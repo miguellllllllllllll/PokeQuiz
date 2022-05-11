@@ -1,0 +1,35 @@
+<html>
+
+<head>
+<title>Ranking</title>
+<meta charset="UTF-8">
+<meta name="author" content="Angelo Miguel G. Vinluan">
+<meta name="keywords" content="Pokemon, Pokemon Quiz, Trivia">
+<meta name="revised" content="05-12-2022">
+<link rel="stylesheet" href="css/ranking.css">
+<body>
+<h1> TOP 10 Scores </h1>
+<p> NAME    SCORE</p>
+
+<!-- Displays The Pokeball That Links You To The First Page -->
+<div id="pokeBall">
+		<a href="index.html">
+		<img src="Pictures/pokeball.png" width="68%" height="68%"><br>
+		Home 
+		</a>
+</div>
+
+<!-- This section of code retrieves and displays the values for the variables playerName and playerScore -->
+<script>
+	var playerList = [];
+	var playerName = sessionStorage.getItem("playerName");
+	var playerScore = sessionStorage.getItem("playerScore");
+	playerList.push(playerName, playerScore);
+	
+	for(var i=0; i<playerList.length; i++){
+		document.write(playerList[i] + " ");
+	}
+</script>
+</body>
+</head>
+</html>

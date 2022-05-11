@@ -1,0 +1,30 @@
+body{
+	font-size: 20px;
+	font-family: 'Work Sans', sans-serif;
+	color: #333;
+  font-weight: 300;
+  text-align: center;
+  background-image: url("../Pictures/AAA.png");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+h1{
+  font-weight: 300;
+  margin: -11px;
+  padding: 0px;
+  font-size: 50px;
+  font-family: Bahnschrift SemiBold;
+  background-color: #000000;
+  color: #ee1515;
+  text-align: left;
+}
+p {
+color: maroon;
+margin-left: 40px;
+}
+#pokeBall{
+	margin-left: 46px;
+	margin-top: 590px;
+	position: absolute;
+	z-index: 1;
+}
