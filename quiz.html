@@ -1,395 +1,213 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>PokeQuiz</title>
-<meta charset="UTF-8">
-<meta name="author" content="Angelo Miguel G. Vinluan">
-<meta name="keywords" content="Pokemon, Pokemon Quiz, Trivia">
-<meta name="revised" content="05-12-2022">
-<link rel="stylesheet" href="css/quiz.css">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>PokeQuiz &middot; Quiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/quiz.css">
+</head>
 <body>
-	<div id="playerName">
-        <p></p>
-    </div> 
-	<h1>PokeQuiz</h1>
-	
-	<div class="quiz-container">
-	<div id="quiz"></div>
-	</div>
-	
-	<button id="previous">Previous Question</button>
-	
-	<button id="next">Next Question</button>
-	
-	<button id="submit">Submit Quiz</button>
-	
-	<div id="results"></div>
-	
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html" class="active">Play</a>
+			<a href="ranking.html">Leaderboard</a>
+		</nav>
+	</header>
+
+	<main class="container">
+		<section class="card quiz-card">
+			<div class="quiz-bg" aria-hidden="true">
+				<img class="quiz-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+			<div class="quiz-meta">
+				<div class="player-pill" id="playerPill">
+					<img src="Pictures/pokeball.png" alt="" class="player-icon">
+					<span id="playerGreeting">Trainer</span>
+				</div>
+				<div class="progress">
+					<span id="progressText">1 / 22</span>
+					<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+				</div>
+			</div>
+
+			<div class="quiz-stage">
+				<div id="quiz" class="quiz-slides"></div>
+			</div>
+
+			<div class="quiz-controls">
+				<button id="previous" class="btn btn-secondary">&larr; Previous</button>
+				<button id="next" class="btn">Next &rarr;</button>
+				<button id="submit" class="btn">Submit Quiz</button>
+			</div>
+
+			<div id="results" class="results" hidden></div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
 	<script>
 		function getParameterByName(name, url) {
-		if (!url) url = window.location.href;
-		name = name.replace(/[\[\]]/g, '\\$&');
-		var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
-			results = regex.exec(url);
-		if (!results) return null;
-		if (!results[2]) return '';
-		return decodeURIComponent(results[2].replace(/\+/g, ' '));
+			if (!url) url = window.location.href;
+			name = name.replace(/[\[\]]/g, '\\$&');
+			const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+			const results = regex.exec(url);
+			if (!results) return null;
+			if (!results[2]) return '';
+			return decodeURIComponent(results[2].replace(/\+/g, ' '));
 		}
 
-		var name = getParameterByName('playerName');
-		document.getElementById("playerName").innerHTML = "Hello " + name;
-		sessionStorage.setItem("playerName", name);
-		
+		function escapeHtml(s) {
+			return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+		}
+
 		(function(){
-			// Functions
-			function buildQuiz(){
-			// variable to store the HTML output
-			const output = [];
+			const playerName = (getParameterByName('playerName') || '').trim() || 'Trainer';
+			document.getElementById('playerGreeting').textContent = playerName;
+			sessionStorage.setItem('playerName', playerName);
 
-			// for each question...
-			myQuestions.forEach(
-				(currentQuestion, questionNumber) => {
+			const myQuestions = [
+				{ question: "What was Ash's starter pokemon?", answers: { a: "The Mouse Pokemon", b: "The Sky Squirrel Pokemon", c: "The Tiny Mouse Pokemon", d: "The Rat Pokemon" }, correctAnswer: "a" },
+				{ question: "Who was the first pokemon Ash caught?", answers: { a: "Caterpie", b: "Pidgey", c: "Squirtle", d: "Pikachu" }, correctAnswer: "a" },
+				{ question: "Where did Ash win his first Pokemon League?", answers: { a: "Kanto Region", b: "Alola Region", c: "Kalos Region", d: "Unova Region" }, correctAnswer: "b" },
+				{ question: "What was the name of Ash's main rival in the Kanto Region?", answers: { a: "Gary", b: "Brock", c: "Giovanni", d: "Blue" }, correctAnswer: "a" },
+				{ question: "What are the three types of the starter pokemon?", answers: { a: "Lightning, Flying, Fighting", b: "Fire, Water, Grass", c: "Dark, Ghost, Psychic", d: "Fire, Ice, Dragon" }, correctAnswer: "b" },
+				{ question: "Which one are the Legendary Birds of the Kanto Region?", answers: { a: "Kyogre, Groudon, Rayquaza", b: "Artickuno, Zapdose, Moltress", c: "Zekrom, Kyurem, Reshiram", d: "Articuno, Zapdos, Moltres" }, correctAnswer: "d" },
+				{ question: "Who was Pokemon Champion Cynthia's main Pokemon?", answers: { a: "Salamence", b: "Metagross", c: "Garchomp", d: "Dragonite" }, correctAnswer: "c" },
+				{ question: "In what generation was Mega Evolution introduced?", answers: { a: "6th", b: "7th", c: "5th", d: "9th" }, correctAnswer: "a" },
+				{ question: "What color are the footprints on a Shiny Galarian Stunfisk?", answers: { a: "Green", b: "Yellow", c: "Brown", d: "Blue" }, correctAnswer: "b" },
+				{ question: "What item do you need to give Scyther to evolve?", answers: { a: "Equalizer", b: "Charged Battery", c: "Metal Claw", d: "Black Augurite" }, correctAnswer: "d" },
+				{ question: "Who did Ash lose to in the Kalos Pokemon League?", answers: { a: "Iris", b: "Alain", c: "Diantha", d: "Cynthia" }, correctAnswer: "b" },
+				{ question: "How do you differentiate a male Pikachu and a female Pikachu?", answers: { a: "Color of Their Tail", b: "Shape of Their Tail", c: "Shape of One of Their Ears", d: "Color of Their Ears" }, correctAnswer: "b" },
+				{ question: "What's the name of the leader of Team Rocket?", answers: { a: "Jessie", b: "James", c: "Giovanni", d: "Ghetsis" }, correctAnswer: "c" },
+				{ question: "Which Tapu is the guardian of Melemele Island?", answers: { a: "Tapu Koko", b: "Tapu Lele", c: "Tapu Bulu", d: "Tapu Fini" }, correctAnswer: "a" },
+				{ question: "In the very first episode of Pokemon what chased after Ash and Pikachu?", answers: { a: "Fearow", b: "Spearow", c: "Pidgey", d: "Pidgeot" }, correctAnswer: "b" },
+				{ question: "How was Pikachu's Pokeball unique when Ash received it?", answers: { a: "Color of The Pokeball", b: "Unusual Size of The Pokeball", c: "The Shape of The Pokeball", d: "A Figure on The Pokeball" }, correctAnswer: "d" },
+				{ question: "How many Deoxys forms are there?", answers: { a: "2", b: "3", c: "4", d: "5" }, correctAnswer: "c" },
+				{ question: "Who was the previous owner of Ash's Charizard?", answers: { a: "Gary", b: "Professor Oak", c: "Professor Juniper", d: "Damian" }, correctAnswer: "d" },
+				{ question: "What cat was Mew's character design based on?", answers: { a: "Scottish Fold", b: "Balinese", c: "Siamese", d: "Sphynx (Bingus)" }, correctAnswer: "d" },
+				{ question: "How many Eeveelutions are there?", answers: { a: "8", b: "9", c: "5", d: "6" }, correctAnswer: "a" },
+				{ question: "In Pokemon GO, what can you name your Eevee for it to evolve into an Espeon?", answers: { a: "Esper", b: "Sakura", c: "Tamao", d: "Mai" }, correctAnswer: "b" }
+			];
 
-					// variable to store the list of possible answers
-					const answers = [];
+			const quizContainer = document.getElementById('quiz');
+			const resultsContainer = document.getElementById('results');
+			const previousButton = document.getElementById('previous');
+			const nextButton = document.getElementById('next');
+			const submitButton = document.getElementById('submit');
+			const progressText = document.getElementById('progressText');
+			const progressFill = document.getElementById('progressFill');
 
-					// and for each available answer...
-					for(letter in currentQuestion.answers){
-						// ...add an HTML radio button
-						answers.push(
-							`<label>
-								<input type="radio" name="question${questionNumber}" value="${letter}">
-								${letter} :
-								${currentQuestion.answers[letter]}
-							</label>`
-						);
-					}
-
-					// add this question and its answers to the output
-					output.push(
-						`<div class="slide">
-							<div class="question"> ${currentQuestion.question} </div>
-							<div class="answers"> ${answers.join("")} </div>
-						</div>`
-					);
-				}
-			);
-
-			// finally combine our output list into one string of HTML and put it on the page
-			quizContainer.innerHTML = output.join('');
+			function buildQuiz() {
+				const out = myQuestions.map((q, qi) => {
+					const answers = Object.entries(q.answers).map(([letter, text]) => `
+						<label class="answer">
+							<input type="radio" name="question${qi}" value="${letter}">
+							<span class="answer-letter">${letter.toUpperCase()}</span>
+							<span class="answer-text">${text}</span>
+						</label>
+					`).join('');
+					return `
+						<div class="slide" data-index="${qi}">
+							<div class="question-num">Question ${qi + 1} of ${myQuestions.length}</div>
+							<div class="question">${q.question}</div>
+							<div class="answers">${answers}</div>
+						</div>
+					`;
+				}).join('');
+				quizContainer.innerHTML = out;
 			}
 
-			function showResults(){
-
-				// gather answer containers from our quiz
-				const answerContainers = quizContainer.querySelectorAll('.answers');
-
-				// keep track of user's answers
-				let numCorrect = 0;
-
-				// for each question...
-				myQuestions.forEach( (currentQuestion, questionNumber) => {
-
-				// find selected answer
-				const answerContainer = answerContainers[questionNumber];
-				const selector = `input[name=question${questionNumber}]:checked`;
-				const userAnswer = (answerContainer.querySelector(selector) || {}).value;
-
-				// if answer is correct
-				if(userAnswer === currentQuestion.correctAnswer){
-					// add to the number of correct answers
-					numCorrect++;
-
-					// color the answers green
-					answerContainers[questionNumber].style.color = 'lightgreen';
-				}
-				// if answer is wrong or blank
-				else{
-					// color the answers red
-					answerContainers[questionNumber].style.color = 'red';
-				}
-				});
-
-				// show number of correct answers out of total
-				resultsContainer.innerHTML = `${numCorrect} out of ${myQuestions.length}`;
-				sessionStorage.setItem("playerScore", numCorrect);
-				window.open("ranking.html", '_blank');
+			function updateProgress() {
+				progressText.textContent = `${currentSlide + 1} / ${myQuestions.length}`;
+				progressFill.style.width = `${((currentSlide + 1) / myQuestions.length) * 100}%`;
 			}
 
 			function showSlide(n) {
 				slides[currentSlide].classList.remove('active-slide');
 				slides[n].classList.add('active-slide');
 				currentSlide = n;
-				
-				if(currentSlide === 0){
-					previousButton.style.display = 'none';
-				}
-				else{
-					previousButton.style.display = 'inline-block';
-				}
-				if(currentSlide === slides.length-1){
+
+				previousButton.style.display = currentSlide === 0 ? 'none' : 'inline-flex';
+				if (currentSlide === slides.length - 1) {
 					nextButton.style.display = 'none';
-					submitButton.style.display = 'inline-block';
-				}
-				else{
-					nextButton.style.display = 'inline-block';
+					submitButton.style.display = 'inline-flex';
+				} else {
+					nextButton.style.display = 'inline-flex';
 					submitButton.style.display = 'none';
 				}
+				updateProgress();
+				quizContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			}
 
-			function showNextSlide() {
-				showSlide(currentSlide + 1);
+			function showResults() {
+				const answerContainers = quizContainer.querySelectorAll('.answers');
+				let numCorrect = 0;
+
+				myQuestions.forEach((q, qi) => {
+					const container = answerContainers[qi];
+					const selected = container.querySelector(`input[name=question${qi}]:checked`);
+					const userAnswer = selected ? selected.value : null;
+					const correct = q.correctAnswer;
+
+					container.querySelectorAll('.answer').forEach(label => {
+						const val = label.querySelector('input').value;
+						if (val === correct) label.classList.add('is-correct');
+						if (val === userAnswer && val !== correct) label.classList.add('is-wrong');
+					});
+
+					if (userAnswer === correct) numCorrect++;
+				});
+
+				const pct = Math.round((numCorrect / myQuestions.length) * 100);
+				resultsContainer.hidden = false;
+				resultsContainer.innerHTML = `
+					<h2>Quiz Complete!</h2>
+					<div class="score">
+						<span class="score-num">${numCorrect}</span>
+						<span class="score-denom"> / ${myQuestions.length}</span>
+					</div>
+					<div class="score-pct">${pct}% Correct</div>
+					<p>Nice run, ${escapeHtml(playerName)}. Your score has been saved to the leaderboard.</p>
+					<div class="results-actions">
+						<a href="ranking.html" class="btn">View Leaderboard &rarr;</a>
+						<a href="play.html" class="btn btn-secondary">Play Again</a>
+					</div>
+				`;
+
+				sessionStorage.setItem('playerScore', String(numCorrect));
+				saveToLeaderboard(playerName, numCorrect);
+
+				submitButton.disabled = true;
+				submitButton.style.display = 'none';
+				previousButton.style.display = 'none';
+				resultsContainer.scrollIntoView({ behavior: 'smooth' });
 			}
 
-			function showPreviousSlide() {
-				showSlide(currentSlide - 1);
-			}	
+			function saveToLeaderboard(name, score) {
+				try {
+					const key = 'pokequiz_leaderboard';
+					const list = JSON.parse(localStorage.getItem(key) || '[]');
+					list.push({ name, score, total: myQuestions.length, at: Date.now() });
+					list.sort((a, b) => b.score - a.score || a.at - b.at);
+					localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
+				} catch (e) { /* localStorage unavailable */ }
+			}
 
-			// Global Variable Declarations
-			const quizContainer = document.getElementById('quiz');
-			const resultsContainer = document.getElementById('results');
-			const submitButton = document.getElementById('submit');
-			const myQuestions = [
-			{
-				question: "What was Ash's starter pokemon?",
-				answers: {
-					a: "The Mouse Pokemon",
-					b: "The Sky Squirrel Pokemon",
-					c: "The Tiny Mouse Pokemon",
-					d: "The Rat Pokemon"
-				},
-				correctAnswer: "a"
-			},
-			{
-				question: "Who was the first pokemon Ash caught?",
-				answers: {
-					a: "Caterpie",
-					b: "Pidgey",
-					c: "Squirtle",
-					d: "Pikachu"
-				},
-				correctAnswer: "a"
-			},
-			{
-				question: "Where did Ash win his first Pokemon League?",
-				answers: {
-					a: "Kanto Region",
-					b: "Alola Region",
-					c: "Kalos Region",
-					d: "Unova Region"
-				},
-				correctAnswer: "b"
-			},
-			{	
-				question: "What was the name of Ash's main rival in the Kanto Region?",
-				answers: {
-					a: "Gary",
-					b: "Brock",
-					c: "Giovanni",
-					d: "Blue"
-				},
-				correctAnswer: "a"
-			},
-			{
-				question: "What are the three types of the starter pokemon",
-				answers: {
-					a: "Lightning, Flying, Fighting",
-					b: "Fire, Water, Grass",
-					c: "Dark, Ghost, Psychic",
-					d: "Fire, Ice, Dragon"
-				},
-				correctAnswer: "b"
-			},
-			{
-				question: "Which one are the Legendary Birds of the Kanto Region?",
-				answers: {
-					a: "Kyogre, Groudon, Rayquaza",
-					b: "Artickuno, Zapdose, Moltress",
-					c: "Zekrom, Kyurem, Reshiram",
-					d: "Articuno, Zapdos, Moltres"
-				},
-				correctAnswer: "d"
-			},
-			{
-				question: "Who was Pokemon Champion Cynthia's main Pokemon?",
-				answers: {
-					a: "Salamence",
-					b: "Metagross",
-					c: "Garchomp",
-					d: "Dragonite"
-				},
-				correctAnswer: "c"
-			},
-			{
-				question: "In what generation was Mega Evolution introduced?",
-				answers: {
-					a: "6th",
-					b: "7th",
-					c: "5th",
-					d: "9th"
-				},
-				correctAnswer: "a"
-			},
-			{
-				question: "What color are the footprints on a Shiny Galarian Stunfisk?",
-				answers: {
-					a: "Green",
-					b: "Yellow",
-					c: "Brown",
-					d: "Blue"
-				},
-				correctAnswer: "b"
-			},
-			{
-				question: "What item do you need to give Scyther to evolve?",
-				answers: {
-					a: "Equalizer",
-					b: "Charged Battery",
-					c: "Metal Claw",
-					d: "Black Augurite"
-				},
-				correctAnswer: "d"
-			},
-			{
-				question: "Who did Ash lose to in the Kalos Pokemon League?",
-				answers: {
-					a: "Iris",
-					b: "Alain",
-					c: "Diantha",
-					d: "Cynthia"
-				},
-				correctAnswer: "b"
-			},
-			{
-				question: "How do you differentiate a male Pikachu and a female Pikachu?",
-				answers: {
-					a: "Color of Their Tail",
-					b: "Shape of Their Tail",
-					c: "Shape of One of Their Ears",
-					d: "Color of Their Ears"
-				},
-				correctAnswer: "b"
-			},
-			{
-				question: "Whats the name of the leader of Team Rocket?",
-				answers: {
-					a: "Jessie",
-					b: "James",
-					c: "Giovanni",
-					d: "Ghetsis"
-				},
-				correctAnswer: "c"
-			},
-			{
-				question: "Which Tapu is the guardian of Melemele Island?",
-				answers: {
-					a: "Tapu Koko",
-					b: "Tapu Lele",
-					c: "Tapu Bulu",
-					d: "Tapu Fini"
-				},
-				correctAnswer: "a"
-			},
-			{
-				question: "In the very first episode of Pokemon what chased after Ash and Pikachu",
-				answers: {
-					a: "Fearow",
-					b: "Spearow",
-					c: "Pidgey",
-					d: "Pidgeot"
-				},
-				correctAnswer: "b"
-			},
-			{
-				question: "How was Pikachu's Pokeball unique when Ash received it?",
-				answers: {
-					a: "Color of The Pokeball",
-					b: "Unusual Size of The Pokeball",
-					c: "The Shape of The Pokeball",
-					d: "A Figure on The Pokeball"
-				},
-				correctAnswer: "d"
-			},
-			{
-				question: "How do you ?",
-				answers: {
-					a: "Color of Their Tail",
-					b: "Shape of Their Tail",
-					c: "Shape of One of Their Ears",
-					d: "Color of Their Ears"
-				},
-				correctAnswer: "b"
-			},
-			{
-				question: "How many Deoxys forms are there?",
-				answers: {
-					a: "2",
-					b: "3",
-					c: "4",
-					d: "5"
-				},
-				correctAnswer: "c"
-			},
-			{
-				question: "Who was the previous owner of Ash's Charizard?",
-				answers: {
-					a: "Gary",
-					b: "Professor Oak",
-					c: "Professor Juniper",
-					d: "Damian"
-				},
-				correctAnswer: "d"
-			},
-			{
-				question: "What cat was Mew's character design based on?",
-				answers: {
-					a: "Scottish Fold",
-					b: "Balinese",
-					c: "Siamese",
-					d: "Sphynx(Bingus)"
-				},
-				correctAnswer: "d"
-			},
-			{
-				question: "How many Eeveelutions are there?",
-				answers: {
-					a: "8",
-					b: "9",
-					c: "5",
-					d: "6"
-				},
-				correctAnswer: "a"
-			},
-			{
-				question: "In Pokemon GO, what can you name ur Eevee for it to evolve into an Espeon",
-				answers: {
-					a: "Esper",
-					b: "Sakura",
-					c: "Tamao",
-					d: "Mai"
-				},
-				correctAnswer: "b"
-			},
-			];
-
-			// Initializes the Quiz
 			buildQuiz();
-				
-			// Sets the pagination of quiz.html
-			const previousButton = document.getElementById("previous");
-			const nextButton = document.getElementById("next");
-			const slides = document.querySelectorAll(".slide");
+			const slides = document.querySelectorAll('.slide');
 			let currentSlide = 0;
+			showSlide(0);
 
-			// Show the first slide
-			showSlide(currentSlide);
-
-			// Event listeners
 			submitButton.addEventListener('click', showResults);
-			previousButton.addEventListener("click", showPreviousSlide);
-			nextButton.addEventListener("click", showNextSlide);
+			previousButton.addEventListener('click', () => showSlide(currentSlide - 1));
+			nextButton.addEventListener('click', () => showSlide(currentSlide + 1));
 		})();
-    </script>
+	</script>
 </body>
-</head>
 </html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Trainer Sign-In &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/playerinfo.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html" class="active">Play</a>
+			<a href="ranking.html">Leaderboard</a>
+		</nav>
+	</header>
+
+	<main class="container narrow">
+		<section class="card form-card">
+			<div class="form-bg" aria-hidden="true">
+				<img class="form-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+
+			<div class="form-inner">
+				<div class="eyebrow">
+					<span class="dot"></span>
+					<span>Register New Trainer</span>
+				</div>
+				<h1>Trainer Sign-In</h1>
+				<p class="lede">Tell us who's playing. We'll save your name to the leaderboard.</p>
+
+				<form id="login" action="quiz.html" method="get" novalidate>
+					<fieldset>
+						<legend class="visually-hidden">Player information</legend>
+
+						<div class="field">
+							<span class="field-label">Gender</span>
+							<div class="radio-group">
+								<label class="radio">
+									<input type="radio" name="gender" value="male" checked>
+									<span>Male</span>
+								</label>
+								<label class="radio">
+									<input type="radio" name="gender" value="female">
+									<span>Female</span>
+								</label>
+								<label class="radio">
+									<input type="radio" name="gender" value="other">
+									<span>Other</span>
+								</label>
+							</div>
+						</div>
+
+						<div class="field">
+							<label for="playerName">Player Name</label>
+							<input type="text" id="playerName" name="playerName" required minlength="1" maxlength="30" placeholder="e.g. Ash" autocomplete="off">
+						</div>
+
+						<div class="field two-col">
+							<div>
+								<label for="Age">Age</label>
+								<input type="number" id="Age" name="Age" min="1" max="120" placeholder="10">
+							</div>
+							<div>
+								<label for="email">Email</label>
+								<input type="email" id="email" name="email" placeholder="ash@pallet.town">
+							</div>
+						</div>
+
+						<div class="form-actions">
+							<button type="submit" class="btn">Start Quiz &rarr;</button>
+							<button type="reset" class="btn btn-secondary">Reset</button>
+							<a href="index.html" class="btn btn-ghost">&larr; Back home</a>
+						</div>
+					</fieldset>
+				</form>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script>
+		(function() {
+			const form = document.getElementById('login');
+			const playerName = document.getElementById('playerName');
+			const inputs = form.querySelectorAll('input[type="text"], input[type="number"], input[type="email"]');
+
+			inputs.forEach(input => {
+				input.addEventListener('blur', () => {
+					if (input.value.trim() === '') {
+						input.classList.remove('valid');
+						input.classList.toggle('invalid', input.hasAttribute('required'));
+					} else {
+						input.classList.add('valid');
+						input.classList.remove('invalid');
+					}
+				});
+			});
+
+			form.addEventListener('submit', (e) => {
+				if (playerName.value.trim() === '') {
+					e.preventDefault();
+					playerName.classList.add('invalid');
+					playerName.focus();
+				}
+			});
+		})();
+	</script>
+</body>
+</html>

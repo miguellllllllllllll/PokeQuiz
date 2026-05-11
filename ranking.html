@@ -1,36 +1,131 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>Ranking</title>
-<meta charset="UTF-8">
-<meta name="author" content="Angelo Miguel G. Vinluan">
-<meta name="keywords" content="Pokemon, Pokemon Quiz, Trivia">
-<meta name="revised" content="05-12-2022">
-<link rel="stylesheet" href="css/ranking.css">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Leaderboard &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/ranking.css">
+</head>
 <body>
-	<h1> TOP 10 Scores </h1>
-	<p> NAME    SCORE</p>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="ranking.html" class="active">Leaderboard</a>
+		</nav>
+	</header>
 
-	<!-- Displays The Pokeball That Links You To The First Page -->
-	<div id="pokeBall">
-			<a href="index.html">
-			<img src="Pictures/pokeball.png" width="68%" height="68%"><br>
-			Home 
-			</a>
-	</div>
+	<main class="container">
+		<section class="card ranking-card">
+			<div class="ranking-bg" aria-hidden="true">
+				<img class="ranking-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+			<div class="ranking-header">
+				<div>
+					<div class="eyebrow">
+						<span class="dot"></span>
+						<span>Hall of Fame</span>
+					</div>
+					<h1>Top 10 Scores</h1>
+					<p class="lede">Highest scores across all your trainers.</p>
+				</div>
+				<button id="clearBoard" type="button" class="btn btn-ghost">Clear Board</button>
+			</div>
 
-	<!-- This section of code retrieves and displays the values for the variables playerName and playerScore -->
+			<div class="leaderboard-wrap">
+				<table class="leaderboard" id="leaderboard">
+					<thead>
+						<tr>
+							<th class="col-rank">#</th>
+							<th class="col-name">Trainer</th>
+							<th class="col-score">Score</th>
+							<th class="col-date">Date</th>
+						</tr>
+					</thead>
+					<tbody id="leaderboardBody"></tbody>
+				</table>
+				<div id="emptyState" class="empty-state" hidden>
+					<img src="Pictures/pokeball.png" alt="" width="64">
+					<p>No scores yet. <a href="play.html">Take the quiz</a> to claim the top spot!</p>
+				</div>
+			</div>
+
+			<div class="ranking-actions">
+				<a href="play.html" class="btn">Play Again &rarr;</a>
+				<a href="index.html" class="btn btn-secondary">Home</a>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
 	<script>
-		const playerList = [];
-		const playerList2 = playerList.concat(this.data);
-		var playerName = sessionStorage.getItem("playerName");
-		var playerScore = sessionStorage.getItem("playerScore");
-		playerList.push(playerName, playerScore);
-			
-		for(var i=0; i<playerList.length; i++){
-			document.write(playerList[i] + " ");
-		}
+		(function() {
+			const KEY = 'pokequiz_leaderboard';
+			const body = document.getElementById('leaderboardBody');
+			const emptyState = document.getElementById('emptyState');
+			const table = document.getElementById('leaderboard');
+			const clearBtn = document.getElementById('clearBoard');
+
+			function formatDate(ts) {
+				const d = new Date(ts);
+				return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+			}
+
+			function escape(s) {
+				return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+			}
+
+			function render() {
+				let list = [];
+				try { list = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+
+				// Fold in the most recent session-only score if it isn't already in localStorage
+				const sessName = sessionStorage.getItem('playerName');
+				const sessScore = sessionStorage.getItem('playerScore');
+				if (sessName && sessScore !== null && !list.some(e => e.name === sessName && String(e.score) === sessScore)) {
+					list.push({ name: sessName, score: Number(sessScore), total: 22, at: Date.now() });
+				}
+
+				list.sort((a, b) => b.score - a.score || a.at - b.at);
+				const top = list.slice(0, 10);
+
+				if (top.length === 0) {
+					table.hidden = true;
+					emptyState.hidden = false;
+					return;
+				}
+
+				table.hidden = false;
+				emptyState.hidden = true;
+
+				body.innerHTML = top.map((e, i) => {
+					const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
+					return `
+						<tr class="rank-${i + 1}">
+							<td class="col-rank">${medal}</td>
+							<td class="col-name">${escape(e.name)}</td>
+							<td class="col-score"><strong>${e.score}</strong><span class="of"> / ${e.total || 22}</span></td>
+							<td class="col-date">${formatDate(e.at)}</td>
+						</tr>
+					`;
+				}).join('');
+			}
+
+			clearBtn.addEventListener('click', () => {
+				if (confirm('Clear the entire leaderboard? This cannot be undone.')) {
+					localStorage.removeItem(KEY);
+					sessionStorage.removeItem('playerScore');
+					render();
+				}
+			});
+
+			render();
+		})();
 	</script>
 </body>
-</head>
 </html>
