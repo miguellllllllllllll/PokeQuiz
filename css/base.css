@@ -23,6 +23,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html, body { margin: 0; padding: 0; }
 
 html { background: #ffe9e9; }
@@ -75,6 +77,7 @@ img { max-width: 100%; height: auto; display: block; }
 	display: flex;
 	gap: 6px;
 	flex-wrap: wrap;
+	margin-left: auto;
 }
 
 .site-header nav a {
@@ -99,6 +102,185 @@ img { max-width: 100%; height: auto; display: block; }
 	color: #fff;
 	box-shadow: 0 4px 0 var(--poke-red-deep);
 }
+
+.profile-wrap {
+	position: relative;
+}
+
+.profile-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 14px 4px 4px;
+	background: linear-gradient(180deg, #2a2a2a, #000);
+	color: var(--poke-yellow);
+	border: 2px solid var(--poke-yellow);
+	border-radius: 999px;
+	font-family: inherit;
+	font-weight: 700;
+	font-size: 13px;
+	cursor: pointer;
+	transition: transform 0.1s, box-shadow 0.15s;
+	box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+	letter-spacing: 0.3px;
+}
+
+.profile-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 0 rgba(0,0,0,0.4); }
+.profile-btn:active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+
+.profile-avatar {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: #fff;
+	padding: 2px;
+	display: block;
+}
+
+.profile-name {
+	max-width: 120px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.profile-panel {
+	position: absolute;
+	top: calc(100% + 10px);
+	right: 0;
+	min-width: 260px;
+	background: #fff;
+	border-radius: 14px;
+	box-shadow: var(--shadow-lg);
+	border: 2px solid var(--poke-black);
+	padding: 18px;
+	z-index: 30;
+	color: var(--ink);
+	animation: ppDrop 0.18s ease;
+}
+
+.profile-panel::before {
+	content: '';
+	position: absolute;
+	top: -8px;
+	right: 22px;
+	width: 14px;
+	height: 14px;
+	background: #fff;
+	border-top: 2px solid var(--poke-black);
+	border-left: 2px solid var(--poke-black);
+	transform: rotate(45deg);
+}
+
+@keyframes ppDrop {
+	from { opacity: 0; transform: translateY(-6px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+.pp-title {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	color: var(--poke-red);
+	text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+	margin-bottom: 12px;
+}
+
+.pp-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 0;
+	border-bottom: 1px dashed rgba(0,0,0,0.08);
+}
+
+.pp-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+.pp-row-label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+	color: var(--muted);
+}
+
+.pp-name-view, .pp-score-view {
+	font-weight: 700;
+	font-size: 15px;
+	color: var(--poke-black);
+}
+
+.pp-empty { color: var(--muted); font-weight: 400; font-style: italic; }
+.pp-of { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+.pp-edit-form {
+	display: flex;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+.pp-input {
+	flex: 1;
+	padding: 8px 12px;
+	font-size: 13px;
+	border: 2px solid #e7e0e0;
+	border-radius: 8px;
+	background: #fafafa;
+	font-family: inherit;
+}
+.pp-input:focus {
+	outline: none;
+	border-color: var(--poke-red);
+	background: #fff;
+}
+
+.pp-mini-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6px 12px;
+	font-size: 12px;
+	font-weight: 700;
+	font-family: inherit;
+	border-radius: 8px;
+	cursor: pointer;
+	border: 2px solid var(--poke-black);
+	background: var(--poke-red);
+	color: #fff;
+	transition: transform 0.05s;
+}
+
+.pp-mini-btn.pp-secondary { background: #fff; color: var(--poke-black); }
+.pp-mini-btn:hover { transform: translateY(-1px); }
+
+.pp-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 14px;
+	padding-top: 12px;
+	border-top: 2px dashed rgba(0,0,0,0.08);
+	flex-wrap: wrap;
+}
+
+.pp-actions button {
+	flex: 1;
+	min-width: 0;
+	padding: 8px 10px;
+	font-size: 12px;
+	font-weight: 700;
+	font-family: inherit;
+	border-radius: 8px;
+	cursor: pointer;
+	border: 2px solid rgba(0,0,0,0.15);
+	background: #fff;
+	color: var(--ink);
+	transition: border-color 0.15s, color 0.15s;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+}
+
+.pp-actions button:hover { border-color: var(--poke-red); color: var(--poke-red); }
+.pp-actions .pp-clear-btn:hover { border-color: #dc2626; color: #dc2626; }
 
 .container {
 	max-width: 1120px;
