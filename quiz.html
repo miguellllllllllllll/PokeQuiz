@@ -197,6 +197,12 @@
 					list.sort((a, b) => b.score - a.score || a.at - b.at);
 					localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
 				} catch (e) { /* localStorage unavailable */ }
+
+				fetch('/api/leaderboard', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ name, score, total: myQuestions.length }),
+				}).catch(() => { /* offline or backend unavailable */ });
 			}
 
 			buildQuiz();

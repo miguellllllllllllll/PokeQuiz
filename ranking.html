@@ -28,12 +28,12 @@
 				<div>
 					<div class="eyebrow">
 						<span class="dot"></span>
-						<span>Hall of Fame</span>
+						<span id="eyebrowLabel">Hall of Fame</span>
 					</div>
 					<h1>Top 10 Scores</h1>
-					<p class="lede">Highest scores across all your trainers.</p>
+					<p class="lede" id="boardSubtitle">Loading scores&hellip;</p>
 				</div>
-				<button id="clearBoard" type="button" class="btn btn-ghost">Clear Board</button>
+				<button id="clearBoard" type="button" class="btn btn-ghost" hidden>Clear Local</button>
 			</div>
 
 			<div class="leaderboard-wrap">
@@ -65,11 +65,13 @@
 
 	<script>
 		(function() {
-			const KEY = 'pokequiz_leaderboard';
+			const LOCAL_KEY = 'pokequiz_leaderboard';
 			const body = document.getElementById('leaderboardBody');
 			const emptyState = document.getElementById('emptyState');
 			const table = document.getElementById('leaderboard');
 			const clearBtn = document.getElementById('clearBoard');
+			const eyebrowLabel = document.getElementById('eyebrowLabel');
+			const subtitle = document.getElementById('boardSubtitle');
 
 			function formatDate(ts) {
 				const d = new Date(ts);
@@ -80,45 +82,65 @@
 				return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 			}
 
-			function render() {
+			function getLocalList() {
 				let list = [];
-				try { list = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
-
-				// Fold in the most recent session-only score if it isn't already in localStorage
+				try { list = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch (e) {}
 				const sessName = sessionStorage.getItem('playerName');
 				const sessScore = sessionStorage.getItem('playerScore');
 				if (sessName && sessScore !== null && !list.some(e => e.name === sessName && String(e.score) === sessScore)) {
-					list.push({ name: sessName, score: Number(sessScore), total: 22, at: Date.now() });
+					list.push({ name: sessName, score: Number(sessScore), total: 21, at: Date.now() });
 				}
-
 				list.sort((a, b) => b.score - a.score || a.at - b.at);
-				const top = list.slice(0, 10);
+				return list;
+			}
 
-				if (top.length === 0) {
+			function renderRows(top) {
+				if (!top.length) {
 					table.hidden = true;
 					emptyState.hidden = false;
 					return;
 				}
-
 				table.hidden = false;
 				emptyState.hidden = true;
-
 				body.innerHTML = top.map((e, i) => {
 					const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
 					return `
 						<tr class="rank-${i + 1}">
 							<td class="col-rank">${medal}</td>
 							<td class="col-name">${escape(e.name)}</td>
-							<td class="col-score"><strong>${e.score}</strong><span class="of"> / ${e.total || 22}</span></td>
+							<td class="col-score"><strong>${e.score}</strong><span class="of">/ ${e.total || 21}</span></td>
 							<td class="col-date">${formatDate(e.at)}</td>
 						</tr>
 					`;
 				}).join('');
 			}
 
+			async function loadGlobal() {
+				const res = await fetch('/api/leaderboard', { headers: { accept: 'application/json' } });
+				if (!res.ok) throw new Error('http ' + res.status);
+				const data = await res.json();
+				if (!Array.isArray(data.entries)) throw new Error('bad payload');
+				return data.entries;
+			}
+
+			async function render() {
+				try {
+					const top = await loadGlobal();
+					eyebrowLabel.textContent = 'Global Hall of Fame';
+					subtitle.textContent = 'Live scores from every trainer worldwide.';
+					clearBtn.hidden = true;
+					renderRows(top.slice(0, 10));
+				} catch (err) {
+					eyebrowLabel.textContent = 'Local Hall of Fame';
+					subtitle.textContent = 'Backend offline — showing scores from this browser.';
+					clearBtn.hidden = false;
+					renderRows(getLocalList().slice(0, 10));
+				}
+			}
+
 			clearBtn.addEventListener('click', () => {
-				if (confirm('Clear the entire leaderboard? This cannot be undone.')) {
-					localStorage.removeItem(KEY);
+				if (confirm('Clear the local leaderboard? This only affects this browser; global scores stay.')) {
+					localStorage.removeItem(LOCAL_KEY);
 					sessionStorage.removeItem('playerScore');
 					render();
 				}
