@@ -118,6 +118,15 @@
 			const playerName = document.getElementById('playerName');
 			const inputs = form.querySelectorAll('input[type="text"], input[type="number"], input[type="email"]');
 
+			// Prefill name from saved profile
+			try {
+				const saved = localStorage.getItem('playerName') || sessionStorage.getItem('playerName');
+				if (saved && !playerName.value) {
+					playerName.value = saved;
+					playerName.classList.add('valid');
+				}
+			} catch {}
+
 			inputs.forEach(input => {
 				input.addEventListener('blur', () => {
 					if (input.value.trim() === '') {
@@ -131,11 +140,18 @@
 			});
 
 			form.addEventListener('submit', (e) => {
-				if (playerName.value.trim() === '') {
+				const name = playerName.value.trim();
+				if (name === '') {
 					e.preventDefault();
 					playerName.classList.add('invalid');
 					playerName.focus();
+					return;
 				}
+				// Persist name so it's available immediately on subsequent pages
+				try {
+					localStorage.setItem('playerName', name);
+					sessionStorage.setItem('playerName', name);
+				} catch {}
 			});
 		})();
 	</script>

@@ -97,7 +97,13 @@
 		(function(){
 			const playerName = (getParameterByName('playerName') || '').trim() || 'Trainer';
 			document.getElementById('playerGreeting').textContent = playerName;
-			sessionStorage.setItem('playerName', playerName);
+			try {
+				sessionStorage.setItem('playerName', playerName);
+				if (playerName !== 'Trainer') localStorage.setItem('playerName', playerName);
+				if (window.PokeProfile && typeof window.PokeProfile.refresh === 'function') {
+					window.PokeProfile.refresh();
+				}
+			} catch {}
 
 			const myQuestions = [
 				{ question: "What was Ash's starter pokemon?", answers: { a: "The Mouse Pokemon", b: "The Sky Squirrel Pokemon", c: "The Tiny Mouse Pokemon", d: "The Rat Pokemon" }, correctAnswer: "a" },

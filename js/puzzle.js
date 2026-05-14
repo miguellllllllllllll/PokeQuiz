@@ -34,7 +34,6 @@
 			const audio = new Audio();
 			audio.preload = 'auto';
 			audio.volume = 0.55;
-			audio.crossOrigin = 'anonymous';
 			audio.src = `${CRY_BASE}${slugify(name)}.mp3`;
 			audio.load();
 			currentAudio = audio;
@@ -94,6 +93,14 @@
 			];
 			console.warn('Failed to load full pokedex; using fallback', err);
 		}
+	}
+
+	function setModeCardsEnabled(enabled) {
+		document.querySelectorAll('.mode-card').forEach((c) => {
+			c.disabled = !enabled;
+			c.style.opacity = enabled ? '' : '0.55';
+			c.style.cursor = enabled ? '' : 'wait';
+		});
 	}
 
 	function init() {
@@ -373,12 +380,17 @@
 		showModeSelect();
 	}
 
-	(async function boot() {
-		await loadPool();
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', init);
-		} else {
+	function bootDom() {
+		setModeCardsEnabled(false);
+		loadPool().then(() => {
 			init();
-		}
-	})();
+			setModeCardsEnabled(true);
+		});
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', bootDom);
+	} else {
+		bootDom();
+	}
 })();

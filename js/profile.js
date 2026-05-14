@@ -34,6 +34,14 @@
 		}
 	}
 
+	let refreshFn = () => {};
+
+	window.PokeProfile = {
+		get name() { return getName(); },
+		set name(v) { setName(v); refreshFn(); },
+		refresh() { refreshFn(); }
+	};
+
 	function init() {
 		const btn = document.querySelector('.profile-btn');
 		if (!btn) return;
@@ -64,6 +72,8 @@
 				panelScoreView.innerHTML = '<span class="pp-empty">No runs yet</span>';
 			}
 		}
+
+		refreshFn = refresh;
 
 		function open() {
 			panel.hidden = false;
