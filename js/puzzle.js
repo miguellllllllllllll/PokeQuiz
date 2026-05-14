@@ -1,12 +1,32 @@
 (function () {
 	const SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 	const CRY_BASE = 'https://play.pokemonshowdown.com/audio/cries/';
-	const BEST_KEY = 'pokequiz_puzzle_best';
+	const DATA_URL = 'js/pokemon-data.json';
+
+	const MODES = {
+		casual: { name: 'Casual', hearts: Infinity, bestKey: 'pokequiz_puzzle_best_casual' },
+		standard: { name: 'Standard', hearts: 3, bestKey: 'pokequiz_puzzle_best_standard' },
+		hardcore: { name: 'Hardcore', hearts: 1, bestKey: 'pokequiz_puzzle_best_hardcore' }
+	};
 
 	function slugify(name) {
 		return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
 	}
 
+	function normalize(s) {
+		return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+	}
+
+	function getBest(modeKey) {
+		const n = Number(localStorage.getItem(modeKey));
+		return Number.isFinite(n) && n > 0 ? n : 0;
+	}
+
+	function setBest(modeKey, n) {
+		try { localStorage.setItem(modeKey, String(n)); } catch {}
+	}
+
+	let POOL = [];
 	let currentAudio = null;
 
 	function preloadCry(name) {
@@ -26,101 +46,9 @@
 		if (!a) return;
 		try {
 			a.currentTime = 0;
-			a.play().catch(() => { /* autoplay blocked or 404 */ });
-		} catch { /* ignore */ }
+			a.play().catch(() => {});
+		} catch {}
 	}
-
-	const POKEMON = [
-		{ id: 1, name: 'Bulbasaur' },
-		{ id: 4, name: 'Charmander' },
-		{ id: 6, name: 'Charizard' },
-		{ id: 7, name: 'Squirtle' },
-		{ id: 9, name: 'Blastoise' },
-		{ id: 10, name: 'Caterpie' },
-		{ id: 16, name: 'Pidgey' },
-		{ id: 19, name: 'Rattata' },
-		{ id: 25, name: 'Pikachu' },
-		{ id: 26, name: 'Raichu' },
-		{ id: 35, name: 'Clefairy' },
-		{ id: 37, name: 'Vulpix' },
-		{ id: 39, name: 'Jigglypuff' },
-		{ id: 41, name: 'Zubat' },
-		{ id: 50, name: 'Diglett' },
-		{ id: 52, name: 'Meowth' },
-		{ id: 54, name: 'Psyduck' },
-		{ id: 58, name: 'Growlithe' },
-		{ id: 63, name: 'Abra' },
-		{ id: 66, name: 'Machop' },
-		{ id: 74, name: 'Geodude' },
-		{ id: 77, name: 'Ponyta' },
-		{ id: 79, name: 'Slowpoke' },
-		{ id: 81, name: 'Magnemite' },
-		{ id: 92, name: 'Gastly' },
-		{ id: 94, name: 'Gengar' },
-		{ id: 95, name: 'Onix' },
-		{ id: 100, name: 'Voltorb' },
-		{ id: 104, name: 'Cubone' },
-		{ id: 113, name: 'Chansey' },
-		{ id: 115, name: 'Kangaskhan' },
-		{ id: 122, name: 'Mr. Mime', aliases: ['mr mime', 'mrmime'] },
-		{ id: 123, name: 'Scyther' },
-		{ id: 124, name: 'Jynx' },
-		{ id: 125, name: 'Electabuzz' },
-		{ id: 128, name: 'Tauros' },
-		{ id: 129, name: 'Magikarp' },
-		{ id: 130, name: 'Gyarados' },
-		{ id: 131, name: 'Lapras' },
-		{ id: 132, name: 'Ditto' },
-		{ id: 133, name: 'Eevee' },
-		{ id: 134, name: 'Vaporeon' },
-		{ id: 135, name: 'Jolteon' },
-		{ id: 136, name: 'Flareon' },
-		{ id: 142, name: 'Aerodactyl' },
-		{ id: 143, name: 'Snorlax' },
-		{ id: 144, name: 'Articuno' },
-		{ id: 145, name: 'Zapdos' },
-		{ id: 146, name: 'Moltres' },
-		{ id: 147, name: 'Dratini' },
-		{ id: 149, name: 'Dragonite' },
-		{ id: 150, name: 'Mewtwo' },
-		{ id: 151, name: 'Mew' },
-		{ id: 155, name: 'Cyndaquil' },
-		{ id: 158, name: 'Totodile' },
-		{ id: 172, name: 'Pichu' },
-		{ id: 196, name: 'Espeon' },
-		{ id: 197, name: 'Umbreon' },
-		{ id: 249, name: 'Lugia' },
-		{ id: 250, name: 'Ho-Oh', aliases: ['hooh', 'ho oh'] },
-		{ id: 257, name: 'Blaziken' },
-		{ id: 282, name: 'Gardevoir' },
-		{ id: 384, name: 'Rayquaza' },
-		{ id: 448, name: 'Lucario' },
-		{ id: 470, name: 'Leafeon' },
-		{ id: 471, name: 'Glaceon' },
-		{ id: 493, name: 'Arceus' },
-		{ id: 658, name: 'Greninja' },
-		{ id: 700, name: 'Sylveon' },
-		{ id: 906, name: 'Sprigatito' },
-		{ id: 909, name: 'Fuecoco' },
-		{ id: 912, name: 'Quaxly' }
-	];
-
-	function normalize(s) {
-		return String(s || '').toLowerCase().normalize('NFD').replace(/[\̀-\ͯ]/g, '').replace(/[^a-z]/g, '');
-	}
-
-	function getBest() {
-		const n = Number(localStorage.getItem(BEST_KEY));
-		return Number.isFinite(n) && n > 0 ? n : 0;
-	}
-
-	function setBest(n) {
-		try { localStorage.setItem(BEST_KEY, String(n)); } catch {}
-	}
-
-	const RECENT_BUFFER = Math.min(8, Math.floor(POKEMON.length / 3));
-	let deck = [];
-	const recentIds = [];
 
 	function shuffleInPlace(arr) {
 		for (let i = arr.length - 1; i > 0; i--) {
@@ -133,23 +61,48 @@
 		return arr;
 	}
 
-	function refillDeck() {
-		deck = shuffleInPlace([...POKEMON]);
+	function createPicker(pool) {
+		let deck = [];
+		const recentIds = [];
+		const RECENT_BUFFER = Math.min(20, Math.floor(pool.length / 3));
+
+		function refill() { deck = shuffleInPlace([...pool]); }
+		function pick() {
+			if (deck.length === 0) refill();
+			let idx = deck.findIndex((p) => !recentIds.includes(p.id));
+			if (idx === -1) idx = 0;
+			const picked = deck.splice(idx, 1)[0];
+			recentIds.push(picked.id);
+			if (recentIds.length > RECENT_BUFFER) recentIds.shift();
+			return picked;
+		}
+		return { pick };
 	}
 
-	function pickPokemon() {
-		if (deck.length === 0) refillDeck();
-
-		let idx = deck.findIndex((p) => !recentIds.includes(p.id));
-		if (idx === -1) idx = 0;
-
-		const pick = deck.splice(idx, 1)[0];
-		recentIds.push(pick.id);
-		if (recentIds.length > RECENT_BUFFER) recentIds.shift();
-		return pick;
+	async function loadPool() {
+		try {
+			const res = await fetch(DATA_URL);
+			if (!res.ok) throw new Error('http ' + res.status);
+			const data = await res.json();
+			if (!Array.isArray(data) || !data.length) throw new Error('empty');
+			POOL = data;
+		} catch (err) {
+			POOL = [
+				{ id: 25, name: 'Pikachu' },
+				{ id: 6, name: 'Charizard' },
+				{ id: 150, name: 'Mewtwo' }
+			];
+			console.warn('Failed to load full pokedex; using fallback', err);
+		}
 	}
 
 	function init() {
+		const modeSelectEl = document.getElementById('modeSelect');
+		const gameView = document.getElementById('gameView');
+		const gameOverEl = document.getElementById('gameOver');
+		const modeBadge = document.getElementById('modeBadge');
+		const heartsRow = document.getElementById('heartsRow');
+
 		const img = document.getElementById('silhouetteImg');
 		const placeholder = document.getElementById('silhouettePlaceholder');
 		const frame = img.closest('.silhouette-frame');
@@ -159,20 +112,88 @@
 		const hintBtn = document.getElementById('hintBtn');
 		const skipBtn = document.getElementById('skipBtn');
 		const nextBtn = document.getElementById('nextBtn');
+		const quitBtn = document.getElementById('quitBtn');
 		const streakNum = document.getElementById('streakNum');
 		const bestNum = document.getElementById('bestNum');
 		const revealWrap = document.getElementById('revealNameWrap');
 		const revealName = document.getElementById('revealName');
+		const finalStreak = document.getElementById('finalStreak');
+		const finalBest = document.getElementById('finalBest');
+		const gameOverTitle = document.getElementById('gameOverTitle');
+		const gameOverMessage = document.getElementById('gameOverMessage');
+		const retryBtn = document.getElementById('retryBtn');
+		const changeModeBtn = document.getElementById('changeModeBtn');
+		const submitButton = guessForm.querySelector('button[type=submit]');
 
+		let mode = null;
+		let modeConfig = null;
+		let picker = null;
 		let current = null;
 		let revealed = false;
 		let hintLetters = 0;
 		let streak = 0;
-		let best = getBest();
-		bestNum.textContent = best;
+		let best = 0;
+		let hearts = 0;
+		let ended = false;
+
+		function paintBestsOnModeSelect() {
+			document.getElementById('bestCasual').textContent = `Best: ${getBest(MODES.casual.bestKey)}`;
+			document.getElementById('bestStandard').textContent = `Best: ${getBest(MODES.standard.bestKey)}`;
+			document.getElementById('bestHardcore').textContent = `Best: ${getBest(MODES.hardcore.bestKey)}`;
+		}
+
+		function showModeSelect() {
+			paintBestsOnModeSelect();
+			modeSelectEl.hidden = false;
+			gameView.hidden = true;
+			gameOverEl.hidden = true;
+		}
+
+		function showGame() {
+			modeSelectEl.hidden = true;
+			gameView.hidden = false;
+			gameOverEl.hidden = true;
+		}
+
+		function showGameOver(victory) {
+			modeSelectEl.hidden = true;
+			gameView.hidden = true;
+			gameOverEl.hidden = false;
+			gameOverTitle.textContent = victory ? 'Dex Complete!' : 'Game Over';
+			finalStreak.textContent = streak;
+			finalBest.textContent = best;
+			const reason = victory
+				? `You identified every Pokémon in the dex on ${modeConfig.name} mode. Incredible.`
+				: current
+					? `You ran out of hearts on <strong>${escapeHtml(current.name)}</strong>.`
+					: 'Run ended.';
+			gameOverMessage.innerHTML = reason;
+		}
+
+		function escapeHtml(s) {
+			return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+		}
+
+		function renderHearts() {
+			heartsRow.innerHTML = '';
+			if (modeConfig.hearts === Infinity) {
+				const inf = document.createElement('span');
+				inf.className = 'hearts-infinite';
+				inf.textContent = '∞';
+				inf.title = 'Unlimited hearts';
+				heartsRow.appendChild(inf);
+				return;
+			}
+			for (let i = 0; i < modeConfig.hearts; i++) {
+				const h = document.createElement('span');
+				h.className = 'heart ' + (i < hearts ? 'filled' : 'empty');
+				h.textContent = '♥';
+				heartsRow.appendChild(h);
+			}
+		}
 
 		function setFeedback(msg, cls = '') {
-			feedback.textContent = msg;
+			feedback.innerHTML = msg;
 			feedback.className = 'feedback' + (cls ? ' ' + cls : '');
 		}
 
@@ -192,7 +213,7 @@
 			hintBtn.disabled = false;
 			skipBtn.hidden = false;
 			nextBtn.hidden = true;
-			guessForm.querySelector('button[type=submit]').disabled = false;
+			submitButton.disabled = false;
 
 			const tempImg = new Image();
 			tempImg.onload = () => {
@@ -211,7 +232,8 @@
 		}
 
 		function nextPokemon() {
-			loadPokemon(pickPokemon());
+			if (ended) return;
+			loadPokemon(picker.pick());
 		}
 
 		function isMatch(input, p) {
@@ -231,13 +253,13 @@
 			hintBtn.disabled = true;
 			skipBtn.hidden = true;
 			nextBtn.hidden = false;
-			guessForm.querySelector('button[type=submit]').disabled = true;
+			submitButton.disabled = true;
 
 			if (correct) {
 				streak++;
 				if (streak > best) {
 					best = streak;
-					setBest(best);
+					setBest(modeConfig.bestKey, best);
 				}
 				streakNum.textContent = streak;
 				bestNum.textContent = best;
@@ -250,30 +272,76 @@
 			setTimeout(() => nextBtn.focus(), 200);
 		}
 
+		function loseHeart() {
+			if (modeConfig.hearts === Infinity) return false;
+			hearts = Math.max(0, hearts - 1);
+			renderHearts();
+			return hearts <= 0;
+		}
+
 		function applyHint() {
 			if (revealed) return;
 			hintLetters = Math.min(hintLetters + 1, current.name.length - 1);
 			const name = current.name;
 			const masked = name.split('').map((ch, i) => {
 				if (i < hintLetters) return ch;
-				if (!/[a-zA-Z]/.test(ch)) return ch;
+				if (!/[a-zA-Z0-9]/.test(ch)) return ch;
 				return '_';
 			}).join(' ');
 			setFeedback(`Hint: ${masked}`, 'hint');
 			if (hintLetters >= current.name.length - 1) hintBtn.disabled = true;
 		}
 
-		guessForm.addEventListener('submit', (e) => {
-			e.preventDefault();
-			if (revealed) return;
-			if (isMatch(guessInput.value, current)) {
-				reveal(true);
+		function handleWrongGuess() {
+			const out = loseHeart();
+			if (out) {
+				ended = true;
+				reveal(false);
+				setFeedback(`Out of hearts &mdash; it was <strong>${escapeHtml(current.name)}</strong>.`, 'wrong');
+				setTimeout(() => showGameOver(false), 900);
 			} else {
-				setFeedback('Not quite — try again!', 'wrong');
+				const heartsLeft = modeConfig.hearts === Infinity ? '∞' : hearts;
+				setFeedback(`Not quite! Hearts left: ${heartsLeft}`, 'wrong');
 				guessInput.classList.remove('shake');
 				void guessInput.offsetWidth;
 				guessInput.classList.add('shake');
 				guessInput.select();
+			}
+		}
+
+		function startMode(modeKey) {
+			mode = modeKey;
+			modeConfig = MODES[modeKey];
+			modeBadge.textContent = modeConfig.name;
+			modeBadge.dataset.mode = modeKey;
+			hearts = modeConfig.hearts === Infinity ? Infinity : modeConfig.hearts;
+			streak = 0;
+			best = getBest(modeConfig.bestKey);
+			ended = false;
+			streakNum.textContent = streak;
+			bestNum.textContent = best;
+			picker = createPicker(POOL);
+			renderHearts();
+			showGame();
+			nextPokemon();
+		}
+
+		// Mode select buttons
+		document.querySelectorAll('.mode-card').forEach((card) => {
+			card.addEventListener('click', () => {
+				const m = card.dataset.mode;
+				if (MODES[m]) startMode(m);
+			});
+		});
+
+		// Guess form
+		guessForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+			if (revealed || ended) return;
+			if (isMatch(guessInput.value, current)) {
+				reveal(true);
+			} else {
+				handleWrongGuess();
 			}
 		});
 
@@ -282,18 +350,35 @@
 		skipBtn.addEventListener('click', () => {
 			streak = 0;
 			streakNum.textContent = streak;
-			setFeedback(`Skipped — it was ${current.name}.`, 'skipped');
+			setFeedback(`Skipped — it was <strong>${escapeHtml(current.name)}</strong>.`, 'skipped');
 			reveal(false);
 		});
 
-		nextBtn.addEventListener('click', nextPokemon);
+		nextBtn.addEventListener('click', () => {
+			if (ended) showGameOver(false);
+			else nextPokemon();
+		});
 
-		nextPokemon();
+		quitBtn.addEventListener('click', () => {
+			if (!confirm('End this run and return to mode select? Your streak will be lost.')) return;
+			ended = true;
+			showGameOver(false);
+		});
+
+		retryBtn.addEventListener('click', () => startMode(mode));
+
+		changeModeBtn.addEventListener('click', () => showModeSelect());
+
+		// Boot
+		showModeSelect();
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
-	} else {
-		init();
-	}
+	(async function boot() {
+		await loadPool();
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', init);
+		} else {
+			init();
+		}
+	})();
 })();
