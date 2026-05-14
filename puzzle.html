@@ -67,10 +67,16 @@
 					<button class="mode-card mode-card-casual" data-mode="casual" type="button" style="--stagger:0">
 						<span class="diff-pill diff-easy">Easy</span>
 						<div class="mode-art">
-							<div class="mode-icon mode-icon-infinite" aria-hidden="true">&infin;</div>
-							<div class="mode-art-rays" aria-hidden="true"></div>
+							<div class="pokeball pokeball-heal" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+								<span class="pb-sparkle pb-sparkle-1"></span>
+								<span class="pb-sparkle pb-sparkle-2"></span>
+							</div>
 						</div>
 						<strong class="mode-title">Casual</strong>
+						<span class="mode-subtitle">Heal Ball Trial</span>
 						<span class="mode-desc">Relax and learn the dex. Mistakes are free.</span>
 						<ul class="mode-stats">
 							<li><span class="ms-num">&infin;</span><span class="ms-label">Hearts</span></li>
@@ -85,13 +91,15 @@
 					<button class="mode-card mode-card-standard" data-mode="standard" type="button" style="--stagger:1">
 						<span class="diff-pill diff-medium">Medium</span>
 						<div class="mode-art">
-							<div class="mode-icon" aria-hidden="true">
-								<span class="heart filled">&#9829;</span>
-								<span class="heart filled">&#9829;</span>
-								<span class="heart filled">&#9829;</span>
+							<div class="pokeball pokeball-classic" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+								<span class="pb-shine"></span>
 							</div>
 						</div>
 						<strong class="mode-title">Standard</strong>
+						<span class="mode-subtitle">Pok&eacute; Ball Trial</span>
 						<span class="mode-desc">The classic challenge. Three strikes and you're out.</span>
 						<ul class="mode-stats">
 							<li><span class="ms-num">3</span><span class="ms-label">Hearts</span></li>
@@ -106,14 +114,18 @@
 					<button class="mode-card mode-card-hardcore" data-mode="hardcore" type="button" style="--stagger:2">
 						<span class="diff-pill diff-hard">Hard</span>
 						<div class="mode-art">
-							<div class="mode-icon" aria-hidden="true">
-								<span class="heart filled">&#9829;</span>
-							</div>
-							<div class="mode-flame" aria-hidden="true">
-								<span></span><span></span><span></span>
+							<div class="pokeball pokeball-master" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-mletter">M</span>
+								<span class="pb-mdot pb-mdot-l"></span>
+								<span class="pb-mdot pb-mdot-r"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+								<span class="pb-glow"></span>
 							</div>
 						</div>
 						<strong class="mode-title">Hardcore</strong>
+						<span class="mode-subtitle">Master Ball Trial</span>
 						<span class="mode-desc">Master mode. One wrong move ends the run.</span>
 						<ul class="mode-stats">
 							<li><span class="ms-num">1</span><span class="ms-label">Heart</span></li>
@@ -128,7 +140,7 @@
 
 				<div class="mode-tip">
 					<span class="mode-tip-icon" aria-hidden="true">!</span>
-					<span>Only wrong guesses cost hearts. <strong>Skip</strong> and <strong>Hint</strong> are free.</span>
+					<span>Wrong guesses cost a heart. <strong>Hint</strong> is always free. <strong>Skip</strong> is Casual only.</span>
 				</div>
 			</div>
 

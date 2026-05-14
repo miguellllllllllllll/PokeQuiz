@@ -218,7 +218,7 @@
 			guessInput.value = '';
 			guessInput.disabled = false;
 			hintBtn.disabled = false;
-			skipBtn.hidden = false;
+			skipBtn.hidden = mode !== 'casual';
 			nextBtn.hidden = true;
 			submitButton.disabled = false;
 
@@ -329,6 +329,8 @@
 			bestNum.textContent = best;
 			picker = createPicker(POOL);
 			renderHearts();
+			// Skip is only available in casual; standard/hardcore force a guess.
+			skipBtn.hidden = modeKey !== 'casual';
 			showGame();
 			nextPokemon();
 		}

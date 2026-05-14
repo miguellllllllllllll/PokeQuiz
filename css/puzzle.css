@@ -125,53 +125,62 @@
 	box-shadow: 0 3px 0 var(--poke-black);
 }
 
-/* --- Casual --- */
+/* --- Casual: Heal Ball theme --- */
 .mode-card-casual {
-	--card-glow: rgba(59, 76, 202, 0.18);
-	--card-glow-2: rgba(34, 197, 94, 0.14);
-	background: linear-gradient(180deg, #f4f8ff 0%, #eaf2ff 100%);
-	border-color: var(--poke-blue);
-	box-shadow: 0 7px 0 #1b2a8a;
+	--card-glow: rgba(255, 138, 196, 0.22);
+	--card-glow-2: rgba(34, 197, 94, 0.10);
+	background:
+		radial-gradient(circle at 20% 20%, rgba(255, 138, 196, 0.08), transparent 50%),
+		linear-gradient(180deg, #fff5fa 0%, #ffe8f3 100%);
+	border-color: #e8489b;
+	box-shadow: 0 7px 0 #a01d6b;
 }
-.mode-card-casual:hover { box-shadow: 0 11px 0 #1b2a8a; }
-.mode-card-casual:active { box-shadow: 0 3px 0 #1b2a8a; }
-.mode-card-casual .mode-title {
-	color: var(--poke-blue);
-	text-shadow: 2px 2px 0 var(--poke-black);
-}
+.mode-card-casual:hover { box-shadow: 0 11px 0 #a01d6b; }
+.mode-card-casual:active { box-shadow: 0 3px 0 #a01d6b; }
+.mode-card-casual .mode-title { color: #d63384; text-shadow: 2px 2px 0 var(--poke-black); }
+.mode-card-casual .mode-subtitle { color: #a01d6b; }
+.mode-card-casual .ms-num { color: #d63384; text-shadow: 1px 1px 0 var(--poke-black); }
+.mode-card-casual .mb-num { color: #d63384; }
 
-/* --- Standard --- */
+/* --- Standard: classic Poké Ball theme --- */
 .mode-card-standard {
-	--card-glow: rgba(255, 203, 5, 0.22);
-	--card-glow-2: rgba(238, 21, 21, 0.10);
-	background: linear-gradient(180deg, #fffaeb 0%, #fff4d6 100%);
+	--card-glow: rgba(238, 21, 21, 0.22);
+	--card-glow-2: rgba(255, 203, 5, 0.16);
+	background:
+		linear-gradient(180deg, #fff 0%, #ffeaea 48%, #fff 52%, #ffeaea 100%);
 	border-color: var(--poke-black);
 }
+.mode-card-standard .mode-title { color: var(--poke-red); text-shadow: 2px 2px 0 var(--poke-black); }
+.mode-card-standard .mode-subtitle { color: var(--poke-red-deep); }
 
-/* --- Hardcore --- */
+/* --- Hardcore: Master Ball theme --- */
 .mode-card-hardcore {
-	--card-glow: rgba(238, 21, 21, 0.4);
-	--card-glow-2: rgba(255, 203, 5, 0.25);
-	background: linear-gradient(180deg, #2a0a0a 0%, #140404 100%);
-	color: #fff;
-	border-color: var(--poke-yellow);
-	box-shadow: 0 7px 0 var(--poke-red-deep);
+	--card-glow: rgba(139, 58, 255, 0.36);
+	--card-glow-2: rgba(255, 92, 168, 0.18);
+	background:
+		radial-gradient(circle at 80% 10%, rgba(139, 58, 255, 0.18), transparent 60%),
+		linear-gradient(180deg, #1c0d3a 0%, #0c0420 100%);
 	color: rgba(255,255,255,0.92);
+	border-color: var(--poke-yellow);
+	box-shadow: 0 7px 0 #4b1396;
 }
 .mode-card-hardcore:hover {
-	background: linear-gradient(180deg, #3a0e0e 0%, #1c0606 100%);
-	box-shadow: 0 11px 0 var(--poke-red-deep);
+	background:
+		radial-gradient(circle at 80% 10%, rgba(139, 58, 255, 0.26), transparent 60%),
+		linear-gradient(180deg, #261050 0%, #100628 100%);
+	box-shadow: 0 11px 0 #4b1396;
 }
-.mode-card-hardcore:active { box-shadow: 0 3px 0 var(--poke-red-deep); }
+.mode-card-hardcore:active { box-shadow: 0 3px 0 #4b1396; }
 .mode-card-hardcore .mode-desc { color: rgba(255,255,255,0.7); }
 .mode-card-hardcore .mode-title {
 	color: var(--poke-yellow);
-	text-shadow: 2px 2px 0 var(--poke-red-deep);
+	text-shadow: 2px 2px 0 #4b1396;
 }
+.mode-card-hardcore .mode-subtitle { color: #ff7eb6; }
 .mode-card-hardcore .mode-stats li { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); }
-.mode-card-hardcore .ms-num { color: var(--poke-yellow); text-shadow: 1px 1px 0 var(--poke-red-deep); }
+.mode-card-hardcore .ms-num { color: var(--poke-yellow); text-shadow: 1px 1px 0 #4b1396; }
 .mode-card-hardcore .ms-label { color: rgba(255,255,255,0.55); }
-.mode-card-hardcore .mode-best { border-color: rgba(255,255,255,0.18); background: rgba(0,0,0,0.18); }
+.mode-card-hardcore .mode-best { border-color: rgba(255,255,255,0.18); background: rgba(0,0,0,0.25); }
 .mode-card-hardcore .mb-label { color: rgba(255,255,255,0.6); }
 .mode-card-hardcore .mb-num { color: var(--poke-yellow); }
 
@@ -199,10 +208,10 @@
 	box-shadow: 0 0 12px rgba(238, 21, 21, 0.5);
 }
 
-/* --- Mode art / icons --- */
+/* --- Mode art: Pokéball icons --- */
 .mode-art {
 	position: relative;
-	height: 88px;
+	height: 110px;
 	width: 100%;
 	display: flex;
 	align-items: center;
@@ -210,21 +219,69 @@
 	margin-top: 6px;
 }
 
-.mode-icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 6px;
-	min-height: 48px;
-	line-height: 1;
+.pokeball {
+	--ball-top: #ee1515;
+	--ball-bottom: #fff;
+	--ball-trim: #1a1a1a;
+	--ball-button: #fff;
+	position: relative;
+	width: 86px;
+	height: 86px;
+	border-radius: 50%;
+	background: var(--ball-bottom);
+	border: 4px solid var(--ball-trim);
+	box-shadow:
+		inset -8px -10px 18px rgba(0,0,0,0.18),
+		inset 8px 6px 16px rgba(255,255,255,0.7),
+		0 8px 14px rgba(0,0,0,0.18);
+	overflow: hidden;
+	animation: floatY 3s ease-in-out infinite, ballSpin 18s linear infinite;
 }
 
-.mode-icon-infinite {
-	font-family: 'Press Start 2P', monospace;
-	font-size: 52px;
-	color: var(--poke-blue);
-	text-shadow: 4px 4px 0 var(--poke-black);
-	animation: floatY 3s ease-in-out infinite;
+.pb-top {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 50%;
+	background: var(--ball-top);
+}
+
+.pb-belt {
+	position: absolute;
+	top: calc(50% - 4px);
+	left: 0;
+	right: 0;
+	height: 8px;
+	background: var(--ball-trim);
+	z-index: 2;
+}
+
+.pb-button {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 22px;
+	height: 22px;
+	background: var(--ball-button);
+	border: 4px solid var(--ball-trim);
+	border-radius: 50%;
+	z-index: 3;
+	box-shadow: inset 0 -3px 0 rgba(0,0,0,0.1);
+}
+
+.pb-shine {
+	position: absolute;
+	top: 8px;
+	left: 12px;
+	width: 18px;
+	height: 12px;
+	background: rgba(255,255,255,0.5);
+	border-radius: 50%;
+	filter: blur(2px);
+	z-index: 4;
+	pointer-events: none;
 }
 
 @keyframes floatY {
@@ -232,76 +289,113 @@
 	50% { transform: translateY(-6px); }
 }
 
-.mode-card-casual .mode-art-rays {
+@keyframes ballSpin {
+	0%, 100% { transform: rotate(0); }
+	50% { transform: rotate(8deg); }
+}
+
+/* Heal Ball (Casual) */
+.pokeball-heal {
+	--ball-top: #ff7eb6;
+	--ball-bottom: #fff;
+	--ball-trim: #1a1a1a;
+}
+.pokeball-heal .pb-sparkle {
 	position: absolute;
-	inset: 0;
-	background:
-		radial-gradient(circle at center, transparent 40%, rgba(59, 76, 202, 0.08) 41%, transparent 42%),
-		radial-gradient(circle at center, transparent 55%, rgba(59, 76, 202, 0.06) 56%, transparent 57%);
+	width: 6px;
+	height: 6px;
+	background: #ff5cab;
 	border-radius: 50%;
-	animation: spin 18s linear infinite;
-	pointer-events: none;
+	box-shadow: 0 0 8px #ff7eb6;
+	z-index: 5;
+	animation: sparkle 2s ease-in-out infinite;
+}
+.pokeball-heal .pb-sparkle-1 { top: 12px; right: 8px; }
+.pokeball-heal .pb-sparkle-2 {
+	bottom: 16px;
+	left: 10px;
+	animation-delay: 1s;
+	width: 4px;
+	height: 4px;
 }
 
-.mode-icon .heart {
-	font-size: 36px;
-	line-height: 1;
-	color: var(--poke-red);
-	text-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 0 16px rgba(238, 21, 21, 0.3);
+@keyframes sparkle {
+	0%, 100% { opacity: 0.4; transform: scale(1); }
+	50% { opacity: 1; transform: scale(1.3); }
 }
 
-.mode-card-standard .mode-icon .heart {
-	animation: heartbeat 1.6s ease-in-out infinite;
-}
-.mode-card-standard .mode-icon .heart:nth-child(2) { animation-delay: 0.2s; }
-.mode-card-standard .mode-icon .heart:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes heartbeat {
-	0%, 100% { transform: scale(1); }
-	50% { transform: scale(1.15); }
+/* Classic Pokéball (Standard) */
+.pokeball-classic {
+	--ball-top: #ee1515;
 }
 
-.mode-card-hardcore .mode-icon .heart {
-	color: var(--poke-yellow);
-	text-shadow: 0 0 16px rgba(255, 203, 5, 0.7), 0 0 4px var(--poke-red);
-	font-size: 48px;
-	animation: heartHard 1.3s ease-in-out infinite;
+/* Master Ball (Hardcore) */
+.pokeball-master {
+	--ball-top: #8b3aff;
+	--ball-trim: #1a1a1a;
+	box-shadow:
+		inset -8px -10px 18px rgba(0,0,0,0.3),
+		inset 8px 6px 16px rgba(255,255,255,0.2),
+		0 0 24px rgba(139, 58, 255, 0.5),
+		0 8px 14px rgba(0,0,0,0.4);
 }
 
-@keyframes heartHard {
-	0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,203,5,0.5)); }
-	50% { transform: scale(1.18); filter: drop-shadow(0 0 14px rgba(255,203,5,0.9)); }
-}
-
-.mode-flame {
+.pokeball-master .pb-mletter {
 	position: absolute;
-	bottom: 4px;
+	top: 4px;
 	left: 50%;
 	transform: translateX(-50%);
-	width: 80px;
-	height: 24px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 16px;
+	color: #ff5ca8;
+	text-shadow: 1px 1px 0 #4b1396;
+	z-index: 4;
+}
+
+.pokeball-master .pb-mdot {
+	position: absolute;
+	top: 30%;
+	width: 8px;
+	height: 8px;
+	background: var(--poke-yellow);
+	border: 2px solid var(--ball-trim);
+	border-radius: 50%;
+	z-index: 4;
+}
+.pokeball-master .pb-mdot-l { left: 14%; }
+.pokeball-master .pb-mdot-r { right: 14%; }
+
+.pokeball-master .pb-glow {
+	position: absolute;
+	inset: -10px;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(139, 58, 255, 0.5) 0%, transparent 70%);
+	z-index: -1;
+	animation: masterGlow 2.4s ease-in-out infinite;
 	pointer-events: none;
 }
 
-.mode-flame span {
-	position: absolute;
-	bottom: 0;
-	left: 50%;
-	width: 10px;
-	height: 18px;
-	background: linear-gradient(to top, var(--poke-yellow), var(--poke-red), transparent);
-	border-radius: 50% 50% 20% 20%;
-	filter: blur(2px);
-	opacity: 0.7;
-	animation: flicker 1.4s ease-in-out infinite;
+@keyframes masterGlow {
+	0%, 100% { opacity: 0.5; transform: scale(0.92); }
+	50% { opacity: 0.9; transform: scale(1.08); }
 }
-.mode-flame span:nth-child(1) { left: 30%; animation-delay: 0s; }
-.mode-flame span:nth-child(2) { left: 50%; animation-delay: 0.4s; height: 22px; }
-.mode-flame span:nth-child(3) { left: 70%; animation-delay: 0.7s; }
 
-@keyframes flicker {
-	0%, 100% { transform: translateX(-50%) scaleY(1); opacity: 0.7; }
-	50% { transform: translateX(-50%) scaleY(1.3); opacity: 1; }
+.mode-card-hardcore .pokeball-master {
+	animation: floatY 2.6s ease-in-out infinite, masterShake 0.45s ease-in-out infinite;
+}
+
+@keyframes masterShake {
+	0%, 100% { rotate: 0; }
+	25% { rotate: -1.5deg; }
+	75% { rotate: 1.5deg; }
+}
+
+.mode-subtitle {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	letter-spacing: 1.5px;
+	color: var(--muted);
+	margin-top: -4px;
 }
 
 .mode-title {
