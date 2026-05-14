@@ -7,12 +7,27 @@
 		return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
 	}
 
-	function playCry(name) {
+	let currentAudio = null;
+
+	function preloadCry(name) {
 		try {
-			const audio = new Audio(`${CRY_BASE}${slugify(name)}.mp3`);
+			const audio = new Audio();
+			audio.preload = 'auto';
 			audio.volume = 0.55;
-			audio.play().catch(() => { /* autoplay blocked or 404 */ });
-		} catch { /* unsupported */ }
+			audio.crossOrigin = 'anonymous';
+			audio.src = `${CRY_BASE}${slugify(name)}.mp3`;
+			audio.load();
+			currentAudio = audio;
+		} catch { currentAudio = null; }
+	}
+
+	function playCry() {
+		const a = currentAudio;
+		if (!a) return;
+		try {
+			a.currentTime = 0;
+			a.play().catch(() => { /* autoplay blocked or 404 */ });
+		} catch { /* ignore */ }
 	}
 
 	const POKEMON = [
@@ -191,6 +206,8 @@
 				setTimeout(nextPokemon, 800);
 			};
 			tempImg.src = `${SPRITE_BASE}${p.id}.png`;
+
+			preloadCry(p.name);
 		}
 
 		function nextPokemon() {
@@ -225,7 +242,7 @@
 				streakNum.textContent = streak;
 				bestNum.textContent = best;
 				setFeedback(`Correct! Streak: ${streak}`, 'correct');
-				playCry(current.name);
+				playCry();
 			} else {
 				streak = 0;
 				streakNum.textContent = streak;
