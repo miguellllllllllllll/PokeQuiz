@@ -103,15 +103,35 @@
 		try { localStorage.setItem(BEST_KEY, String(n)); } catch {}
 	}
 
-	function pickPokemon(exclude) {
-		if (POKEMON.length === 1) return POKEMON[0];
-		let p;
-		let tries = 0;
-		do {
-			p = POKEMON[Math.floor(Math.random() * POKEMON.length)];
-			tries++;
-		} while (p.id === exclude && tries < 12);
-		return p;
+	const RECENT_BUFFER = Math.min(8, Math.floor(POKEMON.length / 3));
+	let deck = [];
+	const recentIds = [];
+
+	function shuffleInPlace(arr) {
+		for (let i = arr.length - 1; i > 0; i--) {
+			const r = (typeof crypto !== 'undefined' && crypto.getRandomValues)
+				? crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32
+				: Math.random();
+			const j = Math.floor(r * (i + 1));
+			[arr[i], arr[j]] = [arr[j], arr[i]];
+		}
+		return arr;
+	}
+
+	function refillDeck() {
+		deck = shuffleInPlace([...POKEMON]);
+	}
+
+	function pickPokemon() {
+		if (deck.length === 0) refillDeck();
+
+		let idx = deck.findIndex((p) => !recentIds.includes(p.id));
+		if (idx === -1) idx = 0;
+
+		const pick = deck.splice(idx, 1)[0];
+		recentIds.push(pick.id);
+		if (recentIds.length > RECENT_BUFFER) recentIds.shift();
+		return pick;
 	}
 
 	function init() {
@@ -174,7 +194,7 @@
 		}
 
 		function nextPokemon() {
-			loadPokemon(pickPokemon(current?.id));
+			loadPokemon(pickPokemon());
 		}
 
 		function isMatch(input, p) {
