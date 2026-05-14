@@ -216,7 +216,7 @@
 .trainer-img {
 	height: 140px;
 	display: flex;
-	align-items: center;
+	align-items: flex-end;
 	justify-content: center;
 	margin-bottom: 12px;
 	position: relative;
@@ -228,19 +228,6 @@
 	width: auto;
 	image-rendering: pixelated;
 	filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-}
-
-/* Subtle breathing loop on the static PNG so it doesn't feel frozen
-   next to the natively-animated GIFs. No scale — the 140px height
-   is enough to match the visible figure size. */
-.trainer-img img[src$=".png"] {
-	transform-origin: bottom center;
-	animation: trainerBreathe 1.6s ease-in-out infinite;
-}
-
-@keyframes trainerBreathe {
-	0%, 100% { transform: scaleY(1) translateY(0); }
-	50% { transform: scaleY(1.02) translateY(-2px); }
 }
 
 .trainer figcaption {
