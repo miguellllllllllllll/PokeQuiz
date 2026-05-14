@@ -137,9 +137,9 @@
 		let ended = false;
 
 		function paintBestsOnModeSelect() {
-			document.getElementById('bestCasual').textContent = `Best: ${getBest(MODES.casual.bestKey)}`;
-			document.getElementById('bestStandard').textContent = `Best: ${getBest(MODES.standard.bestKey)}`;
-			document.getElementById('bestHardcore').textContent = `Best: ${getBest(MODES.hardcore.bestKey)}`;
+			document.getElementById('bestCasual').textContent = getBest(MODES.casual.bestKey);
+			document.getElementById('bestStandard').textContent = getBest(MODES.standard.bestKey);
+			document.getElementById('bestHardcore').textContent = getBest(MODES.hardcore.bestKey);
 		}
 
 		function showModeSelect() {

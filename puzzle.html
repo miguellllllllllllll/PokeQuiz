@@ -54,38 +54,81 @@
 
 			<!-- Mode select view -->
 			<div id="modeSelect" class="puzzle-inner mode-select">
-				<div class="eyebrow">
-					<span class="dot"></span>
-					<span>Choose Your Trial</span>
+				<div class="mode-select-head">
+					<div class="eyebrow">
+						<span class="dot"></span>
+						<span>Choose Your Trial</span>
+					</div>
+					<h1 class="mode-title-big">Who's That <span class="title-flicker">Pok&eacute;mon</span>?</h1>
+					<p class="lede">All <strong>1,025</strong> Pok&eacute;mon are in the dex. Pick your difficulty &mdash; your streak's saved per mode.</p>
 				</div>
-				<h1>Who's That Pok&eacute;mon?</h1>
-				<p class="lede">All <strong>1,025</strong> Pok&eacute;mon are in the dex. Pick your difficulty.</p>
 
 				<div class="mode-grid">
-					<button class="mode-card" data-mode="casual" type="button">
-						<div class="mode-icon mode-icon-infinite" aria-hidden="true">&infin;</div>
+					<button class="mode-card mode-card-casual" data-mode="casual" type="button" style="--stagger:0">
+						<span class="diff-pill diff-easy">Easy</span>
+						<div class="mode-art">
+							<div class="mode-icon mode-icon-infinite" aria-hidden="true">&infin;</div>
+							<div class="mode-art-rays" aria-hidden="true"></div>
+						</div>
 						<strong class="mode-title">Casual</strong>
-						<span class="mode-desc">Unlimited hearts. Take your time.</span>
-						<span class="mode-best" id="bestCasual">Best: 0</span>
+						<span class="mode-desc">Relax and learn the dex. Mistakes are free.</span>
+						<ul class="mode-stats">
+							<li><span class="ms-num">&infin;</span><span class="ms-label">Hearts</span></li>
+							<li><span class="ms-num">&infin;</span><span class="ms-label">Mistakes</span></li>
+						</ul>
+						<span class="mode-best">
+							<span class="mb-label">Best Streak</span>
+							<span class="mb-num" id="bestCasual">0</span>
+						</span>
 					</button>
-					<button class="mode-card" data-mode="standard" type="button">
-						<div class="mode-icon" aria-hidden="true">
-							<span class="heart filled">&#9829;</span>
-							<span class="heart filled">&#9829;</span>
-							<span class="heart filled">&#9829;</span>
+
+					<button class="mode-card mode-card-standard" data-mode="standard" type="button" style="--stagger:1">
+						<span class="diff-pill diff-medium">Medium</span>
+						<div class="mode-art">
+							<div class="mode-icon" aria-hidden="true">
+								<span class="heart filled">&#9829;</span>
+								<span class="heart filled">&#9829;</span>
+								<span class="heart filled">&#9829;</span>
+							</div>
 						</div>
 						<strong class="mode-title">Standard</strong>
-						<span class="mode-desc">3 hearts. Three strikes and you're out.</span>
-						<span class="mode-best" id="bestStandard">Best: 0</span>
+						<span class="mode-desc">The classic challenge. Three strikes and you're out.</span>
+						<ul class="mode-stats">
+							<li><span class="ms-num">3</span><span class="ms-label">Hearts</span></li>
+							<li><span class="ms-num">3</span><span class="ms-label">Mistakes</span></li>
+						</ul>
+						<span class="mode-best">
+							<span class="mb-label">Best Streak</span>
+							<span class="mb-num" id="bestStandard">0</span>
+						</span>
 					</button>
-					<button class="mode-card mode-card-hardcore" data-mode="hardcore" type="button">
-						<div class="mode-icon" aria-hidden="true">
-							<span class="heart filled">&#9829;</span>
+
+					<button class="mode-card mode-card-hardcore" data-mode="hardcore" type="button" style="--stagger:2">
+						<span class="diff-pill diff-hard">Hard</span>
+						<div class="mode-art">
+							<div class="mode-icon" aria-hidden="true">
+								<span class="heart filled">&#9829;</span>
+							</div>
+							<div class="mode-flame" aria-hidden="true">
+								<span></span><span></span><span></span>
+							</div>
 						</div>
 						<strong class="mode-title">Hardcore</strong>
-						<span class="mode-desc">1 heart. One wrong move ends the run.</span>
-						<span class="mode-best" id="bestHardcore">Best: 0</span>
+						<span class="mode-desc">Master mode. One wrong move ends the run.</span>
+						<ul class="mode-stats">
+							<li><span class="ms-num">1</span><span class="ms-label">Heart</span></li>
+							<li><span class="ms-num">0</span><span class="ms-label">Mistakes</span></li>
+						</ul>
+						<span class="mode-best">
+							<span class="mb-label">Best Streak</span>
+							<span class="mb-num" id="bestHardcore">0</span>
+						</span>
 					</button>
+				</div>
+
+				<div class="mode-tip">
+					<span class="mode-tip-icon" aria-hidden="true">!</span>
+					<span>Only wrong guesses cost hearts. <strong>Skip</strong> and <strong>Hint</strong> are free.</span>
 				</div>
 			</div>
 
