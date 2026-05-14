@@ -184,28 +184,70 @@
 .mode-card-hardcore .mb-label { color: rgba(255,255,255,0.6); }
 .mode-card-hardcore .mb-num { color: var(--poke-yellow); }
 
-/* --- Difficulty pill --- */
+/* --- Difficulty pill: themed to match each Pokéball --- */
 .diff-pill {
 	position: absolute;
 	top: 14px;
 	right: 14px;
 	font-family: 'Press Start 2P', monospace;
 	font-size: 8px;
-	letter-spacing: 1px;
-	padding: 5px 9px;
+	letter-spacing: 1.2px;
+	padding: 6px 11px;
 	border-radius: 999px;
-	border: 2px solid currentColor;
-	background: #fff;
+	border: 2px solid var(--poke-black);
+	color: #fff;
 	z-index: 2;
 	line-height: 1;
+	box-shadow: 0 2px 0 var(--poke-black);
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	text-transform: uppercase;
 }
-.diff-easy { color: #1b8b3a; background: #e9fbef; }
-.diff-medium { color: #b97306; background: #fff7e3; }
-.diff-hard {
+
+.diff-pill::before {
+	content: '';
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: currentColor;
+	border: 1.5px solid var(--poke-black);
+	box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2);
+}
+
+/* Easy: Heal Ball pink */
+.diff-easy {
+	background: linear-gradient(180deg, #ff7eb6 0%, #e8489b 100%);
+	color: #ffe1ef;
+	text-shadow: 1px 1px 0 #a01d6b;
+}
+.diff-easy::before { background: #ffd6e7; }
+
+/* Medium: classic Poké Ball red */
+.diff-medium {
+	background: linear-gradient(180deg, var(--poke-red) 0%, var(--poke-red-dark) 100%);
 	color: #fff;
-	background: var(--poke-red);
+	text-shadow: 1px 1px 0 var(--poke-red-deep);
+}
+.diff-medium::before { background: #fff; }
+
+/* Hard: Master Ball purple with yellow accent */
+.diff-hard {
+	background: linear-gradient(180deg, #8b3aff 0%, #5e1cd8 100%);
+	color: var(--poke-yellow);
+	text-shadow: 1px 1px 0 #2a0a55;
 	border-color: var(--poke-yellow);
-	box-shadow: 0 0 12px rgba(238, 21, 21, 0.5);
+	box-shadow: 0 2px 0 #2a0a55, 0 0 16px rgba(139, 58, 255, 0.6);
+	animation: hardPillPulse 2s ease-in-out infinite;
+}
+.diff-hard::before {
+	background: var(--poke-yellow);
+	border-color: var(--poke-black);
+}
+
+@keyframes hardPillPulse {
+	0%, 100% { box-shadow: 0 2px 0 #2a0a55, 0 0 16px rgba(139, 58, 255, 0.5); }
+	50% { box-shadow: 0 2px 0 #2a0a55, 0 0 22px rgba(255, 203, 5, 0.7); }
 }
 
 /* --- Mode art: Pokéball icons --- */
