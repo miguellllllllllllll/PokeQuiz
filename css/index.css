@@ -230,16 +230,21 @@
 	filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
 }
 
-/* Static trainer sprites get a subtle breathing animation so they
-   don't feel frozen next to the natively-animated GIFs. */
+/* Compensate for trainer-sprite padding so smaller native sprites
+   match the visible figure size of Red.gif / Blue.gif, and add a
+   subtle breathing loop so the static PNGs don't feel frozen. */
+.trainer-img {
+	overflow: hidden;
+}
+
 .trainer-img img[src$=".png"] {
 	transform-origin: bottom center;
 	animation: trainerBreathe 1.6s ease-in-out infinite;
 }
 
 @keyframes trainerBreathe {
-	0%, 100% { transform: scaleY(1) translateY(0); }
-	50% { transform: scaleY(1.025) translateY(-2px); }
+	0%, 100% { transform: scale(1.42) translateY(0); }
+	50% { transform: scale(1.45) translateY(-2px); }
 }
 
 .trainer figcaption {
