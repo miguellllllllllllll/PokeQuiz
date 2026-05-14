@@ -271,11 +271,11 @@
 				streakNum.textContent = streak;
 				bestNum.textContent = best;
 				setFeedback(`Correct! Streak: ${streak}`, 'correct');
-				playCry();
 			} else {
 				streak = 0;
 				streakNum.textContent = streak;
 			}
+			playCry();
 			setTimeout(() => nextBtn.focus(), 200);
 		}
 
