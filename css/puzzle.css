@@ -31,6 +31,40 @@
 .mode-select {
 	text-align: center;
 	padding: 44px 36px;
+	position: relative;
+}
+
+.back-link {
+	position: absolute;
+	top: 18px;
+	left: 22px;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 7px 14px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	letter-spacing: 1px;
+	color: var(--poke-black);
+	background: #fff;
+	border: 2px solid var(--poke-black);
+	border-radius: 999px;
+	text-decoration: none;
+	box-shadow: 0 3px 0 var(--poke-black);
+	transition: transform 0.1s, box-shadow 0.15s, background 0.15s;
+	z-index: 2;
+}
+
+.back-link:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 5px 0 var(--poke-black);
+	background: #fff5f5;
+	color: var(--poke-red);
+}
+
+.back-link:active {
+	transform: translateY(1px);
+	box-shadow: 0 2px 0 var(--poke-black);
 }
 
 .mode-select-head {
