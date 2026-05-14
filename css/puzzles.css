@@ -1,0 +1,295 @@
+.hub-card {
+	position: relative;
+	overflow: hidden;
+	padding: 0;
+}
+
+.hub-bg {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+}
+
+.hub-pokeball {
+	position: absolute;
+	right: -130px;
+	top: -130px;
+	width: 360px;
+	opacity: 0.05;
+	animation: hubSpin 30s linear infinite;
+}
+
+@keyframes hubSpin {
+	from { transform: rotate(0); }
+	to { transform: rotate(360deg); }
+}
+
+.hub-inner {
+	position: relative;
+	z-index: 1;
+	padding: 44px 36px 36px;
+}
+
+.hub-head {
+	text-align: center;
+	margin-bottom: 32px;
+}
+
+.hub-head .eyebrow { margin: 0 auto 16px; }
+
+.hub-head h1 {
+	font-size: 28px;
+	margin: 0 0 12px;
+	letter-spacing: 1px;
+	text-shadow: 3px 3px 0 var(--poke-black);
+}
+
+.hub-head .lede {
+	color: #444;
+	margin: 0 auto;
+	font-size: 15px;
+	max-width: 56ch;
+}
+
+/* ============ Game grid ============ */
+
+.games-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 18px;
+	margin-bottom: 24px;
+}
+
+.game-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	padding: 26px 22px 22px;
+	background: linear-gradient(180deg, #fff 0%, #fff5f5 100%);
+	border: 3px solid var(--poke-black);
+	border-radius: 20px;
+	cursor: pointer;
+	font-family: inherit;
+	text-decoration: none;
+	color: var(--ink);
+	text-align: center;
+	transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.2s, background 0.25s;
+	box-shadow: 0 7px 0 var(--poke-black);
+	opacity: 0;
+	animation: gameCardIn 0.45s cubic-bezier(.34,1.56,.64,1) forwards;
+	animation-delay: calc(var(--stagger, 0) * 90ms + 60ms);
+	overflow: hidden;
+}
+
+@keyframes gameCardIn {
+	from { opacity: 0; transform: translateY(18px) scale(0.96); }
+	to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.game-card.is-available:hover {
+	transform: translateY(-5px);
+	box-shadow: 0 11px 0 var(--poke-black);
+}
+
+.game-card.is-available:active {
+	transform: translateY(3px);
+	box-shadow: 0 3px 0 var(--poke-black);
+}
+
+.game-card.is-locked {
+	background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+	border-color: rgba(0, 0, 0, 0.25);
+	box-shadow: 0 5px 0 rgba(0, 0, 0, 0.18);
+	cursor: not-allowed;
+	color: var(--muted);
+}
+
+.game-card.is-locked .game-title {
+	color: var(--muted);
+	text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
+.game-card.is-locked .pokeball {
+	filter: grayscale(0.5);
+	opacity: 0.55;
+}
+
+.game-card.is-locked .game-icon-overlay {
+	opacity: 0.45;
+}
+
+.game-badge {
+	position: absolute;
+	top: 14px;
+	right: 14px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	letter-spacing: 1.2px;
+	padding: 6px 11px;
+	border-radius: 999px;
+	border: 2px solid var(--poke-black);
+	background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+	color: #fff;
+	text-shadow: 1px 1px 0 #14532d;
+	box-shadow: 0 2px 0 var(--poke-black);
+	line-height: 1;
+	z-index: 2;
+}
+
+.game-badge.badge-soon {
+	background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+	color: #fff;
+	text-shadow: 1px 1px 0 #1e293b;
+	border-color: rgba(0,0,0,0.4);
+	box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+}
+
+.game-icon {
+	position: relative;
+	height: 100px;
+	width: 100px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 6px;
+}
+
+.game-icon .pokeball {
+	width: 92px;
+	height: 92px;
+}
+
+.game-icon .pokeball .pb-button {
+	width: 22px;
+	height: 22px;
+}
+
+.game-icon-overlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+}
+
+.game-icon-overlay svg {
+	filter: drop-shadow(0 2px 0 rgba(0,0,0,0.15));
+}
+
+/* Per-card icon centering tweak so the overlay sits on top of the pokeball's button */
+.game-card .pokeball-classic + .game-icon-overlay,
+.game-card .pokeball-heal + .game-icon-overlay,
+.game-card .pokeball-master + .game-icon-overlay,
+.game-card .pokeball-net + .game-icon-overlay {
+	transform: translateY(-2px);
+}
+
+/* Net Ball preview (same construction as classic with green top) */
+.pokeball.pokeball-net {
+	--ball-top: #6cb1ff;
+}
+
+.pokeball.pokeball-net::before {
+	content: '';
+	position: absolute;
+	top: 6%;
+	left: 0;
+	right: 0;
+	height: 44%;
+	background-image:
+		repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.18) 6px 7px),
+		repeating-linear-gradient(-45deg, transparent 0 6px, rgba(0,0,0,0.18) 6px 7px);
+	pointer-events: none;
+	z-index: 1;
+}
+
+.game-title {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 14px;
+	color: var(--poke-red);
+	text-shadow: 2px 2px 0 var(--poke-black);
+	letter-spacing: 0.5px;
+	margin-top: 8px;
+	line-height: 1.5;
+}
+
+.game-desc {
+	font-size: 13px;
+	color: var(--muted);
+	line-height: 1.5;
+	max-width: 32ch;
+	min-height: 56px;
+}
+
+.game-cta {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-top: 6px;
+	padding: 8px 16px;
+	background: linear-gradient(180deg, var(--poke-red) 0%, var(--poke-red-dark) 100%);
+	color: #fff;
+	border: 2px solid var(--poke-black);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	letter-spacing: 1px;
+	box-shadow: 0 3px 0 var(--poke-black);
+	transition: transform 0.1s, box-shadow 0.15s;
+}
+
+.game-card.is-available:hover .game-cta {
+	box-shadow: 0 5px 0 var(--poke-black);
+	transform: translateY(-1px);
+}
+
+.game-cta-locked {
+	background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+	color: var(--poke-black);
+	box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+	text-shadow: 1px 1px 0 rgba(255,255,255,0.4);
+}
+
+/* ============ Hub tip ============ */
+
+.hub-tip {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 18px;
+	background: rgba(255, 203, 5, 0.14);
+	border: 1px solid rgba(255, 203, 5, 0.5);
+	border-radius: 999px;
+	font-size: 13px;
+	color: #6b5500;
+	max-width: 640px;
+	margin: 0 auto;
+	justify-content: center;
+}
+
+.hub-tip-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	background: var(--poke-yellow);
+	color: var(--poke-black);
+	border-radius: 50%;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	border: 2px solid var(--poke-black);
+	flex: 0 0 22px;
+}
+
+.hub-tip strong { color: var(--poke-black); font-weight: 800; }
+
+@media (max-width: 600px) {
+	.hub-inner { padding: 32px 22px 26px; }
+	.hub-head h1 { font-size: 22px; }
+	.games-grid { grid-template-columns: 1fr; }
+}
