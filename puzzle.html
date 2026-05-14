@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Puzzles &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card puzzle-card">
+			<div class="puzzle-bg" aria-hidden="true">
+				<img class="puzzle-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+
+			<div class="puzzle-inner">
+				<div class="puzzle-head">
+					<div>
+						<div class="eyebrow">
+							<span class="dot"></span>
+							<span>Daily Mind Bender</span>
+						</div>
+						<h1>Who's That Pok&eacute;mon?</h1>
+						<p class="lede">Identify the silhouette. Build the longest streak you can.</p>
+					</div>
+					<div class="streak-stats" role="group" aria-label="Puzzle stats">
+						<div class="streak-tile">
+							<span class="stat-num" id="streakNum">0</span>
+							<span class="stat-label">Streak</span>
+						</div>
+						<div class="streak-tile">
+							<span class="stat-num" id="bestNum">0</span>
+							<span class="stat-label">Best</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="silhouette-stage">
+					<div class="silhouette-frame">
+						<div class="silhouette-glow" aria-hidden="true"></div>
+						<img id="silhouetteImg" class="silhouette is-silhouette" src="" alt="">
+						<div id="silhouettePlaceholder" class="silhouette-placeholder">Loading&hellip;</div>
+					</div>
+					<div id="revealNameWrap" class="reveal-name" hidden>
+						<span class="reveal-prefix">It's</span>
+						<strong id="revealName"></strong>!
+					</div>
+				</div>
+
+				<form id="guessForm" class="guess-form" autocomplete="off" novalidate>
+					<input id="guessInput" class="guess-input" type="text" placeholder="Type the Pok&eacute;mon's name&hellip;" autofocus maxlength="32">
+					<button class="btn" type="submit">Guess</button>
+				</form>
+
+				<div id="feedback" class="feedback" aria-live="polite"></div>
+
+				<div class="puzzle-controls">
+					<button id="hintBtn" type="button" class="btn btn-secondary">Hint</button>
+					<button id="skipBtn" type="button" class="btn btn-ghost">Skip</button>
+					<button id="nextBtn" type="button" class="btn" hidden>Next Pok&eacute;mon &rarr;</button>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle.js" defer></script>
+</body>
+</html>
