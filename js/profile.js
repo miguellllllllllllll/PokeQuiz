@@ -5,9 +5,9 @@
 
 	const AVATARS = [
 		{ id: 'pokeball', src: 'Pictures/pokeball.png', label: 'Pokéball' },
-		{ id: 'red', src: 'Pictures/Red.gif', label: 'Red' },
-		{ id: 'blue', src: 'Pictures/Blue.gif', label: 'Blue' },
-		{ id: 'giovanni', src: 'Pictures/Giovanni.png', label: 'Giovanni' },
+		{ id: 'red', src: 'Pictures/Red_art.png', label: 'Red' },
+		{ id: 'blue', src: 'Pictures/Blue_art.png', label: 'Blue' },
+		{ id: 'giovanni', src: 'Pictures/Giovanni_art.png', label: 'Giovanni' },
 	];
 
 	function getAvatar() {
@@ -69,7 +69,16 @@
 		if (!panel) return;
 
 		const nameEl = btn.querySelector('.profile-name');
-		const avatarImg = btn.querySelector('.profile-avatar');
+		let avatarEl = btn.querySelector('.profile-avatar');
+		// Replace the <img> with a <span> so CSS background-image can crop
+		// the trainer art to the face. The picker uses the same technique.
+		if (avatarEl && avatarEl.tagName === 'IMG') {
+			const span = document.createElement('span');
+			span.className = 'profile-avatar';
+			span.setAttribute('aria-hidden', 'true');
+			avatarEl.replaceWith(span);
+			avatarEl = span;
+		}
 		const panelNameView = panel.querySelector('.pp-name-view');
 		const panelScoreView = panel.querySelector('.pp-score-view');
 		const panelEditForm = panel.querySelector('.pp-edit-form');
@@ -97,10 +106,7 @@
 
 		function applyAvatar(id) {
 			const a = AVATARS.find((x) => x.id === id) || AVATARS[0];
-			if (avatarImg) {
-				avatarImg.src = a.src;
-				avatarImg.dataset.avatar = a.id;
-			}
+			if (avatarEl) avatarEl.dataset.avatar = a.id;
 			pickerRow.querySelectorAll('.pp-avatar-option').forEach((b) => {
 				b.classList.toggle('selected', b.dataset.avatar === a.id);
 			});

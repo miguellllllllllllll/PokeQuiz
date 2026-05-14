@@ -132,23 +132,37 @@ img { max-width: 100%; height: auto; display: block; }
 	width: 28px;
 	height: 28px;
 	border-radius: 50%;
-	background: #fff;
-	padding: 0;
+	background-color: #fff;
+	background-repeat: no-repeat;
 	display: block;
-	object-fit: contain;
 	image-rendering: pixelated;
-	border: 1px solid rgba(0,0,0,0.1);
+	border: 1px solid rgba(0,0,0,0.15);
+	flex: 0 0 28px;
 }
 
-.profile-avatar[data-avatar="red"],
-.profile-avatar[data-avatar="blue"],
+.profile-avatar[data-avatar="pokeball"] {
+	background-image: url('../Pictures/pokeball.png');
+	background-size: 78%;
+	background-position: center;
+}
+
+.profile-avatar[data-avatar="red"] {
+	background-image: url('../Pictures/Red_art.png');
+	background-size: 480%;
+	background-position: 50% 8%;
+}
+
+.profile-avatar[data-avatar="blue"] {
+	background-image: url('../Pictures/Blue_art.png');
+	background-size: 480%;
+	background-position: 50% 9%;
+}
+
 .profile-avatar[data-avatar="giovanni"] {
-	object-fit: none;
+	background-image: url('../Pictures/Giovanni_art.png');
+	background-size: 480%;
+	background-position: 50% 5%;
 }
-
-.profile-avatar[data-avatar="red"] { object-position: 50% 28%; }
-.profile-avatar[data-avatar="blue"] { object-position: 50% 24%; }
-.profile-avatar[data-avatar="giovanni"] { object-position: 50% 25%; }
 
 .pp-avatar-row {
 	flex-direction: column !important;
@@ -204,21 +218,21 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .pp-avatar-img[data-avatar="red"] {
-	background-image: url('../Pictures/Red.gif');
-	background-size: 240%;
-	background-position: 50% 18%;
+	background-image: url('../Pictures/Red_art.png');
+	background-size: 500%;
+	background-position: 50% 8%;
 }
 
 .pp-avatar-img[data-avatar="blue"] {
-	background-image: url('../Pictures/Blue.gif');
-	background-size: 260%;
-	background-position: 50% 14%;
+	background-image: url('../Pictures/Blue_art.png');
+	background-size: 500%;
+	background-position: 50% 9%;
 }
 
 .pp-avatar-img[data-avatar="giovanni"] {
-	background-image: url('../Pictures/Giovanni.png');
-	background-size: 220%;
-	background-position: 50% 18%;
+	background-image: url('../Pictures/Giovanni_art.png');
+	background-size: 500%;
+	background-position: 50% 5%;
 }
 
 .profile-name {
