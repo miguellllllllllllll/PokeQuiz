@@ -1,6 +1,19 @@
 (function () {
 	const SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
+	const CRY_BASE = 'https://play.pokemonshowdown.com/audio/cries/';
 	const BEST_KEY = 'pokequiz_puzzle_best';
+
+	function slugify(name) {
+		return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+	}
+
+	function playCry(name) {
+		try {
+			const audio = new Audio(`${CRY_BASE}${slugify(name)}.mp3`);
+			audio.volume = 0.55;
+			audio.play().catch(() => { /* autoplay blocked or 404 */ });
+		} catch { /* unsupported */ }
+	}
 
 	const POKEMON = [
 		{ id: 1, name: 'Bulbasaur' },
@@ -192,6 +205,7 @@
 				streakNum.textContent = streak;
 				bestNum.textContent = best;
 				setFeedback(`Correct! Streak: ${streak}`, 'correct');
+				playCry(current.name);
 			} else {
 				streak = 0;
 				streakNum.textContent = streak;
