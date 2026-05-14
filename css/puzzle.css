@@ -838,11 +838,63 @@
 	flex-wrap: wrap;
 }
 
+/* ============ Loss effect on the card ============ */
+
+.puzzle-card.is-losing {
+	animation: cardShake 0.7s cubic-bezier(.36,.07,.19,.97);
+}
+
+.puzzle-card.is-losing::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	z-index: 5;
+	background:
+		radial-gradient(circle at center, rgba(220, 38, 38, 0) 0%, rgba(220, 38, 38, 0.55) 100%);
+	animation: cardLossFlash 1s ease-out forwards;
+}
+
+@keyframes cardShake {
+	0%, 100% { transform: translate3d(0, 0, 0); }
+	10% { transform: translate3d(-12px, 0, 0); }
+	20% { transform: translate3d(12px, -2px, 0); }
+	30% { transform: translate3d(-10px, 2px, 0); }
+	40% { transform: translate3d(10px, -1px, 0); }
+	50% { transform: translate3d(-7px, 1px, 0); }
+	60% { transform: translate3d(7px, 0, 0); }
+	70% { transform: translate3d(-4px, 1px, 0); }
+	80% { transform: translate3d(4px, -1px, 0); }
+	90% { transform: translate3d(-2px, 0, 0); }
+}
+
+@keyframes cardLossFlash {
+	0% { opacity: 0; }
+	25% { opacity: 1; }
+	100% { opacity: 0; }
+}
+
 /* ============ Game Over ============ */
 
 .game-over {
 	text-align: center;
 	padding: 48px 36px;
+	animation: gameOverEntrance 0.45s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+
+.game-over.is-defeat {
+	background:
+		radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.18), transparent 60%),
+		linear-gradient(180deg, #1a0606 0%, #0a0202 100%);
+	color: rgba(255, 255, 255, 0.92);
+	margin: -32px;
+	border-radius: var(--radius-lg);
+}
+
+@keyframes gameOverEntrance {
+	0% { opacity: 0; transform: scale(0.95); filter: blur(6px); }
+	100% { opacity: 1; transform: scale(1); filter: blur(0); }
 }
 
 .game-over .eyebrow {
@@ -855,10 +907,61 @@
 	color: var(--poke-black);
 }
 
+.game-over.is-defeat .eyebrow {
+	background: rgba(220, 38, 38, 0.18);
+	border-color: rgba(220, 38, 38, 0.5);
+	color: #ff8a8a;
+}
+
+.game-over.is-defeat .eyebrow .dot {
+	background: #ff5252;
+	box-shadow: 0 0 0 4px rgba(255, 82, 82, 0.3);
+}
+
 .game-over h1 {
 	font-size: 30px;
 	margin: 0 0 24px;
 	text-shadow: 3px 3px 0 var(--poke-black);
+}
+
+.game-over.is-defeat h1 {
+	font-size: 36px;
+	color: #ff3a3a;
+	text-shadow:
+		3px 3px 0 #4a0606,
+		0 0 26px rgba(255, 58, 58, 0.55);
+	animation: defeatTitleSlam 0.55s cubic-bezier(.36,.07,.19,.97) both;
+	letter-spacing: 1.5px;
+}
+
+@keyframes defeatTitleSlam {
+	0% { opacity: 0; transform: scale(2.4) translateY(-40px); filter: blur(10px); }
+	60% { transform: scale(1.08) translateY(0); filter: blur(0); opacity: 1; }
+	75% { transform: scale(0.97); }
+	100% { transform: scale(1); }
+}
+
+.game-over.is-defeat .streak-tile {
+	background: rgba(0, 0, 0, 0.35);
+	border-color: rgba(255, 255, 255, 0.1);
+}
+.game-over.is-defeat .streak-tile .stat-num {
+	color: #ff7070;
+	text-shadow: 2px 2px 0 #4a0606;
+}
+.game-over.is-defeat .streak-tile .stat-label { color: rgba(255,255,255,0.55); }
+
+.game-over.is-defeat .game-over-msg { color: rgba(255,255,255,0.78); }
+.game-over.is-defeat .game-over-msg strong { color: #ff8a8a; }
+
+.game-over.is-defeat .btn.btn-secondary {
+	background: rgba(255,255,255,0.08);
+	color: #fff;
+	border-color: rgba(255,255,255,0.2);
+}
+.game-over.is-defeat .btn.btn-ghost {
+	color: rgba(255,255,255,0.85);
+	border-color: rgba(255,255,255,0.2);
 }
 
 .game-over-stats {

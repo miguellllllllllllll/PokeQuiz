@@ -166,13 +166,15 @@
 			modeSelectEl.hidden = true;
 			gameView.hidden = true;
 			gameOverEl.hidden = false;
-			gameOverTitle.textContent = victory ? 'Dex Complete!' : 'Game Over';
+			gameOverEl.classList.toggle('is-victory', !!victory);
+			gameOverEl.classList.toggle('is-defeat', !victory);
+			gameOverTitle.textContent = victory ? 'Dex Complete!' : 'You Blacked Out!';
 			finalStreak.textContent = streak;
 			finalBest.textContent = best;
 			const reason = victory
 				? `You identified every Pokémon in the dex on ${modeConfig.name} mode. Incredible.`
 				: current
-					? `You ran out of hearts on <strong>${escapeHtml(current.name)}</strong>.`
+					? `You were defeated by <strong>${escapeHtml(current.name)}</strong>.`
 					: 'Run ended.';
 			gameOverMessage.innerHTML = reason;
 		}
@@ -305,7 +307,13 @@
 				ended = true;
 				reveal(false);
 				setFeedback(`Out of hearts &mdash; it was <strong>${escapeHtml(current.name)}</strong>.`, 'wrong');
-				setTimeout(() => showGameOver(false), 900);
+				const card = document.querySelector('.puzzle-card');
+				if (card) {
+					card.classList.remove('is-losing');
+					void card.offsetWidth;
+					card.classList.add('is-losing');
+				}
+				setTimeout(() => showGameOver(false), 1400);
 			} else {
 				const heartsLeft = modeConfig.hearts === Infinity ? '∞' : hearts;
 				setFeedback(`Not quite! Hearts left: ${heartsLeft}`, 'wrong');

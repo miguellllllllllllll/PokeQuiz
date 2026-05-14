@@ -1,6 +1,23 @@
 (function () {
 	const NAME_KEY = 'playerName';
 	const LOCAL_KEY = 'pokequiz_leaderboard';
+	const AVATAR_KEY = 'pokequiz_avatar';
+
+	const AVATARS = [
+		{ id: 'pokeball', src: 'Pictures/pokeball.png', label: 'Pokéball' },
+		{ id: 'red', src: 'Pictures/Red.gif', label: 'Red' },
+		{ id: 'blue', src: 'Pictures/Blue.gif', label: 'Blue' },
+		{ id: 'giovanni', src: 'Pictures/Giovanni.png', label: 'Giovanni' },
+	];
+
+	function getAvatar() {
+		const saved = localStorage.getItem(AVATAR_KEY);
+		return AVATARS.find((a) => a.id === saved) || AVATARS[0];
+	}
+
+	function setAvatarStorage(id) {
+		try { localStorage.setItem(AVATAR_KEY, id); } catch {}
+	}
 
 	function getName() {
 		const fromSession = sessionStorage.getItem(NAME_KEY);
@@ -35,10 +52,13 @@
 	}
 
 	let refreshFn = () => {};
+	let setAvatarFn = () => {};
 
 	window.PokeProfile = {
 		get name() { return getName(); },
 		set name(v) { setName(v); refreshFn(); },
+		get avatar() { return getAvatar().id; },
+		set avatar(id) { setAvatarFn(id); },
 		refresh() { refreshFn(); }
 	};
 
@@ -49,6 +69,7 @@
 		if (!panel) return;
 
 		const nameEl = btn.querySelector('.profile-name');
+		const avatarImg = btn.querySelector('.profile-avatar');
 		const panelNameView = panel.querySelector('.pp-name-view');
 		const panelScoreView = panel.querySelector('.pp-score-view');
 		const panelEditForm = panel.querySelector('.pp-edit-form');
@@ -57,6 +78,47 @@
 		const panelSaveBtn = panel.querySelector('.pp-save-btn');
 		const panelCancelBtn = panel.querySelector('.pp-cancel-btn');
 		const panelClearBtn = panel.querySelector('.pp-clear-btn');
+
+		// Inject avatar picker before the actions row
+		const pickerRow = document.createElement('div');
+		pickerRow.className = 'pp-row pp-avatar-row';
+		pickerRow.innerHTML = `
+			<span class="pp-row-label">Avatar</span>
+			<div class="pp-avatar-picker">
+				${AVATARS.map((a) => `
+					<button class="pp-avatar-option" data-avatar="${a.id}" type="button" aria-label="${a.label}" title="${a.label}">
+						<span class="pp-avatar-img" data-avatar="${a.id}"></span>
+					</button>
+				`).join('')}
+			</div>
+		`;
+		const actionsRow = panel.querySelector('.pp-actions');
+		panel.insertBefore(pickerRow, actionsRow);
+
+		function applyAvatar(id) {
+			const a = AVATARS.find((x) => x.id === id) || AVATARS[0];
+			if (avatarImg) {
+				avatarImg.src = a.src;
+				avatarImg.dataset.avatar = a.id;
+			}
+			pickerRow.querySelectorAll('.pp-avatar-option').forEach((b) => {
+				b.classList.toggle('selected', b.dataset.avatar === a.id);
+			});
+		}
+
+		setAvatarFn = (id) => {
+			setAvatarStorage(id);
+			applyAvatar(id);
+		};
+
+		pickerRow.querySelectorAll('.pp-avatar-option').forEach((b) => {
+			b.addEventListener('click', (e) => {
+				e.stopPropagation();
+				setAvatarFn(b.dataset.avatar);
+			});
+		});
+
+		applyAvatar(getAvatar().id);
 
 		function refresh() {
 			const name = getName();
