@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Higher or Lower &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle.css">
+	<link rel="stylesheet" href="css/puzzle-higher-lower.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card puzzle-card hl-card">
+			<div class="puzzle-bg" aria-hidden="true">
+				<img class="puzzle-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+
+			<!-- Intro / start screen -->
+			<div id="hlIntro" class="puzzle-inner hl-intro">
+				<a class="back-link" href="puzzle.html" aria-label="Back to Puzzle Hub">&larr; Puzzle Hub</a>
+				<div class="hl-intro-head">
+					<div class="eyebrow">
+						<span class="dot"></span>
+						<span>Stat Showdown</span>
+					</div>
+					<h1 class="mode-title-big">Higher or <span class="title-flicker">Lower</span>?</h1>
+					<p class="lede">Two Pok&eacute;mon, one stat. Beat the dex, beat your best streak.</p>
+				</div>
+
+				<div class="hl-rules">
+					<div class="hl-rule">
+						<span class="hl-rule-num">1</span>
+						<p>You'll see two Pok&eacute;mon. The <strong>left card's stat</strong> is shown.</p>
+					</div>
+					<div class="hl-rule">
+						<span class="hl-rule-num">2</span>
+						<p>Guess whether the <strong>right card's stat</strong> is <strong>higher</strong> or <strong>lower</strong>.</p>
+					</div>
+					<div class="hl-rule">
+						<span class="hl-rule-num">3</span>
+						<p>Right answer &rarr; the right card slides left and a new mystery card appears. One miss ends the run.</p>
+					</div>
+				</div>
+
+				<div class="hl-stat-toggle">
+					<span class="hl-stat-label">Stat:</span>
+					<div class="hl-stat-options">
+						<button type="button" class="hl-stat-opt selected" data-stat="weight">Weight</button>
+						<button type="button" class="hl-stat-opt" data-stat="height">Height</button>
+						<button type="button" class="hl-stat-opt" data-stat="hp">HP</button>
+						<button type="button" class="hl-stat-opt" data-stat="atk">Attack</button>
+						<button type="button" class="hl-stat-opt" data-stat="spd">Speed</button>
+						<button type="button" class="hl-stat-opt" data-stat="random">Random</button>
+					</div>
+				</div>
+
+				<button id="hlStartBtn" class="btn hl-start-btn" type="button">Start Run &rarr;</button>
+			</div>
+
+			<!-- Game view -->
+			<div id="hlGame" class="puzzle-inner hl-game" hidden>
+				<div class="puzzle-head">
+					<div class="puzzle-head-left">
+						<div class="mode-badge" id="hlStatBadge">Weight</div>
+						<h1>Higher or Lower?</h1>
+					</div>
+					<div class="puzzle-head-right">
+						<div class="streak-stats" role="group" aria-label="Stats">
+							<div class="streak-tile">
+								<span class="stat-num" id="hlStreak">0</span>
+								<span class="stat-label">Streak</span>
+							</div>
+							<div class="streak-tile">
+								<span class="stat-num" id="hlBest">0</span>
+								<span class="stat-label">Best</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="hl-arena">
+					<div class="hl-pair">
+						<article class="hl-card-pokemon hl-left" id="hlLeft">
+							<img class="hl-img" id="hlLeftImg" src="" alt="">
+							<h2 class="hl-name" id="hlLeftName"></h2>
+							<div class="hl-stat" id="hlLeftStat">&mdash;</div>
+							<div class="hl-stat-name" id="hlLeftStatName">Weight</div>
+						</article>
+
+						<div class="hl-versus" aria-hidden="true">VS</div>
+
+						<article class="hl-card-pokemon hl-right" id="hlRight">
+							<img class="hl-img" id="hlRightImg" src="" alt="">
+							<h2 class="hl-name" id="hlRightName"></h2>
+							<div class="hl-stat hl-stat-hidden" id="hlRightStat">???</div>
+							<div class="hl-stat-name" id="hlRightStatName">Weight</div>
+							<div class="hl-cta-pair">
+								<button type="button" class="btn hl-cta hl-higher" data-pick="higher">
+									<span aria-hidden="true">&uarr;</span> Higher
+								</button>
+								<button type="button" class="btn btn-secondary hl-cta hl-lower" data-pick="lower">
+									<span aria-hidden="true">&darr;</span> Lower
+								</button>
+							</div>
+						</article>
+					</div>
+				</div>
+
+				<div id="hlFeedback" class="feedback" aria-live="polite"></div>
+
+				<div class="puzzle-controls">
+					<button id="hlContinueBtn" type="button" class="btn" hidden>Continue &rarr;</button>
+					<button id="hlEndBtn" type="button" class="btn btn-ghost">End Run</button>
+				</div>
+			</div>
+
+			<!-- Game over -->
+			<div id="hlGameOver" class="puzzle-inner game-over is-defeat" hidden>
+				<div class="eyebrow eyebrow-end">
+					<span class="dot"></span>
+					<span>Run Complete</span>
+				</div>
+				<h1 id="hlGameOverTitle">Run Ended</h1>
+				<div class="game-over-stats">
+					<div class="streak-tile big">
+						<span class="stat-num" id="hlFinalStreak">0</span>
+						<span class="stat-label">Final Streak</span>
+					</div>
+					<div class="streak-tile big">
+						<span class="stat-num" id="hlFinalBest">0</span>
+						<span class="stat-label">All-Time Best</span>
+					</div>
+				</div>
+				<p id="hlGameOverMessage" class="game-over-msg"></p>
+				<div class="game-over-actions">
+					<button class="btn" id="hlRetryBtn" type="button">Play Again</button>
+					<a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle-higher-lower.js" defer></script>
+</body>
+</html>

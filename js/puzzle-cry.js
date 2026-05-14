@@ -4,9 +4,9 @@
 	const DATA_URL = 'js/pokemon-data.json';
 
 	const MODES = {
-		casual: { name: 'Casual', hearts: Infinity, bestKey: 'pokequiz_puzzle_best_casual' },
-		standard: { name: 'Standard', hearts: 3, bestKey: 'pokequiz_puzzle_best_standard' },
-		hardcore: { name: 'Hardcore', hearts: 1, bestKey: 'pokequiz_puzzle_best_hardcore' }
+		casual: { name: 'Casual', hearts: Infinity, bestKey: 'pokequiz_cry_best_casual' },
+		standard: { name: 'Standard', hearts: 3, bestKey: 'pokequiz_cry_best_standard' },
+		hardcore: { name: 'Hardcore', hearts: 1, bestKey: 'pokequiz_cry_best_hardcore' }
 	};
 
 	function slugify(name) {
@@ -113,6 +113,7 @@
 		const img = document.getElementById('silhouetteImg');
 		const placeholder = document.getElementById('silhouettePlaceholder');
 		const frame = img.closest('.silhouette-frame');
+		const playCryBtn = document.getElementById('playCryBtn');
 		const guessInput = document.getElementById('guessInput');
 		const guessForm = document.getElementById('guessForm');
 		const feedback = document.getElementById('feedback');
@@ -221,11 +222,18 @@
 			revealed = false;
 			hintLetters = 0;
 			revealWrap.hidden = true;
-			frame.classList.remove('is-revealed');
+			frame.classList.remove('is-revealed', 'cry-ready', 'cry-revealed');
+			frame.classList.add('cry-loading');
+			img.hidden = true;
 			img.classList.remove('is-loaded');
-			img.classList.add('is-silhouette');
-			placeholder.style.display = 'block';
-			placeholder.textContent = 'Loading…';
+			img.classList.remove('is-silhouette');
+			img.src = '';
+			placeholder.hidden = true;
+			if (playCryBtn) {
+				playCryBtn.hidden = false;
+				playCryBtn.disabled = true;
+				playCryBtn.classList.remove('is-playing');
+			}
 			setFeedback('');
 			guessInput.value = '';
 			guessInput.disabled = false;
@@ -234,20 +242,35 @@
 			nextBtn.hidden = true;
 			submitButton.disabled = false;
 
+			// Preload the sprite quietly for the reveal moment, no silhouette
+			// painting beforehand — this is an audio-only round.
 			const tempImg = new Image();
 			tempImg.onload = () => {
 				img.src = tempImg.src;
 				img.classList.add('is-loaded');
-				placeholder.style.display = 'none';
-				guessInput.focus();
 			};
 			tempImg.onerror = () => {
-				placeholder.textContent = 'Sprite unavailable — skipping…';
 				setTimeout(nextPokemon, 800);
 			};
 			tempImg.src = `${SPRITE_BASE}${p.id}.png`;
 
 			preloadCry(p.name);
+			// Give the cry a moment to start buffering before enabling play.
+			if (playCryBtn) {
+				setTimeout(() => {
+					if (current === p) {
+						playCryBtn.disabled = false;
+						frame.classList.remove('cry-loading');
+						frame.classList.add('cry-ready');
+						// Auto-play the first cry so the player hears it immediately,
+						// then they can replay manually.
+						playCry();
+						playCryBtn.classList.add('is-playing');
+						setTimeout(() => playCryBtn.classList.remove('is-playing'), 1800);
+						guessInput.focus();
+					}
+				}, 400);
+			}
 		}
 
 		function nextPokemon() {
@@ -264,7 +287,11 @@
 
 		function reveal(correct) {
 			revealed = true;
+			img.hidden = false;
 			img.classList.remove('is-silhouette');
+			img.classList.add('is-loaded');
+			if (playCryBtn) playCryBtn.hidden = true;
+			frame.classList.add('cry-revealed');
 			revealName.textContent = current.name;
 			revealWrap.hidden = false;
 			frame.classList.add('is-revealed');
@@ -394,6 +421,18 @@
 			ended = true;
 			showGameOver(false);
 		});
+
+		if (playCryBtn) {
+			playCryBtn.addEventListener('click', (e) => {
+				e.preventDefault();
+				if (revealed || ended) return;
+				playCry();
+				playCryBtn.classList.remove('is-playing');
+				void playCryBtn.offsetWidth;
+				playCryBtn.classList.add('is-playing');
+				setTimeout(() => playCryBtn.classList.remove('is-playing'), 1800);
+			});
+		}
 
 		retryBtn.addEventListener('click', () => startMode(mode));
 

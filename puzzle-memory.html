@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Memory Match &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle.css">
+	<link rel="stylesheet" href="css/puzzle-memory.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card puzzle-card mm-card">
+			<div class="puzzle-bg" aria-hidden="true">
+				<img class="puzzle-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+
+			<!-- Intro / difficulty select -->
+			<div id="mmIntro" class="puzzle-inner mm-intro">
+				<a class="back-link" href="puzzle.html" aria-label="Back to Puzzle Hub">&larr; Puzzle Hub</a>
+				<div class="mm-intro-head">
+					<div class="eyebrow">
+						<span class="dot"></span>
+						<span>Concentration Trial</span>
+					</div>
+					<h1 class="mode-title-big">Memory <span class="title-flicker">Match</span></h1>
+					<p class="lede">Flip cards two at a time to find matching Pok&eacute;mon pairs. Match all pairs in the fewest moves.</p>
+				</div>
+
+				<div class="mm-grid-select">
+					<button type="button" class="mm-grid-opt mode-card mode-card-casual selected" data-pairs="6" style="--stagger:0">
+						<span class="diff-pill diff-easy">Easy</span>
+						<div class="mode-art">
+							<div class="pokeball pokeball-classic" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+								<span class="pb-shine"></span>
+							</div>
+						</div>
+						<strong class="mode-title">Easy</strong>
+						<span class="mode-subtitle">3 &times; 4 board</span>
+						<span class="mode-desc">6 pairs &mdash; quick warm-up rounds.</span>
+						<ul class="mode-stats">
+							<li><span class="ms-num">6</span><span class="ms-label">Pairs</span></li>
+							<li><span class="ms-num">12</span><span class="ms-label">Cards</span></li>
+						</ul>
+						<span class="mode-best">
+							<span class="mb-label">Best Time</span>
+							<span class="mb-num" id="mmBest6">&mdash;</span>
+						</span>
+					</button>
+
+					<button type="button" class="mm-grid-opt mode-card mode-card-standard" data-pairs="8" style="--stagger:1">
+						<span class="diff-pill diff-medium">Medium</span>
+						<div class="mode-art">
+							<div class="pokeball pokeball-great" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="mode-title">Medium</strong>
+						<span class="mode-subtitle">4 &times; 4 board</span>
+						<span class="mode-desc">8 pairs &mdash; the classic memory challenge.</span>
+						<ul class="mode-stats">
+							<li><span class="ms-num">8</span><span class="ms-label">Pairs</span></li>
+							<li><span class="ms-num">16</span><span class="ms-label">Cards</span></li>
+						</ul>
+						<span class="mode-best">
+							<span class="mb-label">Best Time</span>
+							<span class="mb-num" id="mmBest8">&mdash;</span>
+						</span>
+					</button>
+
+					<button type="button" class="mm-grid-opt mode-card mode-card-hardcore" data-pairs="12" style="--stagger:2">
+						<span class="diff-pill diff-hard">Hard</span>
+						<div class="mode-art">
+							<div class="pokeball pokeball-ultra" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-ultra-stripe pb-ultra-stripe-l"></span>
+								<span class="pb-ultra-stripe pb-ultra-stripe-r"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="mode-title">Hard</strong>
+						<span class="mode-subtitle">4 &times; 6 board</span>
+						<span class="mode-desc">12 pairs &mdash; for trainers with steel-trap memories.</span>
+						<ul class="mode-stats">
+							<li><span class="ms-num">12</span><span class="ms-label">Pairs</span></li>
+							<li><span class="ms-num">24</span><span class="ms-label">Cards</span></li>
+						</ul>
+						<span class="mode-best">
+							<span class="mb-label">Best Time</span>
+							<span class="mb-num" id="mmBest12">&mdash;</span>
+						</span>
+					</button>
+				</div>
+
+				<button id="mmStartBtn" class="btn mm-start-btn" type="button">Start Match &rarr;</button>
+			</div>
+
+			<!-- Game view -->
+			<div id="mmGame" class="puzzle-inner mm-game" hidden>
+				<div class="puzzle-head">
+					<div class="puzzle-head-left">
+						<div class="mode-badge" id="mmDiffBadge">Easy</div>
+						<h1>Memory Match</h1>
+					</div>
+					<div class="puzzle-head-right">
+						<div class="streak-stats" role="group" aria-label="Stats">
+							<div class="streak-tile">
+								<span class="stat-num" id="mmMoves">0</span>
+								<span class="stat-label">Moves</span>
+							</div>
+							<div class="streak-tile">
+								<span class="stat-num" id="mmTime">0:00</span>
+								<span class="stat-label">Time</span>
+							</div>
+							<div class="streak-tile">
+								<span class="stat-num" id="mmPairs">0/0</span>
+								<span class="stat-label">Pairs</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="mm-board" id="mmBoard"></div>
+
+				<div class="puzzle-controls">
+					<button id="mmRestartBtn" type="button" class="btn btn-secondary">Restart</button>
+					<button id="mmEndBtn" type="button" class="btn btn-ghost">End Run</button>
+				</div>
+			</div>
+
+			<!-- Game over (win or quit) -->
+			<div id="mmGameOver" class="puzzle-inner game-over" hidden>
+				<div class="eyebrow eyebrow-end">
+					<span class="dot"></span>
+					<span id="mmGoLabel">Run Complete</span>
+				</div>
+				<h1 id="mmGameOverTitle">Match Complete!</h1>
+				<div class="game-over-stats">
+					<div class="streak-tile big">
+						<span class="stat-num" id="mmFinalTime">0:00</span>
+						<span class="stat-label">Final Time</span>
+					</div>
+					<div class="streak-tile big">
+						<span class="stat-num" id="mmFinalMoves">0</span>
+						<span class="stat-label">Moves</span>
+					</div>
+					<div class="streak-tile big">
+						<span class="stat-num" id="mmBestTime">&mdash;</span>
+						<span class="stat-label">Best Time</span>
+					</div>
+				</div>
+				<p id="mmGameOverMessage" class="game-over-msg"></p>
+				<div class="game-over-actions">
+					<button class="btn" id="mmAgainBtn" type="button">Play Again</button>
+					<button class="btn btn-secondary" id="mmChangeBtn" type="button">Change Difficulty</button>
+					<a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle-memory.js" defer></script>
+</body>
+</html>
