@@ -5,12 +5,14 @@
 
 	const KEY = 'pokequiz_trainer_palette';
 	const FRAME_H = 38;
+	const FRAME_W = 22;
 
 	// Base palette ladders from Pictures/sprites/calem.png — darkest → lightest.
 	// MAIN is the shade that maps directly to the user's chosen swatch.
-	// Entries may be a hex string or { color, yMin?, yMax? } where the bounds
-	// are frame-local Y (0..FRAME_H-1) — used to avoid recolouring pixels of
-	// shared shades that belong to other body parts.
+	// Entries may be a hex string or { color, yMin?, yMax?, xMin?, xMax? } where
+	// the bounds are frame-local pixel coords (0..FRAME_W-1 / 0..FRAME_H-1) —
+	// used to avoid recolouring pixels of shared shades that belong to other
+	// body parts.
 	const BASE = {
 		cap: [
 			{ color: '#701028', yMax: 19 },
@@ -22,23 +24,29 @@
 			{ color: '#28272C', yMax: 21 },
 			{ color: '#424149', yMax: 21 },
 		],
-		eyes:    [{ color: '#384040', yMax: 19 }],
+		gogglesFrame: [{ color: '#384040', yMax: 18 }],
+		// Two specific pupil pixels per eye, isolated by xMin/xMax+yMin/yMax.
+		eyes: [
+			{ color: '#384040', xMin: 8,  xMax: 9,  yMin: 19, yMax: 19 },
+			{ color: '#384040', xMin: 12, xMax: 13, yMin: 19, yMax: 19 },
+		],
 		outfit:  ['#1F2945', '#354775', '#4F69AE'],
 		shirt:   ['#B8B0D0', '#E8E8F8'],
 		pants:   [{ color: '#384040', yMin: 25 }],
 		goggles: [{ color: '#66847B', yMax: 19 }],
 	};
-	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, eyes: 0, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
+	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, gogglesFrame: 0, eyes: 0, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
 
 	const DEFAULTS = {
-		cap:     '#C03838',
-		skin:    '#D8A078',
-		hair:    '#424149',
-		eyes:    '#384040',
-		outfit:  '#354775',
-		shirt:   '#B8B0D0',
-		pants:   '#384040',
-		goggles: '#66847B',
+		cap:          '#C03838',
+		skin:         '#D8A078',
+		hair:         '#424149',
+		gogglesFrame: '#384040',
+		eyes:         '#384040',
+		outfit:       '#354775',
+		shirt:        '#B8B0D0',
+		pants:        '#384040',
+		goggles:      '#66847B',
 	};
 
 	function hexToRgb(hex) {
@@ -71,15 +79,18 @@
 			const chosenRgb = hexToRgb(choices[cat] || DEFAULTS[cat]);
 			for (let i = 0; i < ladder.length; i++) {
 				const entry = ladder[i];
-				const color = typeof entry === 'string' ? entry : entry.color;
-				const yMin = (typeof entry === 'string') ? 0 : (entry.yMin ?? 0);
-				const yMax = (typeof entry === 'string') ? Infinity : (entry.yMax ?? Infinity);
+				const isStr = typeof entry === 'string';
+				const color = isStr ? entry : entry.color;
+				const yMin = isStr ? 0 : (entry.yMin ?? 0);
+				const yMax = isStr ? Infinity : (entry.yMax ?? Infinity);
+				const xMin = isStr ? 0 : (entry.xMin ?? 0);
+				const xMax = isStr ? Infinity : (entry.xMax ?? Infinity);
 				const o = hexToRgb(color);
 				const nr = Math.max(0, Math.min(255, chosenRgb[0] + (o[0] - mainRgb[0])));
 				const ng = Math.max(0, Math.min(255, chosenRgb[1] + (o[1] - mainRgb[1])));
 				const nb = Math.max(0, Math.min(255, chosenRgb[2] + (o[2] - mainRgb[2])));
 				const key = (o[0]<<16) | (o[1]<<8) | o[2];
-				const rule = { rgb: [nr, ng, nb], yMin, yMax };
+				const rule = { rgb: [nr, ng, nb], yMin, yMax, xMin, xMax };
 				const list = map.get(key);
 				if (list) list.push(rule); else map.set(key, [rule]);
 			}
@@ -101,11 +112,14 @@
 			const key = (px[i]<<16) | (px[i+1]<<8) | px[i+2];
 			const rules = map.get(key);
 			if (!rules) continue;
+			const x = idx % w;
 			const y = (idx / w) | 0;
+			const frameX = x % FRAME_W;
 			const frameY = y % FRAME_H;
 			for (let r = 0; r < rules.length; r++) {
 				const rule = rules[r];
-				if (frameY >= rule.yMin && frameY <= rule.yMax) {
+				if (frameY >= rule.yMin && frameY <= rule.yMax
+				 && frameX >= rule.xMin && frameX <= rule.xMax) {
 					px[i] = rule.rgb[0]; px[i+1] = rule.rgb[1]; px[i+2] = rule.rgb[2];
 					break;
 				}

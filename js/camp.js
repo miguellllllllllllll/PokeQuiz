@@ -395,6 +395,7 @@
 				this.player = this.physics.add.sprite(11*TILE + TILE/2, 14*TILE + TILE/2, 'player', 0);
 				// Origin: feet at the bottom-centre of the frame (foot point ≈ y=36 in 38-tall frame)
 				this.player.setOrigin(0.5, 36/38);
+				this.player.setScale(0.75);  // shrink trainer to roughly one-tile-wide for tile-scale match
 				this.player.setDepth(3);
 				// Physics body — small rectangle covering the feet so collision feels tile-aligned
 				this.player.body.setSize(10, 6);
