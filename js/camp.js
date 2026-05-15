@@ -575,9 +575,20 @@
 							this.follower.anims.play(this.eeveeAnimKeys[dir], true);
 							this.followerDir = dir;
 						}
-					} else if (this.follower.anims.isPlaying) {
-						this.follower.anims.stop();
-						this.follower.setFrame(this.eeveeIdleFrame[this.followerDir]);
+					} else {
+						if (this.follower.anims.isPlaying) this.follower.anims.stop();
+						// Stopped — turn to face the player so the two acknowledge each other.
+						const ldx = this.player.x - this.follower.x;
+						const ldy = this.player.y - this.follower.y;
+						if (Math.abs(ldx) + Math.abs(ldy) > 4) {
+							const faceDir = Math.abs(ldx) > Math.abs(ldy)
+								? (ldx > 0 ? 3 : 1)
+								: (ldy > 0 ? 0 : 2);
+							if (faceDir !== this.followerDir) {
+								this.followerDir = faceDir;
+								this.follower.setFrame(this.eeveeIdleFrame[faceDir]);
+							}
+						}
 					}
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
 				}
