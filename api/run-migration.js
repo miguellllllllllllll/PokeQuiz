@@ -4,6 +4,8 @@ import { Redis } from '@upstash/redis';
 
 export const config = { runtime: 'edge' };
 
+const MEMORY_MIN_MS = { '6': 3500, '8': 5000, '12': 7000 };
+
 const GAMES = [
 	{ key: 'pokequiz:leaderboard:silhouette',  modes: ['casual','standard','hardcore'], timeBased: false },
 	{ key: 'pokequiz:leaderboard:cry',          modes: ['casual','standard','hardcore'], timeBased: false },
@@ -43,34 +45,66 @@ export default async function handler(req) {
 	for (const game of GAMES) {
 		log.push(`\n=== ${game.key} ===`);
 
-		const allKeys = [game.key, ...game.modes.map(m => `${game.key}:${m}`)];
+		if (game.timeBased) {
+			// --- Memory game ---
+			// Valid stored score = -elapsedMs, where elapsedMs >= MEMORY_MIN_MS[mode].
+			// Invalid: stored score > -minMs (i.e., elapsedMs < minMs — too fast or zero).
+			// Also invalid: stored score >= 0 (zero or positive, shouldn't exist).
 
-		// 1. Remove invalid entries from all boards
-		for (const k of allKeys) {
-			let bad = [];
-			if (game.timeBased) {
-				// For memory: stored score is -elapsedMs, so valid = negative. Score >= 0 is invalid.
-				const raw = await redis.zrange(k, 0, '+inf', { byScore: true, withScores: true });
-				bad = parseZRange(raw);
-			} else {
-				// For streak games: score <= 0 is invalid (streaks start at 1).
-				const raw = await redis.zrange(k, '-inf', 0, { byScore: true, withScores: true });
-				bad = parseZRange(raw);
+			// Purge mode-specific boards using the per-mode minimum.
+			for (const mode of game.modes) {
+				const modeKey = `${game.key}:${mode}`;
+				const minMs = MEMORY_MIN_MS[mode];
+				// Stored scores above -(minMs) are invalid: range is (-minMs+1) to +inf
+				// But using numeric, anything > -minMs is invalid.
+				// Use -minMs+1 as the integer floor (all times are integer ms).
+				const invalidMin = -minMs + 1;
+				const raw = await redis.zrange(modeKey, invalidMin, '+inf', { byScore: true, withScores: true });
+				const bad = parseZRange(raw);
+				if (bad.length) {
+					log.push(`  [PURGE] ${modeKey}: removing ${bad.length} entries faster than ${minMs}ms`);
+					for (const e of bad) {
+						await redis.zrem(modeKey, e.member);
+						const meta = safeParse(e.member);
+						log.push(`    - ${meta?.name || '?'} stored=${e.score} (elapsed=${-e.score}ms)`);
+					}
+				}
 			}
-			if (bad.length) {
-				log.push(`  [PURGE] ${k}: removing ${bad.length} invalid entries`);
-				for (const e of bad) {
-					await redis.zrem(k, e.member);
-					const meta = safeParse(e.member);
-					log.push(`    - ${meta?.name || '?'} score=${e.score}`);
+
+			// Purge main memory board: read all, check per mode.
+			const mainRaw = await redis.zrange(game.key, 0, -1, { withScores: true });
+			const mainEntries = parseZRange(mainRaw);
+			for (const e of mainEntries) {
+				const meta = safeParse(e.member);
+				const minMs = MEMORY_MIN_MS[meta?.mode] ?? 3500;
+				// stored score = -elapsedMs; invalid if score > -minMs (elapsed < minMs)
+				if (e.score > -minMs) {
+					await redis.zrem(game.key, e.member);
+					log.push(`  [PURGE] main: ${meta?.name || '?'} stored=${e.score} (elapsed=${-e.score}ms) mode=${meta?.mode}`);
+				}
+			}
+		} else {
+			// --- Streak games ---
+			// All keys (main + mode boards): purge score <= 0.
+			const allKeys = [game.key, ...game.modes.map(m => `${game.key}:${m}`)];
+			for (const k of allKeys) {
+				const raw = await redis.zrange(k, '-inf', 0, { byScore: true, withScores: true });
+				const bad = parseZRange(raw);
+				if (bad.length) {
+					log.push(`  [PURGE] ${k}: removing ${bad.length} invalid entries`);
+					for (const e of bad) {
+						await redis.zrem(k, e.member);
+						const meta = safeParse(e.member);
+						log.push(`    - ${meta?.name || '?'} score=${e.score}`);
+					}
 				}
 			}
 		}
 
-		// 2. Backfill mode-specific boards from the main board
+		// 2. Backfill mode-specific boards from the main board.
 		const mainRaw = await redis.zrange(game.key, 0, -1, { withScores: true });
 		const mainEntries = parseZRange(mainRaw);
-		log.push(`  Main board: ${mainEntries.length} entries`);
+		log.push(`  Main board after purge: ${mainEntries.length} entries`);
 
 		let migrated = 0;
 		for (const e of mainEntries) {
@@ -96,7 +130,7 @@ export default async function handler(req) {
 				for (const ex of existing) await redis.zrem(modeKey, ex.member);
 				await redis.zadd(modeKey, { score: e.score, member: e.member });
 				migrated++;
-				log.push(`  [MIGRATE] ${meta?.name} → ${modeKey} (score=${e.score})`);
+				log.push(`  [MIGRATE] ${meta?.name} → ${modeKey} (stored=${e.score})`);
 			}
 		}
 		if (migrated === 0) log.push('  No entries needed migration');
