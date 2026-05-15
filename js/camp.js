@@ -7,9 +7,9 @@
 	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18;
 
-	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TFN]);
+	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TFN, TIW]);
 	const ANIMATED = new Set([TWN, TH2O, TCR]);
 
 	// ── Map ──────────────────────────────────────────────────────────────────────
@@ -284,6 +284,40 @@
 				ctx.fillStyle='#B09050'; ctx.fillRect(x+7,y+1,1,d-2);
 				ctx.fillStyle='#C8A868'; ctx.fillRect(x+7,y+1,2,1);
 				break;
+			case TIF: {
+				// Interior floor — light wood planks with vertical seams every 8 px
+				ctx.fillStyle='#D8B878'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#E8C888'; ctx.fillRect(x+1,y,d-1,1);            // top board edge
+				ctx.fillStyle='#B89858'; ctx.fillRect(x,y+15,d,1);             // bottom shadow
+				ctx.fillStyle='#A8884C'; ctx.fillRect(x+7,y,1,d);              // plank seam mid
+				ctx.fillStyle='#A8884C'; ctx.fillRect(x+15,y,1,d);             // plank seam right
+				ctx.fillStyle='#C8A86C';
+				ctx.fillRect(x+3,y+4,1,1); ctx.fillRect(x+11,y+9,1,1);
+				ctx.fillRect(x+6,y+12,1,1); ctx.fillRect(x+13,y+3,1,1);
+				break;
+			}
+			case TIW: {
+				// Interior wall — warm panelled plaster with a wainscot trim line
+				ctx.fillStyle='#E8D0A8'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#F4E0B8'; ctx.fillRect(x,y+0,d,1);              // top highlight
+				ctx.fillStyle='#C8A878'; ctx.fillRect(x,y+11,d,1);             // wainscot rail
+				ctx.fillStyle='#A88858'; ctx.fillRect(x,y+12,d,1);             // wainscot shadow
+				ctx.fillStyle='#D8B878'; ctx.fillRect(x,y+13,d,3);             // wainscot panel
+				ctx.fillStyle='#A88858'; ctx.fillRect(x,y+15,d,1);             // base shadow
+				ctx.fillStyle='#D0B888';
+				ctx.fillRect(x+3,y+3,1,1); ctx.fillRect(x+9,y+6,1,1);
+				break;
+			}
+			case TRU: {
+				// Decorative rug — soft red with cream border
+				ctx.fillStyle='#B83838'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#E0C898'; ctx.fillRect(x,y,d,1); ctx.fillRect(x,y+d-1,d,1);
+				ctx.fillStyle='#E0C898'; ctx.fillRect(x,y,1,d); ctx.fillRect(x+d-1,y,1,d);
+				ctx.fillStyle='#8C2828'; ctx.fillRect(x+2,y+2,d-4,d-4);
+				ctx.fillStyle='#D85050'; ctx.fillRect(x+4,y+4,d-8,d-8);
+				ctx.fillStyle='#E0C898'; ctx.fillRect(x+7,y+7,2,2);
+				break;
+			}
 			default:
 				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
 		}
@@ -297,10 +331,32 @@
 		wrap.style.top = hh + 'px';
 	}
 
-	// ── Phaser Scene ─────────────────────────────────────────────────────────────
+	// ── House interior map ───────────────────────────────────────────────────────
+	// 12 wide × 9 tall — wainscot walls, wood floor, rug accent, exit door at south.
+	const HOUSE_W = 12;
+	const HOUSE_H = 9;
+	const HOUSE_DOOR_C = 6;
+	const HOUSE_DOOR_R = HOUSE_H - 1;
+	function buildHouseMap() {
+		const map = Array.from({ length: HOUSE_H }, () => new Array(HOUSE_W).fill(TIF));
+		for (let c = 0; c < HOUSE_W; c++) { map[0][c] = TIW; map[HOUSE_H - 1][c] = TIW; }
+		for (let r = 0; r < HOUSE_H; r++) { map[r][0] = TIW; map[r][HOUSE_W - 1] = TIW; }
+		map[HOUSE_DOOR_R][HOUSE_DOOR_C] = TD;
+		// Small rug in the middle of the room
+		map[4][5] = TRU; map[4][6] = TRU;
+		map[5][5] = TRU; map[5][6] = TRU;
+		return map;
+	}
+
+	// ── Phaser Scenes ────────────────────────────────────────────────────────────
 	function makeSceneClass() {
 		return class CampScene extends Phaser.Scene {
 			constructor() { super({ key: 'camp' }); }
+
+			init(data) {
+				// 'from-house' spawns the player just south of the camp door
+				this.spawnFrom = (data && data.from) || null;
+			}
 
 			preload() {
 				// Load the raw sheet — we'll palette-swap it into a canvas and
@@ -392,7 +448,10 @@
 				mkAnim('walk-north', [7, 6, 8, 6]);
 				mkAnim('walk-east',  [10, 9, 11, 9]);
 
-				this.player = this.physics.add.sprite(11*TILE + TILE/2, 14*TILE + TILE/2, 'player', 0);
+				// Spawn just south of the camp door if coming back from inside the house.
+				const spawnTileC = this.spawnFrom === 'house' ? 11 : 11;
+				const spawnTileR = this.spawnFrom === 'house' ? 12 : 14;
+				this.player = this.physics.add.sprite(spawnTileC*TILE + TILE/2, spawnTileR*TILE + TILE/2, 'player', 0);
 				// Origin: feet at the bottom-centre of the frame (foot point ≈ y=36 in 38-tall frame)
 				this.player.setOrigin(0.5, 36/38);
 				this.player.setScale(0.75);  // shrink trainer to roughly one-tile-wide for tile-scale match
@@ -471,6 +530,10 @@
 				this.followerPath = null;      // remaining waypoints during faceoff routing
 				// Direction → tile-offset vector (matches this.dir: 0=south, 1=west, 2=north, 3=east).
 				this.DIR_VEC = [[0,1],[-1,0],[0,-1],[1,0]];
+
+				// Door-transition guard — flipped true the moment we trigger scene.start
+				// so we don't re-fire while the next scene boots.
+				this.didTransition = false;
 			}
 
 			onResize() {
@@ -630,6 +693,220 @@
 					}
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
 				}
+
+				// Walk onto the door → enter the house.
+				if (!this.didTransition) {
+					const tc = Math.floor(this.player.x / TILE);
+					const tr = Math.floor(this.player.y / TILE);
+					if (this.map[tr] && this.map[tr][tc] === TD) {
+						this.didTransition = true;
+						this.scene.start('house', { from: 'camp' });
+					}
+				}
+			}
+		};
+	}
+
+	function makeHouseSceneClass() {
+		return class HouseScene extends Phaser.Scene {
+			constructor() { super({ key: 'house' }); }
+
+			preload() {
+				this.load.image('player-base', 'Pictures/sprites/calem.png');
+			}
+
+			create() {
+				this.tick = 0;
+				this.map = buildHouseMap();
+				const W = HOUSE_W * TILE, H = HOUSE_H * TILE;
+
+				this.baseTex = this.textures.createCanvas('houseBase', W, H);
+				const baseCtx = this.baseTex.getContext();
+				baseCtx.imageSmoothingEnabled = false;
+				for (let r = 0; r < HOUSE_H; r++) {
+					for (let c = 0; c < HOUSE_W; c++) {
+						drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+					}
+				}
+				this.baseTex.refresh();
+				this.add.image(0, 0, 'houseBase').setOrigin(0).setDepth(0);
+
+				// Palette-swap the trainer sheet — same pipeline as camp.
+				const baseImg = this.textures.get('player-base').getSourceImage();
+				const pw = baseImg.width, ph = baseImg.height;
+				this._playerCanvas = document.createElement('canvas');
+				this._playerCanvas.width = pw;
+				this._playerCanvas.height = ph;
+				this._playerCtx = this._playerCanvas.getContext('2d');
+				const applyPalette = () => {
+					if (window.TrainerPalette) {
+						window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
+					} else {
+						this._playerCtx.clearRect(0, 0, pw, ph);
+						this._playerCtx.drawImage(baseImg, 0, 0);
+					}
+				};
+				applyPalette();
+				if (this.textures.exists('player-house')) this.textures.remove('player-house');
+				this.textures.addSpriteSheet('player-house', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+				this._onStorage = (e) => {
+					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
+						applyPalette();
+						this.textures.get('player-house').refresh();
+					}
+				};
+				window.addEventListener('storage', this._onStorage);
+				this.events.once('shutdown', () => window.removeEventListener('storage', this._onStorage));
+
+				const mkAnim = (key, frames) => {
+					if (this.anims.exists(key)) this.anims.remove(key);
+					this.anims.create({ key, frameRate: 6, repeat: -1,
+						frames: this.anims.generateFrameNumbers('player-house', { frames }) });
+				};
+				mkAnim('h-walk-south', [1, 0, 2, 0]);
+				mkAnim('h-walk-west',  [4, 3, 5, 3]);
+				mkAnim('h-walk-north', [7, 6, 8, 6]);
+				mkAnim('h-walk-east',  [10, 9, 11, 9]);
+
+				// Spawn one tile north of the exit door, facing north.
+				const spawnX = HOUSE_DOOR_C*TILE + TILE/2;
+				const spawnY = (HOUSE_DOOR_R - 1)*TILE + TILE/2;
+				this.player = this.physics.add.sprite(spawnX, spawnY, 'player-house', 0);
+				this.player.setOrigin(0.5, 36/38);
+				this.player.setScale(0.75);
+				this.player.setDepth(3);
+				this.player.body.setSize(10, 6);
+				this.player.body.setOffset((22-10)/2, 38-8);
+
+				this.solids = this.physics.add.staticGroup();
+				for (let r = 0; r < HOUSE_H; r++) {
+					for (let c = 0; c < HOUSE_W; c++) {
+						if (SOLID.has(this.map[r][c])) {
+							const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
+							this.physics.add.existing(rect, true);
+							this.solids.add(rect);
+						}
+					}
+				}
+				this.physics.add.collider(this.player, this.solids);
+
+				this.physics.world.setBounds(0, 0, W, H);
+				this.player.setCollideWorldBounds(true);
+				this.cameras.main.setBounds(0, 0, W, H);
+				this.cameras.main.startFollow(this.player, true, 1, 1);
+				this.cameras.main.setBackgroundColor('#1a0e08');
+				this.cameras.main.setRoundPixels(true);
+				this.applyZoom();
+				this.scale.on('resize', this.onResize, this);
+
+				this.keys = this.input.keyboard.addKeys({
+					up: Phaser.Input.Keyboard.KeyCodes.UP,
+					down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+					left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+					right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+					w: Phaser.Input.Keyboard.KeyCodes.W,
+					a: Phaser.Input.Keyboard.KeyCodes.A,
+					s: Phaser.Input.Keyboard.KeyCodes.S,
+					d: Phaser.Input.Keyboard.KeyCodes.D,
+				});
+				this.dpad = { up:false, down:false, left:false, right:false };
+				this.setupJoystick();
+
+				this.dir = 2; // facing north (player just stepped through the door)
+				this.dirAnimKeys = ['h-walk-south', 'h-walk-west', 'h-walk-north', 'h-walk-east'];
+				this.dirIdleFrame = [0, 3, 6, 9];
+				this.player.setFrame(this.dirIdleFrame[this.dir]);
+				this.didTransition = false;
+				// Wait for the player to step OFF the spawn-door tile before allowing
+				// the exit-on-touch logic to fire (otherwise we'd bounce straight back).
+				this.armedForExit = false;
+			}
+
+			onResize() {
+				applyWrapTop();
+				this.applyZoom();
+			}
+
+			applyZoom() {
+				const W = this.scale.width;
+				const H = this.scale.height;
+				let s = Math.max(2, Math.floor(Math.min(W / 380, H / 240)));
+				s = Math.min(s, 4);
+				this.cameras.main.setZoom(s);
+			}
+
+			setupJoystick() {
+				const base = document.getElementById('joystickBase');
+				const knob = document.getElementById('joystickKnob');
+				if (!base || !knob) return;
+				const RADIUS = 42, DEAD = 0.18;
+				let active = false, pointerId = null;
+				const dpad = this.dpad;
+				const reset = () => {
+					active = false; pointerId = null;
+					dpad.up = dpad.down = dpad.left = dpad.right = false;
+					knob.style.transform = 'translate(-50%,-50%)';
+				};
+				const applyJoy = (dx, dy) => {
+					const dist = Math.sqrt(dx*dx + dy*dy);
+					const clamp = Math.min(dist, RADIUS);
+					const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
+					knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
+					const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
+					const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
+					dpad.left = fx < -DEAD; dpad.right = fx > DEAD;
+					dpad.up   = fy < -DEAD; dpad.down  = fy > DEAD;
+				};
+				base.addEventListener('pointerdown', e => {
+					if (active) return;
+					active = true; pointerId = e.pointerId;
+					base.setPointerCapture(e.pointerId);
+					e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				base.addEventListener('pointermove', e => {
+					if (!active || e.pointerId !== pointerId) return;
+					e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				['pointerup','pointercancel'].forEach(ev => base.addEventListener(ev, e => {
+					if (e.pointerId !== pointerId) return;
+					e.preventDefault(); reset();
+				}));
+			}
+
+			update() {
+				this.tick++;
+				const k = this.keys, d = this.dpad;
+				let vx = 0, vy = 0;
+				if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+				if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+				if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+				if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+				if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				this.player.setVelocity(vx, vy);
+
+				const moving = vx !== 0 || vy !== 0;
+				const animKey = this.dirAnimKeys[this.dir];
+				if (moving) {
+					if (!this.player.anims.isPlaying || this.player.anims.currentAnim?.key !== animKey) {
+						this.player.anims.play(animKey, true);
+					}
+				} else {
+					this.player.anims.stop();
+					this.player.setFrame(this.dirIdleFrame[this.dir]);
+				}
+
+				const tc = Math.floor(this.player.x / TILE);
+				const tr = Math.floor(this.player.y / TILE);
+				const onDoor = tc === HOUSE_DOOR_C && tr === HOUSE_DOOR_R;
+				if (!onDoor) this.armedForExit = true;
+				if (this.armedForExit && onDoor && !this.didTransition) {
+					this.didTransition = true;
+					this.scene.start('camp', { from: 'house' });
+				}
 			}
 		};
 	}
@@ -661,7 +938,7 @@
 				default: 'arcade',
 				arcade: { gravity: { y: 0 }, debug: false },
 			},
-			scene: [makeSceneClass()],
+			scene: [makeSceneClass(), makeHouseSceneClass()],
 		});
 	}
 
