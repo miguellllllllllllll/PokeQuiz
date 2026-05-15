@@ -4,19 +4,27 @@
 	'use strict';
 
 	const KEY = 'pokequiz_trainer_palette';
+	const FRAME_H = 38;
 
 	// Base palette ladders from Pictures/sprites/calem.png — darkest → lightest.
 	// MAIN is the shade that maps directly to the user's chosen swatch.
+	// Entries may be a hex string or { color, yMin?, yMax? } where the bounds
+	// are frame-local Y (0..FRAME_H-1) — used to avoid recolouring pixels of
+	// shared shades that belong to other body parts.
 	const BASE = {
-		cap:     ['#701028', '#784040', '#C03838', '#F06848'],
+		cap: [
+			{ color: '#701028', yMax: 19 },
+			{ color: '#C03838', yMax: 17 },
+			{ color: '#F06848', yMax: 17 },
+		],
 		skin:    ['#885028', '#D09870', '#D8A078', '#F8D0B8'],
 		hair:    ['#28272C', '#424149'],
 		outfit:  ['#1F2945', '#354775', '#4F69AE'],
 		shirt:   ['#B8B0D0', '#E8E8F8'],
-		pants:   ['#384040'],
-		goggles: ['#406888', '#66847B'],
+		pants:   [{ color: '#384040', yMin: 25 }],
+		goggles: [{ color: '#66847B', yMax: 19 }],
 	};
-	const MAIN_IDX = { cap: 2, skin: 2, hair: 1, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
+	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
 
 	const DEFAULTS = {
 		cap:     '#C03838',
@@ -25,7 +33,7 @@
 		outfit:  '#354775',
 		shirt:   '#B8B0D0',
 		pants:   '#384040',
-		goggles: '#406888',
+		goggles: '#66847B',
 	};
 
 	function hexToRgb(hex) {
@@ -44,21 +52,31 @@
 		try { localStorage.setItem(KEY, JSON.stringify(choices)); } catch {}
 	}
 
-	// Build a Map<u24, [r,g,b]> from original sheet colour → recoloured value.
-	// Algorithm: per-channel additive delta from the BASE main shade — exact at
-	// the chosen colour, shifted by the same offset for shadow/highlight shades.
+	// Build a Map<u24, [{rgb, yMin, yMax}]> from original sheet colour → list of
+	// candidate recolour rules (one per category that lists this shade). Algorithm:
+	// per-channel additive delta from the BASE main shade — exact at the chosen
+	// colour, shifted by the same offset for shadow/highlight shades.
 	function buildColourMap(choices) {
 		const map = new Map();
 		for (const cat of Object.keys(BASE)) {
 			const ladder = BASE[cat];
-			const mainRgb = hexToRgb(ladder[MAIN_IDX[cat]]);
+			const mainEntry = ladder[MAIN_IDX[cat]];
+			const mainColor = typeof mainEntry === 'string' ? mainEntry : mainEntry.color;
+			const mainRgb = hexToRgb(mainColor);
 			const chosenRgb = hexToRgb(choices[cat] || DEFAULTS[cat]);
 			for (let i = 0; i < ladder.length; i++) {
-				const o = hexToRgb(ladder[i]);
+				const entry = ladder[i];
+				const color = typeof entry === 'string' ? entry : entry.color;
+				const yMin = (typeof entry === 'string') ? 0 : (entry.yMin ?? 0);
+				const yMax = (typeof entry === 'string') ? Infinity : (entry.yMax ?? Infinity);
+				const o = hexToRgb(color);
 				const nr = Math.max(0, Math.min(255, chosenRgb[0] + (o[0] - mainRgb[0])));
 				const ng = Math.max(0, Math.min(255, chosenRgb[1] + (o[1] - mainRgb[1])));
 				const nb = Math.max(0, Math.min(255, chosenRgb[2] + (o[2] - mainRgb[2])));
-				map.set((o[0]<<16) | (o[1]<<8) | o[2], [nr, ng, nb]);
+				const key = (o[0]<<16) | (o[1]<<8) | o[2];
+				const rule = { rgb: [nr, ng, nb], yMin, yMax };
+				const list = map.get(key);
+				if (list) list.push(rule); else map.set(key, [rule]);
 			}
 		}
 		return map;
@@ -73,11 +91,20 @@
 		const id = dstCtx.getImageData(0, 0, w, h);
 		const px = id.data;
 		const map = buildColourMap(choices);
-		for (let i = 0; i < px.length; i += 4) {
+		for (let i = 0, idx = 0; i < px.length; i += 4, idx++) {
 			if (px[i+3] === 0) continue;
 			const key = (px[i]<<16) | (px[i+1]<<8) | px[i+2];
-			const m = map.get(key);
-			if (m) { px[i] = m[0]; px[i+1] = m[1]; px[i+2] = m[2]; }
+			const rules = map.get(key);
+			if (!rules) continue;
+			const y = (idx / w) | 0;
+			const frameY = y % FRAME_H;
+			for (let r = 0; r < rules.length; r++) {
+				const rule = rules[r];
+				if (frameY >= rule.yMin && frameY <= rule.yMax) {
+					px[i] = rule.rgb[0]; px[i+1] = rule.rgb[1]; px[i+2] = rule.rgb[2];
+					break;
+				}
+			}
 		}
 		dstCtx.putImageData(id, 0, 0);
 	}
