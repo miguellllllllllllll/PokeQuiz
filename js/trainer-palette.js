@@ -25,27 +25,37 @@
 			{ color: '#424149', yMax: 21 },
 		],
 		gogglesFrame: [{ color: '#384040', yMax: 18 }],
-		// Two pupil pixels per eye at the cap/forehead boundary — top row catches the
-		// cap-orange shade, bottom row sits on the forehead shadow band.
+		// Two pupil pixels per eye, isolated by xMin/xMax + yMin/yMax — these are
+		// the four black-outline pixels at (8,22), (13,22), (8,23), (13,23).
 		eyes: [
-			{ color: '#F06848', xMin: 8,  xMax: 8,  yMin: 15, yMax: 15 },
-			{ color: '#F06848', xMin: 13, xMax: 13, yMin: 15, yMax: 15 },
-			{ color: '#384040', xMin: 8,  xMax: 8,  yMin: 16, yMax: 16 },
-			{ color: '#384040', xMin: 13, xMax: 13, yMin: 16, yMax: 16 },
+			{ color: '#000000', xMin: 8,  xMax: 8,  yMin: 22, yMax: 23 },
+			{ color: '#000000', xMin: 13, xMax: 13, yMin: 22, yMax: 23 },
+		],
+		// Sclera: the four white-ish pixels flanking the pupils. These share their
+		// hex with the shirt palette, so without a more-specific rule the Shirt
+		// picker would recolour them. Pinning them to a hidden category with main
+		// = default keeps their delta at zero, so they stay at their natural shade
+		// while the rest of the shirt pixels still respond to the Shirt picker.
+		__sclera: [
+			{ color: '#B8B0D0', xMin: 7,  xMax: 7,  yMin: 22, yMax: 22 },
+			{ color: '#B8B0D0', xMin: 14, xMax: 14, yMin: 22, yMax: 22 },
+			{ color: '#E8E8F8', xMin: 7,  xMax: 7,  yMin: 23, yMax: 23 },
+			{ color: '#E8E8F8', xMin: 14, xMax: 14, yMin: 23, yMax: 23 },
 		],
 		outfit:  ['#1F2945', '#354775', '#4F69AE'],
 		shirt:   ['#B8B0D0', '#E8E8F8'],
 		pants:   [{ color: '#384040', yMin: 25 }],
 		goggles: [{ color: '#66847B', yMax: 19 }],
 	};
-	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, gogglesFrame: 0, eyes: 0, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
+	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, gogglesFrame: 0, eyes: 0, __sclera: 0, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
 
 	const DEFAULTS = {
 		cap:          '#C03838',
 		skin:         '#D8A078',
 		hair:         '#424149',
 		gogglesFrame: '#384040',
-		eyes:         '#F06848',
+		eyes:         '#000000',
+		__sclera:     '#B8B0D0',
 		outfit:       '#354775',
 		shirt:        '#B8B0D0',
 		pants:        '#384040',
