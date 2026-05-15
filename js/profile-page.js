@@ -261,10 +261,81 @@
 		});
 	}
 
+	// ── Trainer Customizer ───────────────────────────────────────────────────────
+	function initCustomizer() {
+		const TL = window.TrainerLook;
+		if (!TL) return;
+
+		const canvas  = document.getElementById('tcCanvas');
+		const dirBtns = document.querySelectorAll('.tc-dir-btn');
+		if (!canvas) return;
+
+		const ctx = canvas.getContext('2d');
+		ctx.imageSmoothingEnabled = false;
+
+		let look    = TL.load();
+		let previewDir = 0;
+
+		function redraw() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			// px=16, py=30 gives comfortable centering in 32×42 canvas
+			TL.draw(ctx, 16, 30, previewDir, 0, look);
+		}
+
+		// Direction buttons
+		dirBtns.forEach(btn => {
+			btn.addEventListener('click', () => {
+				previewDir = Number(btn.dataset.dir);
+				dirBtns.forEach(b => b.classList.toggle('is-active', b === btn));
+				redraw();
+			});
+		});
+
+		// Gender toggle
+		document.querySelectorAll('.tc-toggle[data-key="gender"]').forEach(btn => {
+			btn.classList.toggle('is-active', btn.dataset.val === look.gender);
+			btn.addEventListener('click', () => {
+				look.gender = btn.dataset.val;
+				document.querySelectorAll('.tc-toggle[data-key="gender"]').forEach(b =>
+					b.classList.toggle('is-active', b === btn));
+				TL.save(look);
+				redraw();
+			});
+		});
+
+		// Colour swatches
+		const cats = ['skin','hair','hat','bottom','shoes'];
+		cats.forEach(cat => {
+			const row = document.querySelector(`.tc-row[data-cat="${cat}"]`);
+			if (!row) return;
+			const wrap = row.querySelector('.tc-swatches');
+			TL.PALETTES[cat].forEach(({ color, label }) => {
+				const btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'tc-swatch';
+				btn.style.background = color;
+				btn.title = label;
+				btn.setAttribute('aria-label', label);
+				btn.classList.toggle('is-active', look[cat] === color);
+				btn.addEventListener('click', () => {
+					look[cat] = color;
+					wrap.querySelectorAll('.tc-swatch').forEach(b =>
+						b.classList.toggle('is-active', b === btn));
+					TL.save(look);
+					redraw();
+				});
+				wrap.appendChild(btn);
+			});
+		});
+
+		redraw();
+	}
+
 	function init() {
 		renderAvatarOnButton();
 		renderHero();
 		renderPicker();
+		initCustomizer();
 		wireEdit();
 		wireManage();
 		renderStats();

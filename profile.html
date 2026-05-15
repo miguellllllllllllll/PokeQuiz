@@ -57,6 +57,54 @@
 			</div>
 		</section>
 
+		<section class="card profile-card" id="trainerCustomizer">
+			<header class="section-head">
+				<h2>Customize Camp Trainer</h2>
+				<p>Design your sprite &mdash; changes appear live in the Camp world.</p>
+			</header>
+			<div class="tc-layout">
+				<div class="tc-preview-col">
+					<canvas id="tcCanvas" width="32" height="42" class="tc-canvas" aria-label="Trainer sprite preview"></canvas>
+					<div class="tc-dir-row">
+						<button class="tc-dir-btn" data-dir="2" aria-label="Face north" title="North">↑</button>
+						<button class="tc-dir-btn" data-dir="1" aria-label="Face west" title="West">←</button>
+						<button class="tc-dir-btn is-active" data-dir="0" aria-label="Face south" title="South">↓</button>
+						<button class="tc-dir-btn" data-dir="3" aria-label="Face east" title="East">→</button>
+					</div>
+					<p class="tc-hint">Rotate to preview all sides</p>
+				</div>
+				<div class="tc-controls" id="tcControls">
+					<div class="tc-row">
+						<span class="tc-label">Gender</span>
+						<div class="tc-toggle-group">
+							<button class="tc-toggle" data-key="gender" data-val="male">♂ Male</button>
+							<button class="tc-toggle" data-key="gender" data-val="female">♀ Female</button>
+						</div>
+					</div>
+					<div class="tc-row" data-cat="skin">
+						<span class="tc-label">Skin</span>
+						<div class="tc-swatches"></div>
+					</div>
+					<div class="tc-row" data-cat="hair">
+						<span class="tc-label">Hair</span>
+						<div class="tc-swatches"></div>
+					</div>
+					<div class="tc-row" data-cat="hat">
+						<span class="tc-label">Outfit</span>
+						<div class="tc-swatches"></div>
+					</div>
+					<div class="tc-row" data-cat="bottom">
+						<span class="tc-label">Pants</span>
+						<div class="tc-swatches"></div>
+					</div>
+					<div class="tc-row" data-cat="shoes">
+						<span class="tc-label">Shoes</span>
+						<div class="tc-swatches"></div>
+					</div>
+				</div>
+			</div>
+		</section>
+
 		<section class="card profile-card">
 			<header class="section-head">
 				<h2>Pick Your Avatar</h2>
@@ -130,6 +178,7 @@
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
 	<script src="js/profile.js" defer></script>
+	<script src="js/trainer-look.js" defer></script>
 	<script src="js/profile-page.js" defer></script>
 </body>
 </html>

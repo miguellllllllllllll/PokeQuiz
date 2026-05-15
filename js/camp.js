@@ -240,120 +240,10 @@
 
 	// ── Player — BW2 16-px overworld sprite (Nate-inspired) ─────────────────────
 	// bx = center-6 (12px wide), by = feet-18 (18px tall body+head)
+	// Delegate to shared TrainerLook module (trainer-look.js loaded before this file).
 	function drawPlayer(ctx, px, py, dir, frame) {
-		const bx=Math.floor(px)-6, by=Math.floor(py)-17;
-		const lg=frame===1?2:0; // leg bob: ±2px
-
-		ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.fillRect(bx+1,by+17,10,3);
-
-		if(dir===0){ // South / facing camera
-			// Shoes
-			ctx.fillStyle='#3A2010';
-			ctx.fillRect(bx+1,by+14+lg,4,3); ctx.fillRect(bx+7,by+14-lg,4,3);
-			// Shorts
-			ctx.fillStyle='#607090'; ctx.fillRect(bx+1,by+9,10,6);
-			ctx.fillStyle='#4A5878'; ctx.fillRect(bx+1,by+13,10,2);
-			// Jacket
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+0,by+4,12,6);
-			// White shirt strip
-			ctx.fillStyle='#E8E8F0'; ctx.fillRect(bx+4,by+4,4,4);
-			// Arms
-			ctx.fillStyle='#1C2850';
-			ctx.fillRect(bx-1,by+4,2,6); ctx.fillRect(bx+11,by+4,2,6);
-			// Hands
-			ctx.fillStyle='#F0D0A0';
-			ctx.fillRect(bx-1,by+9,2,3); ctx.fillRect(bx+11,by+9,2,3);
-			// Neck
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+4,by+2,4,3);
-			// Face
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+2,by-3,8,6);
-			// Hair under brim
-			ctx.fillStyle='#302010'; ctx.fillRect(bx+2,by-1,1,3); ctx.fillRect(bx+9,by-1,1,3);
-			// Eyes
-			ctx.fillStyle='#101820'; ctx.fillRect(bx+3,by-1,2,2); ctx.fillRect(bx+7,by-1,2,2);
-			// Mouth
-			ctx.fillStyle='#C07858'; ctx.fillRect(bx+4,by+1,4,1);
-			// Cap brim
-			ctx.fillStyle='#101018'; ctx.fillRect(bx+1,by-3,10,2);
-			// Cap
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+2,by-7,8,5);
-			// Logo
-			ctx.fillStyle='#CC1818'; ctx.fillRect(bx+4,by-6,3,2);
-
-		} else if(dir===2){ // North / facing away
-			// Shoes
-			ctx.fillStyle='#3A2010';
-			ctx.fillRect(bx+1,by+14+lg,4,3); ctx.fillRect(bx+7,by+14-lg,4,3);
-			// Shorts
-			ctx.fillStyle='#607090'; ctx.fillRect(bx+1,by+9,10,6);
-			ctx.fillStyle='#4A5878'; ctx.fillRect(bx+1,by+13,10,2);
-			// Jacket back
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+0,by+4,12,6);
-			// Arms
-			ctx.fillStyle='#1C2850';
-			ctx.fillRect(bx-1,by+4,2,6); ctx.fillRect(bx+11,by+4,2,6);
-			// Hands
-			ctx.fillStyle='#F0D0A0';
-			ctx.fillRect(bx-1,by+9,2,3); ctx.fillRect(bx+11,by+9,2,3);
-			// Back of head / hair
-			ctx.fillStyle='#302010'; ctx.fillRect(bx+2,by-3,8,6);
-			// Cap brim (back shows slightly)
-			ctx.fillStyle='#101018'; ctx.fillRect(bx+1,by-3,10,2);
-			ctx.fillStyle='#101018'; ctx.fillRect(bx+5,by-3,2,2);
-			// Cap
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+2,by-7,8,5);
-
-		} else if(dir===1){ // West / facing left
-			// Shoe (one foot, slides with bob)
-			ctx.fillStyle='#3A2010'; ctx.fillRect(bx+2,by+14+lg,7,3);
-			// Shorts
-			ctx.fillStyle='#607090'; ctx.fillRect(bx+2,by+9,8,6);
-			ctx.fillStyle='#4A5878'; ctx.fillRect(bx+2,by+13,8,2);
-			// Jacket + back arm
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+2,by+4,9,6);
-			ctx.fillRect(bx+0,by+4,3,6);
-			// Front hand
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+0,by+9,2,3);
-			// Neck
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+4,by+2,3,3);
-			// Face (profile)
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+2,by-3,6,6);
-			// Nose
-			ctx.fillStyle='#D0A878'; ctx.fillRect(bx+2,by+0,1,2);
-			// Hair
-			ctx.fillStyle='#302010'; ctx.fillRect(bx+2,by-2,1,3);
-			// Eye
-			ctx.fillStyle='#101820'; ctx.fillRect(bx+3,by-1,2,2);
-			// Cap brim (extends left)
-			ctx.fillStyle='#101018'; ctx.fillRect(bx+1,by-3,8,2); ctx.fillRect(bx+0,by-2,2,1);
-			// Cap
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+2,by-7,7,5);
-
-		} else { // East / facing right
-			// Shoe
-			ctx.fillStyle='#3A2010'; ctx.fillRect(bx+3,by+14+lg,7,3);
-			// Shorts
-			ctx.fillStyle='#607090'; ctx.fillRect(bx+2,by+9,8,6);
-			ctx.fillStyle='#4A5878'; ctx.fillRect(bx+2,by+13,8,2);
-			// Jacket + back arm
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+1,by+4,9,6);
-			ctx.fillRect(bx+9,by+4,3,6);
-			// Front hand
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+10,by+9,2,3);
-			// Neck
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+5,by+2,3,3);
-			// Face (profile)
-			ctx.fillStyle='#F0D0A0'; ctx.fillRect(bx+4,by-3,6,6);
-			// Nose
-			ctx.fillStyle='#D0A878'; ctx.fillRect(bx+9,by+0,1,2);
-			// Hair
-			ctx.fillStyle='#302010'; ctx.fillRect(bx+9,by-2,1,3);
-			// Eye
-			ctx.fillStyle='#101820'; ctx.fillRect(bx+7,by-1,2,2);
-			// Cap brim (extends right)
-			ctx.fillStyle='#101018'; ctx.fillRect(bx+3,by-3,8,2); ctx.fillRect(bx+10,by-2,2,1);
-			// Cap
-			ctx.fillStyle='#1C2850'; ctx.fillRect(bx+3,by-7,7,5);
+		if (window.TrainerLook) {
+			window.TrainerLook.draw(ctx, px, py, dir, frame, _trainerLook);
 		}
 	}
 
@@ -383,7 +273,17 @@
 	}
 
 	// ── Main ─────────────────────────────────────────────────────────────────────
+	let _trainerLook = null;
 	function init() {
+		// Load saved trainer appearance (falls back to defaults if not set).
+		_trainerLook = window.TrainerLook ? window.TrainerLook.load() : null;
+		// Refresh look whenever the profile page saves a change.
+		window.addEventListener('storage', (e) => {
+			if (e.key === 'pokequiz_trainer_look' && window.TrainerLook) {
+				_trainerLook = window.TrainerLook.load();
+			}
+		});
+
 		const canvas = document.getElementById('campCanvas');
 		if (!canvas) return;
 		const ctx = canvas.getContext('2d');
