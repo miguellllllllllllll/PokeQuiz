@@ -18,18 +18,23 @@
 			{ color: '#F06848', yMax: 17 },
 		],
 		skin:    ['#885028', '#D09870', '#D8A078', '#F8D0B8'],
-		hair:    ['#28272C', '#424149'],
+		hair: [
+			{ color: '#28272C', yMax: 21 },
+			{ color: '#424149', yMax: 21 },
+		],
+		eyes:    [{ color: '#384040', yMax: 19 }],
 		outfit:  ['#1F2945', '#354775', '#4F69AE'],
 		shirt:   ['#B8B0D0', '#E8E8F8'],
 		pants:   [{ color: '#384040', yMin: 25 }],
 		goggles: [{ color: '#66847B', yMax: 19 }],
 	};
-	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
+	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, eyes: 0, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
 
 	const DEFAULTS = {
 		cap:     '#C03838',
 		skin:    '#D8A078',
 		hair:    '#424149',
+		eyes:    '#384040',
 		outfit:  '#354775',
 		shirt:   '#B8B0D0',
 		pants:   '#384040',

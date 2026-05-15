@@ -465,6 +465,10 @@
 				this.follower.setDepth(3.5);
 				this.followerHistory = [];
 				this.followerDir = 0;
+				this.followerMode = 'trail';   // 'trail' while player moves, 'faceoff' once stopped
+				this.followerTarget = null;
+				// Direction → tile-offset vector (matches this.dir: 0=south, 1=west, 2=north, 3=east).
+				this.DIR_VEC = [[0,1],[-1,0],[0,-1],[1,0]];
 			}
 
 			onResize() {
@@ -553,13 +557,32 @@
 				}
 				this.animTex.refresh();
 
-				// Sample player position every other tick; follower lerps toward the oldest
-				// sample so it lags ~1 sprite-width behind. Pick walk anim from motion vector.
-				if (this.tick % 2 === 0) {
-					this.followerHistory.push({ x: this.player.x, y: this.player.y });
-					if (this.followerHistory.length > 8) this.followerHistory.shift();
+				// Trail mode: sample player position; follower lerps toward the oldest sample
+				// so it lags ~1 sprite-width behind. Once the player stops, switch to face-off
+				// mode: walk to 1 tile in front of the player, then turn around to face them.
+				if (moving) {
+					if (this.followerMode !== 'trail') {
+						this.followerMode = 'trail';
+						this.followerTarget = null;
+					}
+					if (this.tick % 2 === 0) {
+						this.followerHistory.push({ x: this.player.x, y: this.player.y });
+						if (this.followerHistory.length > 8) this.followerHistory.shift();
+					}
+				} else if (this.followerMode === 'trail') {
+					// Player just stopped — pick a tile in front of them as the face-off target.
+					this.followerMode = 'faceoff';
+					this.followerHistory = [];
+					const [dvx, dvy] = this.DIR_VEC[this.dir];
+					this.followerTarget = {
+						x: this.player.x + dvx * TILE,
+						y: this.player.y + dvy * TILE,
+					};
 				}
-				const target = this.followerHistory[0];
+
+				const target = this.followerMode === 'trail'
+					? this.followerHistory[0]
+					: this.followerTarget;
 				if (target) {
 					const prevX = this.follower.x, prevY = this.follower.y;
 					this.follower.x = Phaser.Math.Linear(this.follower.x, target.x, 0.18);
@@ -568,26 +591,30 @@
 					const fdy = this.follower.y - prevY;
 					const fspeed = Math.hypot(fdx, fdy);
 					if (fspeed > 0.15) {
-						let dir;
-						if (Math.abs(fdx) > Math.abs(fdy)) dir = fdx > 0 ? 3 : 1;  // east / west
-						else                                dir = fdy > 0 ? 0 : 2;  // south / north
+						const dir = Math.abs(fdx) > Math.abs(fdy)
+							? (fdx > 0 ? 3 : 1)
+							: (fdy > 0 ? 0 : 2);
 						if (dir !== this.followerDir || !this.follower.anims.isPlaying) {
 							this.follower.anims.play(this.eeveeAnimKeys[dir], true);
 							this.followerDir = dir;
 						}
 					} else {
 						if (this.follower.anims.isPlaying) this.follower.anims.stop();
-						// Stopped — turn to face the player so the two acknowledge each other.
-						const ldx = this.player.x - this.follower.x;
-						const ldy = this.player.y - this.follower.y;
-						if (Math.abs(ldx) + Math.abs(ldy) > 4) {
-							const faceDir = Math.abs(ldx) > Math.abs(ldy)
-								? (ldx > 0 ? 3 : 1)
-								: (ldy > 0 ? 0 : 2);
-							if (faceDir !== this.followerDir) {
-								this.followerDir = faceDir;
-								this.follower.setFrame(this.eeveeIdleFrame[faceDir]);
-							}
+						// Arrived — face the player. In face-off mode that's the opposite of the
+						// player's facing; in trail mode (rare: paused mid-trail) just orient at them.
+						let faceDir;
+						if (this.followerMode === 'faceoff') {
+							faceDir = (this.dir + 2) % 4;
+						} else {
+							const ldx = this.player.x - this.follower.x;
+							const ldy = this.player.y - this.follower.y;
+							faceDir = Math.abs(ldx) + Math.abs(ldy) <= 4
+								? this.followerDir
+								: (Math.abs(ldx) > Math.abs(ldy) ? (ldx > 0 ? 3 : 1) : (ldy > 0 ? 0 : 2));
+						}
+						if (faceDir !== this.followerDir) {
+							this.followerDir = faceDir;
+							this.follower.setFrame(this.eeveeIdleFrame[faceDir]);
 						}
 					}
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
