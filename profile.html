@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Trainer Profile | PokeQuiz</title>
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/profile-page.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+		</nav>
+		<div class="profile-wrap">
+			<a class="profile-btn" href="profile.html" aria-current="page">
+				<span class="profile-avatar" aria-hidden="true"></span>
+				<span class="profile-name">Trainer</span>
+			</a>
+		</div>
+	</header>
+
+	<main class="container profile-page">
+		<a class="back-link" href="index.html">&larr; Back to Home</a>
+
+		<section class="profile-hero">
+			<div class="ph-avatar-frame">
+				<span class="ph-avatar" aria-hidden="true"></span>
+				<span class="ph-ring"></span>
+			</div>
+			<div class="ph-body">
+				<div class="eyebrow">
+					<span class="dot"></span>
+					<span>Trainer Profile</span>
+				</div>
+				<h1 class="ph-name">Trainer</h1>
+				<p class="ph-id">Trainer ID: <code class="ph-id-code">&mdash;</code></p>
+
+				<div class="ph-edit" hidden>
+					<input class="ph-input" type="text" maxlength="24" placeholder="Your trainer name">
+					<button class="btn ph-save" type="button">Save</button>
+					<button class="btn btn-ghost ph-cancel" type="button">Cancel</button>
+				</div>
+				<div class="ph-edit-error" hidden></div>
+
+				<div class="ph-actions">
+					<button class="btn ph-edit-btn" type="button">Edit Name</button>
+					<a class="btn btn-secondary" href="play.html">Start Quiz</a>
+					<a class="btn btn-ghost" href="puzzle.html">Try a Puzzle</a>
+				</div>
+			</div>
+		</section>
+
+		<section class="card profile-card">
+			<header class="section-head">
+				<h2>Pick Your Avatar</h2>
+				<p>Switch between iconic trainers (or the Pok&eacute;ball).</p>
+			</header>
+			<div class="pp-avatar-picker pp-avatar-picker--lg"></div>
+		</section>
+
+		<section class="card profile-card">
+			<header class="section-head">
+				<h2>Personal Bests</h2>
+				<p>Your top score on each game &mdash; pulled live from the global leaderboard.</p>
+			</header>
+			<div class="stats-grid">
+				<div class="stat-tile" data-game="quiz">
+					<div class="stat-tile-head">
+						<span class="stat-tile-name">Trivia Quiz</span>
+						<span class="stat-tile-tag">/ 21</span>
+					</div>
+					<div class="stat-tile-value">&mdash;</div>
+					<div class="stat-tile-meta">Best of all-time runs</div>
+				</div>
+				<div class="stat-tile" data-game="silhouette">
+					<div class="stat-tile-head">
+						<span class="stat-tile-name">Who's That Pok&eacute;mon?</span>
+						<span class="stat-tile-tag">streak</span>
+					</div>
+					<div class="stat-tile-value">&mdash;</div>
+					<div class="stat-tile-meta">Longest silhouette streak</div>
+				</div>
+				<div class="stat-tile" data-game="cry">
+					<div class="stat-tile-head">
+						<span class="stat-tile-name">Cry Quiz</span>
+						<span class="stat-tile-tag">streak</span>
+					</div>
+					<div class="stat-tile-value">&mdash;</div>
+					<div class="stat-tile-meta">Longest cry-ID streak</div>
+				</div>
+				<div class="stat-tile" data-game="higherlower">
+					<div class="stat-tile-head">
+						<span class="stat-tile-name">Higher or Lower</span>
+						<span class="stat-tile-tag">streak</span>
+					</div>
+					<div class="stat-tile-value">&mdash;</div>
+					<div class="stat-tile-meta">Longest H/L streak</div>
+				</div>
+				<div class="stat-tile" data-game="memory">
+					<div class="stat-tile-head">
+						<span class="stat-tile-name">Memory Match</span>
+						<span class="stat-tile-tag">time</span>
+					</div>
+					<div class="stat-tile-value">&mdash;</div>
+					<div class="stat-tile-meta">Fastest clear (any difficulty)</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="card profile-card">
+			<header class="section-head">
+				<h2>Manage Account</h2>
+				<p>Reset your trainer data on this device.</p>
+			</header>
+			<div class="manage-actions">
+				<button class="btn btn-secondary" type="button" id="ppCopyId">Copy Trainer ID</button>
+				<button class="btn btn-ghost" type="button" id="ppClearData">Clear Local Data</button>
+			</div>
+			<p class="manage-note">Clearing local data removes your name and offline scores on this device. Your global leaderboard entries are not affected.</p>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/profile-page.js" defer></script>
+</body>
+</html>

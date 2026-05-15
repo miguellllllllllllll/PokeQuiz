@@ -88,13 +88,9 @@
 	function init() {
 		const btn = document.querySelector('.profile-btn');
 		if (!btn) return;
-		const panel = document.querySelector('.profile-panel');
-		if (!panel) return;
 
-		const nameEl = btn.querySelector('.profile-name');
+		// Convert the avatar <img> to a <span> so background-image cropping works.
 		let avatarEl = btn.querySelector('.profile-avatar');
-		// Replace the <img> with a <span> so CSS background-image can crop
-		// the trainer art to the face. The picker uses the same technique.
 		if (avatarEl && avatarEl.tagName === 'IMG') {
 			const span = document.createElement('span');
 			span.className = 'profile-avatar';
@@ -102,174 +98,35 @@
 			avatarEl.replaceWith(span);
 			avatarEl = span;
 		}
-		const panelNameView = panel.querySelector('.pp-name-view');
-		const panelScoreView = panel.querySelector('.pp-score-view');
-		const panelEditForm = panel.querySelector('.pp-edit-form');
-		const panelEditBtn = panel.querySelector('.pp-edit-btn');
-		const panelInput = panel.querySelector('.pp-input');
-		const panelSaveBtn = panel.querySelector('.pp-save-btn');
-		const panelCancelBtn = panel.querySelector('.pp-cancel-btn');
-		const panelClearBtn = panel.querySelector('.pp-clear-btn');
-
-		// Inject avatar picker before the actions row
-		const pickerRow = document.createElement('div');
-		pickerRow.className = 'pp-row pp-avatar-row';
-		pickerRow.innerHTML = `
-			<span class="pp-row-label">Avatar</span>
-			<div class="pp-avatar-picker">
-				${AVATARS.map((a) => `
-					<button class="pp-avatar-option" data-avatar="${a.id}" type="button" aria-label="${a.label}" title="${a.label}">
-						<span class="pp-avatar-img" data-avatar="${a.id}"></span>
-					</button>
-				`).join('')}
-			</div>
-		`;
-		const actionsRow = panel.querySelector('.pp-actions');
-		panel.insertBefore(pickerRow, actionsRow);
-
-		function applyAvatar(id) {
-			const a = AVATARS.find((x) => x.id === id) || AVATARS[0];
-			if (avatarEl) avatarEl.dataset.avatar = a.id;
-			pickerRow.querySelectorAll('.pp-avatar-option').forEach((b) => {
-				b.classList.toggle('selected', b.dataset.avatar === a.id);
-			});
-		}
-
-		setAvatarFn = (id) => {
-			setAvatarStorage(id);
-			applyAvatar(id);
-		};
-
-		pickerRow.querySelectorAll('.pp-avatar-option').forEach((b) => {
-			b.addEventListener('click', (e) => {
-				e.stopPropagation();
-				setAvatarFn(b.dataset.avatar);
-			});
-		});
-
-		applyAvatar(getAvatar().id);
+		const nameEl = btn.querySelector('.profile-name');
 
 		function refresh() {
-			const name = getName();
-			const displayName = name || 'Trainer';
-			nameEl.textContent = displayName;
-			panelNameView.textContent = name || 'Not set';
-			panelNameView.classList.toggle('pp-empty', !name);
-
-			const best = getBestLocalScore();
-			if (best) {
-				panelScoreView.innerHTML = `<strong>${best.score}</strong> <span class="pp-of">/ ${best.total || 21}</span>`;
-			} else {
-				panelScoreView.innerHTML = '<span class="pp-empty">No runs yet</span>';
-			}
-
+			if (avatarEl) avatarEl.dataset.avatar = getAvatar().id;
+			if (nameEl) nameEl.textContent = getName() || 'Trainer';
 			syncNamePrompts();
 		}
 
 		refreshFn = refresh;
+		setAvatarFn = (id) => { setAvatarStorage(id); refresh(); };
 
-		function open() {
-			panel.hidden = false;
-			btn.setAttribute('aria-expanded', 'true');
-			refresh();
-		}
-
-		openFn = () => {
-			open();
-			setTimeout(() => toggleEdit(true), 80);
-		};
-
-		function close() {
-			panel.hidden = true;
-			btn.setAttribute('aria-expanded', 'false');
-			panelEditForm.hidden = true;
-		}
-
-		function toggleEdit(show) {
-			panelEditForm.hidden = !show;
-			if (show) {
-				panelInput.value = getName();
-				setTimeout(() => panelInput.focus(), 0);
-			}
-		}
-
-		btn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			panel.hidden ? open() : close();
-		});
-
-		panel.addEventListener('click', (e) => e.stopPropagation());
-
-		document.addEventListener('click', () => close());
-		document.addEventListener('keydown', (e) => {
-			if (e.key === 'Escape') close();
-		});
-
-		panelEditBtn.addEventListener('click', () => toggleEdit(true));
-		panelCancelBtn.addEventListener('click', () => toggleEdit(false));
-		const ppEditError = (() => {
-			const el = document.createElement('div');
-			el.className = 'pp-edit-error';
-			el.hidden = true;
-			panelEditForm.parentNode.insertBefore(el, panelEditForm.nextSibling);
-			return el;
-		})();
-
-		panelSaveBtn.addEventListener('click', async (e) => {
-			e.preventDefault();
-			const candidate = panelInput.value.trim();
-			ppEditError.hidden = true;
-			ppEditError.textContent = '';
-			if (!candidate) {
-				setName('');
-				toggleEdit(false);
-				refresh();
-				return;
-			}
-			// Don't re-claim if it's the same name (avoid round-trip)
-			if (candidate === getName()) {
-				toggleEdit(false);
-				return;
-			}
-			panelSaveBtn.disabled = true;
-			try {
-				const res = await fetch('/api/leaderboard', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ action: 'claim', name: candidate, playerId: getPlayerId() }),
-				});
-				if (res.status === 409) {
-					const data = await res.json().catch(() => ({}));
-					ppEditError.textContent = data.message || `"${candidate}" is already claimed.`;
-					ppEditError.hidden = false;
-					return;
-				}
-				// On non-409 (including offline), allow save — leaderboard will
-				// re-check on the next score POST.
-			} catch {
-				// Offline: allow save locally; can't enforce uniqueness without API.
-			} finally {
-				panelSaveBtn.disabled = false;
-			}
-			setName(candidate);
-			toggleEdit(false);
-			refresh();
-		});
-		panelInput.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') {
+		// Profile button now navigates to the dedicated profile page. Some
+		// pages render the button as a <button>; others (profile.html) as an
+		// <a>. Either way, force navigation on click — except when we're
+		// already on the profile page, where a sibling script (profile-page.js)
+		// owns the UI.
+		const onProfilePage = /\/profile\.html$/.test(window.location.pathname);
+		if (!onProfilePage && btn.tagName !== 'A') {
+			btn.addEventListener('click', (e) => {
 				e.preventDefault();
-				panelSaveBtn.click();
-			}
-		});
+				window.location.href = 'profile.html';
+			});
+		}
 
-		panelClearBtn.addEventListener('click', () => {
-			if (!confirm('Clear all local PokeQuiz data (name + local scores)? Global leaderboard is not affected.')) return;
-			sessionStorage.removeItem(NAME_KEY);
-			sessionStorage.removeItem('playerScore');
-			localStorage.removeItem(NAME_KEY);
-			localStorage.removeItem(LOCAL_KEY);
-			refresh();
-		});
+		// Remove the legacy inline dropdown panel from any page that still
+		// embeds it — the page-based profile replaces it.
+		document.querySelectorAll('.profile-panel').forEach((p) => p.remove());
+
+		openFn = () => { window.location.href = 'profile.html'; };
 
 		refresh();
 	}
