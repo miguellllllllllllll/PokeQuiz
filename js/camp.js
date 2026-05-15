@@ -4,14 +4,13 @@
 	const TILE = 16;
 	const MAP_W = 40;
 	const MAP_H = 30;
-
-	// Mutable viewport — updated by resize()
-	let VIEW_W = 640, VIEW_H = 360, SCALE = 2;
+	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
 	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14;
 
 	const SOLID = new Set([TW, TR, TR2, TWN, TH2O, TTR, TFN]);
+	const ANIMATED = new Set([TWN, TH2O, TCR]);
 
 	// ── Map ──────────────────────────────────────────────────────────────────────
 	function buildMap() {
@@ -62,7 +61,7 @@
 
 	// ── Tile drawing — BW2 Gen 5, TILE=16 ───────────────────────────────────────
 	function drawTile(ctx, t, x, y, tick) {
-		const d = TILE; // 16
+		const d = TILE;
 		switch(t) {
 			case TG:
 				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
@@ -78,16 +77,15 @@
 				ctx.fillStyle='#78B040'; ctx.fillRect(x+6,y+7,2,1);
 				break;
 			case TP: {
-				// Cobblestone: two offset rows of stones separated by 1-px grout
 				ctx.fillStyle='#B0A470'; ctx.fillRect(x,y,d,d);
 				ctx.fillStyle='#988C5A';
-				ctx.fillRect(x,y+5,d,1); ctx.fillRect(x,y+11,d,1); // H grout
-				ctx.fillRect(x+7,y,1,5); ctx.fillRect(x+7,y+12,1,4); // V upper-row
-				ctx.fillRect(x+3,y+6,1,5); ctx.fillRect(x+11,y+6,1,5); // V mid-row
+				ctx.fillRect(x,y+5,d,1); ctx.fillRect(x,y+11,d,1);
+				ctx.fillRect(x+7,y,1,5); ctx.fillRect(x+7,y+12,1,4);
+				ctx.fillRect(x+3,y+6,1,5); ctx.fillRect(x+11,y+6,1,5);
 				ctx.fillStyle='#C8BC88';
-				ctx.fillRect(x+1,y+1,5,2); ctx.fillRect(x+9,y+1,6,2); // top-row highlights
+				ctx.fillRect(x+1,y+1,5,2); ctx.fillRect(x+9,y+1,6,2);
 				ctx.fillRect(x+1,y+7,1,2); ctx.fillRect(x+5,y+7,5,2); ctx.fillRect(x+13,y+7,2,2);
-				ctx.fillRect(x+2,y+12,4,2); ctx.fillRect(x+9,y+12,5,2); // bottom highlights
+				ctx.fillRect(x+2,y+12,4,2); ctx.fillRect(x+9,y+12,5,2);
 				break;
 			}
 			case TR:
@@ -108,7 +106,6 @@
 				ctx.fillStyle='#9C9878'; ctx.fillRect(x+d-1,y,1,d);
 				break;
 			case TWN: {
-				// 4-pane window: each pane 4×4, 1-px divider, wood frame 2px
 				ctx.fillStyle='#D4D0B4'; ctx.fillRect(x,y,d,d);
 				ctx.fillStyle='#784828'; ctx.fillRect(x+2,y+2,12,12);
 				const gl=Math.sin(tick*0.022+x*0.012)*0.05+0.88;
@@ -155,25 +152,18 @@
 				break;
 			}
 			case TTR: {
-				// BW2 dome tree at 16px: dark ring → mid body → highlight → specular
 				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
-				// Trunk
 				ctx.fillStyle='#5C3C1C'; ctx.fillRect(x+7,y+12,2,4);
 				ctx.fillStyle='#7A5030'; ctx.fillRect(x+7,y+13,2,3);
-				// Dark outline ring
 				ctx.fillStyle='#1A3A0A';
 				ctx.fillRect(x+5,y+1,6,1); ctx.fillRect(x+3,y+2,10,1);
 				ctx.fillRect(x+2,y+3,12,8);
 				ctx.fillRect(x+3,y+11,10,1); ctx.fillRect(x+5,y+12,6,1);
-				// Mid-dark fill
 				ctx.fillStyle='#2E600E';
 				ctx.fillRect(x+4,y+2,8,1); ctx.fillRect(x+3,y+3,10,8); ctx.fillRect(x+4,y+11,8,1);
-				// Lighter core
 				ctx.fillStyle='#487824'; ctx.fillRect(x+4,y+3,7,7);
-				// Highlight band
 				ctx.fillStyle='#62A030';
 				ctx.fillRect(x+4,y+3,5,4); ctx.fillRect(x+4,y+7,3,2);
-				// Specular
 				ctx.fillStyle='#9ED860'; ctx.fillRect(x+5,y+4,2,2);
 				ctx.fillStyle='#BFF880'; ctx.fillRect(x+5,y+4,1,1);
 				break;
@@ -228,190 +218,247 @@
 		}
 	}
 
-	function drawChimney(ctx, camX, camY) {
-		const wx=7*TILE+4, wy=2*TILE+2;
-		const sx=wx-camX, sy=wy-camY;
-		if(sx<-16||sx>VIEW_W||sy<-16||sy>VIEW_H) return;
-		ctx.fillStyle='#501010'; ctx.fillRect(sx+1,sy,6,14);
-		ctx.fillStyle='#701818'; ctx.fillRect(sx+2,sy+1,4,12);
-		ctx.fillStyle='#401010'; ctx.fillRect(sx,sy,8,3);
-		ctx.fillStyle='#602020'; ctx.fillRect(sx+1,sy+1,6,2);
-	}
-
-	// ── Player — BW2 16-px overworld sprite (Nate-inspired) ─────────────────────
-	// bx = center-6 (12px wide), by = feet-18 (18px tall body+head)
-	// Delegate to shared TrainerLook module (trainer-look.js loaded before this file).
-	function drawPlayer(ctx, px, py, dir, frame) {
-		if (window.TrainerLook) {
-			window.TrainerLook.draw(ctx, px, py, dir, frame, _trainerLook);
-		}
-	}
-
-	// ── Resize ───────────────────────────────────────────────────────────────────
-	function applyResize(canvas) {
+	function applyWrapTop() {
 		const header = document.querySelector('.site-header');
-		// Use ceil so there's never a sub-pixel gap below the header
-		const hh = header ? Math.ceil(header.getBoundingClientRect().bottom) : 0;
 		const wrap = document.getElementById('campWrap');
-		if (wrap) wrap.style.top = hh + 'px';
-
-		const W = window.innerWidth;
-		const H = window.innerHeight - hh;
-
-		canvas.width  = W;
-		canvas.height = Math.max(H, 1);
-		canvas.style.width  = W + 'px';
-		canvas.style.height = Math.max(H, 1) + 'px';
-
-		// Target ~3px screen pixels per logical pixel so TILE=16 tiles sit at ~48px.
-		// Formula targets DS-like viewport (256×192). Mobile floors to 2.
-		SCALE = Math.max(2, Math.floor(Math.min(W / 380, H / 240)));
-		SCALE = Math.min(SCALE, 4);
-
-		VIEW_W = Math.ceil(W / SCALE);
-		VIEW_H = Math.ceil(Math.max(H, 1) / SCALE);
+		if (!wrap) return;
+		const hh = header ? Math.ceil(header.getBoundingClientRect().bottom) : 0;
+		wrap.style.top = hh + 'px';
 	}
 
-	// ── Main ─────────────────────────────────────────────────────────────────────
-	let _trainerLook = null;
-	function init() {
-		// Load saved trainer appearance (falls back to defaults if not set).
-		_trainerLook = window.TrainerLook ? window.TrainerLook.load() : null;
-		// Refresh look whenever the profile page saves a change.
-		window.addEventListener('storage', (e) => {
-			if (e.key === 'pokequiz_trainer_look' && window.TrainerLook) {
-				_trainerLook = window.TrainerLook.load();
+	// ── Phaser Scene ─────────────────────────────────────────────────────────────
+	function makeSceneClass() {
+		return class CampScene extends Phaser.Scene {
+			constructor() { super({ key: 'camp' }); }
+
+			create() {
+				this.tick = 0;
+				this.map = buildMap();
+				this.trainerLook = window.TrainerLook ? window.TrainerLook.load() : null;
+
+				this._onStorage = (e) => {
+					if (e.key === 'pokequiz_trainer_look' && window.TrainerLook) {
+						this.trainerLook = window.TrainerLook.load();
+					}
+				};
+				window.addEventListener('storage', this._onStorage);
+
+				const W = MAP_W * TILE, H = MAP_H * TILE;
+				// Static base — drawn once. Animated overlay — drawn each frame.
+				this.baseTex = this.textures.createCanvas('campBase', W, H);
+				this.animTex = this.textures.createCanvas('campAnim', W, H);
+				const baseCtx = this.baseTex.getContext();
+				const animCtx = this.animTex.getContext();
+				baseCtx.imageSmoothingEnabled = false;
+				animCtx.imageSmoothingEnabled = false;
+				this.animCtx = animCtx;
+
+				this.animatedCells = [];
+				for (let r = 0; r < MAP_H; r++) {
+					for (let c = 0; c < MAP_W; c++) {
+						const t = this.map[r][c];
+						if (ANIMATED.has(t)) {
+							this.animatedCells.push([r, c, t]);
+							drawTile(baseCtx, TG, c*TILE, r*TILE, 0);
+						} else {
+							drawTile(baseCtx, t, c*TILE, r*TILE, 0);
+						}
+					}
+				}
+				this.baseTex.refresh();
+
+				this.add.image(0, 0, 'campBase').setOrigin(0).setDepth(0);
+				this.add.image(0, 0, 'campAnim').setOrigin(0).setDepth(1);
+
+				// Chimney overlay
+				const wx = 7*TILE + 4, wy = 2*TILE + 2;
+				const cg = this.add.graphics().setDepth(2);
+				cg.fillStyle(0x501010, 1); cg.fillRect(wx+1, wy, 6, 14);
+				cg.fillStyle(0x701818, 1); cg.fillRect(wx+2, wy+1, 4, 12);
+				cg.fillStyle(0x401010, 1); cg.fillRect(wx, wy, 8, 3);
+				cg.fillStyle(0x602020, 1); cg.fillRect(wx+1, wy+1, 6, 2);
+
+				// Player texture (foot at 8,24 inside 16×28 canvas)
+				const PW = 16, PH = 28;
+				this.playerTex = this.textures.createCanvas('playerTex', PW, PH);
+				this.playerCtx = this.playerTex.getContext();
+				this.playerCtx.imageSmoothingEnabled = false;
+
+				this.player = this.physics.add.sprite(11*TILE + TILE/2, 14*TILE + TILE/2, 'playerTex');
+				this.player.setOrigin(0.5, 24/PH);
+				this.player.setDepth(3);
+				this.player.body.setSize(10, 6);
+				this.player.body.setOffset(3, 16);
+
+				// Solid tile bodies
+				this.solids = this.physics.add.staticGroup();
+				for (let r = 0; r < MAP_H; r++) {
+					for (let c = 0; c < MAP_W; c++) {
+						if (SOLID.has(this.map[r][c])) {
+							const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
+							this.physics.add.existing(rect, true);
+							this.solids.add(rect);
+						}
+					}
+				}
+				this.physics.add.collider(this.player, this.solids);
+
+				this.physics.world.setBounds(0, 0, W, H);
+				this.player.setCollideWorldBounds(true);
+
+				this.cameras.main.setBounds(0, 0, W, H);
+				this.cameras.main.startFollow(this.player, true, 1, 1);
+				this.cameras.main.setBackgroundColor('#68A028');
+				this.cameras.main.setRoundPixels(true);
+				this.applyZoom();
+				this.scale.on('resize', this.onResize, this);
+
+				this.keys = this.input.keyboard.addKeys({
+					up: Phaser.Input.Keyboard.KeyCodes.UP,
+					down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+					left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+					right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+					w: Phaser.Input.Keyboard.KeyCodes.W,
+					a: Phaser.Input.Keyboard.KeyCodes.A,
+					s: Phaser.Input.Keyboard.KeyCodes.S,
+					d: Phaser.Input.Keyboard.KeyCodes.D,
+				});
+				this.dpad = { up:false, down:false, left:false, right:false };
+				this.setupJoystick();
+
+				this.dir = 0;
+				this.frame = 0;
+				this.frameTick = 0;
+
+				this.events.once('shutdown', () => {
+					window.removeEventListener('storage', this._onStorage);
+				});
 			}
-		});
 
-		const canvas = document.getElementById('campCanvas');
-		if (!canvas) return;
-		const ctx = canvas.getContext('2d');
-		ctx.imageSmoothingEnabled = false;
+			onResize() {
+				applyWrapTop();
+				this.applyZoom();
+			}
 
-		applyResize(canvas);
-		window.addEventListener('resize', () => applyResize(canvas));
-		window.addEventListener('load', () => applyResize(canvas));
+			applyZoom() {
+				const W = this.scale.width;
+				const H = this.scale.height;
+				let s = Math.max(2, Math.floor(Math.min(W / 380, H / 240)));
+				s = Math.min(s, 4);
+				this.cameras.main.setZoom(s);
+			}
+
+			setupJoystick() {
+				const base = document.getElementById('joystickBase');
+				const knob = document.getElementById('joystickKnob');
+				if (!base || !knob) return;
+				const RADIUS = 42, DEAD = 0.18;
+				let active = false, pointerId = null;
+				const dpad = this.dpad;
+
+				function reset() {
+					active = false; pointerId = null;
+					dpad.up = dpad.down = dpad.left = dpad.right = false;
+					knob.style.transform = 'translate(-50%,-50%)';
+				}
+				function applyJoy(dx, dy) {
+					const dist = Math.sqrt(dx*dx + dy*dy);
+					const clamp = Math.min(dist, RADIUS);
+					const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
+					knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
+					const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
+					const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
+					dpad.left = fx < -DEAD; dpad.right = fx > DEAD;
+					dpad.up   = fy < -DEAD; dpad.down  = fy > DEAD;
+				}
+				base.addEventListener('pointerdown', e => {
+					if (active) return;
+					active = true; pointerId = e.pointerId;
+					base.setPointerCapture(e.pointerId);
+					e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				base.addEventListener('pointermove', e => {
+					if (!active || e.pointerId !== pointerId) return;
+					e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				['pointerup','pointercancel'].forEach(ev => base.addEventListener(ev, e => {
+					if (e.pointerId !== pointerId) return;
+					e.preventDefault(); reset();
+				}));
+			}
+
+			update() {
+				this.tick++;
+
+				const k = this.keys, d = this.dpad;
+				let vx = 0, vy = 0;
+				if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+				if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+				if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+				if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+				if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				this.player.setVelocity(vx, vy);
+
+				const moving = vx !== 0 || vy !== 0;
+				if (moving) {
+					this.frameTick++;
+					if (this.frameTick >= 9) { this.frame ^= 1; this.frameTick = 0; }
+				} else {
+					this.frame = 0; this.frameTick = 0;
+				}
+
+				const actx = this.animCtx;
+				actx.clearRect(0, 0, MAP_W*TILE, MAP_H*TILE);
+				for (const [r, c, t] of this.animatedCells) {
+					drawTile(actx, t, c*TILE, r*TILE, this.tick);
+				}
+				this.animTex.refresh();
+
+				const pctx = this.playerCtx;
+				pctx.clearRect(0, 0, 16, 28);
+				if (window.TrainerLook) {
+					window.TrainerLook.draw(pctx, 8, 24, this.dir, moving ? this.frame : 0, this.trainerLook);
+				}
+				this.playerTex.refresh();
+			}
+		};
+	}
+
+	function start() {
+		const wrap = document.getElementById('campWrap');
+		if (!wrap) return;
+		if (!window.Phaser) { setTimeout(start, 30); return; }
+
+		applyWrapTop();
+		window.addEventListener('resize', applyWrapTop);
+		window.addEventListener('load', applyWrapTop);
 		if (document.fonts && document.fonts.ready) {
-			document.fonts.ready.then(() => applyResize(canvas));
+			document.fonts.ready.then(applyWrapTop);
 		}
 
-		const map = buildMap();
-		let plx = 11*TILE + TILE/2;
-		let ply = 14*TILE + TILE/2;
-		const SPEED = 1.4;
-		let dir=0, frame=0, frameTick=0, tick=0, rafId;
-
-		const keys = new Set();
-		function onKey(e) {
-			const k=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'];
-			if(k.includes(e.key)){ e.type==='keydown'?keys.add(e.key):keys.delete(e.key); e.preventDefault(); }
-		}
-		window.addEventListener('keydown', onKey);
-		window.addEventListener('keyup', onKey);
-
-		const dpad={up:false,down:false,left:false,right:false};
-		(function setupJoystick(){
-			const base=document.getElementById('joystickBase');
-			const knob=document.getElementById('joystickKnob');
-			if(!base||!knob) return;
-			const RADIUS=42, DEAD=0.18;
-			let active=false, pointerId=null;
-			function reset(){
-				active=false; pointerId=null;
-				dpad.up=dpad.down=dpad.left=dpad.right=false;
-				knob.style.transform='translate(-50%,-50%)';
-			}
-			function applyJoy(dx,dy){
-				const dist=Math.sqrt(dx*dx+dy*dy);
-				const clamp=Math.min(dist,RADIUS);
-				const nx=dist>0?dx/dist:0, ny=dist>0?dy/dist:0;
-				knob.style.transform=`translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
-				const fx=dist>0?dx/Math.max(dist,RADIUS):0;
-				const fy=dist>0?dy/Math.max(dist,RADIUS):0;
-				dpad.left=fx<-DEAD; dpad.right=fx>DEAD;
-				dpad.up=fy<-DEAD;   dpad.down=fy>DEAD;
-			}
-			base.addEventListener('pointerdown',e=>{
-				if(active) return;
-				active=true; pointerId=e.pointerId;
-				base.setPointerCapture(e.pointerId);
-				e.preventDefault();
-				const r=base.getBoundingClientRect();
-				applyJoy(e.clientX-r.left-r.width/2, e.clientY-r.top-r.height/2);
-			});
-			base.addEventListener('pointermove',e=>{
-				if(!active||e.pointerId!==pointerId) return;
-				e.preventDefault();
-				const r=base.getBoundingClientRect();
-				applyJoy(e.clientX-r.left-r.width/2, e.clientY-r.top-r.height/2);
-			});
-			['pointerup','pointercancel'].forEach(ev=>base.addEventListener(ev,e=>{
-				if(e.pointerId!==pointerId) return;
-				e.preventDefault(); reset();
-			}));
-		})();
-
-		function solid(wx,wy){
-			const col=Math.floor(wx/TILE),row=Math.floor(wy/TILE);
-			if(col<0||col>=MAP_W||row<0||row>=MAP_H) return true;
-			return SOLID.has(map[row][col]);
-		}
-		function tryMove(dx,dy){
-			const hw=5;
-			const nx=plx+dx;
-			if(!solid(nx-hw,ply-2)&&!solid(nx+hw,ply-2)&&!solid(nx-hw,ply-8)&&!solid(nx+hw,ply-8))
-				plx=Math.max(TILE+hw,Math.min(MAP_W*TILE-TILE-hw,nx));
-			const ny=ply+dy;
-			if(!solid(plx-hw,ny-2)&&!solid(plx+hw,ny-2)&&!solid(plx-hw,ny-8)&&!solid(plx+hw,ny-8))
-				ply=Math.max(TILE+8,Math.min(MAP_H*TILE-TILE,ny));
-		}
-
-		function loop(){
-			tick++;
-			rafId=requestAnimationFrame(loop);
-
-			let dx=0,dy=0;
-			if(keys.has('ArrowUp')||keys.has('w')||keys.has('W')||dpad.up)    {dy=-SPEED;dir=2;}
-			if(keys.has('ArrowDown')||keys.has('s')||keys.has('S')||dpad.down) {dy=+SPEED;dir=0;}
-			if(keys.has('ArrowLeft')||keys.has('a')||keys.has('A')||dpad.left) {dx=-SPEED;dir=1;}
-			if(keys.has('ArrowRight')||keys.has('d')||keys.has('D')||dpad.right){dx=+SPEED;dir=3;}
-			if(dx!==0&&dy!==0){dx*=0.707;dy*=0.707;}
-
-			const moving=dx!==0||dy!==0;
-			if(moving){tryMove(dx,dy);frameTick++;if(frameTick>=9){frame^=1;frameTick=0;}}
-			else{frame=0;frameTick=0;}
-
-			let camX=Math.round(plx-VIEW_W/2);
-			let camY=Math.round(ply-VIEW_H/2-10);
-			camX=Math.max(0,Math.min(MAP_W*TILE-VIEW_W,camX));
-			camY=Math.max(0,Math.min(MAP_H*TILE-VIEW_H,camY));
-
-			// Clear full canvas (pre-scale)
-			ctx.fillStyle='#68A028';
-			ctx.fillRect(0,0,canvas.width,canvas.height);
-
-			// Scale context — all game drawing in logical tile coords
-			ctx.save();
-			ctx.scale(SCALE, SCALE);
-
-			const sc=Math.max(0,Math.floor(camX/TILE)), ec=Math.min(MAP_W-1,Math.ceil((camX+VIEW_W)/TILE));
-			const sr=Math.max(0,Math.floor(camY/TILE)), er=Math.min(MAP_H-1,Math.ceil((camY+VIEW_H)/TILE));
-			for(let r=sr;r<=er;r++) for(let c=sc;c<=ec;c++) drawTile(ctx,map[r][c],c*TILE-camX,r*TILE-camY,tick);
-
-			drawChimney(ctx,camX,camY);
-			drawPlayer(ctx,plx-camX,ply-camY,dir,moving?frame:0);
-
-			ctx.restore();
-		}
-
-		loop();
-		document.addEventListener('visibilitychange',()=>{
-			if(document.hidden) cancelAnimationFrame(rafId);
-			else{tick=0;rafId=requestAnimationFrame(loop);}
+		new Phaser.Game({
+			type: Phaser.AUTO,
+			parent: 'campWrap',
+			backgroundColor: '#68A028',
+			pixelArt: true,
+			roundPixels: true,
+			scale: {
+				mode: Phaser.Scale.RESIZE,
+				width: '100%',
+				height: '100%',
+			},
+			physics: {
+				default: 'arcade',
+				arcade: { gravity: { y: 0 }, debug: false },
+			},
+			scene: [makeSceneClass()],
 		});
 	}
 
-	if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
-	else init();
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+	else start();
 })();

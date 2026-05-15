@@ -16,11 +16,11 @@ body.camp-body {
 	overflow: hidden;
 }
 
-#campCanvas {
+/* Phaser injects its canvas inside #campWrap */
+.camp-world-wrap canvas {
 	display: block;
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
-	/* width/height set by JS to match wrapper */
 }
 
 /* ── Location badge — Pokémon town-name style ── */

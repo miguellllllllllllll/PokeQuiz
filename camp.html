@@ -49,7 +49,7 @@
 
 	<!-- Full-screen world — no card/container wrapper -->
 	<div class="camp-world-wrap" id="campWrap">
-		<canvas id="campCanvas"></canvas>
+		<!-- Phaser injects its canvas into #campWrap -->
 
 		<!-- Location badge (top-left, Pokémon style) -->
 		<div class="camp-location" aria-hidden="true">
@@ -79,6 +79,7 @@
 
 	<script src="js/profile.js" defer></script>
 	<script src="js/trainer-look.js" defer></script>
+	<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js" defer></script>
 	<script src="js/camp.js" defer></script>
 </body>
 </html>
