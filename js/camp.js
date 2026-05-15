@@ -395,6 +395,11 @@
 				this.map = buildMap();
 
 				const W = MAP_W * TILE, H = MAP_H * TILE;
+				// Texture keys persist across scene restarts; nuke them so createCanvas
+				// returns a fresh texture instead of null on the second-and-later boots.
+				['campBase', 'campAnim', 'player'].forEach(k => {
+					if (this.textures.exists(k)) this.textures.remove(k);
+				});
 				// Static base — drawn once. Animated overlay — drawn each frame.
 				this.baseTex = this.textures.createCanvas('campBase', W, H);
 				this.animTex = this.textures.createCanvas('campAnim', W, H);
@@ -506,6 +511,7 @@
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);
+				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
 
 				this.keys = this.input.keyboard.addKeys({
 					up: Phaser.Input.Keyboard.KeyCodes.UP,
@@ -744,6 +750,7 @@
 				this.map = buildHouseMap();
 				const W = HOUSE_W * TILE, H = HOUSE_H * TILE;
 
+				if (this.textures.exists('houseBase')) this.textures.remove('houseBase');
 				this.baseTex = this.textures.createCanvas('houseBase', W, H);
 				const baseCtx = this.baseTex.getContext();
 				baseCtx.imageSmoothingEnabled = false;
@@ -824,6 +831,7 @@
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);
+				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
 
 				this.keys = this.input.keyboard.addKeys({
 					up: Phaser.Input.Keyboard.KeyCodes.UP,
