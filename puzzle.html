@@ -64,7 +64,7 @@
 				</div>
 
 				<div class="games-grid">
-					<a class="game-card is-available" href="puzzle-silhouette.html" style="--stagger:0">
+					<a class="game-card is-available" href="puzzle-silhouette.html" data-game="silhouette" style="--stagger:0">
 						<span class="game-badge">Available</span>
 						<div class="game-icon">
 							<div class="pokeball pokeball-classic" aria-hidden="true">
@@ -76,10 +76,21 @@
 						</div>
 						<strong class="game-title">Who's That Pok&eacute;mon?</strong>
 						<span class="game-desc">Identify the silhouette from all 1,025 Pok&eacute;mon. Hearts, streaks, and a Hardcore mode for the brave.</span>
-						<span class="game-cta">Play Now &rarr;</span>
+						<div class="game-chips">
+							<span class="game-chip">👤 Silhouette</span>
+							<span class="game-chip">3 Modes</span>
+							<span class="game-chip">1,025 Pok&eacute;mon</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="silhouette">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
 					</a>
 
-					<a class="game-card is-available" href="puzzle-cry.html" style="--stagger:1">
+					<a class="game-card is-available" href="puzzle-cry.html" data-game="cry" style="--stagger:1">
 						<span class="game-badge">Available</span>
 						<div class="game-icon">
 							<div class="pokeball pokeball-heal" aria-hidden="true">
@@ -90,10 +101,21 @@
 						</div>
 						<strong class="game-title">Cry Quiz</strong>
 						<span class="game-desc">No silhouette &mdash; just the Pok&eacute;mon's cry. Identify by ear alone.</span>
-						<span class="game-cta">Play Now &rarr;</span>
+						<div class="game-chips">
+							<span class="game-chip">🔊 Audio</span>
+							<span class="game-chip">3 Modes</span>
+							<span class="game-chip">1,025 Cries</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="cry">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
 					</a>
 
-					<a class="game-card is-available" href="puzzle-memory.html" style="--stagger:2">
+					<a class="game-card is-available" href="puzzle-memory.html" data-game="memory" style="--stagger:2">
 						<span class="game-badge">Available</span>
 						<div class="game-icon">
 							<div class="pokeball pokeball-master" aria-hidden="true">
@@ -107,10 +129,21 @@
 						</div>
 						<strong class="game-title">Memory Match</strong>
 						<span class="game-desc">Flip Pok&eacute;mon cards two at a time and find every matching pair.</span>
-						<span class="game-cta">Play Now &rarr;</span>
+						<div class="game-chips">
+							<span class="game-chip">🎴 Flip Cards</span>
+							<span class="game-chip">Time Trial</span>
+							<span class="game-chip">3 Boards</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="memory">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
 					</a>
 
-					<a class="game-card is-available" href="puzzle-higher-lower.html" style="--stagger:3">
+					<a class="game-card is-available" href="puzzle-higher-lower.html" data-game="higherlower" style="--stagger:3">
 						<span class="game-badge">Available</span>
 						<div class="game-icon">
 							<div class="pokeball pokeball-net" aria-hidden="true">
@@ -121,7 +154,18 @@
 						</div>
 						<strong class="game-title">Higher or Lower</strong>
 						<span class="game-desc">Two Pok&eacute;mon, one stat. Guess which is heavier, taller, or stronger.</span>
-						<span class="game-cta">Play Now &rarr;</span>
+						<div class="game-chips">
+							<span class="game-chip">⚖️ Stats</span>
+							<span class="game-chip">5 Categories</span>
+							<span class="game-chip">Endless</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="higherlower">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
 					</a>
 				</div>
 
@@ -136,5 +180,49 @@
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
 	<script src="js/profile.js" defer></script>
+	<script>
+		(function() {
+			function fmtTime(ms) {
+				const t = Math.floor(ms / 1000);
+				return `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+			}
+			function maxLocal(keys) {
+				let max = 0;
+				for (const k of keys) {
+					const n = Number(localStorage.getItem(k));
+					if (Number.isFinite(n) && n > max) max = n;
+				}
+				return max;
+			}
+			function minLocal(keys) {
+				let min = Infinity;
+				for (const k of keys) {
+					const n = Number(localStorage.getItem(k));
+					if (Number.isFinite(n) && n > 0 && n < min) min = n;
+				}
+				return min === Infinity ? 0 : min;
+			}
+			function paint() {
+				const bests = {
+					silhouette: { val: maxLocal(['pokequiz_puzzle_best_casual','pokequiz_puzzle_best_standard','pokequiz_puzzle_best_hardcore']), fmt: (v) => v ? `${v} streak` : '—' },
+					cry:        { val: maxLocal(['pokequiz_cry_best_casual','pokequiz_cry_best_standard','pokequiz_cry_best_hardcore']), fmt: (v) => v ? `${v} streak` : '—' },
+					higherlower:{ val: maxLocal(['pokequiz_hl_best']), fmt: (v) => v ? `${v} streak` : '—' },
+					memory:     { val: minLocal(['pokequiz_memory_best_6','pokequiz_memory_best_8','pokequiz_memory_best_12']), fmt: (v) => v ? fmtTime(v) : '—' },
+				};
+				Object.entries(bests).forEach(([game, { val, fmt }]) => {
+					const card = document.querySelector(`.game-card[data-game="${game}"]`);
+					if (!card) return;
+					const valueEl = card.querySelector('.gb-value');
+					if (valueEl) valueEl.textContent = fmt(val);
+					if (val) card.classList.add('has-best');
+				});
+			}
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', paint);
+			} else {
+				paint();
+			}
+		})();
+	</script>
 </body>
 </html>
