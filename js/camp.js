@@ -662,10 +662,10 @@
 				mkAnim('walk-north', [7, 6, 8, 6]);
 				mkAnim('walk-east',  [10, 9, 11, 9]);
 
-				// Spawn just south of the camp door if coming back from inside the house.
-				const spawnTileC = this.spawnFrom === 'house' ? 11 : 11;
+				// Spawn just south of the camp door if coming back from inside the house,
+				// otherwise the default starting position on the path.
 				const spawnTileR = this.spawnFrom === 'house' ? 12 : 14;
-				this.player = this.physics.add.sprite(spawnTileC*TILE + TILE/2, spawnTileR*TILE + TILE/2, 'player', 0);
+				this.player = this.physics.add.sprite(11*TILE + TILE/2, spawnTileR*TILE + TILE/2, 'player', 0);
 				// Origin: feet at the bottom-centre of the frame (foot point ≈ y=36 in 38-tall frame)
 				this.player.setOrigin(0.5, 36/38);
 				this.player.setScale(0.75);  // shrink trainer to roughly one-tile-wide for tile-scale match
@@ -905,24 +905,31 @@
 				const base = document.getElementById('joystickBase');
 				const knob = document.getElementById('joystickKnob');
 				if (!base || !knob) return;
+				// Re-bind the dpad each scene boot, but only attach DOM listeners once
+				// so we don't stack handlers after camp↔house transitions.
+				base.__campDpad = this.dpad;
+				if (base.dataset.wired) return;
+				base.dataset.wired = '1';
 				const RADIUS = 42, DEAD = 0.18;
 				let active = false, pointerId = null;
-				const dpad = this.dpad;
 
 				function reset() {
 					active = false; pointerId = null;
-					dpad.up = dpad.down = dpad.left = dpad.right = false;
+					const d = base.__campDpad;
+					if (d) { d.up = d.down = d.left = d.right = false; }
 					knob.style.transform = 'translate(-50%,-50%)';
 				}
 				function applyJoy(dx, dy) {
+					const d = base.__campDpad;
+					if (!d) return;
 					const dist = Math.sqrt(dx*dx + dy*dy);
 					const clamp = Math.min(dist, RADIUS);
 					const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
 					knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
 					const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
 					const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
-					dpad.left = fx < -DEAD; dpad.right = fx > DEAD;
-					dpad.up   = fy < -DEAD; dpad.down  = fy > DEAD;
+					d.left = fx < -DEAD; d.right = fx > DEAD;
+					d.up   = fy < -DEAD; d.down  = fy > DEAD;
 				}
 				base.addEventListener('pointerdown', e => {
 					if (active) return;
@@ -961,7 +968,10 @@
 					else if (target && target.message) Dialog.open(target.message);
 					else if (target && target.kind === 'door' && !this.didTransition) {
 						this.didTransition = true;
+						Dialog.close();
+						this.input.keyboard.resetKeys();
 						this.scene.start('house', { from: 'camp' });
+						return;
 					}
 				}
 
@@ -1076,6 +1086,8 @@
 				if (!onDoorTile) this.armedForDoor = true;
 				if (this.armedForDoor && onDoorTile && !this.didTransition) {
 					this.didTransition = true;
+					Dialog.close();
+					this.input.keyboard.resetKeys();
 					this.scene.start('house', { from: 'camp' });
 				}
 			}
@@ -1107,22 +1119,31 @@
 				this.baseTex.refresh();
 				this.add.image(0, 0, 'houseBase').setOrigin(0).setDepth(0);
 
-				// Palette-swap the trainer sheet — same pipeline as camp.
-				const baseImg = this.textures.get('player-base').getSourceImage();
-				const pw = baseImg.width, ph = baseImg.height;
-				this._playerCanvas = document.createElement('canvas');
-				this._playerCanvas.width = pw;
-				this._playerCanvas.height = ph;
-				this._playerCtx = this._playerCanvas.getContext('2d');
-				const applyPalette = () => {
-					if (window.TrainerPalette) {
-						window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
-					} else {
-						this._playerCtx.clearRect(0, 0, pw, ph);
-						this._playerCtx.drawImage(baseImg, 0, 0);
+				// Palette-swap the trainer sheet — same pipeline as camp. Wrapped in
+				// try/catch so a missing or half-loaded asset surfaces in the console
+				// instead of silently producing a half-built scene.
+				try {
+					if (!this.textures.exists('player-base')) {
+						throw new Error('player-base texture missing — Phaser loader did not cache calem.png');
 					}
-				};
-				applyPalette();
+					const baseImg = this.textures.get('player-base').getSourceImage();
+					const pw = baseImg.width, ph = baseImg.height;
+					this._playerCanvas = document.createElement('canvas');
+					this._playerCanvas.width = pw;
+					this._playerCanvas.height = ph;
+					this._playerCtx = this._playerCanvas.getContext('2d');
+					const applyPalette = () => {
+						if (window.TrainerPalette) {
+							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
+						} else {
+							this._playerCtx.clearRect(0, 0, pw, ph);
+							this._playerCtx.drawImage(baseImg, 0, 0);
+						}
+					};
+					applyPalette();
+				} catch (e) {
+					console.error('[HouseScene] palette swap failed:', e);
+				}
 				if (this.textures.exists('player-house')) this.textures.remove('player-house');
 				this.textures.addSpriteSheet('player-house', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
 				this._onStorage = (e) => {
@@ -1210,6 +1231,13 @@
 			applyZoom() {
 				const vw = this.scale.width;
 				const vh = this.scale.height;
+				// Phaser's RESIZE mode can fire onResize before layout settles, leaving
+				// vw/vh at 0 on the very first call. Bail out so we don't compute a
+				// huge negative scroll that puts the camera off-world (black screen).
+				if (vw <= 0 || vh <= 0) {
+					this.events.once('postupdate', () => this.applyZoom());
+					return;
+				}
 				const roomW = HOUSE_W * TILE;
 				const roomH = HOUSE_H * TILE;
 				// Pick the largest integer zoom that still fits the whole room in view.
@@ -1231,23 +1259,30 @@
 				const base = document.getElementById('joystickBase');
 				const knob = document.getElementById('joystickKnob');
 				if (!base || !knob) return;
+				// Joystick handlers attach once across all scene boots — only the dpad
+				// reference is swapped so it always points at the current scene's state.
+				base.__campDpad = this.dpad;
+				if (base.dataset.wired) return;
+				base.dataset.wired = '1';
 				const RADIUS = 42, DEAD = 0.18;
 				let active = false, pointerId = null;
-				const dpad = this.dpad;
 				const reset = () => {
 					active = false; pointerId = null;
-					dpad.up = dpad.down = dpad.left = dpad.right = false;
+					const d = base.__campDpad;
+					if (d) { d.up = d.down = d.left = d.right = false; }
 					knob.style.transform = 'translate(-50%,-50%)';
 				};
 				const applyJoy = (dx, dy) => {
+					const d = base.__campDpad;
+					if (!d) return;
 					const dist = Math.sqrt(dx*dx + dy*dy);
 					const clamp = Math.min(dist, RADIUS);
 					const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
 					knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
 					const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
 					const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
-					dpad.left = fx < -DEAD; dpad.right = fx > DEAD;
-					dpad.up   = fy < -DEAD; dpad.down  = fy > DEAD;
+					d.left = fx < -DEAD; d.right = fx > DEAD;
+					d.up   = fy < -DEAD; d.down  = fy > DEAD;
 				};
 				base.addEventListener('pointerdown', e => {
 					if (active) return;
@@ -1302,6 +1337,8 @@
 				if (!onDoor) this.armedForExit = true;
 				if (this.armedForExit && onDoor && !this.didTransition) {
 					this.didTransition = true;
+					Dialog.close();
+					this.input.keyboard.resetKeys();
 					this.scene.start('camp', { from: 'house' });
 				}
 				// Hide interaction prompt in the house — no signs here.
