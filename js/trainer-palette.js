@@ -25,10 +25,13 @@
 			{ color: '#424149', yMax: 21 },
 		],
 		gogglesFrame: [{ color: '#384040', yMax: 18 }],
-		// Two specific pupil pixels per eye, isolated by xMin/xMax+yMin/yMax.
+		// Two pupil pixels per eye at the cap/forehead boundary — top row catches the
+		// cap-orange shade, bottom row sits on the forehead shadow band.
 		eyes: [
-			{ color: '#384040', xMin: 8,  xMax: 9,  yMin: 19, yMax: 19 },
-			{ color: '#384040', xMin: 12, xMax: 13, yMin: 19, yMax: 19 },
+			{ color: '#F06848', xMin: 8,  xMax: 8,  yMin: 15, yMax: 15 },
+			{ color: '#F06848', xMin: 13, xMax: 13, yMin: 15, yMax: 15 },
+			{ color: '#384040', xMin: 8,  xMax: 8,  yMin: 16, yMax: 16 },
+			{ color: '#384040', xMin: 13, xMax: 13, yMin: 16, yMax: 16 },
 		],
 		outfit:  ['#1F2945', '#354775', '#4F69AE'],
 		shirt:   ['#B8B0D0', '#E8E8F8'],
@@ -42,7 +45,7 @@
 		skin:         '#D8A078',
 		hair:         '#424149',
 		gogglesFrame: '#384040',
-		eyes:         '#384040',
+		eyes:         '#F06848',
 		outfit:       '#354775',
 		shirt:        '#B8B0D0',
 		pants:        '#384040',
@@ -69,6 +72,14 @@
 	// candidate recolour rules (one per category that lists this shade). Algorithm:
 	// per-channel additive delta from the BASE main shade — exact at the chosen
 	// colour, shifted by the same offset for shadow/highlight shades.
+	// Smaller (xRange * yRange) = more specific; sorted ascending so specific rules
+	// win when their pixel matches before wider rules get a chance.
+	function specificity(rule) {
+		const xr = rule.xMax === Infinity ? 1e9 : (rule.xMax - rule.xMin);
+		const yr = rule.yMax === Infinity ? 1e9 : (rule.yMax - rule.yMin);
+		return xr * yr;
+	}
+
 	function buildColourMap(choices) {
 		const map = new Map();
 		for (const cat of Object.keys(BASE)) {
@@ -95,6 +106,7 @@
 				if (list) list.push(rule); else map.set(key, [rule]);
 			}
 		}
+		for (const rules of map.values()) rules.sort((a, b) => specificity(a) - specificity(b));
 		return map;
 	}
 

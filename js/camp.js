@@ -468,6 +468,7 @@
 				this.followerDir = 0;
 				this.followerMode = 'trail';   // 'trail' while player moves, 'faceoff' once stopped
 				this.followerTarget = null;
+				this.followerPath = null;      // remaining waypoints during faceoff routing
 				// Direction → tile-offset vector (matches this.dir: 0=south, 1=west, 2=north, 3=east).
 				this.DIR_VEC = [[0,1],[-1,0],[0,-1],[1,0]];
 			}
@@ -560,25 +561,31 @@
 
 				// Trail mode: sample player position; follower lerps toward the oldest sample
 				// so it lags ~1 sprite-width behind. Once the player stops, switch to face-off
-				// mode: walk to 1 tile in front of the player, then turn around to face them.
+				// mode: route Eevee around the player via a side waypoint, then to a tile
+				// in front of the player, ending facing them.
 				if (moving) {
 					if (this.followerMode !== 'trail') {
 						this.followerMode = 'trail';
 						this.followerTarget = null;
+						this.followerPath = null;
 					}
 					if (this.tick % 2 === 0) {
 						this.followerHistory.push({ x: this.player.x, y: this.player.y });
 						if (this.followerHistory.length > 8) this.followerHistory.shift();
 					}
 				} else if (this.followerMode === 'trail') {
-					// Player just stopped — pick a tile in front of them as the face-off target.
+					// Player just stopped — build a two-step path around the player.
+					// Step 1: a tile perpendicular to the player's facing (right side),
+					// Step 2: a tile in front of the player (final face-off position).
 					this.followerMode = 'faceoff';
 					this.followerHistory = [];
 					const [dvx, dvy] = this.DIR_VEC[this.dir];
-					this.followerTarget = {
-						x: this.player.x + dvx * TILE,
-						y: this.player.y + dvy * TILE,
-					};
+					const [pvx, pvy] = this.DIR_VEC[(this.dir + 1) % 4];
+					this.followerPath = [
+						{ x: this.player.x + pvx * TILE, y: this.player.y + pvy * TILE },
+						{ x: this.player.x + dvx * TILE, y: this.player.y + dvy * TILE },
+					];
+					this.followerTarget = this.followerPath.shift();
 				}
 
 				const target = this.followerMode === 'trail'
@@ -599,9 +606,12 @@
 							this.follower.anims.play(this.eeveeAnimKeys[dir], true);
 							this.followerDir = dir;
 						}
+					} else if (this.followerMode === 'faceoff' && this.followerPath && this.followerPath.length > 0) {
+						// Arrived at the side waypoint — advance to the final face-off tile.
+						this.followerTarget = this.followerPath.shift();
 					} else {
 						if (this.follower.anims.isPlaying) this.follower.anims.stop();
-						// Arrived — face the player. In face-off mode that's the opposite of the
+						// Settled — face the player. In face-off mode that's the opposite of the
 						// player's facing; in trail mode (rare: paused mid-trail) just orient at them.
 						let faceDir;
 						if (this.followerMode === 'faceoff') {
