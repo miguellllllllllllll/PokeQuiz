@@ -86,6 +86,8 @@
 	}
 
 	function init() {
+		getPlayerId(); // ensure every visitor gets a stable ID, even without sign-in
+
 		const btn = document.querySelector('.profile-btn');
 		if (!btn) return;
 

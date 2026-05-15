@@ -218,7 +218,7 @@
 
 		function postLeaderboard(elapsedMs) {
 			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
-			const playerId = localStorage.getItem('pokequiz_player_id') || '';
+			const playerId = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
 			if (!playerName || !playerId) return;
 			try {
 				fetch('/api/leaderboard', {
