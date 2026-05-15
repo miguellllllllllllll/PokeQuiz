@@ -1231,8 +1231,10 @@
 				this.physics.world.setBounds(0, 0, W, H);
 				this.player.setCollideWorldBounds(true);
 				// Interior is a fixed room — keep the camera centered on it instead of
-				// following the player. No setBounds so the camera can scroll negative
-				// (centering even when the viewport is bigger than the room).
+				// following the player. Use very large bounds so centerOn can produce
+				// negative scroll when the viewport is bigger than the room without
+				// being clamped to zero.
+				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
 				this.cameras.main.setBackgroundColor('#1a0e08');
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
@@ -1273,8 +1275,7 @@
 				const vw = this.scale.width;
 				const vh = this.scale.height;
 				// Phaser's RESIZE mode can fire onResize before layout settles, leaving
-				// vw/vh at 0 on the very first call. Bail out so we don't compute a
-				// huge negative scroll that puts the camera off-world (black screen).
+				// vw/vh at 0 on the very first call. Bail and re-try on the next tick.
 				if (vw <= 0 || vh <= 0) {
 					this.events.once('postupdate', () => this.applyZoom());
 					return;
@@ -1287,13 +1288,11 @@
 				s = Math.min(s, 5);
 				const cam = this.cameras.main;
 				cam.setZoom(s);
-				// Manually compute scroll so the room is centered in the viewport even
-				// when the viewport (in world units) is larger than the room — Phaser's
-				// setBounds + centerOn would clamp scroll to zero otherwise.
-				const viewportWorldW = vw / s;
-				const viewportWorldH = vh / s;
-				cam.scrollX = (roomW - viewportWorldW) / 2;
-				cam.scrollY = (roomH - viewportWorldH) / 2;
+				// centerOn computes scrollX/Y so the world point at (x, y) sits at the
+				// middle of the viewport. With the large camera bounds set in create()
+				// the resulting scroll won't be clamped if the viewport is bigger than
+				// the room.
+				cam.centerOn(roomW / 2, roomH / 2);
 			}
 
 			setupJoystick() {
