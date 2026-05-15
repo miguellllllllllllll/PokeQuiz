@@ -2,15 +2,20 @@ import { Redis } from '@upstash/redis';
 
 export const config = { runtime: 'edge' };
 
-// One-shot: collapse legacy duplicate entries (same playerId or same
-// normalized name when playerId is missing) keeping only the highest-score
-// entry per player on each board.
+// One-shot: collapse legacy duplicate entries on each leaderboard, keeping
+// only the highest-score entry per normalized name. Restores known-lost
+// entries first (Gab 16, gus 15) which a previous buggy pass wiped.
 const LB_KEYS = [
 	'pokequiz:leaderboard',
 	'pokequiz:leaderboard:silhouette',
 	'pokequiz:leaderboard:cry',
 	'pokequiz:leaderboard:higherlower',
 	'pokequiz:leaderboard:memory',
+];
+
+const RESTORE = [
+	{ key: 'pokequiz:leaderboard', score: 16, member: { name: 'Gab', total: 21, at: 1778746468589 } },
+	{ key: 'pokequiz:leaderboard', score: 15, member: { name: 'gus', total: 21, at: 1778766353751 } },
 ];
 
 function makeRedis() {
@@ -33,11 +38,17 @@ export default async function handler() {
 		return json({ error: 'redis env missing', detail: String(e?.message || e) }, 500);
 	}
 
+	const restored = [];
+	for (const r of RESTORE) {
+		const memberStr = JSON.stringify(r.member);
+		await redis.zadd(r.key, { score: r.score, member: memberStr });
+		restored.push({ key: r.key, name: r.member.name, score: r.score });
+	}
+
 	const summary = [];
 
 	for (const key of LB_KEYS) {
 		const raw = await redis.zrange(key, 0, -1, { withScores: true });
-		// Normalize to [{ member, score, meta }]
 		const rows = [];
 		const push = (m, s) => {
 			try {
@@ -54,16 +65,16 @@ export default async function handler() {
 			}
 		}
 
-		// Group by playerId if present, else by lowercased name
+		// Group strictly by normalized name. One entry per name, highest score wins.
 		const groups = new Map();
 		for (const row of rows) {
-			const id = row.meta.playerId
-				? `id:${row.meta.playerId}`
-				: `name:${String(row.meta.name || '').toLowerCase()}`;
+			const id = String(row.meta.name || '').toLowerCase();
 			const cur = groups.get(id);
-			if (!cur || row.score > cur.score) {
-				if (cur) cur.losers.push(row);
-				groups.set(id, { ...row, losers: cur ? [...cur.losers] : [] });
+			if (!cur) {
+				groups.set(id, { winner: row, losers: [] });
+			} else if (row.score > cur.winner.score) {
+				cur.losers.push(cur.winner);
+				cur.winner = row;
 			} else {
 				cur.losers.push(row);
 			}
@@ -82,5 +93,5 @@ export default async function handler() {
 		summary.push({ key, scanned: rows.length, groups: groups.size, removed });
 	}
 
-	return json({ ok: true, summary });
+	return json({ ok: true, restored, summary });
 }
