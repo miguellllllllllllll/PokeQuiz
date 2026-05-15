@@ -51,6 +51,31 @@ async function checkOrClaimName(redis, name, playerId) {
 	return { ok: true };
 }
 
+// Find every leaderboard entry that belongs to the given player (by stored
+// playerId, or by name match for legacy pre-uniqueness entries that don't
+// have a playerId yet).
+async function findPlayerEntries(redis, key, playerId, name) {
+	const raw = await redis.zrange(key, 0, -1, { withScores: true });
+	const out = [];
+	const push = (m, score) => {
+		try {
+			const meta = typeof m === 'string' ? JSON.parse(m) : m;
+			if (!meta) return;
+			const isOwn = meta.playerId === playerId
+				|| (!meta.playerId && meta.name && normalizeName(meta.name) === normalizeName(name));
+			if (isOwn) out.push({ member: m, score: Number(score), meta });
+		} catch {}
+	};
+	if (Array.isArray(raw)) {
+		if (raw.length && typeof raw[0] === 'object' && raw[0] !== null && 'member' in raw[0]) {
+			for (const row of raw) push(row.member, row.score);
+		} else {
+			for (let i = 0; i < raw.length; i += 2) push(raw[i], raw[i + 1]);
+		}
+	}
+	return out;
+}
+
 function json(data, status = 200, extraHeaders = {}) {
 	return new Response(JSON.stringify(data), {
 		status,
@@ -205,17 +230,37 @@ export default async function handler(req) {
 			/* if rate limiter fails, allow through */
 		}
 
-		const member = JSON.stringify({
-			name,
-			total: Number.isFinite(total) ? total : (cfg.defaultTotal ?? undefined),
-			at: Date.now(),
-			...(mode ? { mode } : {}),
-		});
 		// For time-based games, negate so larger = better in the sorted set.
 		const storedScore = cfg.timeBased ? -score : score;
 		try {
-			await getRedis().zadd(cfg.key, { score: storedScore, member });
-			await getRedis().zremrangebyrank(cfg.key, 0, -KEEP_TOP - 1);
+			// Dedupe: keep only this player's best per game. Find any
+			// existing entries owned by this playerId (or legacy name-only
+			// entries) and keep only the higher score.
+			const existing = await findPlayerEntries(redis, cfg.key, playerId, name);
+			let bestExistingScore = -Infinity;
+			for (const e of existing) {
+				if (e.score > bestExistingScore) bestExistingScore = e.score;
+			}
+			if (existing.length > 0 && storedScore <= bestExistingScore) {
+				// New score doesn't beat existing best — return current top
+				// without writing anything new.
+				const entries = await readTop(cfg, MAX_RETURN);
+				return json({ ok: true, game: gameName, kept: 'existing-best', entries });
+			}
+			// New is better. Remove all existing entries from this player
+			// before adding the new one.
+			for (const e of existing) {
+				await redis.zrem(cfg.key, e.member);
+			}
+			const member = JSON.stringify({
+				name,
+				playerId,
+				total: Number.isFinite(total) ? total : (cfg.defaultTotal ?? undefined),
+				at: Date.now(),
+				...(mode ? { mode } : {}),
+			});
+			await redis.zadd(cfg.key, { score: storedScore, member });
+			await redis.zremrangebyrank(cfg.key, 0, -KEEP_TOP - 1);
 			const entries = await readTop(cfg, MAX_RETURN);
 			return json({ ok: true, game: gameName, entries });
 		} catch (err) {
