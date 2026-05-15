@@ -143,6 +143,7 @@
 		let best = 0;
 		let hearts = 0;
 		let ended = false;
+		let submitted = false;
 
 		function paintBestsOnModeSelect() {
 			document.getElementById('bestCasual').textContent = getBest(MODES.casual.bestKey);
@@ -174,6 +175,8 @@
 		}
 
 		function postLeaderboard() {
+			if (submitted) return;
+			submitted = true;
 			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
 			const playerId = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
 			if (!playerName || !playerId || streak <= 0) return;
@@ -181,7 +184,7 @@
 				fetch('/api/leaderboard', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ game: 'cry', name: playerName, score: streak, mode , playerId }),
+					body: JSON.stringify({ game: 'cry', name: playerName, score: streak, mode, playerId }),
 				}).catch(() => {});
 			} catch {}
 		}
@@ -387,6 +390,7 @@
 			streak = 0;
 			best = getBest(modeConfig.bestKey);
 			ended = false;
+			submitted = false;
 			streakNum.textContent = streak;
 			bestNum.textContent = best;
 			picker = createPicker(POOL);

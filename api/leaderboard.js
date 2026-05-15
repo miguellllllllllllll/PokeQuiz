@@ -22,11 +22,18 @@ function getRedis() {
 // games like memory, we store negated milliseconds so higher = faster).
 const GAMES = {
 	quiz:       { key: 'pokequiz:leaderboard',                maxTotal: 100, defaultTotal: 21 },
-	silhouette: { key: 'pokequiz:leaderboard:silhouette',     maxTotal: 9999, modes: ['casual','standard','hardcore'] },
-	cry:        { key: 'pokequiz:leaderboard:cry',            maxTotal: 9999, modes: ['casual','standard','hardcore'] },
-	higherlower:{ key: 'pokequiz:leaderboard:higherlower',    maxTotal: 9999, modes: ['weight','height','hp','atk','spd','random'] },
+	// Streak caps: ~500 is humanly unreachable in a single session; anything higher is fraudulent.
+	silhouette: { key: 'pokequiz:leaderboard:silhouette',     maxTotal: 500, modes: ['casual','standard','hardcore'] },
+	cry:        { key: 'pokequiz:leaderboard:cry',            maxTotal: 500, modes: ['casual','standard','hardcore'] },
+	higherlower:{ key: 'pokequiz:leaderboard:higherlower',    maxTotal: 500, modes: ['weight','height','hp','atk','spd','random'] },
 	memory:     { key: 'pokequiz:leaderboard:memory',         maxTotal: 0,   timeBased: true, modes: ['6','8','12'] },
 };
+
+// Minimum physically-possible completion times per memory board size (ms).
+// Derived from mandatory animation delays: each matched pair holds a 520ms flip
+// animation, plus the 900ms finish delay. These floors can't be beaten even with
+// perfect knowledge and instant clicks.
+const MEMORY_MIN_MS = { '6': 3500, '8': 5000, '12': 7000 };
 
 const MAX_NAME = 24;
 const MAX_RETURN = 50;
@@ -230,18 +237,27 @@ export default async function handler(req) {
 
 		const score = Number(body?.score);
 		const total = Number(body?.total);
-		const mode = typeof body?.mode === 'string' ? body.mode.slice(0, 24) : undefined;
+		const mode = typeof body?.mode === 'string' ? body.mode.slice(0, 24) : '';
 
 		if (!Number.isFinite(score) || score < 0) return json({ error: 'invalid score' }, 400);
 
-		// Game-specific validation
+		// Reject unknown modes up-front so bad data never reaches Redis.
+		if (mode && cfg.modes && !cfg.modes.includes(mode)) {
+			return json({ error: 'invalid mode' }, 400);
+		}
+
+		// Game-specific score validation
 		if (cfg.timeBased) {
-			// Memory match: score = elapsed ms, lower is better. Range cap 30 minutes.
-			if (score > 30 * 60 * 1000) return json({ error: 'score out of range' }, 400);
+			// Memory match: score = elapsed ms, lower is better.
+			// Minimum is board-size-dependent (animation floors); max 30 min.
+			const minMs = MEMORY_MIN_MS[mode] ?? 3500;
+			if (score < minMs || score > 30 * 60 * 1000) return json({ error: 'score out of range' }, 400);
 		} else {
+			// Streak / quiz: must be at least 1 and within the game's realistic cap.
+			if (score < 1) return json({ error: 'invalid score' }, 400);
 			if (score > cfg.maxTotal) return json({ error: 'invalid score' }, 400);
 			if (cfg.maxTotal === 100) {
-				// quiz game: total must be reasonable
+				// quiz: total must be in range and score can't exceed it
 				if (!Number.isFinite(total) || total < 1 || total > cfg.maxTotal) return json({ error: 'invalid total' }, 400);
 				if (score > total) return json({ error: 'score exceeds total' }, 400);
 			}
@@ -265,7 +281,7 @@ export default async function handler(req) {
 			playerId,
 			total: Number.isFinite(total) ? total : (cfg.defaultTotal ?? undefined),
 			at: Date.now(),
-			...(mode ? { mode } : {}),
+			...(mode ? { mode } : {}),  // omit key entirely if no mode
 		});
 
 		try {

@@ -217,6 +217,9 @@
 		}
 
 		function postLeaderboard(elapsedMs) {
+			// Minimum times match animation floors server-side: 6-pair≥3.5s, 8-pair≥5s, 12-pair≥7s
+			const minMs = ({ 6: 3500, 8: 5000, 12: 7000 })[chosenPairs] ?? 3500;
+			if (!elapsedMs || elapsedMs < minMs) return;
 			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
 			const playerId = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
 			if (!playerName || !playerId) return;

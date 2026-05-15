@@ -1,16 +1,18 @@
 /* ── Full-screen body lock ── */
 body.camp-body {
 	overflow: hidden;
+	/* Override site's pink gradient — any gap should be game-green, not pink */
+	background: #68A028 !important;
 }
 
 /* ── World canvas — fills everything below the header ── */
 .camp-world-wrap {
 	position: fixed;
+	top: 60px; /* CSS fallback; exact value overridden by JS after fonts load */
 	left: 0;
 	right: 0;
 	bottom: 0;
-	/* top set dynamically by JS to match header height */
-	background: #88C038;
+	background: #68A028;
 	overflow: hidden;
 }
 
@@ -86,48 +88,39 @@ body.camp-body {
 	.camp-location-name { font-size: 8px; }
 }
 
-/* ── Mobile d-pad ── */
-.dpad-wrap {
+/* ── Mobile joystick ── */
+.joystick-wrap {
 	position: absolute;
-	bottom: 20px;
-	right: 20px;
+	bottom: 24px;
+	right: 24px;
 	display: none;
-	flex-direction: column;
-	align-items: center;
-	gap: 4px;
 	z-index: 6;
 }
 
-.dpad-row {
-	display: flex;
-	gap: 4px;
+.joystick-base {
+	position: relative;
+	width: 110px;
+	height: 110px;
+	background: rgba(16, 28, 48, 0.55);
+	border: 2px solid rgba(168, 200, 232, 0.35);
+	border-radius: 50%;
+	touch-action: none;
 }
 
-.dpad-btn {
-	width: 52px;
-	height: 52px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: rgba(16, 28, 48, 0.82);
-	border: 2px solid #3a5070;
-	border-bottom: 4px solid rgba(0,0,0,0.55);
-	border-radius: 10px;
-	color: #a8c8e8;
-	font-size: 18px;
-	cursor: pointer;
-	user-select: none;
-	-webkit-user-select: none;
-	touch-action: manipulation;
-	transition: background 0.08s, transform 0.08s;
-}
-
-.dpad-btn:active {
+.joystick-knob {
+	position: absolute;
+	width: 46px;
+	height: 46px;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 	background: rgba(58, 80, 112, 0.9);
-	transform: translateY(2px);
-	border-bottom-width: 2px;
+	border: 2px solid rgba(168, 200, 232, 0.6);
+	border-radius: 50%;
+	pointer-events: none;
+	transition: transform 0.05s;
 }
 
 @media (max-width: 700px) {
-	.dpad-wrap { display: flex; }
+	.joystick-wrap { display: block; }
 }

@@ -114,6 +114,7 @@
 		let streak = 0;
 		let best = getBest();
 		let ended = false;
+		let submitted = false;
 		bestNum.textContent = best;
 
 		function pickStat() {
@@ -160,10 +161,10 @@
 		function startGame() {
 			introEl.hidden = true;
 			gameEl.hidden = false;
-			gameOverEl.hidden = false ? false : true; // ensure hidden
 			gameOverEl.hidden = true;
 			streak = 0;
 			ended = false;
+			submitted = false;
 			streakNum.textContent = streak;
 			bestNum.textContent = best;
 			activeStat = pickStat();
@@ -179,6 +180,8 @@
 		}
 
 		function postLeaderboard() {
+			if (submitted) return;
+			submitted = true;
 			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
 			const playerId = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
 			if (!playerName || !playerId || streak <= 0) return;
@@ -186,7 +189,7 @@
 				fetch('/api/leaderboard', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ game: 'higherlower', name: playerName, score: streak, mode: activeStat , playerId }),
+					body: JSON.stringify({ game: 'higherlower', name: playerName, score: streak, mode: activeStat, playerId }),
 				}).catch(() => {});
 			} catch {}
 		}
