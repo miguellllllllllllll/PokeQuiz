@@ -163,15 +163,21 @@
 			updateMeta();
 			if (first.pokemon.id === c.pokemon.id) {
 				// Match
-				c.matched = true;
-				first.matched = true;
-				c.el.classList.add('is-matched');
-				first.el.classList.add('is-matched');
+				const a = first, b = c;
+				b.matched = true;
+				a.matched = true;
 				first = null;
 				matched++;
 				pairsEl.textContent = `${matched}/${chosenPairs}`;
+				// Wait for the second card's flip to finish before adding the
+				// matched class — otherwise the scale-pop animation fights the
+				// in-flight rotation and the pokeball-front flashes through.
+				setTimeout(() => {
+					a.el.classList.add('is-matched');
+					b.el.classList.add('is-matched');
+				}, 520);
 				if (matched === chosenPairs) {
-					setTimeout(finishGame, 350);
+					setTimeout(finishGame, 900);
 				}
 			} else {
 				// No match — flip back after a short delay
