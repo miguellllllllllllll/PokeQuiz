@@ -219,6 +219,60 @@
 }
 .empty-state a:hover { text-decoration: underline; }
 
+/* Mode sub-tabs — appear beneath the game tabs for games that have modes */
+.lb-mode-tabs {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	gap: 6px;
+	margin-bottom: 18px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.lb-mode-tabs::before {
+	content: 'Mode:';
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: var(--muted);
+	letter-spacing: 0.5px;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.lb-mode-tab {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 12px;
+	background: #fff;
+	border: 2px solid rgba(0, 0, 0, 0.1);
+	border-radius: 999px;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--ink);
+	transition: transform 0.1s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.lb-mode-tab:hover {
+	border-color: var(--poke-blue);
+	color: var(--poke-blue);
+	transform: translateY(-1px);
+}
+
+.lb-mode-tab.is-active {
+	background: linear-gradient(180deg, #3b5bdb 0%, #1b2a8a 100%);
+	color: #fff;
+	border-color: var(--poke-black);
+	box-shadow: 0 3px 0 var(--poke-black);
+}
+
+@media (max-width: 640px) {
+	.lb-mode-tab { font-size: 11px; padding: 5px 10px; }
+	.lb-mode-tabs::before { font-size: 8px; }
+}
+
 .ranking-actions {
 	position: relative;
 	z-index: 1;

@@ -85,6 +85,8 @@
 				</button>
 			</div>
 
+			<div id="modeTabs" class="lb-mode-tabs" hidden></div>
+
 			<div class="leaderboard-wrap">
 				<table class="leaderboard" id="leaderboard">
 					<thead>
@@ -120,14 +122,49 @@
 	<script>
 		(function() {
 			const GAMES = {
-				quiz:       { label: 'Trivia Quiz',         scoreLabel: 'Score',  defaultTotal: 21, timeBased: false },
-				silhouette: { label: "Who's That Pokémon?", scoreLabel: 'Streak', timeBased: false },
-				cry:        { label: 'Cry Quiz',            scoreLabel: 'Streak', timeBased: false },
-				higherlower:{ label: 'Higher or Lower',     scoreLabel: 'Streak', timeBased: false },
-				memory:     { label: 'Memory Match',        scoreLabel: 'Time',   timeBased: true },
+				quiz: {
+					label: 'Trivia Quiz', scoreLabel: 'Score', defaultTotal: 21, timeBased: false,
+					modes: null,
+				},
+				silhouette: {
+					label: "Who's That Pokémon?", scoreLabel: 'Streak', timeBased: false,
+					modes: [
+						{ key: 'casual',   label: 'Casual' },
+						{ key: 'standard', label: 'Standard' },
+						{ key: 'hardcore', label: 'Hardcore' },
+					],
+				},
+				cry: {
+					label: 'Cry Quiz', scoreLabel: 'Streak', timeBased: false,
+					modes: [
+						{ key: 'casual',   label: 'Casual' },
+						{ key: 'standard', label: 'Standard' },
+						{ key: 'hardcore', label: 'Hardcore' },
+					],
+				},
+				higherlower: {
+					label: 'Higher or Lower', scoreLabel: 'Streak', timeBased: false,
+					modes: [
+						{ key: 'weight', label: 'Weight' },
+						{ key: 'height', label: 'Height' },
+						{ key: 'hp',     label: 'HP' },
+						{ key: 'atk',    label: 'Attack' },
+						{ key: 'spd',    label: 'Speed' },
+						{ key: 'random', label: 'Random' },
+					],
+				},
+				memory: {
+					label: 'Memory Match', scoreLabel: 'Time', timeBased: true,
+					modes: [
+						{ key: '6',  label: 'Easy (6 pairs)' },
+						{ key: '8',  label: 'Medium (8 pairs)' },
+						{ key: '12', label: 'Hard (12 pairs)' },
+					],
+				},
 			};
 
 			const tabsEl = document.querySelectorAll('.lb-tab');
+			const modeTabsEl = document.getElementById('modeTabs');
 			const body = document.getElementById('leaderboardBody');
 			const emptyState = document.getElementById('emptyState');
 			const emptyMsg = document.getElementById('emptyMsg');
@@ -139,6 +176,7 @@
 			const colScoreLabel = document.getElementById('colScoreLabel');
 
 			let activeGame = 'quiz';
+			let activeMode = '';   // '' = all modes
 
 			function fmtTime(ms) {
 				const totalSec = Math.floor(ms / 1000);
@@ -156,6 +194,19 @@
 				return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 			}
 
+			function formatMode(game, mode) {
+				if (game === 'memory') {
+					return ({ '6': 'Easy', '8': 'Medium', '12': 'Hard' })[mode] || mode;
+				}
+				if (game === 'silhouette' || game === 'cry') {
+					return mode.charAt(0).toUpperCase() + mode.slice(1);
+				}
+				if (game === 'higherlower') {
+					return ({ weight: 'Weight', height: 'Height', hp: 'HP', atk: 'Attack', spd: 'Speed', random: 'Random' })[mode] || mode;
+				}
+				return mode;
+			}
+
 			function renderRows(entries) {
 				const cfg = GAMES[activeGame];
 				colScoreLabel.textContent = cfg.scoreLabel;
@@ -163,7 +214,10 @@
 				if (!entries.length) {
 					table.hidden = true;
 					emptyState.hidden = false;
-					emptyMsg.textContent = `No scores yet for ${cfg.label}. Be the first.`;
+					const modeLabel = activeMode
+						? ` · ${formatMode(activeGame, activeMode)}`
+						: '';
+					emptyMsg.textContent = `No scores yet for ${cfg.label}${modeLabel}. Be the first.`;
 					return;
 				}
 				table.hidden = false;
@@ -178,66 +232,102 @@
 					} else {
 						scoreDisplay = `<strong>${e.score}</strong>`;
 					}
-					const mode = e.mode ? escapeHtml(formatMode(activeGame, e.mode)) : '—';
+					// When on a mode-specific board, the Mode column is redundant — hide it.
+					const modeDisplay = activeMode ? '' : (e.mode ? escapeHtml(formatMode(activeGame, e.mode)) : '—');
 					return `
 						<tr class="rank-${Math.min(i + 1, 4)}">
 							<td class="col-rank">${medal}</td>
 							<td class="col-name">${escapeHtml(e.name)}</td>
 							<td class="col-score">${scoreDisplay}</td>
-							<td class="col-mode">${mode}</td>
+							<td class="col-mode">${modeDisplay}</td>
 							<td class="col-date">${formatDate(e.at)}</td>
 						</tr>
 					`;
 				}).join('');
 			}
 
-			function formatMode(game, mode) {
-				if (game === 'memory') {
-					return ({ '6': 'Easy', '8': 'Medium', '12': 'Hard' })[mode] || mode;
+			function buildModeTabs(game) {
+				const cfg = GAMES[game];
+				modeTabsEl.innerHTML = '';
+				if (!cfg.modes) {
+					modeTabsEl.hidden = true;
+					return;
 				}
-				if (game === 'silhouette' || game === 'cry') {
-					return mode.charAt(0).toUpperCase() + mode.slice(1);
-				}
-				if (game === 'higherlower') {
-					return ({ 'weight': 'Weight', 'height': 'Height', 'hp': 'HP', 'atk': 'Attack', 'spd': 'Speed', 'random': 'Random' })[mode] || mode;
-				}
-				return mode;
+				modeTabsEl.hidden = false;
+
+				// "All modes" tab
+				const allBtn = document.createElement('button');
+				allBtn.type = 'button';
+				allBtn.className = 'lb-mode-tab' + (activeMode === '' ? ' is-active' : '');
+				allBtn.dataset.mode = '';
+				allBtn.textContent = 'All';
+				allBtn.addEventListener('click', () => selectMode(''));
+				modeTabsEl.appendChild(allBtn);
+
+				// One tab per mode
+				cfg.modes.forEach(({ key, label }) => {
+					const btn = document.createElement('button');
+					btn.type = 'button';
+					btn.className = 'lb-mode-tab' + (activeMode === key ? ' is-active' : '');
+					btn.dataset.mode = key;
+					btn.textContent = label;
+					btn.addEventListener('click', () => selectMode(key));
+					modeTabsEl.appendChild(btn);
+				});
 			}
 
-			async function loadGlobal(game) {
-				const res = await fetch(`/api/leaderboard?game=${encodeURIComponent(game)}&limit=50`);
+			async function loadBoard(game, mode) {
+				let url = `/api/leaderboard?game=${encodeURIComponent(game)}&limit=50`;
+				if (mode) url += `&mode=${encodeURIComponent(mode)}`;
+				const res = await fetch(url);
 				if (!res.ok) throw new Error('http ' + res.status);
 				const data = await res.json();
 				if (!Array.isArray(data.entries)) throw new Error('bad payload');
 				return data.entries;
 			}
 
-			async function selectGame(game) {
-				activeGame = game;
+			async function loadAndRender(game, mode) {
 				const cfg = GAMES[game];
-				tabsEl.forEach((t) => {
-					const active = t.dataset.game === game;
-					t.classList.toggle('is-active', active);
-					t.setAttribute('aria-selected', active ? 'true' : 'false');
-				});
-				boardTitle.textContent = `Top 50 · ${cfg.label}`;
 				loadingState.hidden = false;
 				emptyState.hidden = true;
 				table.hidden = true;
 				try {
-					const top = await loadGlobal(game);
+					const entries = await loadBoard(game, mode);
 					loadingState.hidden = true;
+					const modeLabel = mode ? ` · ${formatMode(game, mode)}` : '';
+					boardTitle.textContent = `Top 50 · ${cfg.label}${modeLabel}`;
 					eyebrowLabel.textContent = 'Global Hall of Fame';
 					subtitle.textContent = cfg.timeBased
-						? `Fastest times across every trainer worldwide. Lower is better.`
-						: `Highest streaks across every trainer worldwide.`;
-					renderRows(top);
-				} catch (err) {
+						? 'Fastest times across every trainer worldwide. Lower is better.'
+						: 'Highest streaks across every trainer worldwide.';
+					renderRows(entries);
+				} catch {
 					loadingState.hidden = true;
 					eyebrowLabel.textContent = 'Backend Offline';
 					subtitle.textContent = 'Could not load global scores. Try again in a moment.';
 					renderRows([]);
 				}
+			}
+
+			async function selectMode(mode) {
+				activeMode = mode;
+				// Sync active state on mode tabs
+				modeTabsEl.querySelectorAll('.lb-mode-tab').forEach((b) => {
+					b.classList.toggle('is-active', b.dataset.mode === mode);
+				});
+				await loadAndRender(activeGame, mode);
+			}
+
+			async function selectGame(game) {
+				activeGame = game;
+				activeMode = '';  // reset to all modes when switching games
+				tabsEl.forEach((t) => {
+					const active = t.dataset.game === game;
+					t.classList.toggle('is-active', active);
+					t.setAttribute('aria-selected', active ? 'true' : 'false');
+				});
+				buildModeTabs(game);
+				await loadAndRender(game, '');
 			}
 
 			tabsEl.forEach((t) => t.addEventListener('click', () => selectGame(t.dataset.game)));

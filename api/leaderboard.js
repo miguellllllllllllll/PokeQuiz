@@ -22,10 +22,10 @@ function getRedis() {
 // games like memory, we store negated milliseconds so higher = faster).
 const GAMES = {
 	quiz:       { key: 'pokequiz:leaderboard',                maxTotal: 100, defaultTotal: 21 },
-	silhouette: { key: 'pokequiz:leaderboard:silhouette',     maxTotal: 9999 },
-	cry:        { key: 'pokequiz:leaderboard:cry',            maxTotal: 9999 },
-	higherlower:{ key: 'pokequiz:leaderboard:higherlower',    maxTotal: 9999 },
-	memory:     { key: 'pokequiz:leaderboard:memory',         maxTotal: 0,   timeBased: true },
+	silhouette: { key: 'pokequiz:leaderboard:silhouette',     maxTotal: 9999, modes: ['casual','standard','hardcore'] },
+	cry:        { key: 'pokequiz:leaderboard:cry',            maxTotal: 9999, modes: ['casual','standard','hardcore'] },
+	higherlower:{ key: 'pokequiz:leaderboard:higherlower',    maxTotal: 9999, modes: ['weight','height','hp','atk','spd','random'] },
+	memory:     { key: 'pokequiz:leaderboard:memory',         maxTotal: 0,   timeBased: true, modes: ['6','8','12'] },
 };
 
 const MAX_NAME = 24;
@@ -137,6 +137,25 @@ async function readTop(cfg, limit) {
 	return entries;
 }
 
+// Write one entry to a board (deduplicating by player, keeping best score).
+// Returns true if the new score was written, false if existing was better.
+async function writeToBoard(redis, boardKey, playerId, name, storedScore, member) {
+	const existing = await findPlayerEntries(redis, boardKey, playerId, name);
+	let bestExisting = -Infinity;
+	for (const e of existing) {
+		if (e.score > bestExisting) bestExisting = e.score;
+	}
+	if (existing.length > 0 && storedScore <= bestExisting) {
+		return false;
+	}
+	for (const e of existing) {
+		await redis.zrem(boardKey, e.member);
+	}
+	await redis.zadd(boardKey, { score: storedScore, member });
+	await redis.zremrangebyrank(boardKey, 0, -KEEP_TOP - 1);
+	return true;
+}
+
 function safeParse(s) {
 	try { return JSON.parse(s); } catch { return null; }
 }
@@ -159,10 +178,18 @@ export default async function handler(req) {
 		const gameName = url.searchParams.get('game') || 'quiz';
 		const cfg = gameConfig(gameName);
 		if (!cfg) return json({ error: 'unknown game' }, 400);
+
+		// Support mode-specific board reads.
+		const modeParam = url.searchParams.get('mode') || '';
+		let readCfg = cfg;
+		if (modeParam && cfg.modes && cfg.modes.includes(modeParam)) {
+			readCfg = { ...cfg, key: cfg.key + ':' + modeParam };
+		}
+
 		const limit = url.searchParams.get('limit');
 		try {
-			const entries = await readTop(cfg, limit);
-			return json({ game: gameName, entries });
+			const entries = await readTop(readCfg, limit);
+			return json({ game: gameName, mode: modeParam || null, entries });
 		} catch (err) {
 			return json({ error: 'read failed', detail: String(err?.message || err), env: envDiag() }, 500);
 		}
@@ -232,35 +259,24 @@ export default async function handler(req) {
 
 		// For time-based games, negate so larger = better in the sorted set.
 		const storedScore = cfg.timeBased ? -score : score;
+
+		const member = JSON.stringify({
+			name,
+			playerId,
+			total: Number.isFinite(total) ? total : (cfg.defaultTotal ?? undefined),
+			at: Date.now(),
+			...(mode ? { mode } : {}),
+		});
+
 		try {
-			// Dedupe: keep only this player's best per game. Find any
-			// existing entries owned by this playerId (or legacy name-only
-			// entries) and keep only the higher score.
-			const existing = await findPlayerEntries(redis, cfg.key, playerId, name);
-			let bestExistingScore = -Infinity;
-			for (const e of existing) {
-				if (e.score > bestExistingScore) bestExistingScore = e.score;
+			// Write to main board (overall best per player across all modes).
+			await writeToBoard(redis, cfg.key, playerId, name, storedScore, member);
+
+			// Write to mode-specific board (best per player per mode).
+			if (mode && cfg.modes && cfg.modes.includes(mode)) {
+				await writeToBoard(redis, cfg.key + ':' + mode, playerId, name, storedScore, member);
 			}
-			if (existing.length > 0 && storedScore <= bestExistingScore) {
-				// New score doesn't beat existing best — return current top
-				// without writing anything new.
-				const entries = await readTop(cfg, MAX_RETURN);
-				return json({ ok: true, game: gameName, kept: 'existing-best', entries });
-			}
-			// New is better. Remove all existing entries from this player
-			// before adding the new one.
-			for (const e of existing) {
-				await redis.zrem(cfg.key, e.member);
-			}
-			const member = JSON.stringify({
-				name,
-				playerId,
-				total: Number.isFinite(total) ? total : (cfg.defaultTotal ?? undefined),
-				at: Date.now(),
-				...(mode ? { mode } : {}),
-			});
-			await redis.zadd(cfg.key, { score: storedScore, member });
-			await redis.zremrangebyrank(cfg.key, 0, -KEEP_TOP - 1);
+
 			const entries = await readTop(cfg, MAX_RETURN);
 			return json({ ok: true, game: gameName, entries });
 		} catch (err) {
