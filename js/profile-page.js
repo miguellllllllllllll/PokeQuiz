@@ -312,6 +312,7 @@
 			const row = document.querySelector(`.tc-row[data-cat="${cat}"]`);
 			if (!row) return;
 			const wrap = row.querySelector('.tc-swatches');
+			const picker = row.querySelector('.tc-color-picker');
 			TP.PALETTES[cat].forEach(({ color, label }) => {
 				const btn = document.createElement('button');
 				btn.type = 'button';
@@ -319,16 +320,30 @@
 				btn.style.background = color;
 				btn.title = label;
 				btn.setAttribute('aria-label', label);
-				btn.classList.toggle('is-active', choices[cat] === color);
+				btn.classList.toggle('is-active', (choices[cat] || '').toLowerCase() === color.toLowerCase());
 				btn.addEventListener('click', () => {
 					choices[cat] = color;
 					wrap.querySelectorAll('.tc-swatch').forEach(b =>
 						b.classList.toggle('is-active', b === btn));
+					if (picker) picker.value = color.toLowerCase();
 					TP.save(choices);
 					redraw();
 				});
 				wrap.appendChild(btn);
 			});
+			if (picker) {
+				picker.value = (choices[cat] || TP.DEFAULTS[cat]).toLowerCase();
+				picker.addEventListener('input', () => {
+					choices[cat] = picker.value.toUpperCase();
+					wrap.querySelectorAll('.tc-swatch').forEach(b => {
+						const c = b.style.background;
+						// match swatch by current chosen colour (best-effort)
+						b.classList.toggle('is-active', false);
+					});
+					TP.save(choices);
+					redraw();
+				});
+			}
 		});
 	}
 

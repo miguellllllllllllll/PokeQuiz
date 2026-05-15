@@ -12,14 +12,16 @@
 		skin:   ['#885028', '#D09870', '#D8A078', '#F8D0B8'],
 		hair:   ['#28272C', '#424149'],
 		outfit: ['#1F2945', '#354775', '#4F69AE'],
+		shirt:  ['#B8B0D0', '#E8E8F8'],
 	};
-	const MAIN_IDX = { cap: 2, skin: 2, hair: 1, outfit: 1 };
+	const MAIN_IDX = { cap: 2, skin: 2, hair: 1, outfit: 1, shirt: 0 };
 
 	const DEFAULTS = {
 		cap:    '#C03838',
 		skin:   '#D8A078',
 		hair:   '#424149',
 		outfit: '#354775',
+		shirt:  '#B8B0D0',
 	};
 
 	const PALETTES = {
@@ -55,6 +57,14 @@
 			{ color: '#4A1880', label: 'Purple'  },
 			{ color: '#383838', label: 'Charcoal'},
 			{ color: '#4A6830', label: 'Olive'   },
+		],
+		shirt: [
+			{ color: '#B8B0D0', label: 'Lilac'  },
+			{ color: '#E8E8E8', label: 'White'  },
+			{ color: '#3A3A3A', label: 'Black'  },
+			{ color: '#6A3030', label: 'Maroon' },
+			{ color: '#306A60', label: 'Teal'   },
+			{ color: '#D8B868', label: 'Sand'   },
 		],
 	};
 

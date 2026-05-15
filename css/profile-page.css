@@ -411,6 +411,23 @@
 	box-shadow: 0 0 0 2px #fff inset;
 }
 
+.tc-color-picker {
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: 2px solid rgba(0,0,0,0.15);
+	border-radius: 50%;
+	background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+	cursor: pointer;
+	flex-shrink: 0;
+	margin-left: 6px;
+	transition: transform 0.1s, border-color 0.12s;
+}
+.tc-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.tc-color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
+.tc-color-picker::-moz-color-swatch { border: none; border-radius: 50%; }
+.tc-color-picker:hover { border-color: var(--poke-red); transform: scale(1.08); }
+
 @media (max-width: 640px) {
 	.profile-hero {
 		grid-template-columns: 1fr;
