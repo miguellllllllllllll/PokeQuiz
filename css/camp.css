@@ -1,42 +1,46 @@
-/* ── Camp page shell ── */
+/* ── Camp card shell ── */
 .camp-card {
 	padding: 0;
 	overflow: hidden;
-	background: #1a2a1a;
+	background: #000;
 	border: 3px solid var(--poke-black);
 	box-shadow: 0 6px 0 var(--poke-black), var(--shadow-lg);
 }
 
+/* ── Header — Pokémon game HUD bar ── */
 .camp-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	gap: 12px;
-	padding: 14px 20px;
-	background: linear-gradient(180deg, #0e1a0e 0%, #1a2a1a 100%);
-	border-bottom: 2px solid rgba(255,255,255,0.06);
+	padding: 10px 16px;
+	background: linear-gradient(180deg, #1c2840 0%, #101c30 100%);
+	border-bottom: 3px solid #2a3c58;
 }
 
-.camp-header-left { display: flex; flex-direction: column; gap: 2px; }
+.camp-header-left { display: flex; flex-direction: column; gap: 3px; }
+
 .camp-header-left h1 {
 	margin: 0;
 	font-family: 'Press Start 2P', monospace;
-	font-size: 13px;
-	color: #7ddb5a;
-	text-shadow: 1px 1px 0 #2a5a1a, 0 0 12px rgba(125,219,90,0.4);
+	font-size: 11px;
+	color: #f8f8f8;
 	letter-spacing: 1px;
+	text-shadow: 1px 1px 0 #000, 0 0 10px rgba(100,180,255,0.3);
 }
+
 .camp-header-left p {
 	margin: 0;
-	font-size: 11px;
-	color: rgba(255,255,255,0.4);
+	font-size: 9px;
+	color: #8090b0;
 	font-family: 'Press Start 2P', monospace;
 	letter-spacing: 0.5px;
 }
 
+/* ── Key hints ── */
 .camp-controls-hint {
 	display: flex;
-	gap: 10px;
+	gap: 6px;
 	flex-wrap: wrap;
 	align-items: center;
 }
@@ -45,33 +49,36 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: 26px;
-	height: 26px;
-	padding: 0 6px;
-	background: #2a3a2a;
-	border: 1px solid rgba(125,219,90,0.25);
-	border-bottom: 3px solid rgba(0,0,0,0.5);
-	border-radius: 5px;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 5px;
+	background: #0e1826;
+	border: 1px solid #3a5070;
+	border-bottom: 3px solid #0a1220;
+	border-radius: 4px;
 	font-family: 'Press Start 2P', monospace;
-	font-size: 8px;
-	color: rgba(255,255,255,0.6);
+	font-size: 7px;
+	color: #a8c8e8;
 	letter-spacing: 0;
 }
 
 .ctrl-label {
-	font-size: 10px;
-	color: rgba(255,255,255,0.3);
+	font-size: 8px;
+	color: #4a6080;
 	font-family: 'Press Start 2P', monospace;
 	letter-spacing: 0.3px;
-	margin-left: -4px;
+	margin-left: -2px;
 }
 
 /* ── Canvas wrapper ── */
 .camp-world-wrap {
 	position: relative;
 	overflow: hidden;
-	background: #2d4a20;
+	background: #88C038;
 	line-height: 0;
+	/* 3px inner border mimics the Pokémon game screen bezel */
+	border-top: 3px solid #2a3c58;
+	border-bottom: 3px solid #2a3c58;
 }
 
 #campCanvas {
@@ -82,40 +89,11 @@
 	height: auto;
 }
 
-/* ── HUD overlay ── */
-.camp-hud {
-	position: absolute;
-	top: 10px;
-	left: 10px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	pointer-events: none;
-	z-index: 5;
-}
-
-.hud-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 5px 10px;
-	background: rgba(0,0,0,0.6);
-	border: 1px solid rgba(125,219,90,0.3);
-	border-radius: 6px;
-	font-family: 'Press Start 2P', monospace;
-	font-size: 8px;
-	color: #7ddb5a;
-	letter-spacing: 0.5px;
-	backdrop-filter: blur(4px);
-}
-
-.hud-badge span { color: rgba(255,255,255,0.5); }
-
 /* ── Mobile d-pad ── */
 .dpad-wrap {
 	position: absolute;
-	bottom: 16px;
-	right: 16px;
+	bottom: 14px;
+	right: 14px;
 	display: none;
 	flex-direction: column;
 	align-items: center;
@@ -129,30 +107,34 @@
 }
 
 .dpad-btn {
-	width: 44px;
-	height: 44px;
+	width: 46px;
+	height: 46px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(0,0,0,0.65);
-	border: 2px solid rgba(125,219,90,0.35);
+	background: rgba(16, 28, 48, 0.8);
+	border: 2px solid #3a5070;
+	border-bottom: 4px solid rgba(0,0,0,0.6);
 	border-radius: 8px;
-	color: rgba(255,255,255,0.7);
-	font-size: 18px;
+	color: #a8c8e8;
+	font-size: 16px;
 	cursor: pointer;
 	user-select: none;
 	-webkit-user-select: none;
 	touch-action: manipulation;
-	transition: background 0.1s;
+	transition: background 0.1s, transform 0.1s;
 }
 
-.dpad-btn:active { background: rgba(125,219,90,0.25); }
+.dpad-btn:active {
+	background: rgba(58, 80, 112, 0.8);
+	transform: translateY(2px);
+	border-bottom-width: 2px;
+}
 
 @media (max-width: 640px) {
 	.dpad-wrap { display: flex; }
 	.ctrl-key, .ctrl-label { display: none; }
-	.camp-header-left h1 { font-size: 11px; }
-	.camp-world-wrap { height: 400px; }
+	.camp-header-left h1 { font-size: 9px; }
 }
 
 /* ── Footer bar ── */
@@ -161,9 +143,9 @@
 	justify-content: space-between;
 	align-items: center;
 	gap: 12px;
-	padding: 12px 20px;
-	background: linear-gradient(180deg, #1a2a1a 0%, #0e1a0e 100%);
-	border-top: 2px solid rgba(255,255,255,0.06);
+	padding: 10px 16px;
+	background: linear-gradient(180deg, #101c30 0%, #0c1826 100%);
+	border-top: 3px solid #2a3c58;
 }
 
 .camp-footer .btn { font-size: 12px; padding: 9px 18px; }

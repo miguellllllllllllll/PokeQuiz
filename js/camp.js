@@ -21,15 +21,14 @@
 		// Grass variety
 		let rng=77777;
 		function rand(){ rng^=rng<<13;rng^=rng>>17;rng^=rng<<5;return(rng>>>0)/0xFFFFFFFF; }
-		for(let r=2;r<MAP_H-2;r++) for(let c=2;c<MAP_W-2;c++) if(rand()<0.1) map[r][c]=TG2;
+		for(let r=2;r<MAP_H-2;r++) for(let c=2;c<MAP_W-2;c++) if(rand()<0.09) map[r][c]=TG2;
 
 		// Border trees
 		for(let c=0;c<MAP_W;c++){set(0,c,TTR);set(1,c,TTR);}
 		for(let r=0;r<MAP_H;r++){set(r,0,TTR);set(r,1,TTR);set(r,MAP_W-1,TTR);set(r,MAP_W-2,TTR);}
-		// Bottom border with entrance gap at cols 9-13
 		for(let c=0;c<MAP_W;c++) if(c<8||c>13){set(MAP_H-1,c,TTR);set(MAP_H-2,c,TTR);}
 
-		// Interior trees (don't overlap house cols 6-16 rows 3-11 or pond cols 30-36 rows 3-9)
+		// Interior trees
 		[[8,3],[9,4],[10,3],[11,4],[14,3],[15,4],[16,3],[20,3],[21,4],[22,3],[23,4],[26,2],[27,3],
 		 [3,19],[4,20],[5,22],[4,24],[5,26],[3,28],[6,18],[7,19]
 		].forEach(([r,c])=>set(r,c,TTR));
@@ -49,199 +48,332 @@
 		set(8,14,TWN); set(9,14,TWN);
 		set(11,11,TD);
 
-		// Pond: cols 30-36, rows 3-9 (rough edges)
+		// Pond: cols 30-36, rows 3-9
 		fill(3,30,9,36,TH2O);
 		[[3,30],[3,36],[9,30],[9,36],[3,31],[9,31],[3,35],[9,35],[4,30],[4,36],[8,30],[8,36]
 		].forEach(([r,c])=>set(r,c,TG));
 
 		// Paths
-		for(let r=12;r<=27;r++) set(r,11,TP);       // vertical from house
-		for(let c=11;c<=22;c++) set(20,c,TP);        // horizontal to field gate
+		for(let r=12;r<=27;r++) set(r,11,TP);
+		for(let c=11;c<=22;c++) set(20,c,TP);
 
-		// Crop field fence: cols 20-36, rows 12-27
+		// Fence + field
 		for(let c=20;c<=36;c++){set(12,c,TFN);set(27,c,TFN);}
 		for(let r=13;r<=26;r++){set(r,20,TFN);set(r,36,TFN);}
-		set(20,20,TP); set(20,21,TP);                // gate
-
-		// Soil and crops inside fence
+		set(20,20,TP); set(20,21,TP);
 		fill(13,21,26,35,TSO);
 		for(let r=14;r<=26;r+=2) for(let c=21;c<=35;c++) set(r,c,TCR);
 
 		return map;
 	}
 
-	// ── Tile drawing ─────────────────────────────────────────────────────────────
+	// ── Tile drawing — Pokémon Gen 3/4 aesthetic ─────────────────────────────────
 	function drawTile(ctx, t, x, y, tick) {
 		const d = TILE;
 		switch(t) {
+
+			// ── Ground ──
 			case TG:
-				ctx.fillStyle='#57a82e'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='rgba(0,0,0,0.04)';
-				ctx.fillRect(x,y,d,1); ctx.fillRect(x,y,1,d);
+				ctx.fillStyle='#88C038'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#68A020';
+				ctx.fillRect(x+4,y+5,2,6); ctx.fillRect(x+17,y+18,2,6); ctx.fillRect(x+26,y+7,2,6);
+				ctx.fillStyle='#A0D848';
+				ctx.fillRect(x+9,y+12,7,3);
 				break;
+
 			case TG2:
-				ctx.fillStyle='#4a9a26'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#5db630'; ctx.fillRect(x+3,y+3,7,5); ctx.fillRect(x+16,y+18,6,4);
-				ctx.fillStyle='#6cc940'; ctx.fillRect(x+5,y+5,3,3);
+				ctx.fillStyle='#78B028'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#589818';
+				ctx.fillRect(x+3,y+4,2,7); ctx.fillRect(x+13,y+20,2,7); ctx.fillRect(x+22,y+11,2,7);
+				ctx.fillStyle='#90C030';
+				ctx.fillRect(x+16,y+6,6,3);
 				break;
+
 			case TP:
-				ctx.fillStyle='#876023'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#9c7030'; ctx.fillRect(x+2,y+2,d-4,d-4);
-				ctx.fillStyle='#a88040';
-				ctx.fillRect(x+4,y+4,10,7); ctx.fillRect(x+17,y+14,9,6); ctx.fillRect(x+3,y+18,11,7);
-				ctx.fillStyle='#b89050'; ctx.fillRect(x+5,y+5,4,3); ctx.fillRect(x+18,y+15,3,3);
+				ctx.fillStyle='#D8C080'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#C0A868';
+				ctx.fillRect(x+4,y+4,4,3); ctx.fillRect(x+17,y+14,3,3); ctx.fillRect(x+7,y+22,5,3); ctx.fillRect(x+23,y+9,3,2);
+				ctx.fillStyle='#E8D898';
+				ctx.fillRect(x+11,y+8,4,2); ctx.fillRect(x+20,y+22,4,2);
 				break;
-			case TR:
-				ctx.fillStyle='#8a2c2c'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#9e3535'; ctx.fillRect(x+2,y+2,d-4,d-4);
-				ctx.fillStyle='#7a2020';
-				ctx.fillRect(x,y+8,d,2); ctx.fillRect(x,y+20,d,2); ctx.fillRect(x+16,y,2,d);
+
+			// ── House ──
+			case TR: // roof face — warm orange-red shingles
+				ctx.fillStyle='#C84020'; ctx.fillRect(x,y,d,d);
+				// Shingle rows
+				ctx.fillStyle='#B03010';
+				ctx.fillRect(x,y+9,d,3); ctx.fillRect(x,y+20,d,3);
+				// Ridge/highlight
+				ctx.fillStyle='#E05830';
+				ctx.fillRect(x,y,d,5);
+				ctx.fillStyle='#F07040';
+				ctx.fillRect(x,y+1,d,2);
+				// Left divider lines (between shingles)
+				ctx.fillStyle='#B03010';
+				ctx.fillRect(x+16,y,1,d);
 				break;
-			case TR2:
-				ctx.fillStyle='#581818'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#6a2020'; ctx.fillRect(x+1,y+2,d-2,d-6);
-				ctx.fillStyle='#4a1010'; ctx.fillRect(x,y+d-4,d,4);
+
+			case TR2: // eave — dark overhang
+				ctx.fillStyle='#701808'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#9C2810'; ctx.fillRect(x,y+3,d,d-7);
+				ctx.fillStyle='#501008'; ctx.fillRect(x,y+d-3,d,3);
 				break;
-			case TW:
-				ctx.fillStyle='#e6d4a0'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#d4be88';
-				ctx.fillRect(x,y,d,3); ctx.fillRect(x,y,3,d); ctx.fillRect(x+d-3,y,3,d);
-				ctx.fillStyle='#c8b070';
-				ctx.fillRect(x+4,y+8,d-8,2); ctx.fillRect(x+4,y+20,d-8,2);
+
+			case TW: // wall — cream white with plank lines
+				ctx.fillStyle='#F0EED8'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#D8D4B0';
+				ctx.fillRect(x+2,y+9,d-4,2); ctx.fillRect(x+2,y+20,d-4,2);
+				// Edge shadow
+				ctx.fillStyle='#C8C4A0';
+				ctx.fillRect(x+d-2,y,2,d); ctx.fillRect(x,y+d-2,d,2);
 				break;
-			case TWN: {
-				ctx.fillStyle='#e6d4a0'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#7a5a18'; ctx.fillRect(x+4,y+4,d-8,d-8);
-				const gl=Math.sin(tick*0.025+x*0.02)*0.08+0.82;
-				ctx.fillStyle=`rgba(140,200,240,${gl})`;
-				ctx.fillRect(x+6,y+6,8,8); ctx.fillRect(x+18,y+6,8,8);
-				ctx.fillRect(x+6,y+18,8,8); ctx.fillRect(x+18,y+18,8,8);
-				ctx.fillStyle='#7a5a18';
-				ctx.fillRect(x+13,y+5,2,d-10); ctx.fillRect(x+5,y+13,d-10,2);
-				ctx.fillStyle='rgba(255,255,255,0.5)';
-				ctx.fillRect(x+7,y+7,3,3); ctx.fillRect(x+19,y+7,3,3);
+
+			case TWN: { // window — blue glass + white curtains
+				ctx.fillStyle='#F0EED8'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#785020'; ctx.fillRect(x+4,y+4,d-8,d-8); // frame
+				const gl=Math.sin(tick*0.022+x*0.012)*0.06+0.86;
+				// Panes
+				ctx.fillStyle=`rgba(100,180,240,${gl})`;
+				ctx.fillRect(x+6,y+6,9,9); ctx.fillRect(x+17,y+6,9,9);
+				ctx.fillRect(x+6,y+17,9,9); ctx.fillRect(x+17,y+17,9,9);
+				// Dividers
+				ctx.fillStyle='#785020';
+				ctx.fillRect(x+14,y+5,2,d-10); ctx.fillRect(x+5,y+14,d-10,2);
+				// Curtain strips
+				ctx.fillStyle='rgba(255,255,255,0.45)';
+				ctx.fillRect(x+6,y+6,3,9); ctx.fillRect(x+17,y+6,3,9);
+				// Glare
+				ctx.fillStyle='rgba(255,255,255,0.75)';
+				ctx.fillRect(x+7,y+7,3,2); ctx.fillRect(x+18,y+7,3,2);
 				break;
 			}
-			case TD:
-				ctx.fillStyle='#e6d4a0'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#5a2c10'; ctx.fillRect(x+4,y+2,d-8,d-2);
-				ctx.fillStyle='#7a4020'; ctx.fillRect(x+6,y+4,d-12,d-6);
-				ctx.fillStyle='#8a5030'; ctx.fillRect(x+8,y+6,d-16,d-14);
-				ctx.fillStyle='#ffcb05'; ctx.fillRect(x+d-12,y+16,4,4);
+
+			case TD: // door — brown wood
+				ctx.fillStyle='#F0EED8'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#5A3010'; ctx.fillRect(x+5,y+2,d-10,d-2);
+				ctx.fillStyle='#8A5020'; ctx.fillRect(x+7,y+4,d-14,d-6);
+				ctx.fillStyle='#703818'; ctx.fillRect(x+7,y+15,d-14,2);
+				ctx.fillStyle='#A06030'; ctx.fillRect(x+8,y+5,5,5); ctx.fillRect(x+8,y+17,5,4);
+				ctx.fillStyle='#F0A000'; ctx.fillRect(x+d-12,y+17,4,4);
+				ctx.fillStyle='#FFD040'; ctx.fillRect(x+d-11,y+18,2,2);
 				break;
+
+			// ── Water — Pokémon blue with sparkles ──
 			case TH2O: {
-				const w1=Math.sin(tick*0.04+(x+y)*0.05)*2, w2=Math.sin(tick*0.03+x*0.07)*1.5;
-				ctx.fillStyle='#2e70cc'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#3880dd';
-				ctx.fillRect(x+2,y+w1+4,d-4,3); ctx.fillRect(x+4,y+w1+14,d-8,3); ctx.fillRect(x+2,y+w2+22,d-4,2);
-				ctx.fillStyle='rgba(255,255,255,0.2)';
-				ctx.fillRect(x+6,y+w1+5,5,1); ctx.fillRect(x+16,y+w1+15,7,1);
+				const w1=Math.sin(tick*0.05+(x+y)*0.04)*2.5;
+				const w2=Math.sin(tick*0.04+x*0.06)*2;
+				ctx.fillStyle='#4878C8'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#6898E8';
+				ctx.fillRect(x+2,y+w1+3,d-4,3); ctx.fillRect(x+3,y+w1+13,d-6,3); ctx.fillRect(x+2,y+w2+22,d-4,3);
+				ctx.fillStyle='#90B8F8';
+				ctx.fillRect(x+5,y+w1+4,8,1); ctx.fillRect(x+18,y+w1+14,7,1);
+				// Animated sparkle
+				const sp=Math.floor(tick/10)%4;
+				ctx.fillStyle='rgba(190,228,255,0.7)';
+				if(sp===0){ctx.fillRect(x+10,y+6,5,5);}
+				else if(sp===1){ctx.fillRect(x+20,y+20,5,5);}
+				else if(sp===2){ctx.fillRect(x+5,y+20,5,5);}
+				else{ctx.fillRect(x+22,y+6,5,5);}
+				ctx.fillStyle='rgba(255,255,255,0.5)';
+				if(sp===0){ctx.fillRect(x+12,y+8,2,2);}
+				else if(sp===1){ctx.fillRect(x+22,y+22,2,2);}
+				else if(sp===2){ctx.fillRect(x+7,y+22,2,2);}
+				else{ctx.fillRect(x+24,y+8,2,2);}
 				break;
 			}
-			case TTR:
-				ctx.fillStyle='#3a8020'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#6b3a1f'; ctx.fillRect(x+12,y+18,8,14);
-				ctx.fillStyle='#7a4828'; ctx.fillRect(x+14,y+20,4,12);
-				ctx.fillStyle='#1e6010'; ctx.fillRect(x+2,y+2,28,20);
-				ctx.fillStyle='#2a7818'; ctx.fillRect(x+4,y+4,24,16);
-				ctx.fillStyle='#3a9020'; ctx.fillRect(x+7,y+6,18,12);
-				ctx.fillStyle='#50a830'; ctx.fillRect(x+10,y+7,12,8);
-				ctx.fillStyle='#6cc040'; ctx.fillRect(x+12,y+8,5,4);
+
+			// ── Trees — round dome, THE Pokémon look ──
+			case TTR: {
+				// Grass shadow under tree
+				ctx.fillStyle='#68A028'; ctx.fillRect(x,y,d,d);
+				// Trunk
+				ctx.fillStyle='#604828'; ctx.fillRect(x+12,y+22,8,10);
+				ctx.fillStyle='#785838'; ctx.fillRect(x+14,y+23,4,9);
+				// Canopy: dark outline first (round silhouette via stacked rects)
+				ctx.fillStyle='#284E18';
+				ctx.fillRect(x+8, y+0, 16,2);
+				ctx.fillRect(x+4, y+2, 24,3);
+				ctx.fillRect(x+2, y+5, 28,18);
+				ctx.fillRect(x+4, y+23,24,2);
+				ctx.fillRect(x+8, y+25,16,2);
+				// Main green fill
+				ctx.fillStyle='#48982E';
+				ctx.fillRect(x+10,y+2, 12,2);
+				ctx.fillRect(x+6, y+4, 20,19);
+				ctx.fillRect(x+10,y+23,12,2);
+				// Lighter inner
+				ctx.fillStyle='#60B840';
+				ctx.fillRect(x+8, y+4, 16,16);
+				ctx.fillRect(x+10,y+20,12,3);
+				// Highlight zone (upper-left)
+				ctx.fillStyle='#80D050';
+				ctx.fillRect(x+8, y+5, 12,8);
+				ctx.fillRect(x+8, y+13,8, 5);
+				// Bright highlight dot
+				ctx.fillStyle='#9EE868';
+				ctx.fillRect(x+10,y+6, 6, 4);
+				ctx.fillStyle='#B8F880';
+				ctx.fillRect(x+11,y+7, 3, 2);
 				break;
+			}
+
+			// ── Flowers ──
 			case TFR:
-				ctx.fillStyle='#57a82e'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#3a8020'; ctx.fillRect(x+14,y+18,4,10);
-				ctx.fillStyle='#cc1515';
-				ctx.fillRect(x+10,y+10,12,10); ctx.fillRect(x+12,y+8,8,14);
-				ctx.fillStyle='#ff3030'; ctx.fillRect(x+14,y+10,4,4);
-				ctx.fillStyle='#ffcb05'; ctx.fillRect(x+13,y+11,6,5);
+				ctx.fillStyle='#88C038'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#408030'; ctx.fillRect(x+14,y+20,3,10);
+				ctx.fillStyle='#D82020';
+				ctx.fillRect(x+10,y+12,11,9); ctx.fillRect(x+12,y+10,7,13);
+				ctx.fillStyle='#F04040'; ctx.fillRect(x+14,y+12,4,4);
+				ctx.fillStyle='#F8C808'; ctx.fillRect(x+13,y+13,5,5);
+				ctx.fillStyle='#FFE040'; ctx.fillRect(x+14,y+14,3,3);
 				break;
+
 			case TFY:
-				ctx.fillStyle='#57a82e'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#3a8020'; ctx.fillRect(x+14,y+18,4,10);
-				ctx.fillStyle='#d4a000';
-				ctx.fillRect(x+10,y+10,12,10); ctx.fillRect(x+12,y+8,8,14);
-				ctx.fillStyle='#ffcb05'; ctx.fillRect(x+14,y+10,4,4);
-				ctx.fillStyle='#ff8800'; ctx.fillRect(x+13,y+11,6,5);
+				ctx.fillStyle='#88C038'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#408030'; ctx.fillRect(x+14,y+20,3,10);
+				ctx.fillStyle='#E8A000';
+				ctx.fillRect(x+10,y+12,11,9); ctx.fillRect(x+12,y+10,7,13);
+				ctx.fillStyle='#F8C808'; ctx.fillRect(x+14,y+12,4,4);
+				ctx.fillStyle='#FF7800'; ctx.fillRect(x+13,y+13,5,5);
+				ctx.fillStyle='#FFB020'; ctx.fillRect(x+14,y+14,3,3);
 				break;
+
+			// ── Field ──
 			case TSO:
-				ctx.fillStyle='#2e1a08'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#3a2210'; ctx.fillRect(x+2,y+2,d-4,d-4);
-				ctx.fillStyle='#261408';
-				ctx.fillRect(x,y+10,d,2); ctx.fillRect(x,y+22,d,2);
+				ctx.fillStyle='#503818'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#5A4220'; ctx.fillRect(x+2,y+2,d-4,d-4);
+				ctx.fillStyle='#402808'; ctx.fillRect(x,y+11,d,2); ctx.fillRect(x,y+22,d,2);
+				ctx.fillStyle='#6A4C28'; ctx.fillRect(x+2,y+3,d-4,7); ctx.fillRect(x+2,y+13,d-4,8);
 				break;
+
 			case TCR: {
-				ctx.fillStyle='#2e1a08'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#3a2210'; ctx.fillRect(x+2,y+2,d-4,d-4);
-				const sw=Math.sin(tick*0.04+x*0.1)*1.2;
-				ctx.fillStyle='#2e7a18';
-				ctx.fillRect(x+3+sw,y+16,5,12); ctx.fillRect(x+13+sw,y+14,5,14); ctx.fillRect(x+23+sw,y+16,5,12);
-				ctx.fillStyle='#4aa830';
-				ctx.fillRect(x+2+sw,y+10,7,8); ctx.fillRect(x+12+sw,y+8,7,8); ctx.fillRect(x+22+sw,y+10,7,8);
-				ctx.fillStyle='#66cc48';
-				ctx.fillRect(x+4+sw,y+10,3,4); ctx.fillRect(x+14+sw,y+8,3,4);
+				ctx.fillStyle='#503818'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#5A4220'; ctx.fillRect(x+2,y+2,d-4,d-4);
+				ctx.fillStyle='#402808'; ctx.fillRect(x,y+11,d,2); ctx.fillRect(x,y+22,d,2);
+				const sw=Math.sin(tick*0.06+x*0.08)*1.5;
+				[[3,14],[13,12],[23,14]].forEach(([cx,cy])=>{
+					ctx.fillStyle='#285820'; ctx.fillRect(x+cx+sw,y+cy,4,d-cy);
+					ctx.fillStyle='#488A28'; ctx.fillRect(x+cx-2+sw,y+cy,8,7);
+					ctx.fillStyle='#68B840'; ctx.fillRect(x+cx-1+sw,y+cy+1,6,5);
+					ctx.fillStyle='#88D050'; ctx.fillRect(x+cx+sw,y+cy+2,4,2);
+				});
 				break;
 			}
+
+			// ── Fence — Pokémon wooden fence ──
 			case TFN:
-				ctx.fillStyle='#57a82e'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#b08040'; ctx.fillRect(x,y+8,d,5); ctx.fillRect(x,y+20,d,5);
-				ctx.fillStyle='#c09050'; ctx.fillRect(x+12,y+2,8,d-4);
-				ctx.fillStyle='#d4a860'; ctx.fillRect(x+14,y+4,4,d-8);
+				ctx.fillStyle='#88C038'; ctx.fillRect(x,y,d,d);
+				// Rails
+				ctx.fillStyle='#987030'; ctx.fillRect(x,y+9,d,5); ctx.fillRect(x,y+20,d,5);
+				ctx.fillStyle='#705020'; ctx.fillRect(x,y+13,d,2); ctx.fillRect(x,y+24,d,2);
+				ctx.fillStyle='#C09848'; ctx.fillRect(x,y+10,d,2); ctx.fillRect(x,y+21,d,2);
+				// Post
+				ctx.fillStyle='#A88040'; ctx.fillRect(x+12,y+2,8,d-4);
+				ctx.fillStyle='#C0A060'; ctx.fillRect(x+13,y+3,5,d-6);
+				ctx.fillStyle='#D8B870'; ctx.fillRect(x+14,y+4,2,d-8);
+				// Post cap
+				ctx.fillStyle='#C0A060'; ctx.fillRect(x+10,y+2,12,4);
+				ctx.fillStyle='#907030'; ctx.fillRect(x+10,y+5,12,2);
 				break;
+
 			default:
-				ctx.fillStyle='#57a82e'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#88C038'; ctx.fillRect(x,y,d,d);
 		}
 	}
 
-	// ── Player ───────────────────────────────────────────────────────────────────
-	// bx/by = top-left of a 24×28 sprite box; py is feet (by+28)
+	// ── Chimney (drawn as world overlay, not a tile) ──────────────────────────────
+	function drawChimney(ctx, camX, camY) {
+		// Chimney sits at col 7.5 (screen center between cols 7 and 8), above row 3
+		const wx = 7 * TILE + 12, wy = 2 * TILE + 8;
+		const sx = wx - camX, sy = wy - camY;
+		if(sx < -32 || sx > VIEW_W || sy < -32 || sy > VIEW_H) return;
+		ctx.fillStyle='#501010'; ctx.fillRect(sx+2,sy,12,28);
+		ctx.fillStyle='#701818'; ctx.fillRect(sx+4,sy+2,8,24);
+		ctx.fillStyle='#401010'; ctx.fillRect(sx,sy,16,6);
+		ctx.fillStyle='#602020'; ctx.fillRect(sx+2,sy+2,12,3);
+	}
+
+	// ── Player — Gen 3 Pokémon trainer sprite ────────────────────────────────────
 	function drawPlayer(ctx, px, py, dir, frame) {
-		const bx=Math.floor(px)-12, by=Math.floor(py)-28;
+		const bx=Math.floor(px)-11, by=Math.floor(py)-28;
 		const lg=frame===1?3:0;
 
-		// Shadow
-		ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fillRect(bx+3,by+26,18,5);
+		// Ground shadow
+		ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(bx+2,by+28,18,5);
 
-		if(dir===0) { // Down
-			ctx.fillStyle='#111'; ctx.fillRect(bx+4,by+24+lg,7,4); ctx.fillRect(bx+13,by+24-lg,7,4);
-			ctx.fillStyle='#1a2050'; ctx.fillRect(bx+5,by+16,14,9);
-			ctx.fillStyle='#cc2020'; ctx.fillRect(bx+3,by+9,18,8); ctx.fillRect(bx,by+9,4,8); ctx.fillRect(bx+20,by+9,4,8);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx,by+16,4,4); ctx.fillRect(bx+20,by+16,4,4);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx+5,by+4,14,10);
-			ctx.fillStyle='#222'; ctx.fillRect(bx+7,by+7,2,2); ctx.fillRect(bx+15,by+7,2,2);
-			ctx.fillStyle='#c07040'; ctx.fillRect(bx+10,by+11,4,1);
-		} else if(dir===2) { // Up
-			ctx.fillStyle='#111'; ctx.fillRect(bx+4,by+24+lg,7,4); ctx.fillRect(bx+13,by+24-lg,7,4);
-			ctx.fillStyle='#1a2050'; ctx.fillRect(bx+5,by+16,14,9);
-			ctx.fillStyle='#cc2020'; ctx.fillRect(bx+3,by+9,18,8); ctx.fillRect(bx,by+9,4,8); ctx.fillRect(bx+20,by+9,4,8);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx,by+16,4,4); ctx.fillRect(bx+20,by+16,4,4);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx+5,by+4,14,10);
-			ctx.fillStyle='#cc2020'; ctx.fillRect(bx+9,by+3,6,3); // back of hat strap
-		} else if(dir===1) { // Left
-			ctx.fillStyle='#111'; ctx.fillRect(bx+5,by+24+lg,10,4);
-			ctx.fillStyle='#1a2050'; ctx.fillRect(bx+5,by+16,13,9);
-			ctx.fillStyle='#cc2020'; ctx.fillRect(bx+4,by+9,15,8); ctx.fillRect(bx,by+9,5,8);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx,by+15,5,4);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx+5,by+4,12,10);
-			ctx.fillStyle='#222'; ctx.fillRect(bx+6,by+7,2,2);
-			ctx.fillStyle='#d0a060'; ctx.fillRect(bx+5,by+9,2,2);
-			ctx.fillStyle='#881010'; ctx.fillRect(bx+2,by+4,4,2); // brim extension
-		} else { // Right
-			ctx.fillStyle='#111'; ctx.fillRect(bx+9,by+24+lg,10,4);
-			ctx.fillStyle='#1a2050'; ctx.fillRect(bx+6,by+16,13,9);
-			ctx.fillStyle='#cc2020'; ctx.fillRect(bx+5,by+9,15,8); ctx.fillRect(bx+19,by+9,5,8);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx+19,by+15,5,4);
-			ctx.fillStyle='#f0c080'; ctx.fillRect(bx+7,by+4,12,10);
-			ctx.fillStyle='#222'; ctx.fillRect(bx+16,by+7,2,2);
-			ctx.fillStyle='#d0a060'; ctx.fillRect(bx+17,by+9,2,2);
-			ctx.fillStyle='#881010'; ctx.fillRect(bx+18,by+4,4,2);
+		// === DOWN (facing camera) ===
+		if(dir===0){
+			// Shoes
+			ctx.fillStyle='#202020'; ctx.fillRect(bx+3,by+25+lg,7,4); ctx.fillRect(bx+12,by+25-lg,7,4);
+			// Pants
+			ctx.fillStyle='#282860'; ctx.fillRect(bx+4,by+17,14,9);
+			// Jacket
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+3,by+11,16,7);
+			// Collar/shirt
+			ctx.fillStyle='#F0F0E0'; ctx.fillRect(bx+8,by+11,6,3);
+			// Arms
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx,by+11,4,7); ctx.fillRect(bx+18,by+11,4,7);
+			// Hands
+			ctx.fillStyle='#F0C880'; ctx.fillRect(bx,by+17,4,4); ctx.fillRect(bx+18,by+17,4,4);
+			// Hair (sides)
+			ctx.fillStyle='#301808'; ctx.fillRect(bx+4,by+6,2,5); ctx.fillRect(bx+16,by+6,2,5);
+			// Face
+			ctx.fillStyle='#F0C880'; ctx.fillRect(bx+5,by+5,12,9);
+			// Eyes
+			ctx.fillStyle='#101010'; ctx.fillRect(bx+7,by+8,2,2); ctx.fillRect(bx+13,by+8,2,2);
+			// Hat brim (dark)
+			ctx.fillStyle='#181818'; ctx.fillRect(bx+3,by+3,16,3);
+			// Hat top (red)
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+5,by-3,12,7);
+			// Logo
+			ctx.fillStyle='#F0F0F0'; ctx.fillRect(bx+8,by+2,6,2);
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+9,by+2,4,2);
+
+		// === UP (back) ===
+		}else if(dir===2){
+			ctx.fillStyle='#202020'; ctx.fillRect(bx+3,by+25+lg,7,4); ctx.fillRect(bx+12,by+25-lg,7,4);
+			ctx.fillStyle='#282860'; ctx.fillRect(bx+4,by+17,14,9);
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+3,by+11,16,7); ctx.fillRect(bx,by+11,4,7); ctx.fillRect(bx+18,by+11,4,7);
+			ctx.fillStyle='#F0C880'; ctx.fillRect(bx,by+17,4,4); ctx.fillRect(bx+18,by+17,4,4);
+			// Back of head
+			ctx.fillStyle='#301808'; ctx.fillRect(bx+5,by+5,12,9);
+			// Hat
+			ctx.fillStyle='#181818'; ctx.fillRect(bx+3,by+3,16,3);
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+5,by-3,12,7);
+			// Back strap of cap
+			ctx.fillStyle='#181818'; ctx.fillRect(bx+9,by+3,4,3);
+
+		// === LEFT ===
+		}else if(dir===1){
+			ctx.fillStyle='#202020'; ctx.fillRect(bx+4,by+25+lg,10,4);
+			ctx.fillStyle='#282860'; ctx.fillRect(bx+4,by+17,12,9);
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+4,by+11,13,7); ctx.fillRect(bx,by+11,5,7);
+			ctx.fillStyle='#F0C880'; ctx.fillRect(bx,by+16,5,4);
+			// Hair
+			ctx.fillStyle='#301808'; ctx.fillRect(bx+4,by+5,2,6);
+			// Face (profile)
+			ctx.fillStyle='#F0C880'; ctx.fillRect(bx+5,by+5,10,9);
+			ctx.fillStyle='#101010'; ctx.fillRect(bx+6,by+8,2,2);
+			ctx.fillStyle='#D0A060'; ctx.fillRect(bx+5,by+10,2,2);
+			// Hat
+			ctx.fillStyle='#181818'; ctx.fillRect(bx+3,by+3,14,3);
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+5,by-3,11,7);
+			ctx.fillStyle='#181818'; ctx.fillRect(bx+2,by+4,4,2);
+
+		// === RIGHT ===
+		}else{
+			ctx.fillStyle='#202020'; ctx.fillRect(bx+8,by+25+lg,10,4);
+			ctx.fillStyle='#282860'; ctx.fillRect(bx+6,by+17,12,9);
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+5,by+11,13,7); ctx.fillRect(bx+17,by+11,5,7);
+			ctx.fillStyle='#F0C880'; ctx.fillRect(bx+17,by+16,5,4);
+			ctx.fillStyle='#301808'; ctx.fillRect(bx+16,by+5,2,6);
+			ctx.fillStyle='#F0C880'; ctx.fillRect(bx+7,by+5,10,9);
+			ctx.fillStyle='#101010'; ctx.fillRect(bx+14,by+8,2,2);
+			ctx.fillStyle='#D0A060'; ctx.fillRect(bx+15,by+10,2,2);
+			ctx.fillStyle='#181818'; ctx.fillRect(bx+5,by+3,14,3);
+			ctx.fillStyle='#C83020'; ctx.fillRect(bx+6,by-3,11,7);
+			ctx.fillStyle='#181818'; ctx.fillRect(bx+16,by+4,4,2);
 		}
-
-		// Hat (shared)
-		ctx.fillStyle='#881010'; ctx.fillRect(bx+3,by+2,18,4);
-		ctx.fillStyle='#991818'; ctx.fillRect(bx+5,by-2,14,5);
-		ctx.fillStyle='#ffffff'; ctx.fillRect(bx+9,by+2,6,3);
-		ctx.fillStyle='#ee1515'; ctx.fillRect(bx+10,by+2,4,3);
 	}
 
 	// ── Main ─────────────────────────────────────────────────────────────────────
@@ -260,10 +392,7 @@
 		const keys = new Set();
 		function onKey(e) {
 			const k=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D'];
-			if(k.includes(e.key)){
-				e.type==='keydown'?keys.add(e.key):keys.delete(e.key);
-				e.preventDefault();
-			}
+			if(k.includes(e.key)){ e.type==='keydown'?keys.add(e.key):keys.delete(e.key); e.preventDefault(); }
 		}
 		window.addEventListener('keydown', onKey);
 		window.addEventListener('keyup', onKey);
@@ -283,7 +412,6 @@
 			if(col<0||col>=MAP_W||row<0||row>=MAP_H) return true;
 			return SOLID.has(map[row][col]);
 		}
-
 		function tryMove(dx,dy){
 			const hw=9;
 			const nx=plx+dx;
@@ -299,9 +427,9 @@
 			rafId=requestAnimationFrame(loop);
 
 			let dx=0,dy=0;
-			if(keys.has('ArrowUp')||keys.has('w')||keys.has('W')||dpad.up)   {dy=-SPEED;dir=2;}
-			if(keys.has('ArrowDown')||keys.has('s')||keys.has('S')||dpad.down){dy=+SPEED;dir=0;}
-			if(keys.has('ArrowLeft')||keys.has('a')||keys.has('A')||dpad.left){dx=-SPEED;dir=1;}
+			if(keys.has('ArrowUp')||keys.has('w')||keys.has('W')||dpad.up)    {dy=-SPEED;dir=2;}
+			if(keys.has('ArrowDown')||keys.has('s')||keys.has('S')||dpad.down) {dy=+SPEED;dir=0;}
+			if(keys.has('ArrowLeft')||keys.has('a')||keys.has('A')||dpad.left) {dx=-SPEED;dir=1;}
 			if(keys.has('ArrowRight')||keys.has('d')||keys.has('D')||dpad.right){dx=+SPEED;dir=3;}
 			if(dx!==0&&dy!==0){dx*=0.707;dy*=0.707;}
 
@@ -314,12 +442,13 @@
 			camX=Math.max(0,Math.min(MAP_W*TILE-VIEW_W,camX));
 			camY=Math.max(0,Math.min(MAP_H*TILE-VIEW_H,camY));
 
-			ctx.fillStyle='#57a82e'; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+			ctx.fillStyle='#88C038'; ctx.fillRect(0,0,VIEW_W,VIEW_H);
 
 			const sc=Math.max(0,Math.floor(camX/TILE)), ec=Math.min(MAP_W-1,Math.ceil((camX+VIEW_W)/TILE));
 			const sr=Math.max(0,Math.floor(camY/TILE)), er=Math.min(MAP_H-1,Math.ceil((camY+VIEW_H)/TILE));
 			for(let r=sr;r<=er;r++) for(let c=sc;c<=ec;c++) drawTile(ctx,map[r][c],c*TILE-camX,r*TILE-camY,tick);
 
+			drawChimney(ctx, camX, camY);
 			drawPlayer(ctx,plx-camX,ply-camY,dir,moving?frame:0);
 		}
 
