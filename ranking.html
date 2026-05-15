@@ -57,10 +57,32 @@
 						<span class="dot"></span>
 						<span id="eyebrowLabel">Hall of Fame</span>
 					</div>
-					<h1>Top 10 Scores</h1>
+					<h1 id="boardTitle">Top 50 Scores</h1>
 					<p class="lede" id="boardSubtitle">Loading scores&hellip;</p>
 				</div>
-				<button id="clearBoard" type="button" class="btn btn-ghost" hidden>Clear Local</button>
+			</div>
+
+			<div class="lb-tabs" role="tablist">
+				<button type="button" class="lb-tab is-active" data-game="quiz" role="tab" aria-selected="true">
+					<span class="lb-tab-icon">🧠</span>
+					<span class="lb-tab-label">Trivia Quiz</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="silhouette" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">👤</span>
+					<span class="lb-tab-label">Who's That Pokémon?</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="cry" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🔊</span>
+					<span class="lb-tab-label">Cry Quiz</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="higherlower" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">⚖️</span>
+					<span class="lb-tab-label">Higher or Lower</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="memory" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🎴</span>
+					<span class="lb-tab-label">Memory Match</span>
+				</button>
 			</div>
 
 			<div class="leaderboard-wrap">
@@ -69,7 +91,8 @@
 						<tr>
 							<th class="col-rank">#</th>
 							<th class="col-name">Trainer</th>
-							<th class="col-score">Score</th>
+							<th class="col-score" id="colScoreLabel">Score</th>
+							<th class="col-mode">Mode</th>
 							<th class="col-date">Date</th>
 						</tr>
 					</thead>
@@ -77,12 +100,15 @@
 				</table>
 				<div id="emptyState" class="empty-state" hidden>
 					<img src="Pictures/pokeball.png" alt="" width="64">
-					<p>No scores yet. <a href="play.html">Take the quiz</a> to claim the top spot!</p>
+					<p id="emptyMsg">No scores yet for this game. Be the first.</p>
+				</div>
+				<div id="loadingState" class="empty-state">
+					<p>Loading global scores&hellip;</p>
 				</div>
 			</div>
 
 			<div class="ranking-actions">
-				<a href="play.html" class="btn">Play Again &rarr;</a>
+				<a href="puzzle.html" class="btn">Puzzle Hub &rarr;</a>
 				<a href="index.html" class="btn btn-secondary">Home</a>
 			</div>
 		</section>
@@ -93,88 +119,131 @@
 	<script src="js/profile.js" defer></script>
 	<script>
 		(function() {
-			const LOCAL_KEY = 'pokequiz_leaderboard';
+			const GAMES = {
+				quiz:       { label: 'Trivia Quiz',         scoreLabel: 'Score',  defaultTotal: 21, timeBased: false },
+				silhouette: { label: "Who's That Pokémon?", scoreLabel: 'Streak', timeBased: false },
+				cry:        { label: 'Cry Quiz',            scoreLabel: 'Streak', timeBased: false },
+				higherlower:{ label: 'Higher or Lower',     scoreLabel: 'Streak', timeBased: false },
+				memory:     { label: 'Memory Match',        scoreLabel: 'Time',   timeBased: true },
+			};
+
+			const tabsEl = document.querySelectorAll('.lb-tab');
 			const body = document.getElementById('leaderboardBody');
 			const emptyState = document.getElementById('emptyState');
+			const emptyMsg = document.getElementById('emptyMsg');
+			const loadingState = document.getElementById('loadingState');
 			const table = document.getElementById('leaderboard');
-			const clearBtn = document.getElementById('clearBoard');
 			const eyebrowLabel = document.getElementById('eyebrowLabel');
+			const boardTitle = document.getElementById('boardTitle');
 			const subtitle = document.getElementById('boardSubtitle');
+			const colScoreLabel = document.getElementById('colScoreLabel');
+
+			let activeGame = 'quiz';
+
+			function fmtTime(ms) {
+				const totalSec = Math.floor(ms / 1000);
+				const m = Math.floor(totalSec / 60);
+				const s = totalSec % 60;
+				return `${m}:${String(s).padStart(2, '0')}`;
+			}
 
 			function formatDate(ts) {
 				const d = new Date(ts);
 				return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 			}
 
-			function escape(s) {
-				return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+			function escapeHtml(s) {
+				return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 			}
 
-			function getLocalList() {
-				let list = [];
-				try { list = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch (e) {}
-				const sessName = sessionStorage.getItem('playerName');
-				const sessScore = sessionStorage.getItem('playerScore');
-				if (sessName && sessScore !== null && !list.some(e => e.name === sessName && String(e.score) === sessScore)) {
-					list.push({ name: sessName, score: Number(sessScore), total: 21, at: Date.now() });
-				}
-				list.sort((a, b) => b.score - a.score || a.at - b.at);
-				return list;
-			}
-
-			function renderRows(top) {
-				if (!top.length) {
+			function renderRows(entries) {
+				const cfg = GAMES[activeGame];
+				colScoreLabel.textContent = cfg.scoreLabel;
+				body.innerHTML = '';
+				if (!entries.length) {
 					table.hidden = true;
 					emptyState.hidden = false;
+					emptyMsg.textContent = `No scores yet for ${cfg.label}. Be the first.`;
 					return;
 				}
 				table.hidden = false;
 				emptyState.hidden = true;
-				body.innerHTML = top.map((e, i) => {
+				body.innerHTML = entries.map((e, i) => {
 					const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
+					let scoreDisplay;
+					if (cfg.timeBased) {
+						scoreDisplay = `<strong>${fmtTime(e.score)}</strong>`;
+					} else if (activeGame === 'quiz') {
+						scoreDisplay = `<strong>${e.score}</strong><span class="of">/ ${e.total || cfg.defaultTotal}</span>`;
+					} else {
+						scoreDisplay = `<strong>${e.score}</strong>`;
+					}
+					const mode = e.mode ? escapeHtml(formatMode(activeGame, e.mode)) : '—';
 					return `
-						<tr class="rank-${i + 1}">
+						<tr class="rank-${Math.min(i + 1, 4)}">
 							<td class="col-rank">${medal}</td>
-							<td class="col-name">${escape(e.name)}</td>
-							<td class="col-score"><strong>${e.score}</strong><span class="of">/ ${e.total || 21}</span></td>
+							<td class="col-name">${escapeHtml(e.name)}</td>
+							<td class="col-score">${scoreDisplay}</td>
+							<td class="col-mode">${mode}</td>
 							<td class="col-date">${formatDate(e.at)}</td>
 						</tr>
 					`;
 				}).join('');
 			}
 
-			async function loadGlobal() {
-				const res = await fetch('/api/leaderboard', { headers: { accept: 'application/json' } });
+			function formatMode(game, mode) {
+				if (game === 'memory') {
+					return ({ '6': 'Easy', '8': 'Medium', '12': 'Hard' })[mode] || mode;
+				}
+				if (game === 'silhouette' || game === 'cry') {
+					return mode.charAt(0).toUpperCase() + mode.slice(1);
+				}
+				if (game === 'higherlower') {
+					return ({ 'weight': 'Weight', 'height': 'Height', 'hp': 'HP', 'atk': 'Attack', 'spd': 'Speed', 'random': 'Random' })[mode] || mode;
+				}
+				return mode;
+			}
+
+			async function loadGlobal(game) {
+				const res = await fetch(`/api/leaderboard?game=${encodeURIComponent(game)}&limit=50`);
 				if (!res.ok) throw new Error('http ' + res.status);
 				const data = await res.json();
 				if (!Array.isArray(data.entries)) throw new Error('bad payload');
 				return data.entries;
 			}
 
-			async function render() {
+			async function selectGame(game) {
+				activeGame = game;
+				const cfg = GAMES[game];
+				tabsEl.forEach((t) => {
+					const active = t.dataset.game === game;
+					t.classList.toggle('is-active', active);
+					t.setAttribute('aria-selected', active ? 'true' : 'false');
+				});
+				boardTitle.textContent = `Top 50 · ${cfg.label}`;
+				loadingState.hidden = false;
+				emptyState.hidden = true;
+				table.hidden = true;
 				try {
-					const top = await loadGlobal();
+					const top = await loadGlobal(game);
+					loadingState.hidden = true;
 					eyebrowLabel.textContent = 'Global Hall of Fame';
-					subtitle.textContent = 'Live scores from every trainer worldwide.';
-					clearBtn.hidden = true;
-					renderRows(top.slice(0, 10));
+					subtitle.textContent = cfg.timeBased
+						? `Fastest times across every trainer worldwide. Lower is better.`
+						: `Highest streaks across every trainer worldwide.`;
+					renderRows(top);
 				} catch (err) {
-					eyebrowLabel.textContent = 'Local Hall of Fame';
-					subtitle.textContent = 'Backend offline — showing scores from this browser.';
-					clearBtn.hidden = false;
-					renderRows(getLocalList().slice(0, 10));
+					loadingState.hidden = true;
+					eyebrowLabel.textContent = 'Backend Offline';
+					subtitle.textContent = 'Could not load global scores. Try again in a moment.';
+					renderRows([]);
 				}
 			}
 
-			clearBtn.addEventListener('click', () => {
-				if (confirm('Clear the local leaderboard? This only affects this browser; global scores stay.')) {
-					localStorage.removeItem(LOCAL_KEY);
-					sessionStorage.removeItem('playerScore');
-					render();
-				}
-			});
+			tabsEl.forEach((t) => t.addEventListener('click', () => selectGame(t.dataset.game)));
 
-			render();
+			// Initial load
+			selectGame('quiz');
 		})();
 	</script>
 </body>

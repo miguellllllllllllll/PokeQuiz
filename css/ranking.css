@@ -38,6 +38,62 @@
 .ranking-header h1 { margin-bottom: 6px; }
 .ranking-header .lede { margin: 0; color: var(--muted); font-size: 14px; }
 
+.lb-tabs {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	gap: 6px;
+	margin-bottom: 18px;
+	flex-wrap: wrap;
+}
+
+.lb-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 9px 14px;
+	background: #fff;
+	border: 2px solid rgba(0, 0, 0, 0.1);
+	border-radius: 999px;
+	cursor: pointer;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--ink);
+	transition: transform 0.1s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.lb-tab:hover {
+	border-color: var(--poke-red);
+	color: var(--poke-red);
+	transform: translateY(-1px);
+}
+
+.lb-tab.is-active {
+	background: linear-gradient(180deg, var(--poke-red) 0%, var(--poke-red-dark) 100%);
+	color: #fff;
+	border-color: var(--poke-black);
+	box-shadow: 0 3px 0 var(--poke-black);
+	text-shadow: 1px 1px 0 var(--poke-red-deep);
+}
+
+.lb-tab-icon { font-size: 16px; line-height: 1; }
+.lb-tab-label { white-space: nowrap; }
+
+.col-mode {
+	font-size: 12px;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+}
+
+@media (max-width: 640px) {
+	.lb-tab-label { display: none; }
+	.lb-tab { padding: 9px 12px; }
+	.lb-tab-icon { font-size: 18px; }
+	.col-mode { display: none; }
+}
+
 .leaderboard-wrap {
 	position: relative;
 	z-index: 1;

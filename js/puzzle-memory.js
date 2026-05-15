@@ -210,6 +210,18 @@
 			setTimeout(() => layer.remove(), 2400);
 		}
 
+		function postLeaderboard(elapsedMs) {
+			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
+			if (!playerName) return;
+			try {
+				fetch('/api/leaderboard', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ game: 'memory', name: playerName, score: elapsedMs, mode: String(chosenPairs) }),
+				}).catch(() => {});
+			} catch {}
+		}
+
 		function finishGame() {
 			ended = true;
 			clearInterval(timer);
@@ -219,6 +231,7 @@
 			if (isBest) setBestTime(chosenPairs, elapsed);
 			paintBests();
 			spawnConfetti();
+			postLeaderboard(elapsed);
 
 			gameEl.hidden = true;
 			gameOverEl.hidden = false;

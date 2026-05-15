@@ -178,7 +178,20 @@
 			setFeedback('');
 		}
 
+		function postLeaderboard() {
+			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
+			if (!playerName || streak <= 0) return;
+			try {
+				fetch('/api/leaderboard', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ game: 'higherlower', name: playerName, score: streak, mode: activeStat }),
+				}).catch(() => {});
+			} catch {}
+		}
+
 		function showGameOver() {
+			postLeaderboard();
 			introEl.hidden = true;
 			gameEl.hidden = true;
 			gameOverEl.hidden = false;
