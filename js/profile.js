@@ -18,9 +18,6 @@
 
 	const AVATARS = [
 		{ id: 'pokeball', src: 'Pictures/pokeball.png', label: 'Pokéball' },
-		{ id: 'red', src: 'Pictures/Red_art.png', label: 'Red' },
-		{ id: 'blue', src: 'Pictures/Blue_art.png', label: 'Blue' },
-		{ id: 'giovanni', src: 'Pictures/Giovanni_art.png', label: 'Giovanni' },
 	];
 
 	function getAvatar() {

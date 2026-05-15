@@ -7,9 +7,6 @@
 
 	const AVATARS = [
 		{ id: 'pokeball', label: 'Pokéball' },
-		{ id: 'red',      label: 'Red' },
-		{ id: 'blue',     label: 'Blue' },
-		{ id: 'giovanni', label: 'Giovanni' },
 	];
 
 	const GAMES = [
@@ -308,42 +305,22 @@
 			});
 		});
 
-		Object.keys(TP.PALETTES).forEach(cat => {
+		Object.keys(TP.DEFAULTS).forEach(cat => {
 			const row = document.querySelector(`.tc-row[data-cat="${cat}"]`);
 			if (!row) return;
-			const wrap = row.querySelector('.tc-swatches');
 			const picker = row.querySelector('.tc-color-picker');
-			TP.PALETTES[cat].forEach(({ color, label }) => {
-				const btn = document.createElement('button');
-				btn.type = 'button';
-				btn.className = 'tc-swatch';
-				btn.style.background = color;
-				btn.title = label;
-				btn.setAttribute('aria-label', label);
-				btn.classList.toggle('is-active', (choices[cat] || '').toLowerCase() === color.toLowerCase());
-				btn.addEventListener('click', () => {
-					choices[cat] = color;
-					wrap.querySelectorAll('.tc-swatch').forEach(b =>
-						b.classList.toggle('is-active', b === btn));
-					if (picker) picker.value = color.toLowerCase();
-					TP.save(choices);
-					redraw();
-				});
-				wrap.appendChild(btn);
+			const hexEl = row.querySelector('[data-hex]');
+			if (!picker) return;
+			const current = (choices[cat] || TP.DEFAULTS[cat]).toLowerCase();
+			picker.value = current;
+			if (hexEl) hexEl.textContent = current.toUpperCase();
+			picker.addEventListener('input', () => {
+				const val = picker.value.toUpperCase();
+				choices[cat] = val;
+				if (hexEl) hexEl.textContent = val;
+				TP.save(choices);
+				redraw();
 			});
-			if (picker) {
-				picker.value = (choices[cat] || TP.DEFAULTS[cat]).toLowerCase();
-				picker.addEventListener('input', () => {
-					choices[cat] = picker.value.toUpperCase();
-					wrap.querySelectorAll('.tc-swatch').forEach(b => {
-						const c = b.style.background;
-						// match swatch by current chosen colour (best-effort)
-						b.classList.toggle('is-active', false);
-					});
-					TP.save(choices);
-					redraw();
-				});
-			}
 		});
 	}
 

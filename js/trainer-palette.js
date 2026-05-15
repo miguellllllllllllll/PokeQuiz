@@ -8,64 +8,24 @@
 	// Base palette ladders from Pictures/sprites/calem.png — darkest → lightest.
 	// MAIN is the shade that maps directly to the user's chosen swatch.
 	const BASE = {
-		cap:    ['#701028', '#784040', '#C03838', '#F06848'],
-		skin:   ['#885028', '#D09870', '#D8A078', '#F8D0B8'],
-		hair:   ['#28272C', '#424149'],
-		outfit: ['#1F2945', '#354775', '#4F69AE'],
-		shirt:  ['#B8B0D0', '#E8E8F8'],
+		cap:     ['#701028', '#784040', '#C03838', '#F06848'],
+		skin:    ['#885028', '#D09870', '#D8A078', '#F8D0B8'],
+		hair:    ['#28272C', '#424149'],
+		outfit:  ['#1F2945', '#354775', '#4F69AE'],
+		shirt:   ['#B8B0D0', '#E8E8F8'],
+		pants:   ['#384040'],
+		goggles: ['#406888', '#66847B'],
 	};
-	const MAIN_IDX = { cap: 2, skin: 2, hair: 1, outfit: 1, shirt: 0 };
+	const MAIN_IDX = { cap: 2, skin: 2, hair: 1, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
 
 	const DEFAULTS = {
-		cap:    '#C03838',
-		skin:   '#D8A078',
-		hair:   '#424149',
-		outfit: '#354775',
-		shirt:  '#B8B0D0',
-	};
-
-	const PALETTES = {
-		cap: [
-			{ color: '#C03838', label: 'Red'     },
-			{ color: '#1A4A28', label: 'Forest'  },
-			{ color: '#1C2850', label: 'Navy'    },
-			{ color: '#181818', label: 'Black'   },
-			{ color: '#7A7A7A', label: 'Grey'    },
-			{ color: '#4A1880', label: 'Purple'  },
-			{ color: '#E0A800', label: 'Gold'    },
-		],
-		skin: [
-			{ color: '#FFE8C8', label: 'Pale'  },
-			{ color: '#F8D0B8', label: 'Fair'  },
-			{ color: '#D8A078', label: 'Tan'   },
-			{ color: '#A0623A', label: 'Brown' },
-			{ color: '#5C3A1E', label: 'Dark'  },
-		],
-		hair: [
-			{ color: '#424149', label: 'Default' },
-			{ color: '#1B1B1B', label: 'Black'   },
-			{ color: '#7A4828', label: 'Brown'   },
-			{ color: '#D4A820', label: 'Blonde'  },
-			{ color: '#AA2820', label: 'Red'     },
-			{ color: '#C0C0C0', label: 'Silver'  },
-			{ color: '#2858A0', label: 'Blue'    },
-		],
-		outfit: [
-			{ color: '#354775', label: 'Navy'    },
-			{ color: '#8B1818', label: 'Crimson' },
-			{ color: '#1A4A28', label: 'Forest'  },
-			{ color: '#4A1880', label: 'Purple'  },
-			{ color: '#383838', label: 'Charcoal'},
-			{ color: '#4A6830', label: 'Olive'   },
-		],
-		shirt: [
-			{ color: '#B8B0D0', label: 'Lilac'  },
-			{ color: '#E8E8E8', label: 'White'  },
-			{ color: '#3A3A3A', label: 'Black'  },
-			{ color: '#6A3030', label: 'Maroon' },
-			{ color: '#306A60', label: 'Teal'   },
-			{ color: '#D8B868', label: 'Sand'   },
-		],
+		cap:     '#C03838',
+		skin:    '#D8A078',
+		hair:    '#424149',
+		outfit:  '#354775',
+		shirt:   '#B8B0D0',
+		pants:   '#384040',
+		goggles: '#406888',
 	};
 
 	function hexToRgb(hex) {
@@ -122,5 +82,5 @@
 		dstCtx.putImageData(id, 0, 0);
 	}
 
-	window.TrainerPalette = { BASE, MAIN_IDX, DEFAULTS, PALETTES, KEY, load, save, recolor };
+	window.TrainerPalette = { BASE, MAIN_IDX, DEFAULTS, KEY, load, save, recolor };
 })();
