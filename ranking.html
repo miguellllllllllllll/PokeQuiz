@@ -233,8 +233,8 @@
 					} else {
 						scoreDisplay = `<strong>${e.score}</strong>`;
 					}
-					// When on a mode-specific board, the Mode column is redundant — hide it.
-					const modeDisplay = activeMode ? '' : (e.mode ? escapeHtml(formatMode(activeGame, e.mode)) : '—');
+					// Mode column is always hidden — every board is mode-specific now.
+					const modeDisplay = '';
 					return `
 						<tr class="rank-${Math.min(i + 1, 4)}">
 							<td class="col-rank">${medal}</td>
@@ -256,16 +256,7 @@
 				}
 				modeTabsEl.hidden = false;
 
-				// "All modes" tab
-				const allBtn = document.createElement('button');
-				allBtn.type = 'button';
-				allBtn.className = 'lb-mode-tab' + (activeMode === '' ? ' is-active' : '');
-				allBtn.dataset.mode = '';
-				allBtn.textContent = 'All';
-				allBtn.addEventListener('click', () => selectMode(''));
-				modeTabsEl.appendChild(allBtn);
-
-				// One tab per mode
+				// One tab per mode — no "All" tab
 				cfg.modes.forEach(({ key, label }) => {
 					const btn = document.createElement('button');
 					btn.type = 'button';
@@ -321,14 +312,16 @@
 
 			async function selectGame(game) {
 				activeGame = game;
-				activeMode = '';  // reset to all modes when switching games
+				// Default to first mode for games that have modes
+				const cfg = GAMES[game];
+				activeMode = cfg.modes ? cfg.modes[0].key : '';
 				tabsEl.forEach((t) => {
 					const active = t.dataset.game === game;
 					t.classList.toggle('is-active', active);
 					t.setAttribute('aria-selected', active ? 'true' : 'false');
 				});
 				buildModeTabs(game);
-				await loadAndRender(game, '');
+				await loadAndRender(game, activeMode);
 			}
 
 			tabsEl.forEach((t) => t.addEventListener('click', () => selectGame(t.dataset.game)));
