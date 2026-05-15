@@ -212,12 +212,13 @@
 
 		function postLeaderboard(elapsedMs) {
 			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
-			if (!playerName) return;
+			const playerId = localStorage.getItem('pokequiz_player_id') || '';
+			if (!playerName || !playerId) return;
 			try {
 				fetch('/api/leaderboard', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ game: 'memory', name: playerName, score: elapsedMs, mode: String(chosenPairs) }),
+					body: JSON.stringify({ game: 'memory', name: playerName, score: elapsedMs, mode: String(chosenPairs) , playerId }),
 				}).catch(() => {});
 			} catch {}
 		}

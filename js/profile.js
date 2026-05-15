@@ -2,6 +2,19 @@
 	const NAME_KEY = 'playerName';
 	const LOCAL_KEY = 'pokequiz_leaderboard';
 	const AVATAR_KEY = 'pokequiz_avatar';
+	const PLAYER_ID_KEY = 'pokequiz_player_id';
+
+	function getPlayerId() {
+		let id;
+		try { id = localStorage.getItem(PLAYER_ID_KEY); } catch {}
+		if (!id) {
+			id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+				? crypto.randomUUID()
+				: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+			try { localStorage.setItem(PLAYER_ID_KEY, id); } catch {}
+		}
+		return id;
+	}
 
 	const AVATARS = [
 		{ id: 'pokeball', src: 'Pictures/pokeball.png', label: 'Pokéball' },
@@ -61,6 +74,7 @@
 		set name(v) { setName(v); refreshFn(); },
 		get avatar() { return getAvatar().id; },
 		set avatar(id) { setAvatarFn(id); },
+		get playerId() { return getPlayerId(); },
 		refresh() { refreshFn(); },
 		open() { openFn(); },
 	};
@@ -193,9 +207,51 @@
 
 		panelEditBtn.addEventListener('click', () => toggleEdit(true));
 		panelCancelBtn.addEventListener('click', () => toggleEdit(false));
-		panelSaveBtn.addEventListener('click', (e) => {
+		const ppEditError = (() => {
+			const el = document.createElement('div');
+			el.className = 'pp-edit-error';
+			el.hidden = true;
+			panelEditForm.parentNode.insertBefore(el, panelEditForm.nextSibling);
+			return el;
+		})();
+
+		panelSaveBtn.addEventListener('click', async (e) => {
 			e.preventDefault();
-			setName(panelInput.value);
+			const candidate = panelInput.value.trim();
+			ppEditError.hidden = true;
+			ppEditError.textContent = '';
+			if (!candidate) {
+				setName('');
+				toggleEdit(false);
+				refresh();
+				return;
+			}
+			// Don't re-claim if it's the same name (avoid round-trip)
+			if (candidate === getName()) {
+				toggleEdit(false);
+				return;
+			}
+			panelSaveBtn.disabled = true;
+			try {
+				const res = await fetch('/api/leaderboard', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ action: 'claim', name: candidate, playerId: getPlayerId() }),
+				});
+				if (res.status === 409) {
+					const data = await res.json().catch(() => ({}));
+					ppEditError.textContent = data.message || `"${candidate}" is already claimed.`;
+					ppEditError.hidden = false;
+					return;
+				}
+				// On non-409 (including offline), allow save — leaderboard will
+				// re-check on the next score POST.
+			} catch {
+				// Offline: allow save locally; can't enforce uniqueness without API.
+			} finally {
+				panelSaveBtn.disabled = false;
+			}
+			setName(candidate);
 			toggleEdit(false);
 			refresh();
 		});

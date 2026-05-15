@@ -33,6 +33,23 @@ const MAX_RETURN = 50;
 const KEEP_TOP = 100;
 const RATE_LIMIT = 12;
 const RATE_WINDOW_SECONDS = 60;
+const NAMES_KEY = 'pokequiz:names';   // hash: lowercased_name -> playerId
+
+function normalizeName(s) {
+	return String(s).toLowerCase();
+}
+
+async function checkOrClaimName(redis, name, playerId) {
+	const normalized = normalizeName(name);
+	const owner = await redis.hget(NAMES_KEY, normalized);
+	if (owner && owner !== playerId) {
+		return { ok: false, owner };
+	}
+	if (!owner) {
+		await redis.hset(NAMES_KEY, { [normalized]: playerId });
+	}
+	return { ok: true };
+}
 
 function json(data, status = 200, extraHeaders = {}) {
 	return new Response(JSON.stringify(data), {
@@ -130,16 +147,39 @@ export default async function handler(req) {
 		let body;
 		try { body = await req.json(); } catch { return json({ error: 'invalid json' }, 400); }
 
+		const action = body?.action || 'score';
+		const name = sanitizeName(body?.name);
+		const playerId = typeof body?.playerId === 'string' ? body.playerId.slice(0, 64) : '';
+
+		if (!name) return json({ error: 'name required' }, 400);
+		if (!playerId) return json({ error: 'playerId required' }, 400);
+
+		// Name claim / ownership check (applies to both claim and score actions)
+		let redis;
+		try { redis = getRedis(); } catch (err) {
+			return json({ error: 'redis init failed' }, 500);
+		}
+		const ownership = await checkOrClaimName(redis, name, playerId);
+		if (!ownership.ok) {
+			return json({
+				error: 'name taken',
+				message: `The name "${name}" is already claimed by another trainer. Please pick a different name.`,
+			}, 409);
+		}
+
+		// Claim-only request: stop here, no score persisted.
+		if (action === 'claim') {
+			return json({ ok: true, claimed: name });
+		}
+
 		const gameName = body?.game || 'quiz';
 		const cfg = gameConfig(gameName);
 		if (!cfg) return json({ error: 'unknown game' }, 400);
 
-		const name = sanitizeName(body?.name);
 		const score = Number(body?.score);
 		const total = Number(body?.total);
 		const mode = typeof body?.mode === 'string' ? body.mode.slice(0, 24) : undefined;
 
-		if (!name) return json({ error: 'name required' }, 400);
 		if (!Number.isFinite(score) || score < 0) return json({ error: 'invalid score' }, 400);
 
 		// Game-specific validation
