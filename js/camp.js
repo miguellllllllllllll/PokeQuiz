@@ -980,7 +980,7 @@
 				if (Phaser.Input.Keyboard.JustDown(k.interact)) {
 					if (dialogOpen) Dialog.advance();
 					else if (target && target.message) Dialog.open(target.message);
-					else if (target && target.kind === 'door' && !this.didTransition) {
+					else if (target && target.kind === 'door' && !this.didTransition && this.armedForDoor) {
 						this.didTransition = true;
 						Dialog.close();
 						this.input.keyboard.resetKeys();
@@ -1092,12 +1092,15 @@
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
 				}
 
-				// Walk onto the door → enter the house. Re-arm after the player steps
-				// off the door tile so we don't bounce them straight back inside.
+				// Walk onto the door → enter the house. The player has to walk at least
+				// two tiles away from the door before the entry trigger re-arms, so a
+				// quick step-off-then-step-back-on doesn't re-fire (which would soft-
+				// lock the player on the door tile after exiting the house).
 				const tc = Math.floor(this.player.x / TILE);
 				const tr = Math.floor(this.player.y / TILE);
 				const onDoorTile = this.map[tr] && this.map[tr][tc] === TD;
-				if (!onDoorTile) this.armedForDoor = true;
+				const distFromDoor = Math.abs(tr - 11) + Math.abs(tc - 11);
+				if (distFromDoor >= 2) this.armedForDoor = true;
 				if (this.armedForDoor && onDoorTile && !this.didTransition) {
 					this.didTransition = true;
 					Dialog.close();
@@ -1374,16 +1377,42 @@
 				const tc = Math.floor(this.player.x / TILE);
 				const tr = Math.floor(this.player.y / TILE);
 				const onDoor = tc === HOUSE_DOOR_C && tr === HOUSE_DOOR_R;
-				if (!onDoor) this.armedForExit = true;
-				if (this.armedForExit && onDoor && !this.didTransition) {
+				// Require at least two tiles of distance before re-arming so a quick
+				// step-onto-the-door right after spawn doesn't bounce the player back
+				// to camp. Same shape as CampScene's armedForDoor logic.
+				const distFromDoor = Math.abs(tr - HOUSE_DOOR_R) + Math.abs(tc - HOUSE_DOOR_C);
+				if (distFromDoor >= 2) this.armedForExit = true;
+
+				// Show the interaction prompt + E-key exit when standing right next to
+				// the door. The prompt sits above the player on-screen.
+				const pe = document.getElementById('campPrompt');
+				const lbl = document.getElementById('campPromptLabel');
+				const nearDoor = distFromDoor === 1 || onDoor;
+				if (pe && lbl) {
+					if (nearDoor && !dialogOpen) {
+						lbl.textContent = 'Exit';
+						pe.hidden = false;
+						const cam = this.cameras.main;
+						const sx = (this.player.x - cam.worldView.x) * cam.zoom;
+						const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+						pe.style.left = sx + 'px';
+						pe.style.top  = sy + 'px';
+						pe.style.transform = 'translate(-50%, calc(-100% - 12px))';
+					} else {
+						pe.hidden = true;
+					}
+				}
+
+				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact);
+				const triggerExit = !this.didTransition && this.armedForExit && (
+					onDoor || (ePressed && nearDoor)
+				);
+				if (triggerExit) {
 					this.didTransition = true;
 					Dialog.close();
 					this.input.keyboard.resetKeys();
 					this.scene.start('camp', { from: 'house' });
 				}
-				// Hide interaction prompt in the house — no signs here.
-				const pe = document.getElementById('campPrompt');
-				if (pe) pe.hidden = true;
 			}
 		};
 	}
