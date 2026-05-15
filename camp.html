@@ -9,7 +9,7 @@
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/camp.css">
 </head>
-<body>
+<body class="camp-body">
 	<header class="site-header">
 		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
 		<nav>
@@ -47,50 +47,40 @@
 		</div>
 	</header>
 
-	<main class="container">
-		<section class="card camp-card">
-			<div class="camp-header">
-				<div class="camp-header-left">
-					<h1>Trainer Camp</h1>
-					<p>Your very own world</p>
-				</div>
-				<div class="camp-controls-hint">
-					<span class="ctrl-key">W</span>
-					<span class="ctrl-key">A</span>
-					<span class="ctrl-key">S</span>
-					<span class="ctrl-key">D</span>
-					<span class="ctrl-label">or</span>
-					<span class="ctrl-key">&#x2191;</span>
-					<span class="ctrl-key">&#x2190;</span>
-					<span class="ctrl-key">&#x2193;</span>
-					<span class="ctrl-key">&#x2192;</span>
-					<span class="ctrl-label">to move</span>
-				</div>
+	<!-- Full-screen world — no card/container wrapper -->
+	<div class="camp-world-wrap" id="campWrap">
+		<canvas id="campCanvas"></canvas>
+
+		<!-- Location badge (top-left, Pokémon style) -->
+		<div class="camp-location" aria-hidden="true">
+			<span class="camp-location-name">TRAINER CAMP</span>
+		</div>
+
+		<!-- Controls hint (top-right) -->
+		<div class="camp-controls-hint" aria-hidden="true">
+			<span class="ctrl-key">W</span>
+			<span class="ctrl-key">A</span>
+			<span class="ctrl-key">S</span>
+			<span class="ctrl-key">D</span>
+			<span class="ctrl-sep">or</span>
+			<span class="ctrl-key">&#x2191;</span>
+			<span class="ctrl-key">&#x2190;</span>
+			<span class="ctrl-key">&#x2193;</span>
+			<span class="ctrl-key">&#x2192;</span>
+		</div>
+
+		<!-- Mobile d-pad (bottom-right) -->
+		<div class="dpad-wrap" aria-hidden="true">
+			<div class="dpad-row">
+				<button class="dpad-btn" id="dpadUp" type="button" aria-label="Move up">&#x2191;</button>
 			</div>
-
-			<div class="camp-world-wrap">
-				<canvas id="campCanvas" width="800" height="480"></canvas>
-
-				<div class="dpad-wrap" aria-hidden="true">
-					<div class="dpad-row">
-						<button class="dpad-btn" id="dpadUp" type="button" aria-label="Move up">&#x2191;</button>
-					</div>
-					<div class="dpad-row">
-						<button class="dpad-btn" id="dpadLeft" type="button" aria-label="Move left">&#x2190;</button>
-						<button class="dpad-btn" id="dpadDown" type="button" aria-label="Move down">&#x2193;</button>
-						<button class="dpad-btn" id="dpadRight" type="button" aria-label="Move right">&#x2192;</button>
-					</div>
-				</div>
+			<div class="dpad-row">
+				<button class="dpad-btn" id="dpadLeft" type="button" aria-label="Move left">&#x2190;</button>
+				<button class="dpad-btn" id="dpadDown" type="button" aria-label="Move down">&#x2193;</button>
+				<button class="dpad-btn" id="dpadRight" type="button" aria-label="Move right">&#x2192;</button>
 			</div>
-
-			<div class="camp-footer">
-				<a href="puzzle.html" class="btn">Puzzle Hub &rarr;</a>
-				<a href="index.html" class="btn btn-secondary">Home</a>
-			</div>
-		</section>
-	</main>
-
-	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+		</div>
+	</div>
 
 	<script src="js/profile.js" defer></script>
 	<script src="js/camp.js" defer></script>
