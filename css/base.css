@@ -142,26 +142,26 @@ img { max-width: 100%; height: auto; display: block; }
 
 .profile-avatar[data-avatar="pokeball"] {
 	background-image: url('../Pictures/pokeball.png');
-	background-size: 78%;
+	background-size: 95%;
 	background-position: center;
 }
 
 .profile-avatar[data-avatar="red"] {
 	background-image: url('../Pictures/Red_art.png');
-	background-size: 480%;
-	background-position: 50% 8%;
+	background-size: 280%;
+	background-position: 50% 11%;
 }
 
 .profile-avatar[data-avatar="blue"] {
 	background-image: url('../Pictures/Blue_art.png');
-	background-size: 480%;
-	background-position: 50% 9%;
+	background-size: 280%;
+	background-position: 50% 12%;
 }
 
 .profile-avatar[data-avatar="giovanni"] {
 	background-image: url('../Pictures/Giovanni_art.png');
-	background-size: 480%;
-	background-position: 50% 5%;
+	background-size: 280%;
+	background-position: 50% 10%;
 }
 
 .pp-avatar-row {
@@ -213,26 +213,26 @@ img { max-width: 100%; height: auto; display: block; }
 
 .pp-avatar-img[data-avatar="pokeball"] {
 	background-image: url('../Pictures/pokeball.png');
-	background-size: 78%;
+	background-size: 92%;
 	background-position: center;
 }
 
 .pp-avatar-img[data-avatar="red"] {
 	background-image: url('../Pictures/Red_art.png');
-	background-size: 500%;
-	background-position: 50% 8%;
+	background-size: 340%;
+	background-position: 50% 13%;
 }
 
 .pp-avatar-img[data-avatar="blue"] {
 	background-image: url('../Pictures/Blue_art.png');
-	background-size: 500%;
-	background-position: 50% 9%;
+	background-size: 340%;
+	background-position: 50% 14%;
 }
 
 .pp-avatar-img[data-avatar="giovanni"] {
 	background-image: url('../Pictures/Giovanni_art.png');
-	background-size: 500%;
-	background-position: 50% 5%;
+	background-size: 340%;
+	background-position: 50% 11%;
 }
 
 .profile-name {
@@ -389,9 +389,9 @@ img { max-width: 100%; height: auto; display: block; }
 .card {
 	background: var(--surface);
 	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-md);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 6px 18px rgba(0, 0, 0, 0.06);
 	padding: 32px;
-	border: 1px solid var(--border);
+	border: 1px solid rgba(0, 0, 0, 0.05);
 	position: relative;
 }
 
@@ -456,36 +456,44 @@ h3 { font-size: 13px; color: var(--poke-black); text-shadow: none; }
 	justify-content: center;
 	gap: 8px;
 	font-family: 'Inter', sans-serif;
-	font-size: 15px;
+	font-size: 14px;
 	font-weight: 700;
-	padding: 13px 22px;
+	padding: 11px 22px;
 	border-radius: 999px;
-	border: 2px solid var(--poke-black);
+	border: none;
 	cursor: pointer;
-	transition: transform 0.1s, box-shadow 0.2s, background 0.2s;
-	background: linear-gradient(180deg, var(--poke-red) 0%, var(--poke-red-dark) 100%);
+	transition: background 0.18s, box-shadow 0.18s, transform 0.1s;
+	background: var(--poke-red);
 	color: #fff;
-	box-shadow: 0 5px 0 var(--poke-black);
+	box-shadow: 0 2px 6px rgba(238, 21, 21, 0.22);
 	text-decoration: none;
-	letter-spacing: 0.3px;
+	letter-spacing: 0.2px;
 }
 
-.btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--poke-black); }
-.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--poke-black); }
+.btn:hover { background: var(--poke-red-dark); box-shadow: 0 4px 12px rgba(238, 21, 21, 0.3); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(238, 21, 21, 0.18); }
 
 .btn.btn-secondary {
 	background: #fff;
-	color: var(--poke-black);
+	color: var(--ink);
+	border: 1px solid rgba(0,0,0,0.1);
+	box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.btn.btn-secondary:hover {
+	background: #fafafa;
+	border-color: rgba(0,0,0,0.18);
+	box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .btn.btn-ghost {
 	background: transparent;
-	color: var(--poke-black);
-	border-color: rgba(0,0,0,0.18);
+	color: var(--ink);
+	border: 1px solid rgba(0,0,0,0.12);
 	box-shadow: none;
 }
 .btn.btn-ghost:hover {
-	background: rgba(0,0,0,0.04);
+	background: rgba(0,0,0,0.03);
+	border-color: rgba(0,0,0,0.2);
 	transform: none;
 	box-shadow: none;
 }

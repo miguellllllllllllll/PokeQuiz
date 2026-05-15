@@ -26,6 +26,73 @@
 	padding: 36px;
 }
 
+/* ============ Name prompt banner ============ */
+
+.name-prompt {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 12px 16px;
+	margin: 0 auto 22px;
+	max-width: 720px;
+	background: linear-gradient(180deg, #fffbea 0%, #fff3c4 100%);
+	border: 2px solid var(--poke-yellow);
+	border-radius: 14px;
+	box-shadow: 0 2px 0 var(--poke-red-deep);
+	text-align: left;
+}
+
+.np-icon {
+	font-size: 24px;
+	flex-shrink: 0;
+}
+
+.np-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+}
+
+.np-text strong {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	color: var(--poke-red-deep);
+	letter-spacing: 0.5px;
+}
+
+.np-text span {
+	font-size: 12px;
+	color: var(--ink);
+	line-height: 1.4;
+}
+
+.np-btn {
+	flex-shrink: 0;
+	padding: 8px 16px;
+	background: linear-gradient(180deg, var(--poke-red) 0%, var(--poke-red-dark) 100%);
+	color: #fff;
+	border: 2px solid var(--poke-black);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	letter-spacing: 1px;
+	cursor: pointer;
+	box-shadow: 0 3px 0 var(--poke-black);
+	transition: transform 0.1s, box-shadow 0.15s;
+	white-space: nowrap;
+}
+
+.np-btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 0 var(--poke-black);
+}
+
+@media (max-width: 540px) {
+	.name-prompt { flex-direction: column; text-align: center; }
+	.np-text { align-items: center; }
+}
+
 /* ============ Mode Select ============ */
 
 .mode-select {

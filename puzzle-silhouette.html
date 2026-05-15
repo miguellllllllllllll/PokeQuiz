@@ -55,6 +55,15 @@
 			<!-- Mode select view -->
 			<div id="modeSelect" class="puzzle-inner mode-select">
 				<a class="back-link" href="puzzle.html" aria-label="Back to Puzzle Hub">&larr; Puzzle Hub</a>
+				<div class="name-prompt" hidden>
+					<span class="np-icon" aria-hidden="true">🏆</span>
+					<div class="np-text">
+						<strong>Set your trainer name</strong>
+						<span>So your scores show up on the global leaderboard.</span>
+					</div>
+					<button type="button" class="np-btn" onclick="window.PokeProfile && window.PokeProfile.open()">Set Name</button>
+				</div>
+
 				<div class="mode-select-head">
 					<div class="eyebrow">
 						<span class="dot"></span>

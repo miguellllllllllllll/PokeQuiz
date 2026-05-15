@@ -54,13 +54,22 @@
 	let refreshFn = () => {};
 	let setAvatarFn = () => {};
 
+	let openFn = () => {};
+
 	window.PokeProfile = {
 		get name() { return getName(); },
 		set name(v) { setName(v); refreshFn(); },
 		get avatar() { return getAvatar().id; },
 		set avatar(id) { setAvatarFn(id); },
-		refresh() { refreshFn(); }
+		refresh() { refreshFn(); },
+		open() { openFn(); },
 	};
+
+	function syncNamePrompts() {
+		const banners = document.querySelectorAll('.name-prompt');
+		const has = !!getName();
+		banners.forEach((b) => { b.hidden = has; });
+	}
 
 	function init() {
 		const btn = document.querySelector('.profile-btn');
@@ -139,6 +148,8 @@
 			} else {
 				panelScoreView.innerHTML = '<span class="pp-empty">No runs yet</span>';
 			}
+
+			syncNamePrompts();
 		}
 
 		refreshFn = refresh;
@@ -148,6 +159,11 @@
 			btn.setAttribute('aria-expanded', 'true');
 			refresh();
 		}
+
+		openFn = () => {
+			open();
+			setTimeout(() => toggleEdit(true), 80);
+		};
 
 		function close() {
 			panel.hidden = true;
