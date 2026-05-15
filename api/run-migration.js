@@ -43,15 +43,20 @@ export default async function handler(req) {
 	for (const game of GAMES) {
 		log.push(`\n=== ${game.key} ===`);
 
-		// 1. Remove invalid entries from all boards (main + each mode board)
 		const allKeys = [game.key, ...game.modes.map(m => `${game.key}:${m}`)];
+
+		// 1. Remove invalid entries from all boards
 		for (const k of allKeys) {
-			// For time-based: score >= 0 is invalid (valid stored scores are negative ms)
-			// For streak: score <= 0 is invalid (valid streaks are >= 1)
-			const invalidMin = game.timeBased ? 0 : '-inf';
-			const invalidMax = game.timeBased ? '+inf' : 0;
-			const raw = await redis.zrangebyscore(k, invalidMin, invalidMax, { withScores: true });
-			const bad = parseZRange(raw);
+			let bad = [];
+			if (game.timeBased) {
+				// For memory: stored score is -elapsedMs, so valid = negative. Score >= 0 is invalid.
+				const raw = await redis.zrange(k, 0, '+inf', { byScore: true, withScores: true });
+				bad = parseZRange(raw);
+			} else {
+				// For streak games: score <= 0 is invalid (streaks start at 1).
+				const raw = await redis.zrange(k, '-inf', 0, { byScore: true, withScores: true });
+				bad = parseZRange(raw);
+			}
 			if (bad.length) {
 				log.push(`  [PURGE] ${k}: removing ${bad.length} invalid entries`);
 				for (const e of bad) {
@@ -73,8 +78,6 @@ export default async function handler(req) {
 			if (!meta || !meta.mode || !game.modes.includes(meta.mode)) continue;
 
 			const modeKey = `${game.key}:${meta.mode}`;
-
-			// Find existing entry for this player in the mode board
 			const modeRaw = await redis.zrange(modeKey, 0, -1, { withScores: true });
 			const modeEntries = parseZRange(modeRaw);
 
@@ -93,7 +96,7 @@ export default async function handler(req) {
 				for (const ex of existing) await redis.zrem(modeKey, ex.member);
 				await redis.zadd(modeKey, { score: e.score, member: e.member });
 				migrated++;
-				log.push(`  [MIGRATE] ${meta.name} → ${modeKey} (score=${e.score})`);
+				log.push(`  [MIGRATE] ${meta?.name} → ${modeKey} (score=${e.score})`);
 			}
 		}
 		if (migrated === 0) log.push('  No entries needed migration');
