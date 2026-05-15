@@ -235,6 +235,8 @@
 				// Load the raw sheet — we'll palette-swap it into a canvas and
 				// register that canvas as the 'player' spritesheet below.
 				this.load.image('player-base', 'Pictures/sprites/calem.png');
+				// PMD walk sheet: 7 frames × 8 directions (rows 0/2/4/6 = S/E/N/W).
+				this.load.spritesheet('eevee', 'Pictures/sprites/eevee.png', { frameWidth: 40, frameHeight: 48 });
 			}
 
 			create() {
@@ -368,6 +370,30 @@
 				// Idle frame index per direction (frame 0 of each row)
 				this.dirIdleFrame = [0, 3, 6, 9];
 				this.player.setFrame(this.dirIdleFrame[this.dir]);
+
+				// Eevee follower — trails behind the player via a position-history buffer.
+				// PMD 7-frame walk × 4 cardinal directions (rows 0/2/4/6 of an 8-row sheet).
+				// Origin Y = 30/48 anchors at the feet (sampled from the south-idle frame).
+				const eeveeAnims = [
+					['eevee-walk-south', [0,1,2,3,4,5,6],        0],   // dir 0 (south)
+					['eevee-walk-west',  [42,43,44,45,46,47,48], 42],  // dir 1 (west) — row 6
+					['eevee-walk-north', [28,29,30,31,32,33,34], 28],  // dir 2 (north) — row 4
+					['eevee-walk-east',  [14,15,16,17,18,19,20], 14],  // dir 3 (east) — row 2
+				];
+				for (const [key, frames] of eeveeAnims) {
+					if (!this.anims.exists(key)) {
+						this.anims.create({ key, frameRate: 10, repeat: -1,
+							frames: this.anims.generateFrameNumbers('eevee', { frames }) });
+					}
+				}
+				this.eeveeAnimKeys = eeveeAnims.map(([k]) => k);
+				this.eeveeIdleFrame = eeveeAnims.map(([,,idle]) => idle);
+				this.follower = this.add.sprite(this.player.x, this.player.y + 14, 'eevee', this.eeveeIdleFrame[0]);
+				this.follower.setOrigin(0.5, 30/48);
+				this.follower.setScale(0.8);
+				this.follower.setDepth(3.5);
+				this.followerHistory = [];
+				this.followerDir = 0;
 			}
 
 			onResize() {
@@ -455,6 +481,35 @@
 					drawTile(actx, t, c*TILE, r*TILE, this.tick);
 				}
 				this.animTex.refresh();
+
+				// Sample player position every other tick; follower lerps toward the oldest
+				// sample so it lags ~1 sprite-width behind. Pick walk anim from motion vector.
+				if (this.tick % 2 === 0) {
+					this.followerHistory.push({ x: this.player.x, y: this.player.y });
+					if (this.followerHistory.length > 8) this.followerHistory.shift();
+				}
+				const target = this.followerHistory[0];
+				if (target) {
+					const prevX = this.follower.x, prevY = this.follower.y;
+					this.follower.x = Phaser.Math.Linear(this.follower.x, target.x, 0.18);
+					this.follower.y = Phaser.Math.Linear(this.follower.y, target.y, 0.18);
+					const fdx = this.follower.x - prevX;
+					const fdy = this.follower.y - prevY;
+					const fspeed = Math.hypot(fdx, fdy);
+					if (fspeed > 0.15) {
+						let dir;
+						if (Math.abs(fdx) > Math.abs(fdy)) dir = fdx > 0 ? 3 : 1;  // east / west
+						else                                dir = fdy > 0 ? 0 : 2;  // south / north
+						if (dir !== this.followerDir || !this.follower.anims.isPlaying) {
+							this.follower.anims.play(this.eeveeAnimKeys[dir], true);
+							this.followerDir = dir;
+						}
+					} else if (this.follower.anims.isPlaying) {
+						this.follower.anims.stop();
+						this.follower.setFrame(this.eeveeIdleFrame[this.followerDir]);
+					}
+					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
+				}
 			}
 		};
 	}
