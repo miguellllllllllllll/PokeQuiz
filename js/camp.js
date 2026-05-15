@@ -7,9 +7,9 @@
 	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15;
 
-	const SOLID = new Set([TW, TR, TR2, TWN, TH2O, TTR, TFN]);
+	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TFN]);
 	const ANIMATED = new Set([TWN, TH2O, TCR]);
 
 	// ── Map ──────────────────────────────────────────────────────────────────────
@@ -36,8 +36,9 @@
 		 [22,5,TFY],[23,4,TFR],[24,5,TFY],
 		].forEach(([r,c,t])=>set(r,c,t));
 
-		fill(3,6,5,16,TR);
-		for(let c=6;c<=16;c++) set(6,c,TR2);
+		for(let c=6;c<=16;c++) set(3,c,TRP);   // ridge row
+		fill(4,6,5,16,TR);                       // roof slope (front face)
+		for(let c=5;c<=17;c++) set(6,c,TR2);    // eave with 1-tile overhang on each side
 		fill(7,6,11,16,TW);
 		set(8,8,TWN); set(9,8,TWN);
 		set(8,14,TWN); set(9,14,TWN);
@@ -88,47 +89,117 @@
 				ctx.fillRect(x+2,y+12,4,2); ctx.fillRect(x+9,y+12,5,2);
 				break;
 			}
-			case TR:
-				ctx.fillStyle='#9C2020'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#701414'; ctx.fillRect(x,y+4,d,1); ctx.fillRect(x,y+9,d,1); ctx.fillRect(x,y+14,d,1);
-				ctx.fillStyle='#C03028'; ctx.fillRect(x,y,d,2);
-				ctx.fillStyle='#E04838'; ctx.fillRect(x,y,d,1);
-				ctx.fillStyle='#7A1A1A'; ctx.fillRect(x+8,y,1,d);
+			case TRP: {
+				// Ridge row — the apex of the pitched roof, slightly receded (back slope)
+				ctx.fillStyle='#5C0808'; ctx.fillRect(x,y,d,d);
+				// Top edge: dark cap stripe (the actual ridge line, in shadow as it faces away)
+				ctx.fillStyle='#2C0404'; ctx.fillRect(x,y+0,d,2);
+				// Ridge highlight — thin lit band where light just clips the apex
+				ctx.fillStyle='#A82424'; ctx.fillRect(x,y+2,d,1);
+				// Back slope shingles (darker than front-slope TR — same shape, less light)
+				ctx.fillStyle='#7C1414'; ctx.fillRect(x+0,y+4,8,5); ctx.fillRect(x+8,y+4,8,5);
+				ctx.fillStyle='#902020'; ctx.fillRect(x+0,y+3,8,1); ctx.fillRect(x+8,y+3,8,1);
+				ctx.fillStyle='#2C0404'; ctx.fillRect(x+7,y+3,1,6);
+				ctx.fillStyle='#4C0808'; ctx.fillRect(x+0,y+9,d,1);
+				// Second row (offset)
+				ctx.fillStyle='#7C1414'; ctx.fillRect(x+0,y+11,4,4); ctx.fillRect(x+4,y+11,8,4); ctx.fillRect(x+12,y+11,4,4);
+				ctx.fillStyle='#902020'; ctx.fillRect(x+0,y+10,4,1); ctx.fillRect(x+4,y+10,8,1); ctx.fillRect(x+12,y+10,4,1);
+				ctx.fillStyle='#2C0404'; ctx.fillRect(x+3,y+10,1,5); ctx.fillRect(x+11,y+10,1,5);
+				ctx.fillStyle='#4C0808'; ctx.fillRect(x+0,y+15,d,1);
 				break;
+			}
+			case TR: {
+				// Front-slope shingles — well-lit, top-left bias for dimensionality
+				ctx.fillStyle='#9C1C1C'; ctx.fillRect(x,y,d,d);
+				// Top row of shingles
+				ctx.fillStyle='#C0302C'; ctx.fillRect(x+0,y+1,8,6); ctx.fillRect(x+8,y+1,8,6);
+				ctx.fillStyle='#E84838'; ctx.fillRect(x+0,y+0,8,1); ctx.fillRect(x+8,y+0,8,1);  // bright top edge
+				ctx.fillStyle='#F46050'; ctx.fillRect(x+0,y+0,4,1); ctx.fillRect(x+8,y+0,4,1);  // left-half extra highlight (light from upper-left)
+				ctx.fillStyle='#3C0606'; ctx.fillRect(x+7,y+0,1,8);                              // hard seam between shingles
+				ctx.fillStyle='#5C0C0C'; ctx.fillRect(x+0,y+7,16,1);                             // shingle-row shadow
+				ctx.fillStyle='#7C1414'; ctx.fillRect(x+13,y+1,3,6);                             // right-side shingle in shadow (light from left)
+				ctx.fillStyle='#7C1414'; ctx.fillRect(x+5,y+1,3,6);
+				// Bottom row of shingles (offset)
+				ctx.fillStyle='#C0302C'; ctx.fillRect(x+0,y+9,4,6); ctx.fillRect(x+4,y+9,8,6); ctx.fillRect(x+12,y+9,4,6);
+				ctx.fillStyle='#E84838'; ctx.fillRect(x+0,y+8,4,1); ctx.fillRect(x+4,y+8,8,1); ctx.fillRect(x+12,y+8,4,1);
+				ctx.fillStyle='#F46050'; ctx.fillRect(x+0,y+8,2,1); ctx.fillRect(x+4,y+8,4,1); ctx.fillRect(x+12,y+8,2,1);
+				ctx.fillStyle='#3C0606'; ctx.fillRect(x+3,y+8,1,8); ctx.fillRect(x+11,y+8,1,8);
+				ctx.fillStyle='#5C0C0C'; ctx.fillRect(x+0,y+15,16,1);
+				ctx.fillStyle='#7C1414'; ctx.fillRect(x+9,y+9,3,6);
+				ctx.fillStyle='#7C1414'; ctx.fillRect(x+1,y+9,3,6);
+				break;
+			}
 			case TR2:
-				ctx.fillStyle='#601010'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#7C1A1A'; ctx.fillRect(x,y+1,d,d-3);
-				ctx.fillStyle='#480C0C'; ctx.fillRect(x,y+d-2,d,2);
+				// Eave — projecting overhang with strong cast shadow below
+				ctx.fillStyle='#580808'; ctx.fillRect(x,y,d,d);
+				// Roof end shingles (one last lit row before the overhang lip)
+				ctx.fillStyle='#9C1C1C'; ctx.fillRect(x,y+0,d,4);
+				ctx.fillStyle='#C0302C'; ctx.fillRect(x,y+0,d,3);
+				ctx.fillStyle='#E84838'; ctx.fillRect(x,y+0,d,1);
+				ctx.fillStyle='#3C0606'; ctx.fillRect(x+7,y+0,1,4);
+				// Trim board (the visible front-face of the overhang)
+				ctx.fillStyle='#3C0606'; ctx.fillRect(x+0,y+4,d,1);   // top seam where shingles end
+				ctx.fillStyle='#7C5028'; ctx.fillRect(x+0,y+5,d,4);   // wooden fascia trim board
+				ctx.fillStyle='#9C6838'; ctx.fillRect(x+0,y+5,d,1);   // trim highlight
+				ctx.fillStyle='#5C3818'; ctx.fillRect(x+0,y+8,d,1);   // trim bottom edge
+				// Cast shadow beneath the overhang (this is what makes the house feel 3D)
+				ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x+0,y+9,d,4);
+				ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(x+0,y+13,d,2);
+				ctx.fillStyle='rgba(0,0,0,0.2)';  ctx.fillRect(x+0,y+15,d,1);
 				break;
 			case TW:
-				ctx.fillStyle='#D4D0B4'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#B0AC8C'; ctx.fillRect(x+1,y+5,d-2,1); ctx.fillRect(x+1,y+11,d-2,1);
-				ctx.fillStyle='#9C9878'; ctx.fillRect(x+d-1,y,1,d);
+				// Wood-plank wall with directional shading (light from top-left)
+				ctx.fillStyle='#D0B878'; ctx.fillRect(x,y,d,d);                  // base plank
+				ctx.fillStyle='#E0CC8C'; ctx.fillRect(x+0,y+0,d-2,1);             // top-edge highlight
+				ctx.fillStyle='#E0CC8C'; ctx.fillRect(x+0,y+6,d-2,1);
+				ctx.fillStyle='#E0CC8C'; ctx.fillRect(x+0,y+12,d-2,1);
+				ctx.fillStyle='#A88848'; ctx.fillRect(x+0,y+5,d,1);               // plank shadow
+				ctx.fillStyle='#A88848'; ctx.fillRect(x+0,y+11,d,1);
+				ctx.fillStyle='#8C6C2C'; ctx.fillRect(x+0,y+15,d,1);              // bottom shadow line
+				ctx.fillStyle='#A88848'; ctx.fillRect(x+d-1,y+0,1,d);             // right-edge column shadow (cohesive across tiles)
+				// Grain specks
+				ctx.fillStyle='#B89858';
+				ctx.fillRect(x+3,y+2,1,1); ctx.fillRect(x+10,y+3,1,1);
+				ctx.fillRect(x+6,y+8,1,1); ctx.fillRect(x+13,y+9,1,1);
+				ctx.fillRect(x+2,y+13,1,1); ctx.fillRect(x+9,y+14,1,1);
 				break;
 			case TWN: {
-				ctx.fillStyle='#D4D0B4'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#784828'; ctx.fillRect(x+2,y+2,12,12);
-				const gl=Math.sin(tick*0.022+x*0.012)*0.05+0.88;
-				ctx.fillStyle=`rgba(90,160,230,${gl})`;
+				// Paned window — wood frame with 2×2 glass and subtle animated glint
+				ctx.fillStyle='#D8C088'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#3A1F08'; ctx.fillRect(x+1,y+1,14,14);     // outer frame
+				ctx.fillStyle='#5C3818'; ctx.fillRect(x+2,y+2,12,12);     // inner frame
+				const gl=Math.sin(tick*0.022+x*0.012)*0.06+0.82;
+				ctx.fillStyle=`rgba(120,190,240,${gl})`;
 				ctx.fillRect(x+3,y+3,4,4); ctx.fillRect(x+9,y+3,4,4);
 				ctx.fillRect(x+3,y+9,4,4); ctx.fillRect(x+9,y+9,4,4);
-				ctx.fillStyle='#784828';
+				ctx.fillStyle='#3A1F08';                                  // mullions (window cross)
 				ctx.fillRect(x+7,y+3,1,10); ctx.fillRect(x+3,y+7,10,1);
-				ctx.fillStyle='rgba(255,255,255,0.7)';
-				ctx.fillRect(x+3,y+3,1,3); ctx.fillRect(x+9,y+3,1,3);
-				ctx.fillStyle='rgba(255,255,255,0.9)';
+				ctx.fillStyle='rgba(255,255,255,0.55)';                   // glass highlight
+				ctx.fillRect(x+3,y+3,2,1); ctx.fillRect(x+9,y+3,2,1);
+				ctx.fillStyle='rgba(255,255,255,0.85)';                   // sparkle
 				ctx.fillRect(x+3,y+3,1,1); ctx.fillRect(x+9,y+3,1,1);
+				ctx.fillStyle='rgba(0,0,0,0.18)';                         // bottom-right interior shadow
+				ctx.fillRect(x+6,y+6,1,1); ctx.fillRect(x+12,y+6,1,1);
+				ctx.fillRect(x+6,y+12,1,1); ctx.fillRect(x+12,y+12,1,1);
 				break;
 			}
 			case TD:
-				ctx.fillStyle='#D4D0B4'; ctx.fillRect(x,y,d,d);
-				ctx.fillStyle='#4A2808'; ctx.fillRect(x+3,y+1,10,d-1);
-				ctx.fillStyle='#7C4C20'; ctx.fillRect(x+4,y+2,8,d-3);
-				ctx.fillStyle='#6A3C14'; ctx.fillRect(x+4,y+8,8,1);
-				ctx.fillStyle='#9A5C28';
-				ctx.fillRect(x+5,y+3,3,4); ctx.fillRect(x+5,y+10,3,3);
-				ctx.fillStyle='#E09800'; ctx.fillRect(x+10,y+9,2,2);
-				ctx.fillStyle='#FFD030'; ctx.fillRect(x+10,y+9,1,1);
+				// Paneled door — frame, two recessed panels, brass knob
+				ctx.fillStyle='#D8C088'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#2C1804'; ctx.fillRect(x+2,y+0,12,d);      // door outer frame
+				ctx.fillStyle='#7C4818'; ctx.fillRect(x+3,y+1,10,15);     // door body
+				ctx.fillStyle='#5C3010'; ctx.fillRect(x+3,y+8,10,1);      // mid-rail separator
+				ctx.fillStyle='#9C5C24';                                  // panel inset (lighter)
+				ctx.fillRect(x+4,y+2,8,5); ctx.fillRect(x+4,y+10,8,5);
+				ctx.fillStyle='#5C3010';                                  // panel top shadow
+				ctx.fillRect(x+4,y+2,8,1); ctx.fillRect(x+4,y+10,8,1);
+				ctx.fillStyle='#5C3010';                                  // panel left shadow
+				ctx.fillRect(x+4,y+2,1,5); ctx.fillRect(x+4,y+10,1,5);
+				ctx.fillStyle='#B07028';                                  // panel inner highlight
+				ctx.fillRect(x+11,y+3,1,4); ctx.fillRect(x+11,y+11,1,4);
+				ctx.fillStyle='#FFD038'; ctx.fillRect(x+10,y+8,2,2);      // knob
+				ctx.fillStyle='#FFE890'; ctx.fillRect(x+10,y+8,1,1);      // knob highlight
+				ctx.fillStyle='#8C5C18'; ctx.fillRect(x+10,y+10,1,1);     // knob shadow
 				break;
 			case TH2O: {
 				const w1=Math.round(Math.sin(tick*0.05+(x+y)*0.04)*1.5);
