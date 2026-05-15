@@ -7,10 +7,18 @@
 	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22;
 
-	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TFN, TIW, TST]);
+	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TTR2, TFN, TIW, TST, TSG, TBSH]);
 	const ANIMATED = new Set([TWN, TH2O, TCR]);
+
+	// Signs placed on the camp map — key is "r,c", value is the message shown when
+	// the player presses E next to it. Coordinates match camp's MAP tile grid.
+	const SIGN_MESSAGES = {
+		'12,10': "Welcome to Trainer Camp! Walk up to the house and press E at the door to head inside.",
+		'19,11': "Crops grow here — come back later for a harvest minigame.",
+		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
+	};
 
 	// ── Map ──────────────────────────────────────────────────────────────────────
 	function buildMap() {
@@ -56,6 +64,17 @@
 		set(20,20,TP); set(20,21,TP);
 		fill(13,21,26,35,TSO);
 		for(let r=14;r<=26;r+=2) for(let c=21;c<=35;c++) set(r,c,TCR);
+
+		// Signs — keys must match SIGN_MESSAGES coordinates above
+		set(12,10,TSG);
+		set(19,11,TSG);
+		set(12,4,TSG);
+
+		// Sprinkle autumn-tree variants and bushes for visual variety
+		const variant = [[3,17],[5,15],[7,17],[12,2],[19,3],[23,2],[27,5]];
+		variant.forEach(([r,c]) => { if (map[r][c] === TTR) map[r][c] = TTR2; });
+		const bushes = [[14,8],[16,9],[18,8],[22,9],[24,7],[26,9],[6,20],[5,29],[8,32]];
+		bushes.forEach(([r,c]) => { if (map[r][c] === TG || map[r][c] === TG2) map[r][c] = TBSH; });
 
 		return map;
 	}
@@ -338,6 +357,51 @@
 				ctx.fillRect(x, y, 2, d);
 				break;
 			}
+			case TSG: {
+				// Wooden sign on a post
+				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);                  // grass base
+				ctx.fillStyle='#5C3818'; ctx.fillRect(x+7,y+9,2,7);              // post
+				ctx.fillStyle='#8C5828'; ctx.fillRect(x+7,y+9,1,7);              // post highlight
+				ctx.fillStyle='#5C3818'; ctx.fillRect(x+1,y+2,14,8);             // sign frame
+				ctx.fillStyle='#A86838'; ctx.fillRect(x+2,y+3,12,6);             // sign face
+				ctx.fillStyle='#C48848'; ctx.fillRect(x+2,y+3,12,1);             // top highlight
+				ctx.fillStyle='#3C1808'; ctx.fillRect(x+2,y+9,12,1);             // bottom shadow
+				ctx.fillStyle='#3C1808';
+				ctx.fillRect(x+3,y+5,2,1); ctx.fillRect(x+6,y+5,3,1); ctx.fillRect(x+10,y+5,3,1);
+				ctx.fillRect(x+3,y+7,4,1); ctx.fillRect(x+8,y+7,2,1); ctx.fillRect(x+11,y+7,2,1);
+				break;
+			}
+			case TTR2: {
+				// Alternate tree — autumn / orange leaves variant
+				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#5C3C1C'; ctx.fillRect(x+7,y+12,2,4);
+				ctx.fillStyle='#7A5030'; ctx.fillRect(x+7,y+13,2,3);
+				ctx.fillStyle='#5C2008';
+				ctx.fillRect(x+5,y+1,6,1); ctx.fillRect(x+3,y+2,10,1);
+				ctx.fillRect(x+2,y+3,12,8);
+				ctx.fillRect(x+3,y+11,10,1); ctx.fillRect(x+5,y+12,6,1);
+				ctx.fillStyle='#A04018';
+				ctx.fillRect(x+4,y+2,8,1); ctx.fillRect(x+3,y+3,10,8); ctx.fillRect(x+4,y+11,8,1);
+				ctx.fillStyle='#D86820'; ctx.fillRect(x+4,y+3,7,7);
+				ctx.fillStyle='#F09030';
+				ctx.fillRect(x+4,y+3,5,4); ctx.fillRect(x+4,y+7,3,2);
+				ctx.fillStyle='#FFC050'; ctx.fillRect(x+5,y+4,2,2);
+				ctx.fillStyle='#FFE090'; ctx.fillRect(x+5,y+4,1,1);
+				break;
+			}
+			case TBSH: {
+				// Bush — smaller leafy clump, no trunk
+				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#2E600E';
+				ctx.fillRect(x+3,y+5,10,9); ctx.fillRect(x+4,y+4,8,1); ctx.fillRect(x+5,y+14,6,1);
+				ctx.fillStyle='#487824';
+				ctx.fillRect(x+4,y+5,8,8); ctx.fillRect(x+5,y+13,6,1);
+				ctx.fillStyle='#62A030';
+				ctx.fillRect(x+4,y+5,5,4); ctx.fillRect(x+4,y+9,3,3);
+				ctx.fillStyle='#9ED860'; ctx.fillRect(x+5,y+6,2,2);
+				ctx.fillStyle='#BFF880'; ctx.fillRect(x+5,y+6,1,1);
+				break;
+			}
 			default:
 				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
 		}
@@ -349,6 +413,127 @@
 		if (!wrap) return;
 		const hh = header ? Math.ceil(header.getBoundingClientRect().bottom) : 0;
 		wrap.style.top = hh + 'px';
+	}
+
+	// ── Dialog UI (shared between scenes) ─────────────────────────────────────────
+	const Dialog = (() => {
+		let box, text, cont;
+		let fullText = '', shownLen = 0, revealTimer = 0;
+		let isOpenFlag = false;
+		const CHARS_PER_TICK = 1.6;
+		function ensureRefs() {
+			if (!box) {
+				box = document.getElementById('campDialog');
+				text = document.getElementById('campDialogText');
+				cont = document.getElementById('campDialogCont');
+			}
+			return !!box;
+		}
+		function open(message) {
+			if (!ensureRefs()) return;
+			fullText = message;
+			shownLen = 0;
+			revealTimer = 0;
+			text.textContent = '';
+			cont.hidden = true;
+			box.hidden = false;
+			isOpenFlag = true;
+		}
+		function tick() {
+			if (!isOpenFlag) return;
+			if (shownLen < fullText.length) {
+				revealTimer += CHARS_PER_TICK;
+				const reveal = Math.min(fullText.length, Math.floor(shownLen + revealTimer));
+				if (reveal > shownLen) {
+					shownLen = reveal;
+					revealTimer = 0;
+					text.textContent = fullText.slice(0, shownLen);
+				}
+				if (shownLen >= fullText.length) cont.hidden = false;
+			}
+		}
+		function advance() {
+			if (!isOpenFlag) return;
+			if (shownLen < fullText.length) {
+				shownLen = fullText.length;
+				text.textContent = fullText;
+				cont.hidden = false;
+			} else {
+				close();
+			}
+		}
+		function close() {
+			if (!box) return;
+			box.hidden = true;
+			isOpenFlag = false;
+			fullText = ''; shownLen = 0;
+		}
+		function isOpen() { return isOpenFlag; }
+		return { open, tick, advance, close, isOpen };
+	})();
+
+	// ── Pause menu (shared) ───────────────────────────────────────────────────────
+	function setupPauseMenu(game) {
+		const panel = document.getElementById('campPause');
+		const resumeBtn = document.getElementById('campPauseResume');
+		if (!panel || !resumeBtn || panel.dataset.wired) return;
+		panel.dataset.wired = '1';
+		const close = () => {
+			panel.hidden = true;
+			const active = game.scene.getScenes(true);
+			active.forEach(s => game.scene.resume(s.scene.key));
+		};
+		const open = () => {
+			panel.hidden = false;
+			const active = game.scene.getScenes(true);
+			active.forEach(s => game.scene.pause(s.scene.key));
+		};
+		resumeBtn.addEventListener('click', close);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') {
+				if (Dialog.isOpen()) { Dialog.close(); return; }
+				panel.hidden ? open() : close();
+			}
+		});
+	}
+
+	// ── Mini-map palette — one swatch per tile type ───────────────────────────────
+	function miniMapColor(t) {
+		switch (t) {
+			case TG: case TG2: case TFR: case TFY: return '#78A840';
+			case TP: return '#B0A470';
+			case TW: return '#D8C088';
+			case TR: case TR2: case TRP: return '#9C1C1C';
+			case TWN: return '#5070C0';
+			case TD: return '#7C4818';
+			case TH2O: return '#3858A8';
+			case TTR: return '#1A3A0A';
+			case TTR2: return '#A04018';
+			case TBSH: return '#2E600E';
+			case TSO: case TCR: return '#5A4020';
+			case TFN: return '#8A6030';
+			case TSG: return '#C48848';
+			default: return '#101020';
+		}
+	}
+
+	// ── Day/night tint ────────────────────────────────────────────────────────────
+	// Six-minute full cycle: 0..120s day, 120..180s sunset, 180..240s night,
+	// 240..300s dawn, 300..360s back to day. Driven by performance.now mod cycle.
+	function applyDayNight() {
+		const tint = document.getElementById('campTint');
+		if (!tint) return;
+		const cycleSec = 360;
+		const t = (performance.now() / 1000) % cycleSec;
+		let alpha = 0;
+		let color = '#0a1a40';
+		if (t < 120) { alpha = 0; }
+		else if (t < 180) { alpha = (t - 120) / 60 * 0.55; color = '#3a1a20'; }
+		else if (t < 240) { alpha = 0.55; color = '#0a1430'; }
+		else if (t < 300) { alpha = (1 - (t - 240) / 60) * 0.55; color = '#3a1a20'; }
+		else { alpha = 0; }
+		tint.style.opacity = alpha.toFixed(3);
+		tint.style.background = color;
 	}
 
 	// ── House interior map ───────────────────────────────────────────────────────
@@ -522,9 +707,21 @@
 					a: Phaser.Input.Keyboard.KeyCodes.A,
 					s: Phaser.Input.Keyboard.KeyCodes.S,
 					d: Phaser.Input.Keyboard.KeyCodes.D,
+					interact: Phaser.Input.Keyboard.KeyCodes.E,
 				});
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
+				setupPauseMenu(this.game);
+
+				// Chimney smoke particles + container behind the player so puffs don't
+				// occlude the trainer. The chimney tile is at row 2 col 7 in the map.
+				this.smokeContainer = this.add.container(0, 0).setDepth(2);
+				this.smoke = [];
+
+				// Drifting leaf particles — small autumn-coloured rectangles that fall
+				// across the camera viewport at random.
+				this.leafContainer = this.add.container(0, 0).setDepth(4).setScrollFactor(0);
+				this.leaves = [];
 
 				this.dir = 0;
 				this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
@@ -564,6 +761,131 @@
 				// Door-transition guard — flipped true the moment we trigger scene.start
 				// so we don't re-fire while the next scene boots.
 				this.didTransition = false;
+				// When we arrived from the house, the player is one tile south of the
+				// door. The door check would re-fire the moment they walk north onto it
+				// without this — wait until they step OFF the door area to re-arm.
+				this.armedForDoor = this.spawnFrom !== 'house';
+
+				// Pre-render the static mini-map once. It mirrors the full map at tiny
+				// scale; the player dot is overlaid every frame in updateMinimap().
+				this.minimapEl = document.getElementById('campMinimap');
+				if (this.minimapEl) {
+					this.minimapEl.width = MAP_W * 3;
+					this.minimapEl.height = MAP_H * 3;
+					const mctx = this.minimapEl.getContext('2d');
+					mctx.imageSmoothingEnabled = false;
+					for (let r = 0; r < MAP_H; r++) {
+						for (let c = 0; c < MAP_W; c++) {
+							mctx.fillStyle = miniMapColor(this.map[r][c]);
+							mctx.fillRect(c*3, r*3, 3, 3);
+						}
+					}
+					this.minimapBase = mctx.getImageData(0, 0, this.minimapEl.width, this.minimapEl.height);
+				}
+			}
+
+			findInteractTarget() {
+				// Pick the tile directly in front of the player (one tile in this.dir),
+				// plus the tile the player is standing on (so door entry also works).
+				const tc = Math.floor(this.player.x / TILE);
+				const tr = Math.floor(this.player.y / TILE);
+				const [dvx, dvy] = this.DIR_VEC[this.dir];
+				const candidates = [[tc + dvx, tr + dvy], [tc, tr]];
+				for (const [c, r] of candidates) {
+					if (!this.map[r] || this.map[r][c] === undefined) continue;
+					const t = this.map[r][c];
+					if (t === TSG) {
+						const msg = SIGN_MESSAGES[r + ',' + c];
+						if (msg) return { kind: 'sign', r, c, message: msg };
+					}
+					if (t === TD) return { kind: 'door', r, c };
+				}
+				return null;
+			}
+
+			showPrompt(label) {
+				const el = document.getElementById('campPrompt');
+				const lbl = document.getElementById('campPromptLabel');
+				if (!el) return;
+				if (!label || Dialog.isOpen()) { el.hidden = true; return; }
+				if (lbl) lbl.textContent = label;
+				el.hidden = false;
+				// Anchor the prompt above the player's on-screen position
+				const cam = this.cameras.main;
+				const sx = (this.player.x - cam.worldView.x) * cam.zoom;
+				const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+				el.style.left = sx + 'px';
+				el.style.top  = sy + 'px';
+				el.style.transform = 'translate(-50%, calc(-100% - 12px))';
+			}
+
+			updateLeaves() {
+				if (!this.leafContainer) return;
+				const vw = this.scale.width;
+				const vh = this.scale.height;
+				if (this.tick % 90 === 0 && this.leaves.length < 10) {
+					const colors = [0xD86820, 0xC04018, 0xE89000, 0x8C5A18];
+					const col = colors[(Math.random() * colors.length) | 0];
+					const leaf = this.add.rectangle(Math.random() * vw, -10, 4, 4, col, 0.85);
+					leaf.setOrigin(0.5);
+					leaf.angle = Math.random() * 360;
+					this.leafContainer.add(leaf);
+					this.leaves.push({
+						obj: leaf,
+						driftX: (Math.random() * 1.2 - 0.6),
+						spin: (Math.random() * 4 - 2),
+						sway: Math.random() * Math.PI * 2,
+					});
+				}
+				for (let i = this.leaves.length - 1; i >= 0; i--) {
+					const l = this.leaves[i];
+					l.sway += 0.06;
+					l.obj.x += l.driftX + Math.sin(l.sway) * 0.4;
+					l.obj.y += 0.6;
+					l.obj.angle += l.spin;
+					if (l.obj.y > vh + 16) {
+						l.obj.destroy();
+						this.leaves.splice(i, 1);
+					}
+				}
+			}
+
+			updateSmoke() {
+				if (!this.smokeContainer) return;
+				// Chimney origin in world coords — matches the graphics block in create()
+				const sx = 7*TILE + 8;
+				const sy = 2*TILE + 2;
+				if (this.tick % 18 === 0) {
+					const puff = this.add.circle(sx + (Math.random()*2 - 1), sy, 3, 0xe0d6c0, 0.7);
+					this.smokeContainer.add(puff);
+					this.smoke.push({ obj: puff, life: 0, max: 80, drift: (Math.random()*0.6 - 0.3) });
+				}
+				for (let i = this.smoke.length - 1; i >= 0; i--) {
+					const s = this.smoke[i];
+					s.life++;
+					const p = s.life / s.max;
+					s.obj.x += s.drift;
+					s.obj.y -= 0.4;
+					s.obj.setRadius(3 + p * 4);
+					s.obj.setAlpha((1 - p) * 0.7);
+					if (s.life >= s.max) {
+						s.obj.destroy();
+						this.smoke.splice(i, 1);
+					}
+				}
+			}
+
+			updateMinimap() {
+				if (!this.minimapEl || !this.minimapBase) return;
+				const mctx = this.minimapEl.getContext('2d');
+				mctx.putImageData(this.minimapBase, 0, 0);
+				// Player dot — bright yellow
+				const px = Math.floor(this.player.x / TILE) * 3;
+				const py = Math.floor(this.player.y / TILE) * 3;
+				mctx.fillStyle = '#ffe040';
+				mctx.fillRect(px - 1, py - 1, 5, 5);
+				mctx.fillStyle = '#ffffff';
+				mctx.fillRect(px, py, 3, 3);
 			}
 
 			onResize() {
@@ -624,14 +946,33 @@
 
 			update() {
 				this.tick++;
+				applyDayNight();
+				Dialog.tick();
 
+				const dialogOpen = Dialog.isOpen();
 				const k = this.keys, d = this.dpad;
+
+				// Interaction prompt + E to read signs. When the dialog is open the player
+				// freezes and E advances/closes the dialog instead of moving them.
+				const target = this.findInteractTarget();
+				this.showPrompt(target ? (target.kind === 'door' ? 'Enter' : 'Read') : null);
+				if (Phaser.Input.Keyboard.JustDown(k.interact)) {
+					if (dialogOpen) Dialog.advance();
+					else if (target && target.message) Dialog.open(target.message);
+					else if (target && target.kind === 'door' && !this.didTransition) {
+						this.didTransition = true;
+						this.scene.start('house', { from: 'camp' });
+					}
+				}
+
 				let vx = 0, vy = 0;
-				if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
-				if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
-				if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
-				if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
-				if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				if (!dialogOpen) {
+					if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+					if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+					if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+					if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+					if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				}
 				this.player.setVelocity(vx, vy);
 
 				const moving = vx !== 0 || vy !== 0;
@@ -651,6 +992,9 @@
 					drawTile(actx, t, c*TILE, r*TILE, this.tick);
 				}
 				this.animTex.refresh();
+				this.updateSmoke();
+				this.updateLeaves();
+				this.updateMinimap();
 
 				// Trail mode: sample player position; follower lerps toward the oldest sample
 				// so it lags ~1 sprite-width behind. Once the player stops, switch to face-off
@@ -681,13 +1025,13 @@
 					this.followerTarget = this.followerPath.shift();
 				}
 
-				const target = this.followerMode === 'trail'
+				const followTarget = this.followerMode === 'trail'
 					? this.followerHistory[0]
 					: this.followerTarget;
-				if (target) {
+				if (followTarget) {
 					const prevX = this.follower.x, prevY = this.follower.y;
-					this.follower.x = Phaser.Math.Linear(this.follower.x, target.x, 0.18);
-					this.follower.y = Phaser.Math.Linear(this.follower.y, target.y, 0.18);
+					this.follower.x = Phaser.Math.Linear(this.follower.x, followTarget.x, 0.18);
+					this.follower.y = Phaser.Math.Linear(this.follower.y, followTarget.y, 0.18);
 					const fdx = this.follower.x - prevX;
 					const fdy = this.follower.y - prevY;
 					const fspeed = Math.hypot(fdx, fdy);
@@ -724,14 +1068,15 @@
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
 				}
 
-				// Walk onto the door → enter the house.
-				if (!this.didTransition) {
-					const tc = Math.floor(this.player.x / TILE);
-					const tr = Math.floor(this.player.y / TILE);
-					if (this.map[tr] && this.map[tr][tc] === TD) {
-						this.didTransition = true;
-						this.scene.start('house', { from: 'camp' });
-					}
+				// Walk onto the door → enter the house. Re-arm after the player steps
+				// off the door tile so we don't bounce them straight back inside.
+				const tc = Math.floor(this.player.x / TILE);
+				const tr = Math.floor(this.player.y / TILE);
+				const onDoorTile = this.map[tr] && this.map[tr][tc] === TD;
+				if (!onDoorTile) this.armedForDoor = true;
+				if (this.armedForDoor && onDoorTile && !this.didTransition) {
+					this.didTransition = true;
+					this.scene.start('house', { from: 'camp' });
 				}
 			}
 		};
@@ -824,9 +1169,8 @@
 				this.physics.world.setBounds(0, 0, W, H);
 				this.player.setCollideWorldBounds(true);
 				// Interior is a fixed room — keep the camera centered on it instead of
-				// following the player. The player walks within a static framed view.
-				this.cameras.main.setBounds(0, 0, W, H);
-				this.cameras.main.centerOn(W / 2, H / 2);
+				// following the player. No setBounds so the camera can scroll negative
+				// (centering even when the viewport is bigger than the room).
 				this.cameras.main.setBackgroundColor('#1a0e08');
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
@@ -842,9 +1186,11 @@
 					a: Phaser.Input.Keyboard.KeyCodes.A,
 					s: Phaser.Input.Keyboard.KeyCodes.S,
 					d: Phaser.Input.Keyboard.KeyCodes.D,
+					interact: Phaser.Input.Keyboard.KeyCodes.E,
 				});
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
+				setupPauseMenu(this.game);
 
 				this.dir = 2; // facing north (player just stepped through the door)
 				this.dirAnimKeys = ['h-walk-south', 'h-walk-west', 'h-walk-north', 'h-walk-east'];
@@ -862,16 +1208,23 @@
 			}
 
 			applyZoom() {
-				const W = this.scale.width;
-				const H = this.scale.height;
+				const vw = this.scale.width;
+				const vh = this.scale.height;
 				const roomW = HOUSE_W * TILE;
 				const roomH = HOUSE_H * TILE;
 				// Pick the largest integer zoom that still fits the whole room in view.
-				let s = Math.min(W / roomW, H / roomH);
+				let s = Math.min(vw / roomW, vh / roomH);
 				s = Math.max(2, Math.floor(s));
 				s = Math.min(s, 5);
-				this.cameras.main.setZoom(s);
-				this.cameras.main.centerOn(roomW / 2, roomH / 2);
+				const cam = this.cameras.main;
+				cam.setZoom(s);
+				// Manually compute scroll so the room is centered in the viewport even
+				// when the viewport (in world units) is larger than the room — Phaser's
+				// setBounds + centerOn would clamp scroll to zero otherwise.
+				const viewportWorldW = vw / s;
+				const viewportWorldH = vh / s;
+				cam.scrollX = (roomW - viewportWorldW) / 2;
+				cam.scrollY = (roomH - viewportWorldH) / 2;
 			}
 
 			setupJoystick() {
@@ -918,13 +1271,18 @@
 
 			update() {
 				this.tick++;
+				applyDayNight();
+				Dialog.tick();
+				const dialogOpen = Dialog.isOpen();
 				const k = this.keys, d = this.dpad;
 				let vx = 0, vy = 0;
-				if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
-				if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
-				if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
-				if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
-				if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				if (!dialogOpen) {
+					if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+					if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+					if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+					if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+					if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				}
 				this.player.setVelocity(vx, vy);
 
 				const moving = vx !== 0 || vy !== 0;
@@ -946,6 +1304,9 @@
 					this.didTransition = true;
 					this.scene.start('camp', { from: 'house' });
 				}
+				// Hide interaction prompt in the house — no signs here.
+				const pe = document.getElementById('campPrompt');
+				if (pe) pe.hidden = true;
 			}
 		};
 	}

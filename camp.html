@@ -75,6 +75,35 @@
 				<div class="joystick-knob" id="joystickKnob"></div>
 			</div>
 		</div>
+
+		<!-- Day/night tint — full-screen overlay whose opacity follows the clock -->
+		<div class="camp-tint" id="campTint" aria-hidden="true"></div>
+
+		<!-- Interaction prompt — anchored to the player on-screen, shown when next to something interactable -->
+		<div class="camp-prompt" id="campPrompt" hidden aria-hidden="true">
+			<span class="camp-prompt-arrow">&#x25BC;</span>
+			<span class="camp-prompt-key">E</span>
+			<span class="camp-prompt-label" id="campPromptLabel">Read</span>
+		</div>
+
+		<!-- Dialog box — bottom of screen, typewriter text, dismiss with E or click -->
+		<div class="camp-dialog" id="campDialog" hidden role="dialog" aria-live="polite">
+			<div class="camp-dialog-text" id="campDialogText"></div>
+			<div class="camp-dialog-cont" id="campDialogCont">&#x25BC;</div>
+		</div>
+
+		<!-- Mini-map — corner overview of the camp -->
+		<canvas class="camp-minimap" id="campMinimap" width="120" height="90" aria-hidden="true"></canvas>
+
+		<!-- Pause menu (Escape) -->
+		<div class="camp-pause" id="campPause" hidden role="dialog" aria-modal="true">
+			<div class="camp-pause-panel">
+				<div class="camp-pause-title">Paused</div>
+				<button class="camp-pause-btn" id="campPauseResume" type="button">Resume</button>
+				<a class="camp-pause-btn camp-pause-btn--alt" href="index.html">Return to Home</a>
+				<div class="camp-pause-hint">Press Esc to resume</div>
+			</div>
+		</div>
 	</div>
 
 	<script src="js/profile.js" defer></script>
