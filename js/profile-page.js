@@ -261,11 +261,10 @@
 		});
 	}
 
-	// ── Trainer Customizer ───────────────────────────────────────────────────────
+	// ── Trainer Customizer (palette-swap on the Calem sheet) ────────────────────
 	function initCustomizer() {
-		const TL = window.TrainerLook;
-		if (!TL) return;
-
+		const TP = window.TrainerPalette;
+		if (!TP) return;
 		const canvas  = document.getElementById('tcCanvas');
 		const dirBtns = document.querySelectorAll('.tc-dir-btn');
 		if (!canvas) return;
@@ -273,16 +272,34 @@
 		const ctx = canvas.getContext('2d');
 		ctx.imageSmoothingEnabled = false;
 
-		let look    = TL.load();
+		const FW = 22, FH = 38;
+		const offX = Math.floor((canvas.width - FW) / 2);
+		const offY = Math.floor((canvas.height - FH) / 2);
+
+		const fullCanvas = document.createElement('canvas');
+		const fullCtx = fullCanvas.getContext('2d');
+		fullCtx.imageSmoothingEnabled = false;
+
+		const baseImg = new Image();
+		baseImg.src = 'Pictures/sprites/calem.png';
+
+		let choices = TP.load();
 		let previewDir = 0;
 
 		function redraw() {
+			if (!baseImg.complete || !baseImg.naturalWidth) return;
+			TP.recolor(baseImg, choices, fullCtx);
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			// px=16, py=30 gives comfortable centering in 32×42 canvas
-			TL.draw(ctx, 16, 30, previewDir, 0, look);
+			// sheet rows: 0=south, 1=west, 2=north, 3=east — matches previewDir
+			ctx.drawImage(fullCanvas, 0, previewDir * FH, FW, FH, offX, offY, FW, FH);
 		}
 
-		// Direction buttons
+		baseImg.onload = () => {
+			fullCanvas.width = baseImg.width;
+			fullCanvas.height = baseImg.height;
+			redraw();
+		};
+
 		dirBtns.forEach(btn => {
 			btn.addEventListener('click', () => {
 				previewDir = Number(btn.dataset.dir);
@@ -291,44 +308,28 @@
 			});
 		});
 
-		// Gender toggle
-		document.querySelectorAll('.tc-toggle[data-key="gender"]').forEach(btn => {
-			btn.classList.toggle('is-active', btn.dataset.val === look.gender);
-			btn.addEventListener('click', () => {
-				look.gender = btn.dataset.val;
-				document.querySelectorAll('.tc-toggle[data-key="gender"]').forEach(b =>
-					b.classList.toggle('is-active', b === btn));
-				TL.save(look);
-				redraw();
-			});
-		});
-
-		// Colour swatches
-		const cats = ['skin','hair','hat','bottom','shoes'];
-		cats.forEach(cat => {
+		Object.keys(TP.PALETTES).forEach(cat => {
 			const row = document.querySelector(`.tc-row[data-cat="${cat}"]`);
 			if (!row) return;
 			const wrap = row.querySelector('.tc-swatches');
-			TL.PALETTES[cat].forEach(({ color, label }) => {
+			TP.PALETTES[cat].forEach(({ color, label }) => {
 				const btn = document.createElement('button');
 				btn.type = 'button';
 				btn.className = 'tc-swatch';
 				btn.style.background = color;
 				btn.title = label;
 				btn.setAttribute('aria-label', label);
-				btn.classList.toggle('is-active', look[cat] === color);
+				btn.classList.toggle('is-active', choices[cat] === color);
 				btn.addEventListener('click', () => {
-					look[cat] = color;
+					choices[cat] = color;
 					wrap.querySelectorAll('.tc-swatch').forEach(b =>
 						b.classList.toggle('is-active', b === btn));
-					TL.save(look);
+					TP.save(choices);
 					redraw();
 				});
 				wrap.appendChild(btn);
 			});
 		});
-
-		redraw();
 	}
 
 	function init() {

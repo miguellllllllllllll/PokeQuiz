@@ -232,11 +232,9 @@
 			constructor() { super({ key: 'camp' }); }
 
 			preload() {
-				// Trainer walk sheet — 3 frames per row, 4 rows: S, W, N, E
-				this.load.spritesheet('player', 'Pictures/sprites/calem.png', {
-					frameWidth: 22,
-					frameHeight: 38,
-				});
+				// Load the raw sheet — we'll palette-swap it into a canvas and
+				// register that canvas as the 'player' spritesheet below.
+				this.load.image('player-base', 'Pictures/sprites/calem.png');
 			}
 
 			create() {
@@ -277,6 +275,35 @@
 				cg.fillStyle(0x701818, 1); cg.fillRect(wx+2, wy+1, 4, 12);
 				cg.fillStyle(0x401010, 1); cg.fillRect(wx, wy, 8, 3);
 				cg.fillStyle(0x602020, 1); cg.fillRect(wx+1, wy+1, 6, 2);
+
+				// Palette-swap the base sheet into a canvas-backed spritesheet
+				const baseImg = this.textures.get('player-base').getSourceImage();
+				const pw = baseImg.width, ph = baseImg.height;
+				this._playerCanvas = document.createElement('canvas');
+				this._playerCanvas.width = pw;
+				this._playerCanvas.height = ph;
+				this._playerCtx = this._playerCanvas.getContext('2d');
+				this._playerBaseImg = baseImg;
+
+				const applyPalette = () => {
+					if (window.TrainerPalette) {
+						window.TrainerPalette.recolor(this._playerBaseImg, window.TrainerPalette.load(), this._playerCtx);
+					} else {
+						this._playerCtx.clearRect(0, 0, pw, ph);
+						this._playerCtx.drawImage(this._playerBaseImg, 0, 0);
+					}
+				};
+				applyPalette();
+				this.textures.addSpriteSheet('player', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+
+				this._onStorage = (e) => {
+					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
+						applyPalette();
+						this.textures.get('player').refresh();
+					}
+				};
+				window.addEventListener('storage', this._onStorage);
+				this.events.once('shutdown', () => window.removeEventListener('storage', this._onStorage));
 
 				// Walk animations: row order in sheet = south, west, north, east
 				const mkAnim = (key, frames) => {
