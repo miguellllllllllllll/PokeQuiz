@@ -1264,9 +1264,10 @@
 				this.dirIdleFrame = [0, 3, 6, 9];
 				this.player.setFrame(this.dirIdleFrame[this.dir]);
 				this.didTransition = false;
-				// Wait for the player to step OFF the spawn-door tile before allowing
-				// the exit-on-touch logic to fire (otherwise we'd bounce straight back).
-				this.armedForExit = false;
+				// The player spawns one tile north of the door, so the exit is just a
+				// single step south. Start armed — there's no risk of re-bouncing here
+				// because Phaser fully tears down CampScene before this scene runs.
+				this.armedForExit = true;
 			}
 
 			onResize() {
