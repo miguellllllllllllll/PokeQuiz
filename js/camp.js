@@ -231,17 +231,17 @@
 		return class CampScene extends Phaser.Scene {
 			constructor() { super({ key: 'camp' }); }
 
+			preload() {
+				// Trainer walk sheet — 3 frames per row, 4 rows: S, W, N, E
+				this.load.spritesheet('player', 'Pictures/sprites/calem.png', {
+					frameWidth: 22,
+					frameHeight: 38,
+				});
+			}
+
 			create() {
 				this.tick = 0;
 				this.map = buildMap();
-				this.trainerLook = window.TrainerLook ? window.TrainerLook.load() : null;
-
-				this._onStorage = (e) => {
-					if (e.key === 'pokequiz_trainer_look' && window.TrainerLook) {
-						this.trainerLook = window.TrainerLook.load();
-					}
-				};
-				window.addEventListener('storage', this._onStorage);
 
 				const W = MAP_W * TILE, H = MAP_H * TILE;
 				// Static base — drawn once. Animated overlay — drawn each frame.
@@ -278,17 +278,27 @@
 				cg.fillStyle(0x401010, 1); cg.fillRect(wx, wy, 8, 3);
 				cg.fillStyle(0x602020, 1); cg.fillRect(wx+1, wy+1, 6, 2);
 
-				// Player texture (foot at 8,24 inside 16×28 canvas)
-				const PW = 16, PH = 28;
-				this.playerTex = this.textures.createCanvas('playerTex', PW, PH);
-				this.playerCtx = this.playerTex.getContext();
-				this.playerCtx.imageSmoothingEnabled = false;
+				// Walk animations: row order in sheet = south, west, north, east
+				const mkAnim = (key, frames) => {
+					if (!this.anims.exists(key)) {
+						this.anims.create({
+							key, frameRate: 6, repeat: -1,
+							frames: this.anims.generateFrameNumbers('player', { frames }),
+						});
+					}
+				};
+				mkAnim('walk-south', [1, 0, 2, 0]);
+				mkAnim('walk-west',  [4, 3, 5, 3]);
+				mkAnim('walk-north', [7, 6, 8, 6]);
+				mkAnim('walk-east',  [10, 9, 11, 9]);
 
-				this.player = this.physics.add.sprite(11*TILE + TILE/2, 14*TILE + TILE/2, 'playerTex');
-				this.player.setOrigin(0.5, 24/PH);
+				this.player = this.physics.add.sprite(11*TILE + TILE/2, 14*TILE + TILE/2, 'player', 0);
+				// Origin: feet at the bottom-centre of the frame (foot point ≈ y=36 in 38-tall frame)
+				this.player.setOrigin(0.5, 36/38);
 				this.player.setDepth(3);
+				// Physics body — small rectangle covering the feet so collision feels tile-aligned
 				this.player.body.setSize(10, 6);
-				this.player.body.setOffset(3, 16);
+				this.player.body.setOffset((22-10)/2, 38-8);
 
 				// Solid tile bodies
 				this.solids = this.physics.add.staticGroup();
@@ -327,12 +337,10 @@
 				this.setupJoystick();
 
 				this.dir = 0;
-				this.frame = 0;
-				this.frameTick = 0;
-
-				this.events.once('shutdown', () => {
-					window.removeEventListener('storage', this._onStorage);
-				});
+				this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
+				// Idle frame index per direction (frame 0 of each row)
+				this.dirIdleFrame = [0, 3, 6, 9];
+				this.player.setFrame(this.dirIdleFrame[this.dir]);
 			}
 
 			onResize() {
@@ -404,11 +412,14 @@
 				this.player.setVelocity(vx, vy);
 
 				const moving = vx !== 0 || vy !== 0;
+				const animKey = this.dirAnimKeys[this.dir];
 				if (moving) {
-					this.frameTick++;
-					if (this.frameTick >= 9) { this.frame ^= 1; this.frameTick = 0; }
+					if (!this.player.anims.isPlaying || this.player.anims.currentAnim?.key !== animKey) {
+						this.player.anims.play(animKey, true);
+					}
 				} else {
-					this.frame = 0; this.frameTick = 0;
+					this.player.anims.stop();
+					this.player.setFrame(this.dirIdleFrame[this.dir]);
 				}
 
 				const actx = this.animCtx;
@@ -417,13 +428,6 @@
 					drawTile(actx, t, c*TILE, r*TILE, this.tick);
 				}
 				this.animTex.refresh();
-
-				const pctx = this.playerCtx;
-				pctx.clearRect(0, 0, 16, 28);
-				if (window.TrainerLook) {
-					window.TrainerLook.draw(pctx, 8, 24, this.dir, moving ? this.frame : 0, this.trainerLook);
-				}
-				this.playerTex.refresh();
 			}
 		};
 	}
