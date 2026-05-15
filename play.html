@@ -139,19 +139,74 @@
 				});
 			});
 
-			form.addEventListener('submit', (e) => {
+			function getPlayerId() {
+				let id = '';
+				try { id = localStorage.getItem('pokequiz_player_id') || ''; } catch {}
+				if (!id) {
+					id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+						? crypto.randomUUID()
+						: 'id_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+					try { localStorage.setItem('pokequiz_player_id', id); } catch {}
+				}
+				return id;
+			}
+
+			function ensureNameErrorEl() {
+				let el = document.getElementById('playerNameError');
+				if (el) return el;
+				el = document.createElement('div');
+				el.id = 'playerNameError';
+				el.style.cssText = 'margin-top:8px;padding:10px 14px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.25);border-radius:10px;color:#b91c1c;font-size:13px;font-weight:600;';
+				playerName.insertAdjacentElement('afterend', el);
+				return el;
+			}
+
+			let claimInFlight = false;
+			form.addEventListener('submit', async (e) => {
 				const name = playerName.value.trim();
+				const errEl = ensureNameErrorEl();
+				errEl.hidden = true;
+				errEl.textContent = '';
 				if (name === '') {
 					e.preventDefault();
 					playerName.classList.add('invalid');
 					playerName.focus();
 					return;
 				}
-				// Persist name so it's available immediately on subsequent pages
+				if (claimInFlight) { e.preventDefault(); return; }
+
+				// Claim the name with the API before navigating, so the user
+				// can't reach the quiz with a name owned by another trainer.
+				e.preventDefault();
+				claimInFlight = true;
+				const submitBtn = form.querySelector('button[type=submit]');
+				if (submitBtn) submitBtn.disabled = true;
+				try {
+					const res = await fetch('/api/leaderboard', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({ action: 'claim', name, playerId: getPlayerId() }),
+					});
+					if (res.status === 409) {
+						const data = await res.json().catch(() => ({}));
+						errEl.textContent = data.message || `"${name}" is already claimed by another trainer.`;
+						errEl.hidden = false;
+						playerName.classList.add('invalid');
+						playerName.focus();
+						return;
+					}
+				} catch {
+					// Offline — allow the run; later POSTs will re-check ownership.
+				} finally {
+					claimInFlight = false;
+					if (submitBtn) submitBtn.disabled = false;
+				}
+
 				try {
 					localStorage.setItem('playerName', name);
 					sessionStorage.setItem('playerName', name);
 				} catch {}
+				form.submit();
 			});
 		})();
 	</script>

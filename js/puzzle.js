@@ -300,10 +300,10 @@
 				if (streak > 0 && streak % 5 === 0) {
 					triggerStreakMilestone(streak);
 				}
-			} else {
-				streak = 0;
-				streakNum.textContent = streak;
 			}
+			// On a wrong reveal, callers (skip, out-of-hearts) own the streak
+			// reset themselves so that postLeaderboard sees the run's final
+			// streak before any reset.
 			playCry();
 			setTimeout(() => nextBtn.focus(), 200);
 		}
