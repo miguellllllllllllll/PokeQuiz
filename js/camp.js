@@ -580,14 +580,24 @@
 				this.map = buildMap();
 
 				const W = MAP_W * TILE, H = MAP_H * TILE;
-				// Texture keys persist across scene restarts; nuke them so createCanvas
-				// returns a fresh texture instead of null on the second-and-later boots.
-				['campBase', 'campAnim', 'player'].forEach(k => {
-					if (this.textures.exists(k)) this.textures.remove(k);
-				});
-				// Static base — drawn once. Animated overlay — drawn each frame.
-				this.baseTex = this.textures.createCanvas('campBase', W, H);
-				this.animTex = this.textures.createCanvas('campAnim', W, H);
+				// Skip-if-exists: removing canvas textures and recreating them with the
+				// same key has produced null returns in Phaser 3 on the second boot,
+				// blanking the world. Reuse the existing textures across scene boots
+				// — the camp base is static and the animated overlay is re-drawn every
+				// frame so a single canvas per session works fine.
+				if (!this.textures.exists('campBase')) {
+					this.baseTex = this.textures.createCanvas('campBase', W, H);
+				} else {
+					this.baseTex = this.textures.get('campBase');
+				}
+				if (!this.textures.exists('campAnim')) {
+					this.animTex = this.textures.createCanvas('campAnim', W, H);
+				} else {
+					this.animTex = this.textures.get('campAnim');
+				}
+				if (!this.baseTex || !this.animTex) {
+					console.error('[CampScene] createCanvas returned null', { baseTex: this.baseTex, animTex: this.animTex });
+				}
 				const baseCtx = this.baseTex.getContext();
 				const animCtx = this.animTex.getContext();
 				baseCtx.imageSmoothingEnabled = false;
@@ -637,7 +647,11 @@
 					}
 				};
 				applyPalette();
-				this.textures.addSpriteSheet('player', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+				if (!this.textures.exists('player')) {
+					this.textures.addSpriteSheet('player', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+				} else {
+					this.textures.get('player').refresh();
+				}
 
 				this._onStorage = (e) => {
 					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
@@ -1103,20 +1117,40 @@
 			}
 
 			create() {
+				try {
+					this._buildHouse();
+				} catch (e) {
+					console.error('[HouseScene] create failed:', e);
+					// Fall back to camp so the player isn't stranded on a black screen.
+					this.scene.start('camp', { from: 'house' });
+				}
+				if (typeof window !== 'undefined') window.__houseScene = this;
+			}
+
+			_buildHouse() {
 				this.tick = 0;
 				this.map = buildHouseMap();
 				const W = HOUSE_W * TILE, H = HOUSE_H * TILE;
 
-				if (this.textures.exists('houseBase')) this.textures.remove('houseBase');
-				this.baseTex = this.textures.createCanvas('houseBase', W, H);
-				const baseCtx = this.baseTex.getContext();
-				baseCtx.imageSmoothingEnabled = false;
-				for (let r = 0; r < HOUSE_H; r++) {
-					for (let c = 0; c < HOUSE_W; c++) {
-						drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+				// House map is static — only build the texture the first time. Removing
+				// and re-creating a canvas texture has caused null returns in Phaser 3
+				// in some cases, leaving a black screen on the second entry.
+				if (!this.textures.exists('houseBase')) {
+					this.baseTex = this.textures.createCanvas('houseBase', W, H);
+					if (!this.baseTex) {
+						throw new Error('createCanvas("houseBase") returned null');
 					}
+					const baseCtx = this.baseTex.getContext();
+					baseCtx.imageSmoothingEnabled = false;
+					for (let r = 0; r < HOUSE_H; r++) {
+						for (let c = 0; c < HOUSE_W; c++) {
+							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+						}
+					}
+					this.baseTex.refresh();
+				} else {
+					this.baseTex = this.textures.get('houseBase');
 				}
-				this.baseTex.refresh();
 				this.add.image(0, 0, 'houseBase').setOrigin(0).setDepth(0);
 
 				// Palette-swap the trainer sheet — same pipeline as camp. Wrapped in
@@ -1144,8 +1178,15 @@
 				} catch (e) {
 					console.error('[HouseScene] palette swap failed:', e);
 				}
-				if (this.textures.exists('player-house')) this.textures.remove('player-house');
-				this.textures.addSpriteSheet('player-house', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+				// Skip-if-exists: addSpriteSheet on a duplicate key returns null in
+				// Phaser 3, which would later crash anim creation. The palette is
+				// re-applied to this._playerCanvas above, but the texture keeps the
+				// same source-canvas reference for the lifetime of the session.
+				if (!this.textures.exists('player-house') && this._playerCanvas) {
+					this.textures.addSpriteSheet('player-house', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+				} else if (this.textures.exists('player-house')) {
+					this.textures.get('player-house').refresh();
+				}
 				this._onStorage = (e) => {
 					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
 						applyPalette();
