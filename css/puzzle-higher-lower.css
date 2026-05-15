@@ -45,11 +45,12 @@
 }
 
 .hl-stat-toggle {
-	display: inline-flex;
+	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 10px;
-	margin-bottom: 24px;
+	margin: 0 auto 24px;
+	max-width: 720px;
 }
 
 .hl-stat-label {
