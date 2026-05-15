@@ -517,6 +517,36 @@
 		}
 	}
 
+	// ── Debug HUD ─────────────────────────────────────────────────────────────────
+	// Toggleable on-screen state dump for chasing scene-transition bugs. F8 toggles.
+	const Debug = {
+		on: false,
+		el: null,
+		ensure() {
+			if (this.el) return this.el;
+			const div = document.createElement('div');
+			div.id = 'campDebugHud';
+			div.style.cssText = 'position:absolute;left:14px;top:60px;padding:8px 12px;background:rgba(0,0,0,0.85);color:#7fffa0;font:11px/1.5 ui-monospace,monospace;border:1px solid #295;border-radius:6px;z-index:30;pointer-events:none;white-space:pre;display:none;';
+			document.getElementById('campWrap')?.appendChild(div);
+			this.el = div;
+			return div;
+		},
+		toggle() {
+			this.ensure();
+			this.on = !this.on;
+			this.el.style.display = this.on ? 'block' : 'none';
+		},
+		render(text) {
+			if (!this.on) return;
+			this.ensure();
+			this.el.textContent = text;
+		},
+	};
+	// Wire F8 once.
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'F8') { e.preventDefault(); Debug.toggle(); }
+	});
+
 	// ── Day/night tint ────────────────────────────────────────────────────────────
 	// Six-minute full cycle: 0..120s day, 120..180s sunset, 180..240s night,
 	// 240..300s dawn, 300..360s back to day. Driven by performance.now mod cycle.
@@ -982,6 +1012,7 @@
 					else if (target && target.message) Dialog.open(target.message);
 					else if (target && target.kind === 'door' && !this.didTransition && this.armedForDoor) {
 						this.didTransition = true;
+						console.log('[CampScene] → house (E-key)');
 						Dialog.close();
 						this.input.keyboard.resetKeys();
 						this.scene.start('house', { from: 'camp' });
@@ -1103,10 +1134,23 @@
 				if (distFromDoor >= 2) this.armedForDoor = true;
 				if (this.armedForDoor && onDoorTile && !this.didTransition) {
 					this.didTransition = true;
+					console.log('[CampScene] → house (step-on-door) at tile', tc, tr);
 					Dialog.close();
 					this.input.keyboard.resetKeys();
 					this.scene.start('house', { from: 'camp' });
 				}
+
+				Debug.render(
+					'CAMP\n' +
+					'tile  ' + tc + ',' + tr + '\n' +
+					'dir   ' + ['S','W','N','E'][this.dir] + '\n' +
+					'distD ' + distFromDoor + '\n' +
+					'onD   ' + onDoorTile + '\n' +
+					'armed ' + this.armedForDoor + '\n' +
+					'trans ' + this.didTransition + '\n' +
+					'dlg   ' + dialogOpen + '\n' +
+					'target ' + (target ? target.kind : '-')
+				);
 			}
 		};
 	}
@@ -1120,8 +1164,10 @@
 			}
 
 			create() {
+				console.log('[HouseScene] create()');
 				try {
 					this._buildHouse();
+					console.log('[HouseScene] create() ok — player at', this.player?.x, this.player?.y);
 				} catch (e) {
 					console.error('[HouseScene] create failed:', e);
 					// Fall back to camp so the player isn't stranded on a black screen.
@@ -1410,10 +1456,26 @@
 				);
 				if (triggerExit) {
 					this.didTransition = true;
+					console.log('[HouseScene] → camp at tile', tc, tr, 'onDoor', onDoor, 'ePressed', ePressed, 'armed', this.armedForExit);
 					Dialog.close();
 					this.input.keyboard.resetKeys();
 					this.scene.start('camp', { from: 'house' });
 				}
+
+				Debug.render(
+					'HOUSE\n' +
+					'tile  ' + tc + ',' + tr + '\n' +
+					'doorAt ' + HOUSE_DOOR_C + ',' + HOUSE_DOOR_R + '\n' +
+					'pos   ' + Math.round(this.player.x) + ',' + Math.round(this.player.y) + '\n' +
+					'dir   ' + ['S','W','N','E'][this.dir] + '\n' +
+					'distD ' + distFromDoor + '\n' +
+					'onD   ' + onDoor + '\n' +
+					'near  ' + nearDoor + '\n' +
+					'armed ' + this.armedForExit + '\n' +
+					'trans ' + this.didTransition + '\n' +
+					'E     ' + ePressed + '\n' +
+					'trigE ' + triggerExit
+				);
 			}
 		};
 	}
