@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Camp &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/camp.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html" class="active">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card camp-card">
+			<div class="camp-header">
+				<div class="camp-header-left">
+					<h1>Trainer Camp</h1>
+					<p>Your very own world</p>
+				</div>
+				<div class="camp-controls-hint">
+					<span class="ctrl-key">W</span>
+					<span class="ctrl-key">A</span>
+					<span class="ctrl-key">S</span>
+					<span class="ctrl-key">D</span>
+					<span class="ctrl-label">or</span>
+					<span class="ctrl-key">&#x2191;</span>
+					<span class="ctrl-key">&#x2190;</span>
+					<span class="ctrl-key">&#x2193;</span>
+					<span class="ctrl-key">&#x2192;</span>
+					<span class="ctrl-label">to move</span>
+				</div>
+			</div>
+
+			<div class="camp-world-wrap">
+				<canvas id="campCanvas" width="800" height="480"></canvas>
+
+				<div class="dpad-wrap" aria-hidden="true">
+					<div class="dpad-row">
+						<button class="dpad-btn" id="dpadUp" type="button" aria-label="Move up">&#x2191;</button>
+					</div>
+					<div class="dpad-row">
+						<button class="dpad-btn" id="dpadLeft" type="button" aria-label="Move left">&#x2190;</button>
+						<button class="dpad-btn" id="dpadDown" type="button" aria-label="Move down">&#x2193;</button>
+						<button class="dpad-btn" id="dpadRight" type="button" aria-label="Move right">&#x2192;</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="camp-footer">
+				<a href="puzzle.html" class="btn">Puzzle Hub &rarr;</a>
+				<a href="index.html" class="btn btn-secondary">Home</a>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/camp.js" defer></script>
+</body>
+</html>
