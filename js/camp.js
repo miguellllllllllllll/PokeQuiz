@@ -7,9 +7,9 @@
 	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19;
 
-	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TFN, TIW]);
+	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TFN, TIW, TST]);
 	const ANIMATED = new Set([TWN, TH2O, TCR]);
 
 	// ── Map ──────────────────────────────────────────────────────────────────────
@@ -318,6 +318,26 @@
 				ctx.fillStyle='#E0C898'; ctx.fillRect(x+7,y+7,2,2);
 				break;
 			}
+			case TST: {
+				// Stairs going up — stepped wood with rising shadow toward the back
+				ctx.fillStyle='#D8B878'; ctx.fillRect(x,y,d,d);
+				// Four steps, each 4px tall; back step is darkest (most shadow), front is brightest
+				const stepShades = ['#583818', '#7C5028', '#A06834', '#C08048'];
+				const stepEdges  = ['#3C1F08', '#583018', '#7C4820', '#9C5C28'];
+				for (let s = 0; s < 4; s++) {
+					const sy = y + s * 4;
+					ctx.fillStyle = stepShades[s];
+					ctx.fillRect(x, sy, d, 4);
+					ctx.fillStyle = stepEdges[s];
+					ctx.fillRect(x, sy + 3, d, 1);  // step nosing
+					ctx.fillStyle = '#F0D0A0';
+					ctx.fillRect(x, sy, d, 1);      // step highlight
+				}
+				// Side rail shadow on the left
+				ctx.fillStyle = 'rgba(0,0,0,0.25)';
+				ctx.fillRect(x, y, 2, d);
+				break;
+			}
 			default:
 				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
 		}
@@ -332,19 +352,23 @@
 	}
 
 	// ── House interior map ───────────────────────────────────────────────────────
-	// 12 wide × 9 tall — wainscot walls, wood floor, rug accent, exit door at south.
-	const HOUSE_W = 12;
-	const HOUSE_H = 9;
-	const HOUSE_DOOR_C = 6;
+	// 16 wide × 12 tall — wainscot walls, wood floor, rug accent, exit door at south,
+	// stairs tucked into the north-east corner.
+	const HOUSE_W = 16;
+	const HOUSE_H = 12;
+	const HOUSE_DOOR_C = 8;
 	const HOUSE_DOOR_R = HOUSE_H - 1;
 	function buildHouseMap() {
 		const map = Array.from({ length: HOUSE_H }, () => new Array(HOUSE_W).fill(TIF));
 		for (let c = 0; c < HOUSE_W; c++) { map[0][c] = TIW; map[HOUSE_H - 1][c] = TIW; }
 		for (let r = 0; r < HOUSE_H; r++) { map[r][0] = TIW; map[r][HOUSE_W - 1] = TIW; }
 		map[HOUSE_DOOR_R][HOUSE_DOOR_C] = TD;
-		// Small rug in the middle of the room
-		map[4][5] = TRU; map[4][6] = TRU;
-		map[5][5] = TRU; map[5][6] = TRU;
+		// 2×2 rug roughly centered
+		map[6][7] = TRU; map[6][8] = TRU;
+		map[7][7] = TRU; map[7][8] = TRU;
+		// Stairs in the north-east corner, two tiles wide
+		map[1][12] = TST; map[1][13] = TST;
+		map[2][12] = TST; map[2][13] = TST;
 		return map;
 	}
 
@@ -792,8 +816,10 @@
 
 				this.physics.world.setBounds(0, 0, W, H);
 				this.player.setCollideWorldBounds(true);
+				// Interior is a fixed room — keep the camera centered on it instead of
+				// following the player. The player walks within a static framed view.
 				this.cameras.main.setBounds(0, 0, W, H);
-				this.cameras.main.startFollow(this.player, true, 1, 1);
+				this.cameras.main.centerOn(W / 2, H / 2);
 				this.cameras.main.setBackgroundColor('#1a0e08');
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
@@ -830,9 +856,14 @@
 			applyZoom() {
 				const W = this.scale.width;
 				const H = this.scale.height;
-				let s = Math.max(2, Math.floor(Math.min(W / 380, H / 240)));
-				s = Math.min(s, 4);
+				const roomW = HOUSE_W * TILE;
+				const roomH = HOUSE_H * TILE;
+				// Pick the largest integer zoom that still fits the whole room in view.
+				let s = Math.min(W / roomW, H / roomH);
+				s = Math.max(2, Math.floor(s));
+				s = Math.min(s, 5);
 				this.cameras.main.setZoom(s);
+				this.cameras.main.centerOn(roomW / 2, roomH / 2);
 			}
 
 			setupJoystick() {
