@@ -101,6 +101,32 @@
 		<!-- Tiny inventory readout (Phase 1: seeds + Friendship Berries) -->
 		<div class="camp-inventory" id="campInventory" aria-hidden="true">🌱 0   🍓 0</div>
 
+		<!-- Partner Pokémon panel — feeding + status -->
+		<div class="camp-partner" id="campPartner" hidden>
+			<div class="cp-panel">
+				<button class="cp-close" id="cpClose" type="button" aria-label="Close">×</button>
+				<h2 class="cp-title">Partner Pokémon</h2>
+				<div class="cp-card">
+					<div class="cp-portrait" id="cpPortrait"></div>
+					<div class="cp-info">
+						<div class="cp-name" id="cpName">Eevee</div>
+						<div class="cp-form" id="cpForm">Stage 1 — can evolve</div>
+						<div class="cp-friendship-label">Friendship</div>
+						<div class="cp-friendship-bar">
+							<div class="cp-friendship-fill" id="cpFriendshipBar"></div>
+						</div>
+						<div class="cp-friendship-text" id="cpFriendshipText">0 / 100</div>
+					</div>
+				</div>
+				<div class="cp-actions">
+					<button class="cb-btn" id="cpFeed" type="button">Feed Berry 🍓 <span class="cp-count">×<span id="cpBerries">0</span></span></button>
+					<button class="cb-btn cp-btn-alt" id="cpPet" type="button">Pet 💚</button>
+				</div>
+				<div class="cp-status" id="cpStatus"></div>
+				<div class="cp-hint">Press <b>P</b> anywhere in Camp to open this page · <b>Esc</b> to close</div>
+			</div>
+		</div>
+
 		<!-- Pikachu's Mart — buy seeds, sell berries -->
 		<div class="camp-mart" id="campMart" hidden>
 			<div class="cm-panel">

@@ -256,6 +256,112 @@ body.camp-body {
 }
 .camp-fade.is-hidden { opacity: 0; }
 
+/* ── Partner Pokémon overlay ──────────────────────────────────────────── */
+.camp-partner {
+	position: absolute;
+	inset: 0;
+	background: rgba(8, 6, 16, 0.86);
+	z-index: 29;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: 'Press Start 2P', monospace;
+	color: #fff;
+	padding: 20px;
+}
+.cp-panel {
+	position: relative;
+	background: rgba(16, 22, 36, 0.98);
+	border: 3px solid #f6c84c;
+	border-radius: 14px;
+	padding: 24px 26px 18px;
+	width: 100%;
+	max-width: 480px;
+	box-shadow: 0 20px 56px rgba(0,0,0,0.7);
+}
+.cp-close {
+	position: absolute;
+	top: 10px;
+	right: 12px;
+	width: 32px;
+	height: 32px;
+	background: transparent;
+	border: 0;
+	color: #f6c84c;
+	font-family: inherit;
+	font-size: 22px;
+	cursor: pointer;
+	line-height: 1;
+}
+.cp-close:hover { color: #ffd968; }
+.cp-title {
+	font-size: 14px;
+	color: #f6c84c;
+	margin: 0 0 18px;
+	letter-spacing: 1px;
+	text-align: center;
+}
+.cp-card {
+	display: flex;
+	gap: 18px;
+	align-items: center;
+	margin-bottom: 18px;
+}
+.cp-portrait {
+	flex: 0 0 auto;
+	image-rendering: pixelated;
+	background-repeat: no-repeat;
+	transform: scale(2.4);
+	transform-origin: top left;
+	margin-right: 60px;
+	margin-bottom: 50px;
+}
+.cp-info { flex: 1 1 auto; min-width: 0; }
+.cp-name { font-size: 14px; color: #fff; margin-bottom: 4px; }
+.cp-form { font-size: 9px; color: #b8b8c8; margin-bottom: 14px; }
+.cp-friendship-label { font-size: 9px; color: #f6c84c; margin-bottom: 5px; }
+.cp-friendship-bar {
+	height: 14px;
+	background: #1a1428;
+	border: 1px solid #6a4a8a;
+	border-radius: 4px;
+	overflow: hidden;
+	margin-bottom: 4px;
+}
+.cp-friendship-fill {
+	height: 100%;
+	width: 0%;
+	background: linear-gradient(90deg, #ff6080, #ffaab0);
+	transition: width 0.4s ease-out;
+}
+.cp-friendship-text { font-size: 9px; color: #c8c8d8; }
+.cp-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
+}
+.cp-btn-alt { background: transparent; color: #f6c84c; border: 2px solid #f6c84c; }
+.cp-btn-alt:hover { background: rgba(246,200,76,0.15); }
+.cp-count { font-size: 9px; opacity: 0.8; margin-left: 6px; }
+.cp-status {
+	min-height: 14px;
+	margin-top: 6px;
+	text-align: center;
+	font-size: 10px;
+	color: #92ffaa;
+}
+.cp-status[data-kind="warn"] { color: #ffb070; }
+.cp-status[data-kind="info"] { color: #c0c0e0; }
+.cp-hint {
+	margin-top: 14px;
+	font-size: 8px;
+	color: rgba(255,255,255,0.5);
+	text-align: center;
+	letter-spacing: 0.3px;
+}
+
 /* ── Mart overlay (Pikachu shopkeeper) ────────────────────────────────── */
 .camp-mart {
 	position: absolute;
@@ -579,4 +685,28 @@ body.camp-body {
 	font-size: 8px;
 	color: rgba(255,255,255,0.55);
 	letter-spacing: 0.3px;
+}
+
+/* ── Mobile / tablet polish ───────────────────────────────────────────── */
+@media (max-width: 720px) {
+	.cp-panel, .cm-panel, .cb-screen, .camp-pause-panel {
+		max-width: 92vw;
+		padding: 18px 16px;
+	}
+	.cp-title, .cm-title, .cb-title, .camp-pause-title { font-size: 13px; }
+	.cb-btn { font-size: 10px; padding: 11px 16px; min-height: 44px; min-width: 60px; }
+	.cp-card { flex-direction: column; text-align: center; gap: 10px; }
+	.cp-portrait { margin: 0 auto 50px; }
+	.cm-row { flex-direction: column; align-items: stretch; }
+	.cm-row .cb-btn { width: 100%; }
+	.cb-wheel-rim { width: 220px; height: 220px; }
+	.cb-rhythm-bar { height: 44px; }
+	.camp-dialog { font-size: 11px; padding: 14px 16px 20px; }
+	.camp-inventory { font-size: 9px; padding: 5px 9px; right: 8px; top: 64px; }
+	.camp-prompt { font-size: 8px; padding: 3px 7px; }
+	.camp-minimap { display: none; }
+}
+@media (max-width: 420px) {
+	.cb-wheel-slice { font-size: 9px; padding-top: 28px; }
+	.cb-sketch-buttons { grid-template-columns: 1fr; }
 }

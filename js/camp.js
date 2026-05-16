@@ -363,6 +363,100 @@
 		return { open, close, isOpen };
 	})();
 
+	// ── Partner Pokémon panel — dedicated page for the follower ─────────────────
+	const Partner = (() => {
+		let openFlag = false;
+		function $(id) { return document.getElementById(id); }
+		function refresh() {
+			const inv = Inventory.load();
+			const form = FOLLOWER_FORMS[inv.eeveeForm || 'eevee'] || FOLLOWER_FORMS.eevee;
+			const portrait = $('cpPortrait');
+			if (portrait) {
+				// Show the south-idle frame (row 0, col 0) of the sheet at 4x zoom.
+				portrait.style.backgroundImage = "url('Pictures/sprites/" + form.sheet + ".png')";
+				portrait.style.backgroundPosition = '0 0';
+				portrait.style.backgroundSize = (form.frameW * form.cols) + 'px ' + (form.frameH * 8) + 'px';
+				portrait.style.width = form.frameW + 'px';
+				portrait.style.height = form.frameH + 'px';
+			}
+			$('cpName') && ($('cpName').textContent = form.displayName);
+			$('cpForm') && ($('cpForm').textContent = inv.eeveeForm === 'eevee' ? 'Stage 1 — can evolve' : 'Stage 2 — terminal evolution');
+			const fpct = Math.min(100, Math.round(((inv.friendship || 0) / FRIENDSHIP_MAX) * 100));
+			const bar = $('cpFriendshipBar');
+			if (bar) bar.style.width = fpct + '%';
+			$('cpFriendshipText') && ($('cpFriendshipText').textContent = (inv.friendship || 0) + ' / ' + FRIENDSHIP_MAX + (inv.eeveeForm !== 'eevee' ? ' (maxed)' : ''));
+			$('cpBerries') && ($('cpBerries').textContent = inv.friendshipBerries || 0);
+			const feedBtn = $('cpFeed');
+			if (feedBtn) feedBtn.disabled = (inv.friendshipBerries || 0) <= 0 || (inv.eeveeForm && inv.eeveeForm !== 'eevee');
+			const petBtn = $('cpPet');
+			if (petBtn) petBtn.disabled = false;
+		}
+		function setStatus(msg, kind) {
+			const el = $('cpStatus');
+			if (!el) return;
+			el.textContent = msg || '';
+			el.dataset.kind = kind || '';
+		}
+		function open() {
+			const root = $('campPartner');
+			if (!root) return;
+			root.hidden = false;
+			openFlag = true;
+			setStatus('');
+			refresh();
+		}
+		function close() {
+			const root = $('campPartner');
+			if (root) root.hidden = true;
+			openFlag = false;
+		}
+		function isOpen() { return openFlag; }
+		function feed(sceneRef) {
+			const inv = Inventory.load();
+			if (inv.eeveeForm && inv.eeveeForm !== 'eevee') {
+				setStatus(FOLLOWER_FORMS[inv.eeveeForm].displayName + ' is already evolved!', 'info');
+				return;
+			}
+			if ((inv.friendshipBerries || 0) <= 0) {
+				setStatus('You have no Friendship Berries.', 'warn');
+				return;
+			}
+			inv.friendshipBerries -= 1;
+			inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship || 0) + FRIENDSHIP_PER_BERRY);
+			Inventory.save(inv);
+			if (inv.friendship >= FRIENDSHIP_MAX && sceneRef && typeof sceneRef._triggerEvolution === 'function') {
+				close();
+				sceneRef._triggerEvolution();
+			} else {
+				setStatus('Eevee gobbled a berry. +' + FRIENDSHIP_PER_BERRY + ' Friendship!', 'good');
+				refresh();
+			}
+		}
+		function pet() {
+			setStatus('You give your partner a good pet.   (≧◡≦)', 'good');
+		}
+		function wire(scene) {
+			const root = $('campPartner');
+			if (!root || root.dataset.wired) { return; }
+			root.dataset.wired = '1';
+			$('cpClose') && $('cpClose').addEventListener('click', close);
+			$('cpFeed') && $('cpFeed').addEventListener('click', () => feed(scene));
+			$('cpPet') && $('cpPet').addEventListener('click', pet);
+			// Click the dark backdrop to dismiss.
+			root.addEventListener('click', (e) => { if (e.target === root) close(); });
+		}
+		return { open, close, isOpen, wire };
+	})();
+
+	// Universal ESC-to-close — works for any open modal in this file.
+	document.addEventListener('keydown', (e) => {
+		if (e.key !== 'Escape') return;
+		if (Dialog.isOpen()) { Dialog.close(); e.preventDefault(); return; }
+		if (Partner.isOpen()) { Partner.close(); e.preventDefault(); return; }
+		if (Mart.isOpen()) { Mart.close(); e.preventDefault(); return; }
+		// (Battle/pause have their own Escape handling.)
+	});
+
 	// ── Inventory + planted-berry persistence (localStorage) ─────────────────────
 	const INVENTORY_KEY = 'pokequiz_camp_inventory';
 	const PLANTS_KEY = 'pokequiz_camp_plants';
@@ -374,11 +468,13 @@
 
 	// Follower form data — each PMD walk sheet has its own frame size and column
 	// count, so the south/east/north/west frame indices are computed per form.
+	// originY values were sampled directly from each sprite's south-idle frame
+	// (alpha bounding box) so the feet sit at the world anchor cleanly.
 	const FOLLOWER_FORMS = {
-		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.8, frameW: 40, frameH: 48 },
-		vaporeon: { sheet: 'vaporeon', cols: 4, originY: 32/48, scale: 0.9, frameW: 32, frameH: 48 },
-		espeon:   { sheet: 'espeon',   cols: 4, originY: 32/48, scale: 0.9, frameW: 32, frameH: 48 },
-		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 26/40, scale: 0.9, frameW: 32, frameH: 40 },
+		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.8,  frameW: 40, frameH: 48, displayName: 'Eevee' },
+		vaporeon: { sheet: 'vaporeon', cols: 4, originY: 32/48, scale: 0.65, frameW: 32, frameH: 48, displayName: 'Vaporeon' },
+		espeon:   { sheet: 'espeon',   cols: 4, originY: 31/48, scale: 0.65, frameW: 32, frameH: 48, displayName: 'Espeon' },
+		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 28/40, scale: 0.85, frameW: 32, frameH: 40, displayName: 'Umbreon' },
 	};
 	const Inventory = (() => {
 		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0, eeveeForm: 'eevee' };
@@ -1243,6 +1339,7 @@
 					s: Phaser.Input.Keyboard.KeyCodes.S,
 					d: Phaser.Input.Keyboard.KeyCodes.D,
 					interact: Phaser.Input.Keyboard.KeyCodes.E,
+					partner: Phaser.Input.Keyboard.KeyCodes.P,
 				});
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
@@ -1694,8 +1791,8 @@
 					this.player.setVelocity(0, 0);
 					return;
 				}
-				// Freeze gameplay while a modal (battle UI or mart) is open.
-				if (Battle.isOpen() || Mart.isOpen()) {
+				// Freeze gameplay while any modal is open.
+				if (Battle.isOpen() || Mart.isOpen() || Partner.isOpen()) {
 					this.player.setVelocity(0, 0);
 					this.player.anims.stop();
 					this.player.setFrame(this.dirIdleFrame[this.dir]);
@@ -1711,13 +1808,18 @@
 				// freezes and E advances/closes the dialog instead of moving them.
 				const target = this.findInteractTarget();
 				this.showPrompt(target ? (target.label || (target.kind === 'door' ? 'Enter' : target.kind === 'npc' ? 'Talk' : 'Read')) : null);
+				if (k.partner && Phaser.Input.Keyboard.JustDown(k.partner) && !dialogOpen) {
+					Partner.wire(this);
+					Partner.open();
+				}
 				if (Phaser.Input.Keyboard.JustDown(k.interact)) {
 					if (dialogOpen) Dialog.advance();
 					else if (target && (target.kind === 'plant' || target.kind === 'harvest' || target.kind === 'growing')) {
 						this._handlePlantAction(target);
 					}
 					else if (target && target.kind === 'feed') {
-						this._handleFeed();
+						Partner.wire(this);
+						Partner.open();
 					}
 					else if (target && target.kind === 'npc' && target.npcKind === 'mart') {
 						Mart.open();
