@@ -101,6 +101,74 @@
 		<!-- Tiny inventory readout (Phase 1: seeds + Friendship Berries) -->
 		<div class="camp-inventory" id="campInventory" aria-hidden="true">🌱 0   🍓 0</div>
 
+		<!-- Wild-encounter overlay: spinning wheel → minigame → result -->
+		<div class="camp-battle" id="campBattle" hidden>
+			<!-- Spinning wheel — picks which minigame to play -->
+			<div class="cb-screen cb-wheel" data-screen="wheel">
+				<h2 class="cb-title">A Wild Encounter!</h2>
+				<div class="cb-wheel-rim">
+					<div class="cb-wheel-disc" id="cbWheelDisc">
+						<div class="cb-wheel-slice" style="--i:0"><span>Card</span></div>
+						<div class="cb-wheel-slice" style="--i:1"><span>Type RPS</span></div>
+						<div class="cb-wheel-slice" style="--i:2"><span>Rhythm</span></div>
+						<div class="cb-wheel-slice" style="--i:3"><span>Silhouette</span></div>
+					</div>
+					<div class="cb-wheel-pointer"></div>
+				</div>
+				<button class="cb-btn cb-spin-btn" id="cbSpinBtn" type="button">Spin!</button>
+				<div class="cb-wheel-result" id="cbWheelResult" hidden></div>
+			</div>
+
+			<!-- Card-battle minigame -->
+			<div class="cb-screen cb-card" data-screen="card" hidden>
+				<h2 class="cb-title">Type Card Battle</h2>
+				<div class="cb-card-foe" id="cbCardFoe">A wild Pokémon (type: ???)</div>
+				<div class="cb-card-hand" id="cbCardHand"></div>
+				<div class="cb-card-result" id="cbCardResult" hidden></div>
+			</div>
+
+			<!-- Rock-paper-scissors type matchup -->
+			<div class="cb-screen cb-rps" data-screen="rps" hidden>
+				<h2 class="cb-title">Type Showdown</h2>
+				<div class="cb-rps-foe" id="cbRpsFoe">Foe is choosing…</div>
+				<div class="cb-rps-buttons" id="cbRpsButtons">
+					<button class="cb-btn cb-rps-btn" data-type="fire" type="button">🔥 Fire</button>
+					<button class="cb-btn cb-rps-btn" data-type="water" type="button">💧 Water</button>
+					<button class="cb-btn cb-rps-btn" data-type="grass" type="button">🌿 Grass</button>
+				</div>
+				<div class="cb-rps-result" id="cbRpsResult" hidden></div>
+			</div>
+
+			<!-- Rhythm-meter minigame -->
+			<div class="cb-screen cb-rhythm" data-screen="rhythm" hidden>
+				<h2 class="cb-title">Rhythm Strike</h2>
+				<p class="cb-rhythm-hint">Press <b>Space</b> when the cursor hits the green zone — three hits wins!</p>
+				<div class="cb-rhythm-bar">
+					<div class="cb-rhythm-zone"></div>
+					<div class="cb-rhythm-cursor" id="cbRhythmCursor"></div>
+				</div>
+				<div class="cb-rhythm-score" id="cbRhythmScore">Hits: 0 / 3 · Misses: 0 / 3</div>
+				<div class="cb-rhythm-result" id="cbRhythmResult" hidden></div>
+			</div>
+
+			<!-- Silhouette / sketch minigame -->
+			<div class="cb-screen cb-sketch" data-screen="sketch" hidden>
+				<h2 class="cb-title">Who's That Pokémon?</h2>
+				<div class="cb-sketch-stage">
+					<img class="cb-sketch-img" id="cbSketchImg" alt="">
+				</div>
+				<div class="cb-sketch-buttons" id="cbSketchButtons"></div>
+				<div class="cb-sketch-result" id="cbSketchResult" hidden></div>
+			</div>
+
+			<!-- Result screen — shared between all minigames -->
+			<div class="cb-screen cb-end" data-screen="end" hidden>
+				<h2 class="cb-title" id="cbEndTitle">You Won!</h2>
+				<p class="cb-end-body" id="cbEndBody">+1 Friendship Berry 🍓</p>
+				<button class="cb-btn" id="cbEndBtn" type="button">Continue</button>
+			</div>
+		</div>
+
 		<!-- Pause menu (Escape) -->
 		<div class="camp-pause" id="campPause" hidden role="dialog" aria-modal="true">
 			<div class="camp-pause-panel">

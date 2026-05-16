@@ -7,7 +7,7 @@
 	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23;
 
 	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TTR2, TFN, TIW, TST, TSG, TBSH]);
 	const ANIMATED = new Set([TWN, TH2O, TCR]);
@@ -19,6 +19,269 @@
 		'19,12': "Crops grow here — talk to the farmer at the garden gate and plant a seed on any soil tile.",
 		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
 	};
+
+	// ── Wild-encounter battle system ─────────────────────────────────────────────
+	// Self-contained DOM-overlay battle UI: shows a spinning wheel that picks one
+	// of four minigames at random, runs that minigame, and reports the result via
+	// the callback passed to Battle.start(). Wins award Friendship Berries.
+	const Battle = (() => {
+		const TYPES = ['fire', 'water', 'grass'];
+		const TYPE_EMOJI = { fire: '🔥', water: '💧', grass: '🌿', electric: '⚡', psychic: '🔮', fairy: '✨', normal: '⭐' };
+		// Effectiveness multiplier: TYPES[attacker] vs TYPES[defender].
+		// Standard fire→grass, grass→water, water→fire.
+		const EFFECTIVENESS = {
+			fire:   { fire: 1, water: 0.5, grass: 2 },
+			water:  { fire: 2, water: 1, grass: 0.5 },
+			grass:  { fire: 0.5, water: 2, grass: 1 },
+		};
+		// Pokémon used for sketch/foe — id, name, type. Sprites from PokeAPI CDN.
+		const POKEMON = [
+			{ id: 1, name: 'Bulbasaur', type: 'grass' },
+			{ id: 4, name: 'Charmander', type: 'fire' },
+			{ id: 7, name: 'Squirtle',  type: 'water' },
+			{ id: 25, name: 'Pikachu',  type: 'electric' },
+			{ id: 35, name: 'Clefairy', type: 'fairy' },
+			{ id: 39, name: 'Jigglypuff', type: 'normal' },
+			{ id: 54, name: 'Psyduck',  type: 'water' },
+			{ id: 60, name: 'Poliwag',  type: 'water' },
+			{ id: 63, name: 'Abra',     type: 'psychic' },
+			{ id: 133, name: 'Eevee',   type: 'normal' },
+		];
+		const SPRITE_URL = (id) => 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/' + id + '.png';
+		const MINIGAMES = ['card', 'rps', 'rhythm', 'sketch'];
+		let resultCb = null;
+		let rhythmState = null;
+
+		function $(id) { return document.getElementById(id); }
+		function show(screen) {
+			const root = $('campBattle');
+			if (!root) return;
+			root.hidden = false;
+			root.querySelectorAll('.cb-screen').forEach(el => {
+				el.hidden = el.dataset.screen !== screen;
+			});
+		}
+		function hideAll() {
+			const root = $('campBattle');
+			if (root) root.hidden = true;
+		}
+
+		function start(cb) {
+			resultCb = cb;
+			// Reset wheel UI
+			const disc = $('cbWheelDisc');
+			if (disc) disc.style.transform = 'rotate(0deg)';
+			const wr = $('cbWheelResult');
+			if (wr) { wr.hidden = true; wr.textContent = ''; }
+			const sb = $('cbSpinBtn');
+			if (sb) { sb.disabled = false; sb.textContent = 'Spin!'; }
+			show('wheel');
+		}
+
+		function spin() {
+			const sb = $('cbSpinBtn');
+			if (sb) { sb.disabled = true; sb.textContent = 'Spinning…'; }
+			const choice = MINIGAMES[Math.floor(Math.random() * MINIGAMES.length)];
+			const idx = MINIGAMES.indexOf(choice);
+			// Each slice is 90deg; pointer is at the top. Rotate the disc so the chosen
+			// slice ends up under the pointer, with several full spins for flavour.
+			const sliceAngle = 90;
+			const target = 360 * 4 - (idx * sliceAngle) - sliceAngle / 2;
+			const disc = $('cbWheelDisc');
+			if (disc) disc.style.transform = 'rotate(' + target + 'deg)';
+			setTimeout(() => {
+				const wr = $('cbWheelResult');
+				if (wr) {
+					wr.hidden = false;
+					wr.textContent = 'It’s ' + choice.toUpperCase() + '! Click to begin.';
+				}
+				if (sb) { sb.disabled = false; sb.textContent = 'Begin'; sb.dataset.next = choice; }
+			}, 3100);
+		}
+
+		function nextFromWheel() {
+			const sb = $('cbSpinBtn');
+			const next = sb && sb.dataset.next;
+			if (!next) { spin(); return; }
+			sb.dataset.next = '';
+			startMinigame(next);
+		}
+
+		function startMinigame(key) {
+			if (key === 'card')    startCard();
+			else if (key === 'rps')    startRps();
+			else if (key === 'rhythm') startRhythm();
+			else if (key === 'sketch') startSketch();
+		}
+
+		// ── Card battle ───────────────────────────────────────────────────────────
+		function startCard() {
+			show('card');
+			const foeType = TYPES[Math.floor(Math.random() * TYPES.length)];
+			$('cbCardFoe').textContent = 'A wild ' + (TYPE_EMOJI[foeType] || '') + ' ' + foeType.toUpperCase() + ' Pokémon appears!';
+			// Build a hand of three random typed cards (no duplicates).
+			const hand = [...TYPES].sort(() => Math.random() - 0.5);
+			const handEl = $('cbCardHand');
+			handEl.innerHTML = '';
+			const res = $('cbCardResult');
+			res.hidden = true;
+			hand.forEach(t => {
+				const eff = EFFECTIVENESS[t][foeType];
+				const tag = eff > 1 ? 'super effective' : eff < 1 ? 'not very effective' : 'normal';
+				const effClass = eff > 1 ? 'super' : eff < 1 ? 'weak' : 'normal';
+				const btn = document.createElement('button');
+				btn.className = 'cb-card-card';
+				btn.type = 'button';
+				btn.dataset.effect = effClass;
+				btn.innerHTML = (TYPE_EMOJI[t] || '') + ' ' + t.toUpperCase() + '<span class="cb-card-tag">(?)</span>';
+				btn.addEventListener('click', () => {
+					const won = eff >= 1;
+					res.hidden = false;
+					res.textContent = won
+						? '✅ ' + tag + '! You won the battle.'
+						: '❌ ' + tag + '. The wild Pokémon got away.';
+					handEl.querySelectorAll('button').forEach(b => { b.disabled = true; b.querySelector('.cb-card-tag').textContent = '(' + (EFFECTIVENESS[b.textContent.trim().split(' ')[1].toLowerCase()][foeType] > 1 ? 'super' : EFFECTIVENESS[b.textContent.trim().split(' ')[1].toLowerCase()][foeType] < 1 ? 'weak' : 'ok') + ')'; });
+					setTimeout(() => end(won), 1500);
+				});
+				handEl.appendChild(btn);
+			});
+		}
+
+		// ── Type RPS ──────────────────────────────────────────────────────────────
+		function startRps() {
+			show('rps');
+			const foe = $('cbRpsFoe');
+			foe.textContent = 'Foe is choosing…';
+			const res = $('cbRpsResult');
+			res.hidden = true;
+			const btns = $('cbRpsButtons').querySelectorAll('.cb-rps-btn');
+			btns.forEach(b => { b.disabled = false; });
+			const handler = (e) => {
+				const player = e.currentTarget.dataset.type;
+				const ai = TYPES[Math.floor(Math.random() * TYPES.length)];
+				btns.forEach(b => { b.disabled = true; });
+				foe.textContent = 'Foe picked ' + (TYPE_EMOJI[ai] || '') + ' ' + ai.toUpperCase() + '. You picked ' + (TYPE_EMOJI[player] || '') + ' ' + player.toUpperCase() + '.';
+				const eff = EFFECTIVENESS[player][ai];
+				const won = eff >= 1;
+				res.hidden = false;
+				res.textContent = eff > 1 ? '✅ Super effective! You won.' : eff < 1 ? '❌ Not very effective. You lost.' : '🤝 Standoff — you held your ground.';
+				btns.forEach(b => b.removeEventListener('click', handler));
+				setTimeout(() => end(won), 1500);
+			};
+			btns.forEach(b => b.addEventListener('click', handler, { once: true }));
+		}
+
+		// ── Rhythm strike ─────────────────────────────────────────────────────────
+		function startRhythm() {
+			show('rhythm');
+			const cursor = $('cbRhythmCursor');
+			const score = $('cbRhythmScore');
+			const res = $('cbRhythmResult');
+			res.hidden = true;
+			let pos = 0;
+			let dir = 1;
+			let hits = 0;
+			let misses = 0;
+			const SPEED = 2.2;
+			const target = (pct) => Math.max(0, Math.min(100, pct));
+			let raf = null;
+			const tick = () => {
+				pos += dir * SPEED;
+				if (pos >= 100) { pos = 100; dir = -1; }
+				if (pos <= 0)   { pos = 0;   dir =  1; }
+				cursor.style.left = target(pos) + '%';
+				raf = requestAnimationFrame(tick);
+			};
+			tick();
+			score.textContent = 'Hits: 0 / 3 · Misses: 0 / 3';
+			const finish = (won) => {
+				if (raf) cancelAnimationFrame(raf);
+				document.removeEventListener('keydown', onKey);
+				res.hidden = false;
+				res.textContent = won ? '✅ Rhythm mastered!' : '❌ Out of sync.';
+				setTimeout(() => end(won), 1300);
+			};
+			const onKey = (e) => {
+				if (e.key !== ' ' && e.key !== 'Spacebar') return;
+				e.preventDefault();
+				if (pos >= 45 && pos <= 55) hits++; else misses++;
+				score.textContent = 'Hits: ' + hits + ' / 3 · Misses: ' + misses + ' / 3';
+				if (hits >= 3) finish(true);
+				else if (misses >= 3) finish(false);
+			};
+			document.addEventListener('keydown', onKey);
+			rhythmState = { stop: () => { if (raf) cancelAnimationFrame(raf); document.removeEventListener('keydown', onKey); } };
+		}
+
+		// ── Silhouette / sketch ───────────────────────────────────────────────────
+		function startSketch() {
+			show('sketch');
+			const stage = $('cbSketchImg');
+			const btns = $('cbSketchButtons');
+			const res = $('cbSketchResult');
+			res.hidden = true;
+			stage.classList.remove('is-revealed');
+			// Pick one correct + three distractors.
+			const pool = [...POKEMON].sort(() => Math.random() - 0.5);
+			const correct = pool[0];
+			const choices = pool.slice(0, 4).sort(() => Math.random() - 0.5);
+			stage.src = SPRITE_URL(correct.id);
+			btns.innerHTML = '';
+			choices.forEach(p => {
+				const b = document.createElement('button');
+				b.className = 'cb-btn cb-sketch-btn';
+				b.type = 'button';
+				b.textContent = p.name;
+				b.addEventListener('click', () => {
+					stage.classList.add('is-revealed');
+					[...btns.querySelectorAll('button')].forEach(x => { x.disabled = true; });
+					const won = p.id === correct.id;
+					res.hidden = false;
+					res.textContent = won ? '✅ It was ' + correct.name + '!' : '❌ It was actually ' + correct.name + '.';
+					setTimeout(() => end(won), 1600);
+				}, { once: true });
+				btns.appendChild(b);
+			});
+		}
+
+		// ── Result screen ─────────────────────────────────────────────────────────
+		function end(won) {
+			show('end');
+			$('cbEndTitle').textContent = won ? 'You Won!' : 'You Lost!';
+			$('cbEndBody').textContent = won
+				? '+1 Friendship Berry 🍓 added to your bag.'
+				: 'The wild Pokémon fled with the prize. Try again!';
+			const btn = $('cbEndBtn');
+			btn.textContent = 'Continue';
+			const handler = () => {
+				btn.removeEventListener('click', handler);
+				hideAll();
+				if (resultCb) { const cb = resultCb; resultCb = null; cb(won); }
+			};
+			btn.addEventListener('click', handler);
+		}
+
+		function wire() {
+			const sb = $('cbSpinBtn');
+			if (sb && !sb.dataset.wired) {
+				sb.dataset.wired = '1';
+				sb.addEventListener('click', nextFromWheel);
+			}
+		}
+		// Wire as soon as DOM is ready (in case start() hasn't been called yet).
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', wire);
+		} else {
+			wire();
+		}
+
+		function isOpen() {
+			const root = $('campBattle');
+			return root && !root.hidden;
+		}
+
+		return { start, isOpen };
+	})();
 
 	// ── Inventory + planted-berry persistence (localStorage) ─────────────────────
 	const INVENTORY_KEY = 'pokequiz_camp_inventory';
@@ -123,6 +386,13 @@
 		variant.forEach(([r,c]) => { if (map[r][c] === TTR) map[r][c] = TTR2; });
 		const bushes = [[14,8],[16,9],[18,8],[22,9],[24,7],[26,9],[6,20],[5,29],[8,32]];
 		bushes.forEach(([r,c]) => { if (map[r][c] === TG || map[r][c] === TG2) map[r][c] = TBSH; });
+
+		// Tall grass patches — wild Pokémon hide here. Two clumps off the main path.
+		const tallGrass = [
+			[24,5],[24,6],[25,5],[25,6],[26,6],[26,7],
+			[15,17],[16,17],[16,18],[17,17],[17,18],[18,18],
+		];
+		tallGrass.forEach(([r,c]) => { if (map[r][c] === TG || map[r][c] === TG2) map[r][c] = TTG; });
 
 		return map;
 	}
@@ -448,6 +718,23 @@
 				ctx.fillRect(x+4,y+5,5,4); ctx.fillRect(x+4,y+9,3,3);
 				ctx.fillStyle='#9ED860'; ctx.fillRect(x+5,y+6,2,2);
 				ctx.fillStyle='#BFF880'; ctx.fillRect(x+5,y+6,1,1);
+				break;
+			}
+			case TTG: {
+				// Tall grass — distinctly darker green with vertical blade pattern.
+				// Walking onto this tile rolls for a wild encounter.
+				ctx.fillStyle='#3C6018'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#2A4810'; ctx.fillRect(x,y+12,d,4);
+				ctx.fillStyle='#4F7C28';
+				ctx.fillRect(x+1,y+3,1,10); ctx.fillRect(x+4,y+1,1,12);
+				ctx.fillRect(x+7,y+4,1,9);  ctx.fillRect(x+10,y+2,1,11);
+				ctx.fillRect(x+13,y+5,1,8);
+				ctx.fillStyle='#6CA038';
+				ctx.fillRect(x+2,y+5,1,7); ctx.fillRect(x+5,y+3,1,9);
+				ctx.fillRect(x+8,y+6,1,6); ctx.fillRect(x+11,y+4,1,8);
+				ctx.fillRect(x+14,y+7,1,5);
+				ctx.fillStyle='#92C858';
+				ctx.fillRect(x+5,y+3,1,1); ctx.fillRect(x+11,y+4,1,1);
 				break;
 			}
 			default:
@@ -1246,6 +1533,13 @@
 					this.player.setVelocity(0, 0);
 					return;
 				}
+				// Freeze gameplay while the wild-encounter battle UI is open.
+				if (Battle.isOpen()) {
+					this.player.setVelocity(0, 0);
+					this.player.anims.stop();
+					this.player.setFrame(this.dirIdleFrame[this.dir]);
+					return;
+				}
 				applyDayNight();
 				Dialog.tick();
 
@@ -1381,6 +1675,23 @@
 				// lock the player on the door tile after exiting the house).
 				const tc = Math.floor(this.player.x / TILE);
 				const tr = Math.floor(this.player.y / TILE);
+
+				// Wild-encounter roll: only on a tile change AND only on tall grass.
+				// 1/6 chance per fresh step into a tall-grass tile.
+				const tileKey = tr + ',' + tc;
+				if (tileKey !== this._lastTileKey) {
+					this._lastTileKey = tileKey;
+					if (this.map[tr] && this.map[tr][tc] === TTG && Math.random() < 1/6) {
+						Battle.start((won) => {
+							if (won) {
+								const inv = Inventory.load();
+								inv.friendshipBerries = (inv.friendshipBerries || 0) + 1;
+								Inventory.save(inv);
+							}
+						});
+					}
+				}
+
 				const onDoorTile = this.map[tr] && this.map[tr][tc] === TD;
 				const distFromDoor = Math.abs(tr - 11) + Math.abs(tc - 11);
 				if (distFromDoor >= 2) this.armedForDoor = true;
