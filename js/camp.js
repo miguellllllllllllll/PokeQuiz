@@ -301,6 +301,16 @@
 			if (sellOne) sellOne.disabled = (inv.friendshipBerries || 0) <= 0;
 			if (sellAll) sellAll.disabled = (inv.friendshipBerries || 0) <= 0;
 			if (buySeed) buySeed.disabled = (inv.tokens || 0) < SEED_PRICE;
+			// Stones — disable buy when already owned (one at a time) or short on tokens.
+			document.querySelectorAll('[data-buy-stone]').forEach(b => {
+				const t = b.dataset.buyStone;
+				const owned = inv.stone === t;
+				b.disabled = owned || (inv.tokens || 0) < STONE_PRICE || (inv.eeveeForm && inv.eeveeForm !== 'eevee');
+				b.textContent = owned ? 'Held' : 'Buy';
+			});
+			document.querySelectorAll('.cm-stone-status').forEach(el => {
+				el.textContent = inv.stone === el.dataset.stone ? '(held)' : '';
+			});
 		}
 		function setStatus(msg) {
 			const el = $('cmStatus');
@@ -352,6 +362,20 @@
 				Inventory.save(inv);
 				setStatus('Bought 1 Seed for ' + SEED_PRICE + ' Tokens.');
 				refresh();
+			});
+			document.querySelectorAll('[data-buy-stone]').forEach(b => {
+				b.addEventListener('click', () => {
+					const inv = Inventory.load();
+					const stone = b.dataset.buyStone;
+					if ((inv.tokens || 0) < STONE_PRICE) return;
+					if (inv.stone === stone) return;
+					inv.tokens -= STONE_PRICE;
+					inv.stone = stone;
+					Inventory.save(inv);
+					const nm = stone.charAt(0).toUpperCase() + stone.slice(1);
+					setStatus('Bought ' + nm + ' Stone! Hand it to Eevee to evolve.');
+					refresh();
+				});
 			});
 			$('cmClose') && $('cmClose').addEventListener('click', close);
 		}
@@ -463,21 +487,27 @@
 	const GROW_MS = 30 * 1000; // 30 seconds — tunable; deliberately short for Phase 1
 	const SEED_PRICE = 5;
 	const BERRY_PRICE = 10;
+	const STONE_PRICE = 50;
 	const FRIENDSHIP_PER_BERRY = 20;
 	const FRIENDSHIP_MAX = 100;
+	const DAILY_BONUS_KEY = 'pokequiz_camp_daily';
+	const DAILY_BONUS_MS = 22 * 60 * 60 * 1000; // 22 hours so timezone shifts can't lock you out
 
 	// Follower form data — each PMD walk sheet has its own frame size and column
 	// count, so the south/east/north/west frame indices are computed per form.
 	// originY values were sampled directly from each sprite's south-idle frame
 	// (alpha bounding box) so the feet sit at the world anchor cleanly.
 	const FOLLOWER_FORMS = {
-		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.8,  frameW: 40, frameH: 48, displayName: 'Eevee' },
-		vaporeon: { sheet: 'vaporeon', cols: 4, originY: 32/48, scale: 0.65, frameW: 32, frameH: 48, displayName: 'Vaporeon' },
-		espeon:   { sheet: 'espeon',   cols: 4, originY: 31/48, scale: 0.65, frameW: 32, frameH: 48, displayName: 'Espeon' },
-		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 28/40, scale: 0.85, frameW: 32, frameH: 40, displayName: 'Umbreon' },
+		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.80, frameW: 40, frameH: 48, displayName: 'Eevee' },
+		vaporeon: { sheet: 'vaporeon', cols: 4, originY: 32/48, scale: 0.58, frameW: 32, frameH: 48, displayName: 'Vaporeon' },
+		espeon:   { sheet: 'espeon',   cols: 4, originY: 31/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Espeon' },
+		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 28/40, scale: 0.90, frameW: 32, frameH: 40, displayName: 'Umbreon' },
+		flareon:  { sheet: 'flareon',  cols: 4, originY: 28/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Flareon' },
+		jolteon:  { sheet: 'jolteon',  cols: 4, originY: 29/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Jolteon' },
+		leafeon:  { sheet: 'leafeon',  cols: 4, originY: 32/48, scale: 0.72, frameW: 32, frameH: 48, displayName: 'Leafeon' },
 	};
 	const Inventory = (() => {
-		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0, eeveeForm: 'eevee' };
+		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0, eeveeForm: 'eevee', stone: null };
 		function load() {
 			try {
 				const raw = localStorage.getItem(INVENTORY_KEY);
@@ -506,6 +536,26 @@
 
 	// Camp NPCs. Stationary for Phase 1 — each renders frame 0 of its walk sheet
 	// (south-facing idle) and uses Manhattan-1 adjacency for the E-key dialog.
+	// ── Daily login bonus ────────────────────────────────────────────────────────
+	const Daily = (() => {
+		function lastClaim() {
+			try { return Number(localStorage.getItem(DAILY_BONUS_KEY) || 0); } catch { return 0; }
+		}
+		function ready() { return (Date.now() - lastClaim()) >= DAILY_BONUS_MS; }
+		function claim() {
+			const inv = Inventory.load();
+			inv.tokens = (inv.tokens || 0) + 20;
+			inv.seeds = (inv.seeds || 0) + 1;
+			Inventory.save(inv);
+			try { localStorage.setItem(DAILY_BONUS_KEY, String(Date.now())); } catch {}
+		}
+		function hoursLeft() {
+			const ms = DAILY_BONUS_MS - (Date.now() - lastClaim());
+			return Math.max(0, Math.ceil(ms / (60 * 60 * 1000)));
+		}
+		return { ready, claim, hoursLeft };
+	})();
+
 	const NPCS = [
 		{
 			key: 'mart-keeper', species: 'pikachu', r: 14, c: 13,
@@ -1176,6 +1226,9 @@
 				this.load.spritesheet('vaporeon', 'Pictures/sprites/vaporeon.png', { frameWidth: 32, frameHeight: 48 });
 				this.load.spritesheet('espeon',   'Pictures/sprites/espeon.png',   { frameWidth: 32, frameHeight: 48 });
 				this.load.spritesheet('umbreon',  'Pictures/sprites/umbreon.png',  { frameWidth: 32, frameHeight: 40 });
+				this.load.spritesheet('flareon',  'Pictures/sprites/flareon.png',  { frameWidth: 32, frameHeight: 40 });
+				this.load.spritesheet('jolteon',  'Pictures/sprites/jolteon.png',  { frameWidth: 32, frameHeight: 40 });
+				this.load.spritesheet('leafeon',  'Pictures/sprites/leafeon.png',  { frameWidth: 32, frameHeight: 48 });
 				// NPC sprite sheets (PMD walk; row 0 frame 0 used as the static idle).
 				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
 				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
@@ -1340,6 +1393,8 @@
 					d: Phaser.Input.Keyboard.KeyCodes.D,
 					interact: Phaser.Input.Keyboard.KeyCodes.E,
 					partner: Phaser.Input.Keyboard.KeyCodes.P,
+					bonus:   Phaser.Input.Keyboard.KeyCodes.B,
+					rain:    Phaser.Input.Keyboard.KeyCodes.R,
 				});
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
@@ -1354,6 +1409,10 @@
 				// across the camera viewport at random.
 				this.leafContainer = this.add.container(0, 0).setDepth(4).setScrollFactor(0);
 				this.leaves = [];
+				// Rain weather — fixed-screen raindrops. Toggle with R key.
+				this.rainContainer = this.add.container(0, 0).setDepth(4.5).setScrollFactor(0);
+				this.raindrops = [];
+				this.isRaining = false;
 
 				this.dir = 0;
 				this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
@@ -1608,16 +1667,25 @@
 			}
 
 			_pickEvolutionForm() {
-				// Vaporeon if there's water within 4 tiles of the player; otherwise
-				// day/night decides between Espeon (day/dawn) and Umbreon (night/sunset).
+				// Held stone wins outright — picks Flareon/Jolteon/Leafeon and is
+				// consumed on the next save (handled in _triggerEvolution).
+				const inv = Inventory.load();
+				if (inv.stone === 'fire')    return 'flareon';
+				if (inv.stone === 'thunder') return 'jolteon';
+				if (inv.stone === 'leaf')    return 'leafeon';
+				// No stone? Standing on tall grass also picks Leafeon, since the tile
+				// itself acts as the 'mossy rock' equivalent.
 				const ptc = Math.floor(this.player.x / TILE);
 				const ptr = Math.floor(this.player.y / TILE);
+				if (this.map[ptr] && this.map[ptr][ptc] === TTG) return 'leafeon';
+				// Vaporeon if there's water within 4 tiles of the player.
 				for (let dr = -4; dr <= 4; dr++) {
 					for (let dc = -4; dc <= 4; dc++) {
 						const row = this.map[ptr + dr];
 						if (row && row[ptc + dc] === TH2O) return 'vaporeon';
 					}
 				}
+				// Otherwise day/night picks between Espeon and Umbreon.
 				const t = (performance.now() / 1000) % 360;
 				const isNightish = t > 150 && t < 270;
 				return isNightish ? 'umbreon' : 'espeon';
@@ -1628,6 +1696,7 @@
 				const inv = Inventory.load();
 				inv.eeveeForm = newForm;
 				inv.friendship = FRIENDSHIP_MAX;
+				inv.stone = null;  // stones are consumed on use
 				Inventory.save(inv);
 				Dialog.open('✨ Eevee is evolving into ' + newForm.toUpperCase() + '! ✨');
 				const fade = document.getElementById('campFade');
@@ -1649,6 +1718,33 @@
 				el.style.left = sx + 'px';
 				el.style.top  = sy + 'px';
 				el.style.transform = 'translate(-50%, calc(-100% - 12px))';
+			}
+
+			updateRain() {
+				if (!this.rainContainer) return;
+				if (!this.isRaining) {
+					if (this.raindrops.length === 0) return;
+					// Let existing drops finish their fall after toggling off.
+				}
+				const vw = this.scale.width;
+				const vh = this.scale.height;
+				if (this.isRaining && this.tick % 1 === 0) {
+					for (let i = 0; i < 3; i++) {
+						const drop = this.add.rectangle(Math.random() * vw, -8, 1, 8, 0x88c0ff, 0.7);
+						drop.setOrigin(0.5, 0);
+						this.rainContainer.add(drop);
+						this.raindrops.push({ obj: drop, vy: 18 + Math.random() * 8, vx: -2 });
+					}
+				}
+				for (let i = this.raindrops.length - 1; i >= 0; i--) {
+					const r = this.raindrops[i];
+					r.obj.y += r.vy;
+					r.obj.x += r.vx;
+					if (r.obj.y > vh + 12) {
+						r.obj.destroy();
+						this.raindrops.splice(i, 1);
+					}
+				}
 			}
 
 			updateLeaves() {
@@ -1812,6 +1908,17 @@
 					Partner.wire(this);
 					Partner.open();
 				}
+				if (k.bonus && Phaser.Input.Keyboard.JustDown(k.bonus) && !dialogOpen) {
+					if (Daily.ready()) {
+						Daily.claim();
+						Dialog.open('Daily bonus claimed! +20 💰 Tokens, +1 🌱 Seed.');
+					} else {
+						Dialog.open('Daily bonus already claimed. Next one available in ' + Daily.hoursLeft() + 'h.');
+					}
+				}
+				if (k.rain && Phaser.Input.Keyboard.JustDown(k.rain) && !dialogOpen) {
+					this.isRaining = !this.isRaining;
+				}
 				if (Phaser.Input.Keyboard.JustDown(k.interact)) {
 					if (dialogOpen) Dialog.advance();
 					else if (target && (target.kind === 'plant' || target.kind === 'harvest' || target.kind === 'growing')) {
@@ -1861,6 +1968,7 @@
 				this.animTex.refresh();
 				this.updateSmoke();
 				this.updateLeaves();
+				this.updateRain();
 				this._updateInventoryHud();
 				// Refresh plant visuals every 8 ticks so the ripe-berry bob animates smoothly.
 				if (this.tick % 8 === 0) this._refreshPlantSprites();
