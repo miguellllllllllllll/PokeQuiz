@@ -955,6 +955,30 @@ body.camp-body {
 	box-shadow: 0 0 6px var(--camp-accent), 0 0 12px #ffd968;
 	animation: cb-cursor-glow 0.8s ease-in-out infinite;
 }
+.cb-rhythm-tap-btn {
+	display: block;
+	width: 100%;
+	max-width: 540px;
+	margin: 0 auto 14px;
+	padding: 18px 0;
+	font-size: 22px;
+	font-weight: 900;
+	letter-spacing: 3px;
+	color: #0a0e22;
+	background: linear-gradient(180deg, #92ffaa, #3ec86a);
+	border: 3px solid #3ec86a;
+	border-radius: 12px;
+	cursor: pointer;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+	box-shadow: 0 4px 18px rgba(62,200,106,0.5), 0 2px 4px rgba(0,0,0,0.4);
+	transition: transform 80ms, box-shadow 80ms;
+}
+.cb-rhythm-tap-btn:active {
+	transform: scale(0.96);
+	box-shadow: 0 2px 8px rgba(62,200,106,0.4);
+}
 .cb-rhythm-score { font-size: 11px; color: #f8d090; letter-spacing: 0.6px; }
 .cb-rhythm-result { margin-top: 12px; font-size: 12px; }
 

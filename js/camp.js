@@ -236,27 +236,27 @@
 			// a fallback (the bar's children — cursor/zone — sometimes intercept
 			// taps on small screens).
 			const onTap = (e) => { e.preventDefault(); onKey({ key: ' ' }); };
+			const tapBtn = document.getElementById('cbRhythmTapBtn');
 			const rhythmBar = document.querySelector('.cb-rhythm-bar');
-			const rhythmScreen = document.querySelector('.cb-rhythm');
-			if (rhythmBar) {
-				rhythmBar.addEventListener('pointerdown', onTap);
-				rhythmBar.addEventListener('touchstart', onTap, { passive: false });
+			if (tapBtn) {
+				tapBtn.addEventListener('touchstart', onTap, { passive: false });
+				tapBtn.addEventListener('pointerdown', onTap);
 			}
-			if (rhythmScreen) {
-				rhythmScreen.addEventListener('pointerdown', onTap);
-				rhythmScreen.addEventListener('touchstart', onTap, { passive: false });
+			if (rhythmBar) {
+				rhythmBar.addEventListener('touchstart', onTap, { passive: false });
+				rhythmBar.addEventListener('pointerdown', onTap);
 			}
 			document.addEventListener('keydown', onKey);
 			rhythmState = { stop: () => {
 				if (raf) cancelAnimationFrame(raf);
 				document.removeEventListener('keydown', onKey);
-				if (rhythmBar) {
-					rhythmBar.removeEventListener('pointerdown', onTap);
-					rhythmBar.removeEventListener('touchstart', onTap);
+				if (tapBtn) {
+					tapBtn.removeEventListener('touchstart', onTap);
+					tapBtn.removeEventListener('pointerdown', onTap);
 				}
-				if (rhythmScreen) {
-					rhythmScreen.removeEventListener('pointerdown', onTap);
-					rhythmScreen.removeEventListener('touchstart', onTap);
+				if (rhythmBar) {
+					rhythmBar.removeEventListener('touchstart', onTap);
+					rhythmBar.removeEventListener('pointerdown', onTap);
 				}
 			}};
 		}
