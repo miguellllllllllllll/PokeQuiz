@@ -227,6 +227,23 @@ body.camp-body {
 	.camp-minimap { width: 100px; height: 75px; right: 8px; bottom: 142px; }
 }
 
+/* ── Inventory HUD — corner readout for seeds + berries ──────────────── */
+.camp-inventory {
+	position: absolute;
+	right: 14px;
+	top: 50px;
+	padding: 6px 12px;
+	background: rgba(16, 24, 44, 0.88);
+	border: 2px solid #f6c84c;
+	border-radius: 6px;
+	color: #fff;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	letter-spacing: 0.5px;
+	z-index: 8;
+	pointer-events: none;
+}
+
 /* ── Scene-transition fade — black overlay during page reload ─────────── */
 .camp-fade {
 	position: fixed;

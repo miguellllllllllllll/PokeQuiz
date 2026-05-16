@@ -20,6 +20,37 @@
 		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
 	};
 
+	// ── Inventory + planted-berry persistence (localStorage) ─────────────────────
+	const INVENTORY_KEY = 'pokequiz_camp_inventory';
+	const PLANTS_KEY = 'pokequiz_camp_plants';
+	const GROW_MS = 30 * 1000; // 30 seconds — tunable; deliberately short for Phase 1
+	const Inventory = (() => {
+		function load() {
+			try {
+				const raw = localStorage.getItem(INVENTORY_KEY);
+				if (raw) return Object.assign({ seeds: 3, friendshipBerries: 0 }, JSON.parse(raw));
+			} catch {}
+			return { seeds: 3, friendshipBerries: 0 };
+		}
+		function save(inv) {
+			try { localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv)); } catch {}
+		}
+		return { load, save };
+	})();
+	const Plants = (() => {
+		function load() {
+			try {
+				const raw = localStorage.getItem(PLANTS_KEY);
+				if (raw) return JSON.parse(raw);
+			} catch {}
+			return [];
+		}
+		function save(plants) {
+			try { localStorage.setItem(PLANTS_KEY, JSON.stringify(plants)); } catch {}
+		}
+		return { load, save };
+	})();
+
 	// Camp NPCs. Stationary for Phase 1 — each renders frame 0 of its walk sheet
 	// (south-facing idle) and uses Manhattan-1 adjacency for the E-key dialog.
 	const NPCS = [
@@ -903,6 +934,13 @@
 				}
 				this.physics.add.collider(this.player, npcSolids);
 
+				// Berry planting state — restored from localStorage so plants persist
+				// across page reloads (including the house/camp scene swaps).
+				this.plants = Plants.load();
+				this.plantSprites = {}; // r,c → Phaser graphics representing the plant
+				this.plantContainer = this.add.container(0, 0).setDepth(1.5);
+				this._refreshPlantSprites();
+
 				// Pre-render the static mini-map once. It mirrors the full map at tiny
 				// scale; the player dot is overlaid every frame in updateMinimap().
 				this.minimapEl = document.getElementById('campMinimap');
@@ -938,8 +976,86 @@
 						if (msg) return { kind: 'sign', r, c, message: msg };
 					}
 					if (t === TD) return { kind: 'door', r, c };
+					// Soil tile — plant if free + have seeds, harvest if ripe, status otherwise.
+					if (t === TSO || t === TCR) {
+						const plant = this._findPlantAt(r, c);
+						if (plant) {
+							const ripe = (Date.now() - plant.plantedAt) >= GROW_MS;
+							if (ripe) return { kind: 'harvest', r, c, label: 'Harvest' };
+							return { kind: 'growing', r, c, label: 'Growing…', message: 'A seed is sprouting here. Come back in a bit.' };
+						}
+						return { kind: 'plant', r, c, label: 'Plant' };
+					}
 				}
 				return null;
+			}
+
+			_findPlantAt(r, c) {
+				for (const p of (this.plants || [])) {
+					if (p.r === r && p.c === c) return p;
+				}
+				return null;
+			}
+
+			_refreshPlantSprites() {
+				if (!this.plantContainer) return;
+				this.plantContainer.removeAll(true);
+				this.plantSprites = {};
+				for (const p of this.plants) {
+					const ripe = (Date.now() - p.plantedAt) >= GROW_MS;
+					const x = p.c * TILE + TILE/2;
+					const y = p.r * TILE + TILE/2;
+					const g = this.add.graphics();
+					if (ripe) {
+						g.fillStyle(0x2A5018, 1); g.fillRect(x-1, y+2, 2, 3);    // stem
+						g.fillStyle(0xC03838, 1); g.fillCircle(x, y-1, 3);        // berry red
+						g.fillStyle(0xFFB0B0, 1); g.fillRect(x-1, y-2, 1, 1);     // berry highlight
+						g.fillStyle(0x2A5018, 1); g.fillRect(x+1, y-3, 1, 1);     // leaf
+					} else {
+						g.fillStyle(0x2A5018, 1); g.fillRect(x, y, 1, 4);          // stem
+						g.fillStyle(0x62A030, 1); g.fillRect(x-1, y-1, 3, 2);      // leaf cluster
+						g.fillStyle(0x9ED860, 1); g.fillRect(x-1, y-1, 1, 1);
+					}
+					this.plantContainer.add(g);
+					this.plantSprites[p.r + ',' + p.c] = g;
+				}
+			}
+
+			_handlePlantAction(target) {
+				const inv = Inventory.load();
+				if (target.kind === 'plant') {
+					if (inv.seeds <= 0) {
+						Dialog.open('You have no seeds! Talk to the farmer or check the soil later.');
+						return true;
+					}
+					inv.seeds -= 1;
+					Inventory.save(inv);
+					this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now() });
+					Plants.save(this.plants);
+					this._refreshPlantSprites();
+					return true;
+				}
+				if (target.kind === 'harvest') {
+					this.plants = this.plants.filter(p => !(p.r === target.r && p.c === target.c));
+					Plants.save(this.plants);
+					inv.friendshipBerries = (inv.friendshipBerries || 0) + 1;
+					Inventory.save(inv);
+					this._refreshPlantSprites();
+					Dialog.open('You harvested a Friendship Berry!');
+					return true;
+				}
+				if (target.kind === 'growing') {
+					Dialog.open(target.message);
+					return true;
+				}
+				return false;
+			}
+
+			_updateInventoryHud() {
+				const el = document.getElementById('campInventory');
+				if (!el) return;
+				const inv = Inventory.load();
+				el.textContent = '🌱 ' + inv.seeds + '   🍓 ' + (inv.friendshipBerries || 0);
 			}
 
 			showPrompt(label) {
@@ -1110,6 +1226,9 @@
 				this.showPrompt(target ? (target.label || (target.kind === 'door' ? 'Enter' : target.kind === 'npc' ? 'Talk' : 'Read')) : null);
 				if (Phaser.Input.Keyboard.JustDown(k.interact)) {
 					if (dialogOpen) Dialog.advance();
+					else if (target && (target.kind === 'plant' || target.kind === 'harvest' || target.kind === 'growing')) {
+						this._handlePlantAction(target);
+					}
 					else if (target && target.message) Dialog.open(target.message);
 					else if (target && target.kind === 'door' && !this.didTransition && this.armedForDoor) {
 						this.didTransition = true;
@@ -1147,6 +1266,9 @@
 				this.animTex.refresh();
 				this.updateSmoke();
 				this.updateLeaves();
+				this._updateInventoryHud();
+				// Refresh plant visuals once per second to catch ripening.
+				if (this.tick % 60 === 0) this._refreshPlantSprites();
 				this.updateMinimap();
 
 				// Trail mode: sample player position; follower lerps toward the oldest sample
