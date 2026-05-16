@@ -76,6 +76,10 @@
 			const sb = $('cbSpinBtn');
 			if (sb) { sb.disabled = false; sb.textContent = 'Spin!'; }
 			show('wheel');
+			// Play a random encounter cry and switch to battle music.
+			const randomPoke = POKEMON[Math.floor(Math.random() * POKEMON.length)];
+			Sound.cry(randomPoke.id);
+			Music.start('battle');
 		}
 
 		function spin() {
@@ -248,7 +252,7 @@
 		// ── Result screen ─────────────────────────────────────────────────────────
 		function end(won) {
 			show('end');
-			if (won) Sound.win(); else Sound.lose();
+			if (won) { Stats.increment('totalCatches'); Sound.win(); } else Sound.lose();
 			$('cbEndTitle').textContent = won ? 'You Won!' : 'You Lost!';
 			$('cbEndBody').textContent = won
 				? '+1 Friendship Berry 🍓 added to your bag.'
@@ -423,12 +427,22 @@
 			el.textContent = msg || '';
 			el.dataset.kind = kind || '';
 		}
+		function loadNickname() { try { return localStorage.getItem(NICKNAME_KEY) || ''; } catch { return ''; } }
+		function saveNickname(n) { try { localStorage.setItem(NICKNAME_KEY, n); } catch {} }
+		function loadShiny() { try { return localStorage.getItem(SHINY_KEY) === '1'; } catch { return false; } }
+		function saveShiny(v) { try { localStorage.setItem(SHINY_KEY, v ? '1' : '0'); } catch {} }
+
 		function open() {
 			const root = $('campPartner');
 			if (!root) return;
 			root.hidden = false;
 			openFlag = true;
 			setStatus('');
+			// Restore nickname and shiny state into inputs.
+			const ni = $('cpNickname');
+			if (ni) ni.value = loadNickname();
+			const sb = $('cpShiny');
+			if (sb) sb.classList.toggle('is-active', loadShiny());
 			refresh();
 		}
 		function close() {
@@ -468,10 +482,23 @@
 			$('cpClose') && $('cpClose').addEventListener('click', close);
 			$('cpFeed') && $('cpFeed').addEventListener('click', () => feed(scene));
 			$('cpPet') && $('cpPet').addEventListener('click', pet);
-			// Click the dark backdrop to dismiss.
+			// Nickname — save on input, notify scene to update label.
+			const ni = $('cpNickname');
+			if (ni) ni.addEventListener('input', () => {
+				saveNickname(ni.value.trim());
+				if (scene && scene._updateFollowerLabel) scene._updateFollowerLabel();
+			});
+			// Shiny toggle — save and notify scene to retint follower.
+			const sb = $('cpShiny');
+			if (sb) sb.addEventListener('click', () => {
+				const next = !loadShiny();
+				saveShiny(next);
+				sb.classList.toggle('is-active', next);
+				if (scene && scene._applyFollowerShiny) scene._applyFollowerShiny();
+			});
 			root.addEventListener('click', (e) => { if (e.target === root) close(); });
 		}
-		return { open, close, isOpen, wire };
+		return { open, close, isOpen, wire, loadNickname, loadShiny };
 	})();
 
 	// Universal ESC-to-close — works for any open modal in this file.
@@ -485,6 +512,9 @@
 
 	// ── Inventory + planted-berry persistence (localStorage) ─────────────────────
 	const INVENTORY_KEY = 'pokequiz_camp_inventory';
+	const NICKNAME_KEY  = 'pokequiz_partner_nickname';
+	const SHINY_KEY     = 'pokequiz_partner_shiny';
+	const SAVE_KEY      = 'pokequiz_last_save';
 	const PLANTS_KEY = 'pokequiz_camp_plants';
 	const GROW_MS = 30 * 1000; // 30 seconds — tunable; deliberately short for Phase 1
 	const SEED_PRICE = 5;
@@ -603,9 +633,131 @@
 			spin:    () => play([440, 494, 523, 587],  0.05, 'square'),
 			evolve:  () => chord([523, 659, 784, 1047], 0.6,  'triangle'),
 			click:   () => play([880],                 0.04, 'square', 0.03),
+			// Pokémon cry — unique 3-note sweep derived from Pokémon ID.
+			cry: (id) => {
+				const n = (id || 1);
+				const base = 180 + (n * 47 % 280);
+				play([base, base * (1 + (n * 7 % 9) / 18), base * (0.8 + (n * 3 % 5) / 20)], 0.13, 'sine', 0.06);
+			},
 			setEnabled,
 			isEnabled: () => enabled,
 		};
+	})();
+
+	// ── Background music ─────────────────────────────────────────────────────────
+	// Looping 8-bit chiptune melody per area, built from Web Audio oscillators.
+	const Music = (() => {
+		let musicCtx = null;
+		let oscs = [];
+		let loopTimer = null;
+		let area = null;
+		let on = true;
+
+		// Note sequences: { f: frequency(Hz), d: duration(s), t: oscillator type }
+		const TRACKS = {
+			camp: [
+				{f:330,d:.14,t:'triangle'},{f:392,d:.14,t:'triangle'},{f:440,d:.14,t:'triangle'},
+				{f:392,d:.14,t:'triangle'},{f:330,d:.28,t:'triangle'},{f:294,d:.14,t:'triangle'},
+				{f:330,d:.28,t:'triangle'},{f:294,d:.14,t:'triangle'},{f:262,d:.28,t:'triangle'},
+			],
+			house: [
+				{f:262,d:.20,t:'sine'},{f:294,d:.14,t:'sine'},{f:330,d:.20,t:'sine'},
+				{f:294,d:.14,t:'sine'},{f:262,d:.30,t:'sine'},{f:247,d:.20,t:'sine'},
+				{f:262,d:.30,t:'sine'},
+			],
+			upstairs: [
+				{f:523,d:.12,t:'triangle'},{f:494,d:.10,t:'triangle'},{f:440,d:.12,t:'triangle'},
+				{f:494,d:.10,t:'triangle'},{f:523,d:.22,t:'triangle'},{f:587,d:.12,t:'triangle'},
+				{f:523,d:.22,t:'triangle'},
+			],
+			battle: [
+				{f:440,d:.09,t:'square'},{f:494,d:.09,t:'square'},{f:523,d:.09,t:'square'},
+				{f:587,d:.09,t:'square'},{f:523,d:.09,t:'square'},{f:440,d:.18,t:'square'},
+				{f:415,d:.09,t:'square'},{f:440,d:.18,t:'square'},
+			],
+		};
+
+		function ensureCtx() {
+			try {
+				if (!musicCtx) musicCtx = new (window.AudioContext || window.webkitAudioContext)();
+				if (musicCtx.state === 'suspended') musicCtx.resume();
+			} catch (e) { musicCtx = null; }
+			return musicCtx;
+		}
+
+		function scheduleTrack(track, startTime) {
+			const c = musicCtx;
+			let t = startTime;
+			const vol = 0.022;
+			track.forEach(note => {
+				const osc = c.createOscillator();
+				const g = c.createGain();
+				osc.connect(g).connect(c.destination);
+				osc.frequency.value = note.f;
+				osc.type = note.t || 'triangle';
+				g.gain.setValueAtTime(vol, t);
+				g.gain.exponentialRampToValueAtTime(0.0001, t + note.d - 0.01);
+				osc.start(t);
+				osc.stop(t + note.d);
+				oscs.push(osc);
+				t += note.d;
+			});
+			return t - startTime;
+		}
+
+		function loop(key) {
+			if (!on || key !== area) return;
+			const c = ensureCtx();
+			if (!c) return;
+			const track = TRACKS[key];
+			if (!track) return;
+			const dur = scheduleTrack(track, c.currentTime);
+			loopTimer = setTimeout(() => {
+				oscs = oscs.filter(o => { try { o.stop(0); } catch {} return false; });
+				loop(key);
+			}, (dur - 0.08) * 1000);
+		}
+
+		function start(key) {
+			if (!on) return;
+			if (area === key) return;
+			stop();
+			area = key;
+			const c = ensureCtx();
+			if (!c) return;
+			loop(key);
+		}
+
+		function stop() {
+			area = null;
+			if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
+			oscs.forEach(o => { try { o.stop(0); } catch {} });
+			oscs = [];
+		}
+
+		function setEnabled(flag) {
+			on = !!flag;
+			if (!on) stop();
+			// Persist preference
+			try { localStorage.setItem('pokequiz_music_on', flag ? '1' : '0'); } catch {}
+		}
+		function isEnabled() { return on; }
+		// Load saved preference
+		try { const saved = localStorage.getItem('pokequiz_music_on'); if (saved === '0') on = false; } catch {}
+
+		return { start, stop, setEnabled, isEnabled };
+	})();
+
+	// ── Stats tracking ───────────────────────────────────────────────────────────
+	const STATS_KEY = 'pokequiz_camp_stats';
+	const Stats = (() => {
+		const DEFAULT = { totalCatches: 0, totalHarvests: 0, totalDaysPlayed: 0, loginStreak: 0, totalTokensEarned: 0 };
+		function load() {
+			try { const r = localStorage.getItem(STATS_KEY); return r ? Object.assign({}, DEFAULT, JSON.parse(r)) : Object.assign({}, DEFAULT); } catch { return Object.assign({}, DEFAULT); }
+		}
+		function save(s) { try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch {} }
+		function increment(field, by) { const s = load(); s[field] = (s[field] || 0) + (by || 1); save(s); }
+		return { load, increment };
 	})();
 
 	// ── Daily login bonus ────────────────────────────────────────────────────────
@@ -619,7 +771,15 @@
 			inv.tokens = (inv.tokens || 0) + 20;
 			inv.seeds = (inv.seeds || 0) + 1;
 			Inventory.save(inv);
+			const prevClaim = lastClaim();
 			try { localStorage.setItem(DAILY_BONUS_KEY, String(Date.now())); } catch {}
+			// Update stats: streak continues if last claim was within 48h.
+			const s = Stats.load();
+			const hoursSince = prevClaim ? (Date.now() - prevClaim) / 3600000 : 999;
+			s.loginStreak = (prevClaim && hoursSince < 48) ? (s.loginStreak || 0) + 1 : 1;
+			s.totalDaysPlayed = (s.totalDaysPlayed || 0) + 1;
+			s.totalTokensEarned = (s.totalTokensEarned || 0) + 20;
+			Stats.save(s);
 		}
 		function hoursLeft() {
 			const ms = DAILY_BONUS_MS - (Date.now() - lastClaim());
@@ -1158,6 +1318,7 @@
 		const resumeBtn = document.getElementById('campPauseResume');
 		if (!panel || !resumeBtn || panel.dataset.wired) return;
 		panel.dataset.wired = '1';
+
 		const close = () => {
 			panel.hidden = true;
 			const active = game.scene.getScenes(true);
@@ -1167,8 +1328,50 @@
 			panel.hidden = false;
 			const active = game.scene.getScenes(true);
 			active.forEach(s => game.scene.pause(s.scene.key));
+			// Refresh save timestamp each time the menu opens.
+			const saveTimeEl = document.getElementById('campPauseSaveTime');
+			if (saveTimeEl) {
+				try {
+					const ts = localStorage.getItem(SAVE_KEY);
+					saveTimeEl.textContent = ts
+						? 'Last saved: ' + new Date(Number(ts)).toLocaleTimeString()
+						: 'Not saved yet';
+				} catch { saveTimeEl.textContent = ''; }
+			}
+			// Sync music button label.
+			const musicBtn = document.getElementById('campPauseMusic');
+			if (musicBtn) musicBtn.textContent = '🎵 Music: ' + (Music.isEnabled() ? 'On' : 'Off');
 		};
+
 		resumeBtn.addEventListener('click', close);
+
+		// 💾 Save button — writes the current timestamp to localStorage.
+		const saveBtn = document.getElementById('campPauseSave');
+		if (saveBtn) {
+			saveBtn.addEventListener('click', () => {
+				try { localStorage.setItem(SAVE_KEY, String(Date.now())); } catch {}
+				const saveTimeEl = document.getElementById('campPauseSaveTime');
+				if (saveTimeEl) saveTimeEl.textContent = 'Saved at ' + new Date().toLocaleTimeString();
+				Sound.chime();
+			});
+		}
+
+		// 🎵 Music toggle.
+		const musicBtn = document.getElementById('campPauseMusic');
+		if (musicBtn) {
+			musicBtn.addEventListener('click', () => {
+				const next = !Music.isEnabled();
+				Music.setEnabled(next);
+				if (next) {
+					// Re-start music for the current active area.
+					const active = game.scene.getScenes(true);
+					const key = active[0]?.scene?.key;
+					if (key && ['camp', 'house', 'upstairs'].includes(key)) Music.start(key);
+				}
+				musicBtn.textContent = '🎵 Music: ' + (next ? 'On' : 'Off');
+			});
+		}
+
 		document.addEventListener('keydown', (e) => {
 			if (e.key === 'Escape') {
 				if (Dialog.isOpen()) { Dialog.close(); return; }
@@ -1532,6 +1735,8 @@
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
 				setupPauseMenu(this.game);
+				Music.start('camp');
+				this.events.once('shutdown', () => Music.stop());
 
 				// Chimney smoke particles + container behind the player so puffs don't
 				// occlude the trainer. The chimney tile is at row 2 col 7 in the map.
@@ -1579,6 +1784,31 @@
 				this.follower.setOrigin(0.5, form.originY);
 				this.follower.setScale(form.scale);
 				this.follower.setDepth(3.5);
+
+				// Nickname label — floats above the follower, updated live.
+				this._followerLabel = this.add.text(this.follower.x, this.follower.y - 12, '', {
+					fontFamily: "'Press Start 2P', monospace",
+					fontSize: '5px',
+					color: '#ffffff',
+					stroke: '#000000',
+					strokeThickness: 3,
+				}).setDepth(4).setOrigin(0.5, 1);
+				this._updateFollowerLabel = () => {
+					const nick = Partner.loadNickname();
+					this._followerLabel.setText(nick || '');
+				};
+				this._updateFollowerLabel();
+
+				// Shiny tint — golden shimmer if enabled.
+				this._applyFollowerShiny = () => {
+					if (Partner.loadShiny()) {
+						this.follower.setTint(0xffd080);
+					} else {
+						this.follower.clearTint();
+					}
+				};
+				this._applyFollowerShiny();
+
 				this.followerHistory = [];
 				this.followerDir = 0;
 				this.followerMode = 'trail';   // 'trail' while player moves, 'faceoff' once stopped
@@ -1760,6 +1990,7 @@
 					Inventory.save(inv);
 					this._refreshPlantSprites();
 					Sound.harvest();
+					Stats.increment('totalHarvests');
 					Dialog.open('You harvested a Friendship Berry!');
 					return true;
 				}
@@ -2180,6 +2411,9 @@
 						}
 					}
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
+					if (this._followerLabel) {
+						this._followerLabel.setPosition(this.follower.x, this.follower.y - 12);
+					}
 				}
 
 				// Walk onto the door → enter the house. The player has to walk at least
@@ -2196,6 +2430,7 @@
 					this._lastTileKey = tileKey;
 					if (this.map[tr] && this.map[tr][tc] === TTG && Math.random() < 1/6) {
 						Battle.start((won) => {
+							Music.start('camp');
 							if (won) {
 								const inv = Inventory.load();
 								inv.friendshipBerries = (inv.friendshipBerries || 0) + 1;
@@ -2391,6 +2626,8 @@
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
 				setupPauseMenu(this.game);
+				Music.start('house');
+				this.events.once('shutdown', () => Music.stop());
 
 				// fromUp: face south (just walked down stairs); else face north (just came in from outside)
 				this.dir = fromUp ? 0 : 2;
@@ -2737,6 +2974,8 @@
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
 				setupPauseMenu(this.game);
+				Music.start('upstairs');
+				this.events.once('shutdown', () => Music.stop());
 
 				this.dir = 2; // facing north — just emerged from stairs
 				this.dirAnimKeys = ['u-walk-south', 'u-walk-west', 'u-walk-north', 'u-walk-east'];

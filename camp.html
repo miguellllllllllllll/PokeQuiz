@@ -119,9 +119,14 @@
 						<div class="cp-friendship-text" id="cpFriendshipText">0 / 100</div>
 					</div>
 				</div>
+				<div class="cp-nickname-row">
+					<label class="cp-nickname-label" for="cpNickname">Nickname</label>
+					<input class="cp-nickname-input" id="cpNickname" type="text" maxlength="12" placeholder="Leave blank for default">
+				</div>
 				<div class="cp-actions">
 					<button class="cb-btn" id="cpFeed" type="button">Feed Berry 🍓 <span class="cp-count">×<span id="cpBerries">0</span></span></button>
 					<button class="cb-btn cp-btn-alt" id="cpPet" type="button">Pet 💚</button>
+					<button class="cb-btn cp-btn-shiny" id="cpShiny" type="button">✨ Shiny</button>
 				</div>
 				<div class="cp-status" id="cpStatus"></div>
 				<div class="cp-hint">Press <b>P</b> anywhere in Camp to open this page · <b>Esc</b> to close</div>
@@ -245,7 +250,10 @@
 			<div class="camp-pause-panel">
 				<div class="camp-pause-title">Paused</div>
 				<button class="camp-pause-btn" id="campPauseResume" type="button">Resume</button>
+				<button class="camp-pause-btn camp-pause-btn--save" id="campPauseSave" type="button">💾 Save</button>
+				<button class="camp-pause-btn camp-pause-btn--music" id="campPauseMusic" type="button">🎵 Music: On</button>
 				<a class="camp-pause-btn camp-pause-btn--alt" href="index.html">Return to Home</a>
+				<div class="camp-pause-save-time" id="campPauseSaveTime"></div>
 				<div class="camp-pause-hint">Press Esc to resume</div>
 			</div>
 		</div>
