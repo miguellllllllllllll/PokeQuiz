@@ -101,6 +101,35 @@
 		<!-- Tiny inventory readout (Phase 1: seeds + Friendship Berries) -->
 		<div class="camp-inventory" id="campInventory" aria-hidden="true">🌱 0   🍓 0</div>
 
+		<!-- Pikachu's Mart — buy seeds, sell berries -->
+		<div class="camp-mart" id="campMart" hidden>
+			<div class="cm-panel">
+				<h2 class="cm-title">Pikachu's Mart</h2>
+				<div class="cm-balance">💰 <span id="cmTokens">0</span> Tokens</div>
+
+				<div class="cm-section">
+					<h3 class="cm-section-title">Sell</h3>
+					<div class="cm-row">
+						<div class="cm-row-name">🍓 Friendship Berry <span class="cm-row-count">×<span id="cmBerryCount">0</span></span></div>
+						<button class="cb-btn cm-action" id="cmSellOne" type="button">Sell 1 (+10 💰)</button>
+						<button class="cb-btn cm-action" id="cmSellAll" type="button">Sell All</button>
+					</div>
+				</div>
+
+				<div class="cm-section">
+					<h3 class="cm-section-title">Buy</h3>
+					<div class="cm-row">
+						<div class="cm-row-name">🌱 Berry Seed <span class="cm-row-count">(you have <span id="cmSeedCount">0</span>)</span></div>
+						<span class="cm-row-cost">5 💰</span>
+						<button class="cb-btn cm-action" id="cmBuySeed" type="button">Buy</button>
+					</div>
+				</div>
+
+				<div class="cm-status" id="cmStatus"></div>
+				<button class="cb-btn cm-leave" id="cmClose" type="button">Leave</button>
+			</div>
+		</div>
+
 		<!-- Wild-encounter overlay: spinning wheel → minigame → result -->
 		<div class="camp-battle" id="campBattle" hidden>
 			<!-- Spinning wheel — picks which minigame to play -->

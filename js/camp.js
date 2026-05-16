@@ -283,17 +283,100 @@
 		return { start, isOpen };
 	})();
 
+	// ── Mart UI — Pikachu shopkeeper buys berries / sells seeds ──────────────────
+	const Mart = (() => {
+		let openFlag = false;
+		function $(id) { return document.getElementById(id); }
+		function refresh() {
+			const inv = Inventory.load();
+			const tokensEl = $('cmTokens');
+			const berryEl = $('cmBerryCount');
+			const seedEl = $('cmSeedCount');
+			if (tokensEl) tokensEl.textContent = inv.tokens || 0;
+			if (berryEl) berryEl.textContent = inv.friendshipBerries || 0;
+			if (seedEl) seedEl.textContent = inv.seeds || 0;
+			const sellOne = $('cmSellOne');
+			const sellAll = $('cmSellAll');
+			const buySeed = $('cmBuySeed');
+			if (sellOne) sellOne.disabled = (inv.friendshipBerries || 0) <= 0;
+			if (sellAll) sellAll.disabled = (inv.friendshipBerries || 0) <= 0;
+			if (buySeed) buySeed.disabled = (inv.tokens || 0) < SEED_PRICE;
+		}
+		function setStatus(msg) {
+			const el = $('cmStatus');
+			if (!el) return;
+			el.textContent = msg || '';
+		}
+		function open() {
+			const root = $('campMart');
+			if (!root) return;
+			root.hidden = false;
+			openFlag = true;
+			setStatus('');
+			refresh();
+		}
+		function close() {
+			const root = $('campMart');
+			if (root) root.hidden = true;
+			openFlag = false;
+		}
+		function isOpen() { return openFlag; }
+		function wire() {
+			const root = $('campMart');
+			if (!root || root.dataset.wired) return;
+			root.dataset.wired = '1';
+			$('cmSellOne') && $('cmSellOne').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if ((inv.friendshipBerries || 0) <= 0) return;
+				inv.friendshipBerries -= 1;
+				inv.tokens = (inv.tokens || 0) + BERRY_PRICE;
+				Inventory.save(inv);
+				setStatus('Sold 1 berry for ' + BERRY_PRICE + ' Tokens.');
+				refresh();
+			});
+			$('cmSellAll') && $('cmSellAll').addEventListener('click', () => {
+				const inv = Inventory.load();
+				const n = inv.friendshipBerries || 0;
+				if (n <= 0) return;
+				inv.friendshipBerries = 0;
+				inv.tokens = (inv.tokens || 0) + n * BERRY_PRICE;
+				Inventory.save(inv);
+				setStatus('Sold ' + n + ' berries for ' + (n * BERRY_PRICE) + ' Tokens.');
+				refresh();
+			});
+			$('cmBuySeed') && $('cmBuySeed').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if ((inv.tokens || 0) < SEED_PRICE) return;
+				inv.tokens -= SEED_PRICE;
+				inv.seeds = (inv.seeds || 0) + 1;
+				Inventory.save(inv);
+				setStatus('Bought 1 Seed for ' + SEED_PRICE + ' Tokens.');
+				refresh();
+			});
+			$('cmClose') && $('cmClose').addEventListener('click', close);
+		}
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', wire);
+		} else {
+			wire();
+		}
+		return { open, close, isOpen };
+	})();
+
 	// ── Inventory + planted-berry persistence (localStorage) ─────────────────────
 	const INVENTORY_KEY = 'pokequiz_camp_inventory';
 	const PLANTS_KEY = 'pokequiz_camp_plants';
 	const GROW_MS = 30 * 1000; // 30 seconds — tunable; deliberately short for Phase 1
+	const SEED_PRICE = 5;
+	const BERRY_PRICE = 10;
 	const Inventory = (() => {
+		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0 };
 		function load() {
 			try {
 				const raw = localStorage.getItem(INVENTORY_KEY);
-				if (raw) return Object.assign({ seeds: 3, friendshipBerries: 0 }, JSON.parse(raw));
+				if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw));
 			} catch {}
-			return { seeds: 3, friendshipBerries: 0 };
+			return Object.assign({}, DEFAULT);
 		}
 		function save(inv) {
 			try { localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv)); } catch {}
@@ -319,9 +402,10 @@
 	const NPCS = [
 		{
 			key: 'mart-keeper', species: 'pikachu', r: 14, c: 13,
-			label: 'Talk',
+			label: 'Shop',
 			spriteScale: 0.55, frameHeight: 40,
-			dialog: "Welcome to my shop! I'll buy your berries — come back when you've grown some. (Mart not stocked yet — coming soon.)",
+			kind: 'mart',
+			dialog: "Welcome to my shop! I buy berries and sell seeds — opening the mart now.",
 		},
 		{
 			key: 'farmer', species: 'bulbasaur', r: 19, c: 19,
@@ -1255,7 +1339,7 @@
 				const candidates = [[tc + dvx, tr + dvy], [tc, tr]];
 				for (const [c, r] of candidates) {
 					const npc = this.npcByTile && this.npcByTile[r + ',' + c];
-					if (npc) return { kind: 'npc', r, c, message: npc.dialog, label: npc.label };
+					if (npc) return { kind: 'npc', r, c, message: npc.dialog, label: npc.label, npcKind: npc.kind };
 					if (!this.map[r] || this.map[r][c] === undefined) continue;
 					const t = this.map[r][c];
 					if (t === TSG) {
@@ -1374,7 +1458,7 @@
 				const el = document.getElementById('campInventory');
 				if (!el) return;
 				const inv = Inventory.load();
-				el.textContent = '🌱 ' + inv.seeds + '   🍓 ' + (inv.friendshipBerries || 0);
+				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0);
 			}
 
 			showPrompt(label) {
@@ -1533,8 +1617,8 @@
 					this.player.setVelocity(0, 0);
 					return;
 				}
-				// Freeze gameplay while the wild-encounter battle UI is open.
-				if (Battle.isOpen()) {
+				// Freeze gameplay while a modal (battle UI or mart) is open.
+				if (Battle.isOpen() || Mart.isOpen()) {
 					this.player.setVelocity(0, 0);
 					this.player.anims.stop();
 					this.player.setFrame(this.dirIdleFrame[this.dir]);
@@ -1554,6 +1638,9 @@
 					if (dialogOpen) Dialog.advance();
 					else if (target && (target.kind === 'plant' || target.kind === 'harvest' || target.kind === 'growing')) {
 						this._handlePlantAction(target);
+					}
+					else if (target && target.kind === 'npc' && target.npcKind === 'mart') {
+						Mart.open();
 					}
 					else if (target && target.message) Dialog.open(target.message);
 					else if (target && target.kind === 'door' && !this.didTransition && this.armedForDoor) {
