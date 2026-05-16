@@ -552,7 +552,10 @@
 
 	// Single entry point for scene transitions so we can guard every line and
 	// surface any thrown error on the HUD instead of silently leaving the
-	// player parked on the doorstep.
+	// player parked on the doorstep. The actual scene swap is deferred via
+	// setTimeout(0) so it runs OUTSIDE of Phaser's update loop — calling
+	// scene.start from inside an update has produced cases where the current
+	// scene was never actually stopped, leaving two scenes ticking together.
 	function safeSceneStart(scene, key, data) {
 		try {
 			Dialog.close();
@@ -568,13 +571,18 @@
 			console.error('resetKeys failed:', e);
 			Debug.lastError = 'resetKeys: ' + e.message;
 		}
-		try {
-			console.log('[scene]', scene.scene.key, '→', key, data);
-			scene.scene.start(key, data);
-		} catch (e) {
-			console.error('scene.start failed:', e);
-			Debug.lastError = 'scene.start: ' + e.message;
-		}
+		const fromKey = scene.scene.key;
+		setTimeout(() => {
+			try {
+				console.log('[scene] stop', fromKey, '→ start', key, data);
+				const mgr = scene.scene.manager;
+				mgr.stop(fromKey);
+				mgr.start(key, data);
+			} catch (e) {
+				console.error('scene swap failed:', e);
+				Debug.lastError = 'swap: ' + e.message;
+			}
+		}, 0);
 	}
 
 	// ── Day/night tint ────────────────────────────────────────────────────────────
