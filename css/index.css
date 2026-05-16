@@ -184,6 +184,14 @@
 	gap: 16px;
 }
 
+.trainer-link {
+	display: block;
+	text-decoration: none;
+	color: inherit;
+}
+
+.trainer-link .trainer { cursor: pointer; }
+
 .trainer {
 	margin: 0;
 	background: linear-gradient(180deg, #fff 0%, #fff5f5 100%);
