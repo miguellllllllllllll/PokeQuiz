@@ -645,7 +645,9 @@
 	})();
 
 	// ── Background music ─────────────────────────────────────────────────────────
-	// Looping 8-bit chiptune melody per area, built from Web Audio oscillators.
+	// Multi-voice chiptune per area. Each track is an array of voices played in
+	// parallel; each voice is { type, vol, notes: [[freq_hz, dur_s], ...] }.
+	// freq=0 is a rest. All voices in a track must have the same total duration.
 	const Music = (() => {
 		let musicCtx = null;
 		let oscs = [];
@@ -653,27 +655,61 @@
 		let area = null;
 		let on = true;
 
-		// Note sequences: { f: frequency(Hz), d: duration(s), t: oscillator type }
+		// Shorthand durations at ~120 BPM
+		const q=0.5, e=0.25, h=1.0, dh=1.5;
+
 		const TRACKS = {
+			// ── Camp — Pallet Town-inspired calming melody, 7.0 s loop, C major ──
 			camp: [
-				{f:330,d:.14,t:'triangle'},{f:392,d:.14,t:'triangle'},{f:440,d:.14,t:'triangle'},
-				{f:392,d:.14,t:'triangle'},{f:330,d:.28,t:'triangle'},{f:294,d:.14,t:'triangle'},
-				{f:330,d:.28,t:'triangle'},{f:294,d:.14,t:'triangle'},{f:262,d:.28,t:'triangle'},
+				// Voice 1 · melody (triangle)
+				{ type:'triangle', vol:0.026, notes:[
+					[659,q],[587,e],[523,e],[587,q],[659,q],[784,q],[880,h],   // phrase A
+					[523,q],[494,e],[440,e],[392,q],[440,q],[392,e],[329,e],[262,h], // phrase B
+				]},
+				// Voice 2 · harmony a 3rd below (triangle, softer)
+				{ type:'triangle', vol:0.015, notes:[
+					[523,q],[494,e],[392,e],[494,q],[523,q],[659,q],[699,h],
+					[440,q],[392,e],[349,e],[329,q],[349,q],[329,e],[262,e],[220,h],
+				]},
+				// Voice 3 · bass (sine)
+				{ type:'sine', vol:0.020, notes:[
+					[262,h],[196,h],[262,q],[220,h],   // phrase A  (total 3.5 s)
+					[175,h],[196,h],[131,dh],           // phrase B  (total 3.5 s)
+				]},
 			],
+
+			// ── House — cozy Pokémon Center-style tune, 4.0 s loop, C major ──
 			house: [
-				{f:262,d:.20,t:'sine'},{f:294,d:.14,t:'sine'},{f:330,d:.20,t:'sine'},
-				{f:294,d:.14,t:'sine'},{f:262,d:.30,t:'sine'},{f:247,d:.20,t:'sine'},
-				{f:262,d:.30,t:'sine'},
+				{ type:'triangle', vol:0.022, notes:[
+					[523,q],[659,q],[784,q],[659,q],[587,q],[699,q],[659,q],[523,q],
+				]},
+				{ type:'triangle', vol:0.013, notes:[
+					[440,q],[523,q],[659,q],[523,q],[494,q],[523,q],[523,q],[440,q],
+				]},
+				{ type:'sine', vol:0.018, notes:[
+					[262,h],[196,h],[247,q],[262,dh],
+				]},
 			],
+
+			// ── Upstairs — lighter, higher register, 4.0 s loop ──
 			upstairs: [
-				{f:523,d:.12,t:'triangle'},{f:494,d:.10,t:'triangle'},{f:440,d:.12,t:'triangle'},
-				{f:494,d:.10,t:'triangle'},{f:523,d:.22,t:'triangle'},{f:587,d:.12,t:'triangle'},
-				{f:523,d:.22,t:'triangle'},
+				{ type:'triangle', vol:0.022, notes:[
+					[784,q],[880,q],[784,q],[659,q],[784,q],[659,q],[587,q],[523,q],
+				]},
+				{ type:'triangle', vol:0.013, notes:[
+					[659,q],[699,q],[659,q],[523,q],[659,q],[523,q],[494,q],[440,q],
+				]},
+				{ type:'sine', vol:0.018, notes:[
+					[262,h],[220,h],[196,h],[175,h],
+				]},
 			],
+
+			// ── Battle — energetic square-wave loop, 1.44 s ──
 			battle: [
-				{f:440,d:.09,t:'square'},{f:494,d:.09,t:'square'},{f:523,d:.09,t:'square'},
-				{f:587,d:.09,t:'square'},{f:523,d:.09,t:'square'},{f:440,d:.18,t:'square'},
-				{f:415,d:.09,t:'square'},{f:440,d:.18,t:'square'},
+				{ type:'square', vol:0.020, notes:[
+					[440,.09],[494,.09],[523,.09],[587,.09],
+					[523,.09],[440,.18],[415,.09],[440,.18],
+				]},
 			],
 		};
 
@@ -685,37 +721,48 @@
 			return musicCtx;
 		}
 
-		function scheduleTrack(track, startTime) {
+		// Schedule all voices of a track in parallel; return total duration.
+		function scheduleVoices(voices, startTime) {
 			const c = musicCtx;
-			let t = startTime;
-			const vol = 0.022;
-			track.forEach(note => {
-				const osc = c.createOscillator();
-				const g = c.createGain();
-				osc.connect(g).connect(c.destination);
-				osc.frequency.value = note.f;
-				osc.type = note.t || 'triangle';
-				g.gain.setValueAtTime(vol, t);
-				g.gain.exponentialRampToValueAtTime(0.0001, t + note.d - 0.01);
-				osc.start(t);
-				osc.stop(t + note.d);
-				oscs.push(osc);
-				t += note.d;
+			let maxDur = 0;
+			voices.forEach(voice => {
+				let t = startTime;
+				const v = voice.vol || 0.022;
+				voice.notes.forEach(([freq, dur]) => {
+					if (freq > 0) {
+						const osc = c.createOscillator();
+						const g = c.createGain();
+						osc.connect(g).connect(c.destination);
+						osc.frequency.value = freq;
+						osc.type = voice.type || 'triangle';
+						const atk = Math.min(0.04, dur * 0.12);
+						const rel = Math.min(0.10, dur * 0.25);
+						g.gain.setValueAtTime(0.0001, t);
+						g.gain.linearRampToValueAtTime(v, t + atk);
+						g.gain.setValueAtTime(v, t + dur - rel);
+						g.gain.linearRampToValueAtTime(0.0001, t + dur);
+						osc.start(t);
+						osc.stop(t + dur + 0.05);
+						oscs.push(osc);
+					}
+					t += dur;
+				});
+				maxDur = Math.max(maxDur, t - startTime);
 			});
-			return t - startTime;
+			return maxDur;
 		}
 
 		function loop(key) {
 			if (!on || key !== area) return;
 			const c = ensureCtx();
 			if (!c) return;
-			const track = TRACKS[key];
-			if (!track) return;
-			const dur = scheduleTrack(track, c.currentTime);
+			const voices = TRACKS[key];
+			if (!voices) return;
+			const dur = scheduleVoices(voices, c.currentTime);
 			loopTimer = setTimeout(() => {
 				oscs = oscs.filter(o => { try { o.stop(0); } catch {} return false; });
 				loop(key);
-			}, (dur - 0.08) * 1000);
+			}, (dur - 0.12) * 1000);
 		}
 
 		function start(key) {
@@ -738,11 +785,9 @@
 		function setEnabled(flag) {
 			on = !!flag;
 			if (!on) stop();
-			// Persist preference
 			try { localStorage.setItem('pokequiz_music_on', flag ? '1' : '0'); } catch {}
 		}
 		function isEnabled() { return on; }
-		// Load saved preference
 		try { const saved = localStorage.getItem('pokequiz_music_on'); if (saved === '0') on = false; } catch {}
 
 		return { start, stop, setEnabled, isEnabled };
