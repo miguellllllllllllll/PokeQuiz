@@ -4,6 +4,7 @@
 	'use strict';
 
 	const KEY = 'pokequiz_trainer_palette';
+	const BODY_KEY = 'pokequiz_trainer_body';
 	const FRAME_H = 38;
 	const FRAME_W = 22;
 
@@ -43,11 +44,13 @@
 			{ color: '#E8E8F8', xMin: 14, xMax: 14, yMin: 23, yMax: 23 },
 		],
 		outfit:  ['#1F2945', '#354775', '#4F69AE'],
+		outfitTrim: [{ color: '#784040', yMin: 17 }],
 		shirt:   ['#B8B0D0', '#E8E8F8'],
 		pants:   [{ color: '#384040', yMin: 25 }],
+		shoes:   [{ color: '#406888', yMin: 24 }],
 		goggles: [{ color: '#66847B', yMax: 19 }],
 	};
-	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, gogglesFrame: 0, eyes: 0, __sclera: 0, outfit: 1, shirt: 0, pants: 0, goggles: 0 };
+	const MAIN_IDX = { cap: 1, skin: 2, hair: 1, gogglesFrame: 0, eyes: 0, __sclera: 0, outfit: 1, outfitTrim: 0, shirt: 0, pants: 0, shoes: 0, goggles: 0 };
 
 	const DEFAULTS = {
 		cap:          '#C03838',
@@ -57,10 +60,44 @@
 		eyes:         '#000000',
 		__sclera:     '#B8B0D0',
 		outfit:       '#354775',
+		outfitTrim:   '#784040',
 		shirt:        '#B8B0D0',
 		pants:        '#384040',
+		shoes:        '#406888',
 		goggles:      '#66847B',
 	};
+
+	// Body-style variants: each is a pixel pre-pass on the source sheet
+	// (applied per-frame, frame-local coords) before the palette swap runs.
+	// Mods rewrite hex colours so the existing palette ladder still applies.
+	const BODIES = {
+		classic: { label: 'Classic', mod: null },
+		hood: {
+			label: 'Hood',
+			// Recolour the side/back hair pixels into the cap shade, so the cap
+			// appears to extend down as a hood.
+			mod: function (fx, fy, hex) {
+				if (hex !== '#28272C' && hex !== '#424149') return null;
+				// Sides of the head + back of the neck.
+				if (fy >= 11 && fy <= 22 && (fx <= 4 || fx >= 17)) {
+					return hex === '#28272C' ? '#701028' : '#C03838';
+				}
+				return null;
+			},
+		},
+		bare: {
+			label: 'No Goggles',
+			// Replace goggles frame + lens pixels with the source skin shade so
+			// the skin palette swap colours them. The pupil/sclera pixels are
+			// pinned by xMin/xMax in the BASE map so they stay put.
+			mod: function (fx, fy, hex) {
+				if (fy < 16 || fy > 23) return null;
+				if (hex === '#384040' || hex === '#66847B') return '#D8A078';
+				return null;
+			},
+		},
+	};
+	const BODY_IDS = Object.keys(BODIES);
 
 	function hexToRgb(hex) {
 		const n = parseInt(hex.replace('#',''), 16);
@@ -76,6 +113,20 @@
 	}
 	function save(choices) {
 		try { localStorage.setItem(KEY, JSON.stringify(choices)); } catch {}
+	}
+	function loadBody() {
+		try {
+			const raw = localStorage.getItem(BODY_KEY);
+			if (raw && BODIES[raw]) return raw;
+		} catch {}
+		return 'classic';
+	}
+	function saveBody(id) {
+		try { localStorage.setItem(BODY_KEY, BODIES[id] ? id : 'classic'); } catch {}
+	}
+
+	function rgbToHex(r, g, b) {
+		return '#' + ((1<<24) | (r<<16) | (g<<8) | b).toString(16).slice(1).toUpperCase();
 	}
 
 	// Build a Map<u24, [{rgb, yMin, yMax}]> from original sheet colour → list of
@@ -121,7 +172,9 @@
 	}
 
 	// Write recoloured pixels of srcImage into dstCtx (must be same dimensions).
-	function recolor(srcImage, choices, dstCtx) {
+	// bodyId selects an optional pre-pass that rewrites pixel hexes (still using
+	// ladder shades) before the palette swap runs.
+	function recolor(srcImage, choices, dstCtx, bodyId) {
 		const w = srcImage.width, h = srcImage.height;
 		dstCtx.imageSmoothingEnabled = false;
 		dstCtx.clearRect(0, 0, w, h);
@@ -129,15 +182,25 @@
 		const id = dstCtx.getImageData(0, 0, w, h);
 		const px = id.data;
 		const map = buildColourMap(choices);
+		const body = BODIES[bodyId] || BODIES.classic;
+		const mod = body && body.mod;
 		for (let i = 0, idx = 0; i < px.length; i += 4, idx++) {
 			if (px[i+3] === 0) continue;
-			const key = (px[i]<<16) | (px[i+1]<<8) | px[i+2];
-			const rules = map.get(key);
-			if (!rules) continue;
 			const x = idx % w;
 			const y = (idx / w) | 0;
 			const frameX = x % FRAME_W;
 			const frameY = y % FRAME_H;
+			if (mod) {
+				const srcHex = rgbToHex(px[i], px[i+1], px[i+2]);
+				const replaced = mod(frameX, frameY, srcHex);
+				if (replaced) {
+					const n = parseInt(replaced.slice(1), 16);
+					px[i] = (n>>16)&255; px[i+1] = (n>>8)&255; px[i+2] = n&255;
+				}
+			}
+			const key = (px[i]<<16) | (px[i+1]<<8) | px[i+2];
+			const rules = map.get(key);
+			if (!rules) continue;
 			for (let r = 0; r < rules.length; r++) {
 				const rule = rules[r];
 				if (frameY >= rule.yMin && frameY <= rule.yMax
@@ -150,5 +213,5 @@
 		dstCtx.putImageData(id, 0, 0);
 	}
 
-	window.TrainerPalette = { BASE, MAIN_IDX, DEFAULTS, KEY, load, save, recolor };
+	window.TrainerPalette = { BASE, MAIN_IDX, DEFAULTS, KEY, BODY_KEY, BODIES, BODY_IDS, load, save, loadBody, saveBody, recolor };
 })();

@@ -282,10 +282,11 @@
 
 		let choices = TP.load();
 		let previewDir = 0;
+		let bodyId = TP.loadBody ? TP.loadBody() : 'classic';
 
 		function redraw() {
 			if (!baseImg.complete || !baseImg.naturalWidth) return;
-			TP.recolor(baseImg, choices, fullCtx);
+			TP.recolor(baseImg, choices, fullCtx, bodyId);
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			// sheet rows: 0=south, 1=west, 2=north, 3=east — matches previewDir
 			ctx.drawImage(fullCanvas, 0, previewDir * FH, FW, FH, offX, offY, FW, FH);
@@ -302,6 +303,18 @@
 				previewDir = Number(btn.dataset.dir);
 				dirBtns.forEach(b => b.classList.toggle('is-active', b === btn));
 				redraw();
+			});
+		});
+
+		const bodyBtns = document.querySelectorAll('.tc-body-btn');
+		bodyBtns.forEach(btn => {
+			btn.classList.toggle('is-active', btn.dataset.body === bodyId);
+			btn.addEventListener('click', () => {
+				bodyId = btn.dataset.body;
+				bodyBtns.forEach(b => b.classList.toggle('is-active', b === btn));
+				if (TP.saveBody) TP.saveBody(bodyId);
+				redraw();
+				try { window.dispatchEvent(new StorageEvent('storage', { key: TP.BODY_KEY || 'pokequiz_trainer_body' })); } catch {}
 			});
 		});
 

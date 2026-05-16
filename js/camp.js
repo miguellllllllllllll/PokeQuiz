@@ -333,6 +333,14 @@
 			if (sellOne) sellOne.disabled = (inv.friendshipBerries || 0) <= 0;
 			if (sellAll) sellAll.disabled = (inv.friendshipBerries || 0) <= 0;
 			if (buySeed) buySeed.disabled = (inv.tokens || 0) < SEED_PRICE;
+			const buyScythe = $('cmBuyScythe');
+			if (buyScythe) {
+				buyScythe.disabled = !!inv.hasScythe || (inv.tokens || 0) < SCYTHE_PRICE;
+				buyScythe.textContent = inv.hasScythe ? 'Owned' : 'Buy';
+			}
+			document.querySelectorAll('.cm-scythe-status').forEach(el => {
+				el.textContent = inv.hasScythe ? '(owned — press Q to equip)' : '';
+			});
 			// Stones — disable buy when already owned (one at a time) or short on tokens.
 			document.querySelectorAll('[data-buy-stone]').forEach(b => {
 				const t = b.dataset.buyStone;
@@ -426,6 +434,17 @@
 				inv.seeds = (inv.seeds || 0) + 1;
 				Inventory.save(inv);
 				setStatus('Bought 1 Seed for ' + SEED_PRICE + ' Tokens.');
+				refresh();
+			});
+			$('cmBuyScythe') && $('cmBuyScythe').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if (inv.hasScythe) return;
+				if ((inv.tokens || 0) < SCYTHE_PRICE) return;
+				inv.tokens -= SCYTHE_PRICE;
+				inv.hasScythe = true;
+				inv.scytheEquipped = true;
+				Inventory.save(inv);
+				setStatus('Bought a Scythe! Press Q to toggle. Swing with E near ripe crops.');
 				refresh();
 			});
 			document.querySelectorAll('[data-buy-stone]').forEach(b => {
@@ -839,6 +858,8 @@
 	const GROW_MS = 30 * 1000; // 30 seconds — tunable; deliberately short for Phase 1
 	const SEED_PRICE = 5;
 	const BERRY_PRICE = 10;
+	const SCYTHE_PRICE = 75;
+	const SCYTHE_RADIUS = 3; // Manhattan radius around the player for a single swing
 	const STONE_PRICE = 50;
 	const FRIENDSHIP_PER_BERRY = 20;
 	const FRIENDSHIP_MAX = 100;
@@ -915,7 +936,8 @@
 		const DEFAULT = {
 			seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0,
 			eeveeForm: 'eevee', stone: null,
-			cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [], roomItems: [], roomActive: {}, houseRoomItems: [], houseRoomActive: {} },
+			hasScythe: false, scytheEquipped: false,
+			cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [], roomItems: [], roomPlacements: {}, houseRoomItems: [], housePlacements: {} },
 		};
 		function load() {
 			try {
@@ -926,9 +948,23 @@
 					const cosm = Object.assign({}, DEFAULT.cosmetics, parsed.cosmetics || {});
 					if (!Array.isArray(cosm.decor)) cosm.decor = [];
 					if (!Array.isArray(cosm.roomItems)) cosm.roomItems = [];
-					if (!cosm.roomActive || typeof cosm.roomActive !== 'object') cosm.roomActive = {};
+					if (!cosm.roomPlacements || typeof cosm.roomPlacements !== 'object') cosm.roomPlacements = {};
+					if (cosm.roomActive) {
+						Object.entries(cosm.roomActive).forEach(([k, v]) => {
+							if (v && ROOM_ITEMS[k] && !cosm.roomPlacements[k])
+								cosm.roomPlacements[k] = { r: ROOM_ITEMS[k].r, c: ROOM_ITEMS[k].c };
+						});
+						delete cosm.roomActive;
+					}
 					if (!Array.isArray(cosm.houseRoomItems)) cosm.houseRoomItems = [];
-					if (!cosm.houseRoomActive || typeof cosm.houseRoomActive !== 'object') cosm.houseRoomActive = {};
+					if (!cosm.housePlacements || typeof cosm.housePlacements !== 'object') cosm.housePlacements = {};
+					if (cosm.houseRoomActive) {
+						Object.entries(cosm.houseRoomActive).forEach(([k, v]) => {
+							if (v && HOUSE_ITEMS[k] && !cosm.housePlacements[k])
+								cosm.housePlacements[k] = { r: HOUSE_ITEMS[k].r, c: HOUSE_ITEMS[k].c };
+						});
+						delete cosm.houseRoomActive;
+					}
 					return Object.assign({}, DEFAULT, parsed, { cosmetics: cosm });
 				}
 			} catch {}
