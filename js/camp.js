@@ -683,9 +683,10 @@
 
 					const left = document.createElement('div');
 					left.className = 'cre-item-left';
-					const emojiEl = document.createElement('span');
+					// Pixel-art sprite for the item — falls back to emoji span if the
+					// design isn't registered (keeps layout intact for any new item).
+					const emojiEl = FurnitureSprites.makeIcon(key, 32);
 					emojiEl.className = 'cre-item-emoji';
-					emojiEl.textContent = item.emoji;
 					const infoEl = document.createElement('div');
 					infoEl.className = 'cre-item-info';
 					const labelEl = document.createElement('div');
@@ -1015,6 +1016,462 @@
 		frame:    { label: '🖼️ Photo Frame', price: 15, emoji: '🖼️', r: 2, c: 11, cat: 'decor' },
 		plush:    { label: '🐱 Plush Cat',   price: 25, emoji: '🐱', r: 7, c: 12, cat: 'decor' },
 	};
+
+	// ── Furniture pixel-art sprites ──────────────────────────────────────────────
+	// 16×16 designs painted at runtime via canvas + fillRect, so no extra image
+	// assets are needed and the look matches the camp's BW2-style tile art.
+	// Each entry: { palette: { char: '#rrggbb' }, rows: [16 strings] }. '.' = transparent.
+	const FURNITURE_DESIGNS = {
+		// ── Upstairs (ROOM_ITEMS) ──
+		desk: { palette:{1:'#1a1a1a',2:'#5b3a1d',3:'#9a6b3e',A:'#79c5ff',B:'#3a8bcf'}, rows:[
+			"................",
+			"....111111......",
+			"...1BAAAAB1.....",
+			"...1AAAAAA1.....",
+			"...1AAAAAA1.....",
+			"...1BAAAAB1.....",
+			"...11111111.....",
+			".....1111.......",
+			"..3333333333....",
+			"..3333333333....",
+			"..2222222222....",
+			"..2........2....",
+			"..2........2....",
+			"..2........2....",
+			"..2........2....",
+			"................",
+		]},
+		lamp: { palette:{1:'#3a3a3a',2:'#f3d780',3:'#9c6f2a',Y:'#fff3b3'}, rows:[
+			"................",
+			".......YY.......",
+			"......YYYY......",
+			".....YYYYYY.....",
+			"....33333333....",
+			"....32222223....",
+			"....32222223....",
+			".....333333.....",
+			"......1111......",
+			"......1111......",
+			"......1111......",
+			"......1111......",
+			".....111111.....",
+			"....11111111....",
+			"....33333333....",
+			"................",
+		]},
+		radio: { palette:{1:'#0e0e0e',2:'#1a1a1a',3:'#3a3a3a',4:'#fff',Y:'#fc6',S:'#666'}, rows:[
+			"................",
+			"................",
+			"...22222222.....",
+			"...23333332.....",
+			"...23S22S32.....",
+			"...23SS44S32....",
+			"...23S44SS32....",
+			"...23S22S32.....",
+			"...23333332.....",
+			"...23Y4Y4Y2.....",
+			"...23333332.....",
+			"...22222222.....",
+			"................",
+			"................",
+			"................",
+			"................",
+		]},
+		mirror: { palette:{1:'#a47a30',2:'#d4a857',3:'#cfe5ff',4:'#fff',B:'#86b8e0'}, rows:[
+			"................",
+			"......1111......",
+			".....122221.....",
+			"....12333321....",
+			"....1334B331....",
+			"....134BB431....",
+			"....1344B431....",
+			"....1334B331....",
+			"....1333B331....",
+			"....1B33B331....",
+			"....12333321....",
+			".....122221.....",
+			"......1111......",
+			".......22.......",
+			"......2222......",
+			"................",
+		]},
+		gaming: { palette:{1:'#1a1a1a',2:'#444',3:'#888',A:'#3aff66',B:'#3a8bcf',C:'#ff6a3a'}, rows:[
+			"................",
+			"...11111111.....",
+			"...1AAAAAA1.....",
+			"...1ABBBBA1.....",
+			"...1ABBBBA1.....",
+			"...1AAAAAA1.....",
+			"...11111111.....",
+			"......11........",
+			"....111111......",
+			"................",
+			"..222222222.....",
+			"..233333332.....",
+			"..23CCC3B3 2....",
+			"..233333332.....",
+			"..222222222.....",
+			"................",
+		]},
+		curtain: { palette:{1:'#5b3a1d',2:'#8a5a2a',3:'#79c5ff',4:'#aee0ff',5:'#c44',6:'#922'}, rows:[
+			"................",
+			"..1111111111....",
+			"..15555555 51....",
+			"..16555 55561....",
+			"..1543334451....",
+			"..1543334451....",
+			"..1543334451....",
+			"..1565556561....",
+			"..1565556561....",
+			"..1565556561....",
+			"..1655555 61....",
+			"..1555555551....",
+			"..1565556561....",
+			"..1111111111....",
+			"................",
+			"................",
+		]},
+		plant: { palette:{1:'#3a7e2a',2:'#5fb83a',3:'#1f4a18',4:'#8c5a30',5:'#a47233'}, rows:[
+			"................",
+			"......222.......",
+			".....12321......",
+			"....1232321.....",
+			"....2321232.....",
+			"...12333321.....",
+			"...232123232....",
+			"....1233321.....",
+			".....12321......",
+			"......121.......",
+			".....55555......",
+			"....4444444.....",
+			"....4555554.....",
+			"....4444444.....",
+			".....44444......",
+			"................",
+		]},
+		poster: { palette:{1:'#a47a30',2:'#d4a857',3:'#9bd6ff',4:'#fce98a',5:'#3a7e2a',6:'#fff'}, rows:[
+			"................",
+			"...11111111.....",
+			"...12222221.....",
+			"...12333321.....",
+			"...12366321.....",
+			"...12344321.....",
+			"...12345321.....",
+			"...12355321.....",
+			"...12355321.....",
+			"...12345321.....",
+			"...12222221.....",
+			"...11111111.....",
+			"................",
+			"................",
+			"................",
+			"................",
+		]},
+		trophy: { palette:{1:'#a47a30',2:'#ffd34d',3:'#e6a832',4:'#fff8c8',5:'#5b3a1d'}, rows:[
+			"................",
+			"....1111111.....",
+			"....1222221.....",
+			"....1244421.....",
+			"....1242421.....",
+			"....1244421.....",
+			"....1222221.....",
+			"....13333 31....",
+			".....32223......",
+			"......212.......",
+			"......212.......",
+			".....22222......",
+			"....5555555.....",
+			"....5555555.....",
+			"................",
+			"................",
+		]},
+		book: { palette:{1:'#1a1a1a',2:'#c44',3:'#46b',4:'#4a4',5:'#db4',6:'#fc6'}, rows:[
+			"................",
+			"................",
+			"...1111111111...",
+			"...1444444461...",
+			"...1444444451...",
+			"...1444444461...",
+			"...1111111111...",
+			"...1222222221...",
+			"...1226222221...",
+			"...1222222261...",
+			"...1111111111...",
+			"...1333333361...",
+			"...1333333351...",
+			"...1333333361...",
+			"...1111111111...",
+			"................",
+		]},
+		bear: { palette:{1:'#7a4520',2:'#a36437',3:'#1a1a1a',4:'#c44',5:'#fff'}, rows:[
+			"................",
+			"....22....22....",
+			"...2112..2112...",
+			"...2112..2112...",
+			"....22....22....",
+			"....22222222....",
+			"...2333223332...",
+			"...211211 1112...",
+			"...221334 1322..",
+			"...22122 21222..",
+			"....22444422....",
+			"...221111122....",
+			"..21111111112...",
+			"..211111111 12...",
+			"...22222222.....",
+			"................",
+		]},
+		stars: { palette:{1:'#3a3a3a',2:'#ffd34d',3:'#fff',Y:'#fff3b3'}, rows:[
+			"....111111111...",
+			"................",
+			"...1...1...1....",
+			"...1...1...1....",
+			"...1...1...1....",
+			"...1...1...1....",
+			"...1...1...1....",
+			"...Y...Y...Y....",
+			"..YYY.YYY.YYY...",
+			".YYYYYYYYYYYYY..",
+			"..YYY.YYY.YYY...",
+			"...Y...Y...Y....",
+			"................",
+			"................",
+			"................",
+			"................",
+		]},
+		// ── Ground floor (HOUSE_ITEMS) ──
+		tv: { palette:{1:'#1a1a1a',2:'#3a3a3a',3:'#5b3a1d',A:'#46a8e0',B:'#1f6090'}, rows:[
+			"................",
+			"...1111111111...",
+			"...12222222 21...",
+			"...12AAAAAA21...",
+			"...12ABBBBA21...",
+			"...12ABBBBA21...",
+			"...12AAAAAA21...",
+			"...12222222 21...",
+			"...1111111111...",
+			"......1..1......",
+			"....33333333....",
+			"....3....3..3...",
+			"....3....3..3...",
+			"................",
+			"................",
+			"................",
+		]},
+		couch: { palette:{1:'#1a1a1a',2:'#7a2a2a',3:'#a83a3a',4:'#d04a4a',5:'#5b3a1d'}, rows:[
+			"................",
+			"................",
+			"..2222222222....",
+			"..2334444332....",
+			"..2344444432....",
+			"..2344444432....",
+			"..2344444432....",
+			"..2223333322....",
+			"..2222222222....",
+			"..2444444442....",
+			"..2434434442....",
+			"..2444444442....",
+			"..2222222222....",
+			"..5..........5..",
+			"..5..........5..",
+			"................",
+		]},
+		bookcase: { palette:{1:'#3a2410',2:'#5b3a1d',3:'#8a5a2a',4:'#c44',5:'#46b',6:'#4a4',7:'#db4',8:'#fc6'}, rows:[
+			"....111111111...",
+			"....122222221...",
+			"....14545454 51...",
+			"....16767676 71...",
+			"....122222221...",
+			"....14545454 51...",
+			"....16767676 71...",
+			"....122222221...",
+			"....14545454 51...",
+			"....16767676 71...",
+			"....122222221...",
+			"....14545454 51...",
+			"....16767676 71...",
+			"....122222221...",
+			"....111111111...",
+			"................",
+		]},
+		clock: { palette:{1:'#5b3a1d',2:'#a47a30',3:'#fff',4:'#1a1a1a',5:'#c44'}, rows:[
+			"................",
+			".....111111.....",
+			"....12222221....",
+			"...1233333321...",
+			"...1233333321...",
+			"...123344 4321...",
+			"...12334534321..",
+			"...12333534321..",
+			"...12334434321..",
+			"...12333333321..",
+			"...12333334321..",
+			"...12333334321..",
+			"....12333321....",
+			".....111111.....",
+			"................",
+			"................",
+		]},
+		floorlamp: { palette:{1:'#3a3a3a',2:'#f3d780',3:'#9c6f2a',Y:'#fff3b3'}, rows:[
+			"......YYYY......",
+			".....YYYYYY.....",
+			"....YYYYYYYY....",
+			"....33333333....",
+			"....32222223....",
+			"....32222223....",
+			".....333333.....",
+			"......111.......",
+			"......111.......",
+			"......111.......",
+			"......111.......",
+			"......111.......",
+			"......111.......",
+			"......111.......",
+			"....11111111....",
+			"....33333333....",
+		]},
+		// "plant" is shared (only HOUSE if upstairs already loaded its own — Phaser
+		// caches by key so we register a HOUSE-specific key in scene code.)
+		floorplant: { palette:{1:'#3a7e2a',2:'#5fb83a',3:'#1f4a18',4:'#8c5a30',5:'#a47233'}, rows:[
+			"....1...........",
+			"..1212..........",
+			".121231.........",
+			"..21232.........",
+			"...12321........",
+			"..123212.........",
+			".12312132.........",
+			"..21321.........",
+			"....121.........",
+			"....555.........",
+			"...44444........",
+			"...45554........",
+			"...44444........",
+			"....444.........",
+			"................",
+			"................",
+		]},
+		kettle: { palette:{1:'#1a1a1a',2:'#3a3a3a',3:'#5a5a5a',4:'#888',5:'#a83a3a',6:'#fff'}, rows:[
+			"................",
+			"................",
+			"......2..2......",
+			"......22 22......",
+			".....111111.....",
+			"....21555512....",
+			"....25555552....",
+			"...255555552....",
+			"...255555552....",
+			"...255555552....",
+			"....25555552....",
+			"....21555512....",
+			"....111111111...",
+			"................",
+			"................",
+			"................",
+		]},
+		vase: { palette:{1:'#a47a30',2:'#d4a857',3:'#c44',4:'#922',5:'#4a4',6:'#5fb83a',7:'#3a7e2a'}, rows:[
+			"......333.......",
+			".....34453......",
+			".....35563......",
+			"....63575636....",
+			"....66666666....",
+			".....55555......",
+			".....111111.....",
+			".....122221.....",
+			".....122221.....",
+			"....12222221....",
+			"....12222221....",
+			"....12222221....",
+			"....12222221....",
+			".....111111.....",
+			"......1111......",
+			"................",
+		]},
+		frame: { palette:{1:'#a47a30',2:'#ffd34d',3:'#9bd6ff',4:'#3a7e2a',5:'#fce98a',6:'#fff'}, rows:[
+			"................",
+			"...1111111111...",
+			"...1222222221...",
+			"...12333333 21...",
+			"...12365 5321...",
+			"...12334 4321...",
+			"...12345 5321...",
+			"...12344 4321...",
+			"...12333 3321...",
+			"...12222 2221...",
+			"...1111111111...",
+			"................",
+			"................",
+			"................",
+			"................",
+			"................",
+		]},
+		plush: { palette:{1:'#cf6a2a',2:'#e6803a',3:'#1a1a1a',4:'#fff',5:'#c44',6:'#fc6'}, rows:[
+			"................",
+			"...22....22.....",
+			"..2112..2112....",
+			"..2222222222....",
+			"..2333223332....",
+			"..2244332442....",
+			"..223333 3332....",
+			"..2233553322....",
+			"...22555522.....",
+			"..2222222222....",
+			".211222222112...",
+			".2111122222112...",
+			"..2222222222....",
+			"...2222222 2....",
+			"...22222222.....",
+			"................",
+		]},
+	};
+
+	const FurnitureSprites = (() => {
+		const cache = {};
+		function get(key) {
+			if (cache[key]) return cache[key];
+			const d = FURNITURE_DESIGNS[key === 'plant' && cache._wantHouse ? 'floorplant' : key]
+				|| FURNITURE_DESIGNS[key];
+			if (!d) return null;
+			const canvas = document.createElement('canvas');
+			canvas.width = 16; canvas.height = 16;
+			const ctx = canvas.getContext('2d');
+			ctx.imageSmoothingEnabled = false;
+			for (let r = 0; r < d.rows.length; r++) {
+				const row = d.rows[r];
+				for (let c = 0; c < row.length; c++) {
+					const ch = row[c];
+					if (ch === '.' || ch === ' ') continue;
+					const color = d.palette[ch];
+					if (!color) continue;
+					ctx.fillStyle = color;
+					ctx.fillRect(c, r, 1, 1);
+				}
+			}
+			cache[key] = canvas;
+			return canvas;
+		}
+		// Build a same-canvas <img>-style element scaled up via CSS for the editor menu.
+		function makeIcon(key, sizePx) {
+			const src = get(key);
+			if (!src) {
+				// Fallback: emoji span so the layout never breaks.
+				const span = document.createElement('span');
+				span.textContent = (ROOM_ITEMS[key] || HOUSE_ITEMS[key] || {}).emoji || '';
+				span.style.fontSize = (sizePx || 22) + 'px';
+				return span;
+			}
+			const img = document.createElement('canvas');
+			img.width = 16; img.height = 16;
+			const ctx = img.getContext('2d');
+			ctx.imageSmoothingEnabled = false;
+			ctx.drawImage(src, 0, 0);
+			img.style.width = (sizePx || 32) + 'px';
+			img.style.height = (sizePx || 32) + 'px';
+			img.style.imageRendering = 'pixelated';
+			img.style.display = 'block';
+			return img;
+		}
+		return { get, makeIcon };
+	})();
 
 	const Inventory = (() => {
 		const DEFAULT = {
@@ -3505,7 +3962,8 @@
 				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
 				const _houseWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
 				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_houseWp]?.house || '#1a0e08');
-				// Pre-create ground floor item overlays — positioned from stored placements.
+				// Pre-create ground floor item overlays — pixel-art sprites built from
+				// FURNITURE_DESIGNS, registered as Phaser canvas textures.
 				const _houseRoomInv = Inventory.load();
 				const _housePlacements = _houseRoomInv.cosmetics?.housePlacements || {};
 				this._roomItemObjs = {};
@@ -3513,8 +3971,20 @@
 					const pos = _housePlacements[key];
 					const x = (pos ? pos.c : item.c) * TILE + TILE / 2;
 					const y = (pos ? pos.r : item.r) * TILE + TILE / 2;
-					const obj = this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
-						.setOrigin(0.5).setDepth(2).setVisible(!!pos);
+					// Use a house-scoped sprite key so the same "plant" id can have
+					// different art for the upstairs vs ground-floor scene.
+					const texKey = 'furniture-house-' + key;
+					if (!this.textures.exists(texKey)) {
+						// "plant" downstairs uses the floor-plant design; everything else
+						// resolves to a same-named design.
+						const designKey = (key === 'plant') ? 'floorplant' : key;
+						const canvas = FURNITURE_DESIGNS[designKey] ? FurnitureSprites.get(designKey) : null;
+						if (canvas) this.textures.addCanvas(texKey, canvas);
+					}
+					const obj = this.textures.exists(texKey)
+						? this.add.image(x, y, texKey).setOrigin(0.5).setDepth(2).setVisible(!!pos)
+						: this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
+							.setOrigin(0.5).setDepth(2).setVisible(!!pos);
 					this._roomItemObjs[key] = obj;
 				});
 				// Grid overlay + ghost for tile-snap placement mode.
@@ -3938,7 +4408,8 @@
 				const _upWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
 				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_upWp]?.upstairs || '#140a18');
 
-				// Pre-create room item overlays — positioned from stored placements.
+				// Pre-create room item overlays — pixel-art sprites built from
+				// FURNITURE_DESIGNS, registered as Phaser canvas textures.
 				const _roomInv = Inventory.load();
 				const _roomPlacements = _roomInv.cosmetics?.roomPlacements || {};
 				this._roomItemObjs = {};
@@ -3946,8 +4417,15 @@
 					const pos = _roomPlacements[key];
 					const x = (pos ? pos.c : item.c) * TILE + TILE / 2;
 					const y = (pos ? pos.r : item.r) * TILE + TILE / 2;
-					const obj = this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
-						.setOrigin(0.5).setDepth(2).setVisible(!!pos);
+					const texKey = 'furniture-up-' + key;
+					if (!this.textures.exists(texKey)) {
+						const canvas = FURNITURE_DESIGNS[key] ? FurnitureSprites.get(key) : null;
+						if (canvas) this.textures.addCanvas(texKey, canvas);
+					}
+					const obj = this.textures.exists(texKey)
+						? this.add.image(x, y, texKey).setOrigin(0.5).setDepth(2).setVisible(!!pos)
+						: this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
+							.setOrigin(0.5).setDepth(2).setVisible(!!pos);
 					this._roomItemObjs[key] = obj;
 				});
 				// Grid overlay + ghost for tile-snap placement mode.
