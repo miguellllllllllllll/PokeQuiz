@@ -4239,8 +4239,15 @@
 			leave.addEventListener('click', close);
 			foot.append(leave);
 			panel.append(head, itemsEl, statusEl, foot);
+			// Block taps on the panel itself from bubbling to the backdrop's
+			// close-handler — so users only close by tapping the dim backdrop
+			// or pressing Leave/Escape, not by tapping the panel chrome.
+			panel.addEventListener('pointerdown', (e) => e.stopPropagation());
 			root.append(panel);
 			document.body.append(root);
+			// Tap outside the panel (on the dim backdrop) closes the shop —
+			// matches the camp's existing dialog dismissal pattern for touch users.
+			root.addEventListener('pointerdown', () => { if (openFlag) close(); });
 			document.addEventListener('keydown', (e) => {
 				if (openFlag && e.key === 'Escape') { e.preventDefault(); close(); }
 			});
