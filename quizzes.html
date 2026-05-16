@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Quizzes &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle.css">
+	<link rel="stylesheet" href="css/puzzles.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="quizzes.html" class="active">Quizzes</a>
+			<a href="puzzle.html">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card hub-card">
+			<div class="hub-bg" aria-hidden="true">
+				<img class="hub-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+
+			<div class="hub-inner">
+				<div class="hub-head">
+					<div class="eyebrow">
+						<span class="dot"></span>
+						<span>Pok&eacute;mon Trivia</span>
+					</div>
+					<h1>Quizzes</h1>
+					<p class="lede">Pick your difficulty. Every quiz is 21 multiple-choice questions &mdash; finish to log a score to the leaderboard.</p>
+				</div>
+
+				<div class="games-grid" id="quizzesGrid"></div>
+
+				<div class="hub-tip">
+					<span class="hub-tip-icon" aria-hidden="true">!</span>
+					<span>All quizzes share one <strong>leaderboard</strong>. Master Quiz is the hardest spread &mdash; clear it to prove you're the real champion.</span>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/quizzes.js"></script>
+	<script>
+		(function() {
+			function getParameterByName(name) {
+				const url = window.location.href;
+				name = name.replace(/[\[\]]/g, '\\$&');
+				const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+				const r = regex.exec(url);
+				if (!r) return null;
+				if (!r[2]) return '';
+				return decodeURIComponent(r[2].replace(/\+/g, ' '));
+			}
+
+			function escapeHtml(s) {
+				return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+			}
+
+			const playerName = (getParameterByName('playerName') || '').trim()
+				|| (function(){ try { return localStorage.getItem('playerName') || sessionStorage.getItem('playerName') || ''; } catch { return ''; } })();
+
+			const grid = document.getElementById('quizzesGrid');
+			const QUIZZES = window.POKEQUIZ_QUIZZES || {};
+			const order = ['easy', 'medium', 'hard', 'master'];
+
+			const pokeballByDiff = {
+				Easy:   'pokeball-heal',
+				Medium: 'pokeball-net',
+				Hard:   'pokeball-classic',
+				Master: 'pokeball-master'
+			};
+
+			const href = (id) => {
+				const params = new URLSearchParams();
+				params.set('quiz', id);
+				if (playerName) params.set('playerName', playerName);
+				return `quiz.html?${params.toString()}`;
+			};
+
+			grid.innerHTML = order.filter(k => QUIZZES[k]).map((k, i) => {
+				const q = QUIZZES[k];
+				const ball = pokeballByDiff[q.difficulty] || 'pokeball-classic';
+				const chips = (q.chips || []).map(c => `<span class="game-chip">${escapeHtml(c)}</span>`).join('');
+				const masterExtra = q.id === 'master'
+					? `<span class="pb-mletter">M</span><span class="pb-mdot pb-mdot-l"></span><span class="pb-mdot pb-mdot-r"></span>`
+					: '';
+				return `
+					<a class="game-card is-available" href="${href(q.id)}" data-game="quiz-${q.id}" style="--stagger:${i}">
+						<span class="game-badge">${escapeHtml(q.difficulty)}</span>
+						<div class="game-icon">
+							<div class="pokeball ${ball}" aria-hidden="true">
+								<span class="pb-top"></span>
+								${masterExtra}
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+								<span class="pb-shine"></span>
+							</div>
+						</div>
+						<strong class="game-title">${escapeHtml(q.name)}</strong>
+						<span class="game-desc">${escapeHtml(q.description)}</span>
+						<div class="game-chips">${chips}</div>
+						<div class="game-footer">
+							<span class="game-best">
+								<span class="gb-label">Questions</span>
+								<span class="gb-value">${q.questions.length}</span>
+							</span>
+							<span class="game-cta">Start &rarr;</span>
+						</div>
+					</a>
+				`;
+			}).join('');
+		})();
+	</script>
+</body>
+</html>

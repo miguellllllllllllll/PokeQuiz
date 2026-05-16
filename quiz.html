@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>PokeQuiz &middot; Quiz</title>
+	<title id="pageTitle">PokeQuiz &middot; Quiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
 	<link rel="stylesheet" href="css/base.css">
@@ -14,7 +14,8 @@
 		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
 		<nav>
 			<a href="index.html">Home</a>
-			<a href="play.html" class="active">Play</a>
+			<a href="play.html">Play</a>
+			<a href="quizzes.html" class="active">Quizzes</a>
 			<a href="puzzle.html">Puzzles</a>
 			<a href="ranking.html">Leaderboard</a>
 			<a href="camp.html">Camp</a>
@@ -57,8 +58,12 @@
 					<img src="Pictures/pokeball.png" alt="" class="player-icon">
 					<span id="playerGreeting">Trainer</span>
 				</div>
+				<div class="quiz-title-pill" id="quizTitlePill">
+					<span class="quiz-title-name" id="quizTitleName">Master Quiz</span>
+					<span class="quiz-title-diff" id="quizTitleDiff">Master</span>
+				</div>
 				<div class="progress">
-					<span id="progressText">1 / 22</span>
+					<span id="progressText">1 / 21</span>
 					<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 				</div>
 			</div>
@@ -80,6 +85,7 @@
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
 	<script src="js/profile.js" defer></script>
+	<script src="js/quizzes.js"></script>
 	<script>
 		function getParameterByName(name, url) {
 			if (!url) url = window.location.href;
@@ -106,29 +112,13 @@
 				}
 			} catch {}
 
-			const myQuestions = [
-				{ question: "What was Ash's starter pokemon?", answers: { a: "The Mouse Pokemon", b: "The Sky Squirrel Pokemon", c: "The Tiny Mouse Pokemon", d: "The Rat Pokemon" }, correctAnswer: "a" },
-				{ question: "Who was the first pokemon Ash caught?", answers: { a: "Caterpie", b: "Pidgey", c: "Squirtle", d: "Pikachu" }, correctAnswer: "a" },
-				{ question: "Where did Ash win his first Pokemon League?", answers: { a: "Kanto Region", b: "Alola Region", c: "Kalos Region", d: "Unova Region" }, correctAnswer: "b" },
-				{ question: "What was the name of Ash's main rival in the Kanto Region?", answers: { a: "Gary", b: "Brock", c: "Giovanni", d: "Blue" }, correctAnswer: "a" },
-				{ question: "What are the three types of the starter pokemon?", answers: { a: "Lightning, Flying, Fighting", b: "Fire, Water, Grass", c: "Dark, Ghost, Psychic", d: "Fire, Ice, Dragon" }, correctAnswer: "b" },
-				{ question: "Which one are the Legendary Birds of the Kanto Region?", answers: { a: "Kyogre, Groudon, Rayquaza", b: "Artickuno, Zapdose, Moltress", c: "Zekrom, Kyurem, Reshiram", d: "Articuno, Zapdos, Moltres" }, correctAnswer: "d" },
-				{ question: "Who was Pokemon Champion Cynthia's main Pokemon?", answers: { a: "Salamence", b: "Metagross", c: "Garchomp", d: "Dragonite" }, correctAnswer: "c" },
-				{ question: "In what generation was Mega Evolution introduced?", answers: { a: "6th", b: "7th", c: "5th", d: "9th" }, correctAnswer: "a" },
-				{ question: "What color are the footprints on a Shiny Galarian Stunfisk?", answers: { a: "Green", b: "Yellow", c: "Brown", d: "Blue" }, correctAnswer: "b" },
-				{ question: "What item do you need to give Scyther to evolve?", answers: { a: "Equalizer", b: "Charged Battery", c: "Metal Claw", d: "Black Augurite" }, correctAnswer: "d" },
-				{ question: "Who did Ash lose to in the Kalos Pokemon League?", answers: { a: "Iris", b: "Alain", c: "Diantha", d: "Cynthia" }, correctAnswer: "b" },
-				{ question: "How do you differentiate a male Pikachu and a female Pikachu?", answers: { a: "Color of Their Tail", b: "Shape of Their Tail", c: "Shape of One of Their Ears", d: "Color of Their Ears" }, correctAnswer: "b" },
-				{ question: "What's the name of the leader of Team Rocket?", answers: { a: "Jessie", b: "James", c: "Giovanni", d: "Ghetsis" }, correctAnswer: "c" },
-				{ question: "Which Tapu is the guardian of Melemele Island?", answers: { a: "Tapu Koko", b: "Tapu Lele", c: "Tapu Bulu", d: "Tapu Fini" }, correctAnswer: "a" },
-				{ question: "In the very first episode of Pokemon what chased after Ash and Pikachu?", answers: { a: "Fearow", b: "Spearow", c: "Pidgey", d: "Pidgeot" }, correctAnswer: "b" },
-				{ question: "How was Pikachu's Pokeball unique when Ash received it?", answers: { a: "Color of The Pokeball", b: "Unusual Size of The Pokeball", c: "The Shape of The Pokeball", d: "A Figure on The Pokeball" }, correctAnswer: "d" },
-				{ question: "How many Deoxys forms are there?", answers: { a: "2", b: "3", c: "4", d: "5" }, correctAnswer: "c" },
-				{ question: "Who was the previous owner of Ash's Charizard?", answers: { a: "Gary", b: "Professor Oak", c: "Professor Juniper", d: "Damian" }, correctAnswer: "d" },
-				{ question: "What cat was Mew's character design based on?", answers: { a: "Scottish Fold", b: "Balinese", c: "Siamese", d: "Sphynx (Bingus)" }, correctAnswer: "d" },
-				{ question: "How many Eeveelutions are there?", answers: { a: "8", b: "9", c: "5", d: "6" }, correctAnswer: "a" },
-				{ question: "In Pokemon GO, what can you name your Eevee for it to evolve into an Espeon?", answers: { a: "Esper", b: "Sakura", c: "Tamao", d: "Mai" }, correctAnswer: "b" }
-			];
+			const quizId = (getParameterByName('quiz') || 'master').toLowerCase();
+			const QUIZZES = (window.POKEQUIZ_QUIZZES || {});
+			const quizDef = QUIZZES[quizId] || QUIZZES.master;
+			document.getElementById('quizTitleName').textContent = quizDef.name;
+			document.getElementById('quizTitleDiff').textContent = quizDef.difficulty;
+			document.getElementById('pageTitle').textContent = `PokeQuiz · ${quizDef.name}`;
+			const myQuestions = quizDef.questions;
 
 			const quizContainer = document.getElementById('quiz');
 			const resultsContainer = document.getElementById('results');
@@ -211,7 +201,7 @@
 					<p>Nice run, ${escapeHtml(playerName)}. Your score has been saved to the leaderboard.</p>
 					<div class="results-actions">
 						<a href="ranking.html" class="btn">View Leaderboard &rarr;</a>
-						<a href="play.html" class="btn btn-secondary">Play Again</a>
+						<a href="quizzes.html" class="btn btn-secondary">Pick Another Quiz</a>
 					</div>
 				`;
 

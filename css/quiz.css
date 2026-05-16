@@ -278,3 +278,32 @@
 	.score { font-size: 40px; }
 	.score-denom { font-size: 18px; }
 }
+
+.quiz-title-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 14px;
+	background: linear-gradient(180deg, #fff 0%, #f5f5f5 100%);
+	border: 2px solid #111;
+	border-radius: 12px;
+	font-weight: 800;
+	font-size: 13px;
+	box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+	letter-spacing: 0.3px;
+}
+
+.quiz-title-name {
+	color: #111;
+	text-transform: uppercase;
+}
+
+.quiz-title-diff {
+	color: #fff;
+	background: var(--poke-red, #dc2626);
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.6px;
+}
