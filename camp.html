@@ -158,14 +158,17 @@
 		<!-- Pikachu's Mart — buy seeds, sell berries -->
 		<div class="camp-mart" id="campMart" hidden>
 			<div class="cm-panel">
-				<h2 class="cm-title">Pikachu's Mart</h2>
-				<div class="cm-balance">💰 <span id="cmTokens">0</span> Tokens</div>
+				<div class="cm-panel-head">
+					<h2 class="cm-title">Pikachu's Mart</h2>
+					<div class="cm-balance">💰 <span id="cmTokens">0</span> Tokens</div>
+				</div>
+				<div class="cm-panel-body">
 
 				<div class="cm-section">
 					<h3 class="cm-section-title">Sell</h3>
 					<div class="cm-row">
 						<div class="cm-row-name">🍓 Friendship Berry <span class="cm-row-count">×<span id="cmBerryCount">0</span></span></div>
-						<button class="cb-btn cm-action" id="cmSellOne" type="button">Sell 1 (+10 💰)</button>
+						<button class="cb-btn cm-action" id="cmSellOne" type="button">Sell 1 · +10💰</button>
 						<button class="cb-btn cm-action" id="cmSellAll" type="button">Sell All</button>
 					</div>
 				</div>
@@ -173,7 +176,7 @@
 				<div class="cm-section">
 					<h3 class="cm-section-title">Buy</h3>
 					<div class="cm-row">
-						<div class="cm-row-name">🌱 Berry Seed <span class="cm-row-count">(you have <span id="cmSeedCount">0</span>)</span></div>
+						<div class="cm-row-name">🌱 Berry Seed <span class="cm-row-count">(×<span id="cmSeedCount">0</span> owned)</span></div>
 						<span class="cm-row-cost">5 💰</span>
 						<button class="cb-btn cm-action" id="cmBuySeed" type="button">Buy</button>
 					</div>
@@ -198,44 +201,46 @@
 					<h3 class="cm-section-title">Cosmetics</h3>
 
 					<div class="cm-cosm-group">
-						<div class="cm-cosm-label">🏠 Wallpaper <span class="cm-row-cost">15 💰 each</span></div>
+						<div class="cm-cosm-label">🏠 Wallpaper <span class="cm-row-cost">15💰 each</span></div>
 						<div class="cm-cosm-row">
-							<button class="cb-btn cm-cosm-btn" data-buy-wallpaper="sakura"  data-label="🌸 Sakura"  type="button">🌸 Sakura</button>
-							<button class="cb-btn cm-cosm-btn" data-buy-wallpaper="ocean"   data-label="🌊 Ocean"   type="button">🌊 Ocean</button>
-							<button class="cb-btn cm-cosm-btn" data-buy-wallpaper="forest"  data-label="🌲 Forest"  type="button">🌲 Forest</button>
-							<button class="cb-btn cm-cosm-btn" data-buy-wallpaper="dusk"    data-label="⭐ Dusk"    type="button">⭐ Dusk</button>
+							<button class="cm-cosm-btn" data-buy-wallpaper="sakura"  data-label="🌸 Sakura"  type="button">🌸 Sakura</button>
+							<button class="cm-cosm-btn" data-buy-wallpaper="ocean"   data-label="🌊 Ocean"   type="button">🌊 Ocean</button>
+							<button class="cm-cosm-btn" data-buy-wallpaper="forest"  data-label="🌲 Forest"  type="button">🌲 Forest</button>
+							<button class="cm-cosm-btn" data-buy-wallpaper="dusk"    data-label="⭐ Dusk"    type="button">⭐ Dusk</button>
 						</div>
 					</div>
 
 					<div class="cm-cosm-group">
-						<div class="cm-cosm-label">🎨 Camp Accent <span class="cm-row-cost">20 💰 each</span></div>
+						<div class="cm-cosm-label">🎨 Camp Accent <span class="cm-row-cost">20💰 each</span></div>
 						<div class="cm-cosm-row">
-							<button class="cb-btn cm-cosm-btn" data-buy-accent="red"   data-label="🔴 Red"   type="button">🔴 Red</button>
-							<button class="cb-btn cm-cosm-btn" data-buy-accent="blue"  data-label="🔵 Blue"  type="button">🔵 Blue</button>
-							<button class="cb-btn cm-cosm-btn" data-buy-accent="green" data-label="🟢 Green" type="button">🟢 Green</button>
+							<button class="cm-cosm-btn" data-buy-accent="red"   data-label="🔴 Red"   type="button">🔴 Red</button>
+							<button class="cm-cosm-btn" data-buy-accent="blue"  data-label="🔵 Blue"  type="button">🔵 Blue</button>
+							<button class="cm-cosm-btn" data-buy-accent="green" data-label="🟢 Green" type="button">🟢 Green</button>
 						</div>
 					</div>
 
 					<div class="cm-cosm-group">
-						<div class="cm-cosm-label">🐾 Partner Size <span class="cm-row-cost">10 💰 (tiny/big)</span></div>
+						<div class="cm-cosm-label">🐾 Partner Size <span class="cm-row-cost">10💰 (tiny/big)</span></div>
 						<div class="cm-cosm-row">
-							<button class="cb-btn cm-cosm-btn" data-buy-scale="small"  data-label="🔽 Tiny"   type="button">🔽 Tiny</button>
-							<button class="cb-btn cm-cosm-btn" data-buy-scale="normal" data-label="↔️ Normal" type="button">↔️ Normal</button>
-							<button class="cb-btn cm-cosm-btn" data-buy-scale="large"  data-label="🔼 Big"    type="button">🔼 Big</button>
+							<button class="cm-cosm-btn" data-buy-scale="small"  data-label="🔽 Tiny"   type="button">🔽 Tiny</button>
+							<button class="cm-cosm-btn" data-buy-scale="normal" data-label="↔ Normal"  type="button">↔ Normal</button>
+							<button class="cm-cosm-btn" data-buy-scale="large"  data-label="🔼 Big"    type="button">🔼 Big</button>
 						</div>
 					</div>
 
 					<div class="cm-cosm-group">
 						<div class="cm-cosm-label">🌿 Camp Decor <span class="cm-row-cost">one-time</span></div>
 						<div class="cm-cosm-row">
-							<button class="cb-btn cm-cosm-btn" data-buy-decor="flowers" data-label="🌸 Flower Patch" type="button">🌸 Flowers <span class="cm-row-cost">25💰</span></button>
-							<button class="cb-btn cm-cosm-btn" data-buy-decor="lantern" data-label="🏮 Lantern"      type="button">🏮 Lantern <span class="cm-row-cost">30💰</span></button>
+							<button class="cm-cosm-btn" data-buy-decor="flowers" data-label="🌸 Flowers" data-price="25" type="button">🌸 Flowers · 25💰</button>
+							<button class="cm-cosm-btn" data-buy-decor="lantern" data-label="🏮 Lantern" data-price="30" type="button">🏮 Lantern · 30💰</button>
 						</div>
 					</div>
 				</div>
 
 				<div class="cm-status" id="cmStatus"></div>
 				<button class="cb-btn cm-leave" id="cmClose" type="button">Leave</button>
+
+				</div><!-- /.cm-panel-body -->
 			</div>
 		</div>
 

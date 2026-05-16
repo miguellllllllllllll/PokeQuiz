@@ -28,38 +28,42 @@ body.camp-body {
 /* ── Location badge — Pokémon town-name style ── */
 .camp-location {
 	position: absolute;
-	top: 12px;
-	left: 14px;
-	padding: 6px 14px 6px 12px;
-	background: rgba(16, 24, 44, 0.88);
-	border: 2px solid #3a5070;
-	border-radius: 4px;
-	backdrop-filter: blur(6px);
+	top: 10px;
+	left: 12px;
+	padding: 5px 12px 5px 10px;
+	background: rgba(10, 14, 28, 0.9);
+	border: 1px solid rgba(255,255,255,0.1);
+	border-top: 1px solid rgba(255,255,255,0.18);
+	border-radius: 5px;
+	backdrop-filter: blur(8px);
 	pointer-events: none;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .camp-location-name {
 	font-family: 'Press Start 2P', monospace;
-	font-size: 10px;
-	color: #f8f8f8;
+	font-size: 9px;
+	color: #e8eaf0;
 	letter-spacing: 1.5px;
-	text-shadow: 1px 1px 0 #000;
+	text-shadow: 0 1px 0 #000;
 }
 
 /* ── Controls hint — top-right floating pill ── */
 .camp-controls-hint {
 	position: absolute;
-	top: 12px;
-	right: 14px;
+	top: 10px;
+	right: 12px;
 	display: flex;
-	gap: 5px;
+	gap: 4px;
 	align-items: center;
-	padding: 6px 10px;
-	background: rgba(16, 24, 44, 0.82);
-	border: 1px solid #3a5070;
-	border-radius: 4px;
-	backdrop-filter: blur(6px);
+	padding: 5px 8px;
+	background: rgba(10, 14, 28, 0.9);
+	border: 1px solid rgba(255,255,255,0.1);
+	border-top: 1px solid rgba(255,255,255,0.18);
+	border-radius: 5px;
+	backdrop-filter: blur(8px);
 	pointer-events: none;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .ctrl-key {
@@ -312,51 +316,63 @@ body.camp-body {
 	width: 144px;
 	height: 108px;
 	background: rgba(10, 16, 28, 0.85);
-	border: 2px solid rgba(246, 200, 76, 0.7);
+	border: 2px solid rgba(from var(--camp-accent) r g b / 0.7);
 	border-radius: 6px;
 	image-rendering: pixelated;
 	pointer-events: none;
 	z-index: 6;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 @media (max-width: 700px) {
 	.camp-minimap { width: 100px; height: 75px; right: 8px; bottom: 142px; }
+}
+@media (max-width: 600px) {
+	.camp-tc-btn { top: 42px; }
 }
 
 /* ── Trainer Card shortcut icon ──────────────────────────────────────── */
 .camp-tc-btn {
 	position: absolute;
-	right: 14px;
-	top: 88px;
+	right: 12px;
+	top: 90px; /* below inventory HUD on desktop */
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 36px;
-	height: 36px;
-	background: rgba(16, 24, 44, 0.88);
-	border: 2px solid var(--camp-accent);
-	border-radius: 8px;
+	width: 32px;
+	height: 32px;
+	background: rgba(10, 14, 28, 0.9);
+	border: 1px solid rgba(255,255,255,0.1);
+	border-top: 1px solid rgba(255,255,255,0.18);
+	border-radius: 5px;
 	text-decoration: none;
 	z-index: 7;
-	transition: background 0.15s, transform 0.1s;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+	transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
-.camp-tc-btn:hover { background: rgba(246, 200, 76, 0.25); transform: scale(1.1); }
-.camp-tc-icon { font-size: 18px; line-height: 1; }
+.camp-tc-btn:hover { background: rgba(from var(--camp-accent) r g b / 0.2); border-color: rgba(from var(--camp-accent) r g b / 0.5); transform: scale(1.08); }
+.camp-tc-icon { font-size: 16px; line-height: 1; }
 
 /* ── Inventory HUD — corner readout for seeds + berries ──────────────── */
 .camp-inventory {
 	position: absolute;
-	right: 14px;
-	top: 50px;
-	padding: 6px 12px;
-	background: rgba(16, 24, 44, 0.88);
-	border: 2px solid var(--camp-accent);
-	border-radius: 6px;
-	color: #fff;
+	right: 12px;
+	top: 48px; /* below controls hint on desktop */
+	padding: 5px 10px;
+	background: rgba(10, 14, 28, 0.9);
+	border: 1px solid rgba(255,255,255,0.1);
+	border-top: 1px solid rgba(255,255,255,0.18);
+	border-radius: 5px;
+	color: #e0e4f0;
 	font-family: 'Press Start 2P', monospace;
-	font-size: 11px;
+	font-size: 9px;
 	letter-spacing: 0.5px;
 	z-index: 8;
 	pointer-events: none;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+/* On mobile the controls hint is hidden so we can reclaim the top-right slot */
+@media (max-width: 600px) {
+	.camp-inventory { top: 10px; }
 }
 
 /* ── Scene-transition fade — black overlay during page reload ─────────── */
@@ -375,7 +391,7 @@ body.camp-body {
 .camp-partner {
 	position: absolute;
 	inset: 0;
-	background: rgba(8, 6, 16, 0.86);
+	background: rgba(4, 2, 12, 0.88);
 	z-index: 29;
 	display: flex;
 	align-items: center;
@@ -383,96 +399,116 @@ body.camp-body {
 	font-family: 'Press Start 2P', monospace;
 	color: #fff;
 	padding: 20px;
+	backdrop-filter: blur(2px);
 }
 .cp-panel {
 	position: relative;
-	background: rgba(16, 22, 36, 0.98);
-	border: 3px solid var(--camp-accent);
-	border-radius: 14px;
-	padding: 24px 26px 18px;
+	background: linear-gradient(180deg, rgba(22, 18, 44, 0.99), rgba(14, 12, 30, 0.99));
+	border: 2px solid var(--camp-accent);
+	border-radius: 16px;
+	padding: 20px 22px 16px;
 	width: 100%;
-	max-width: 480px;
-	box-shadow: 0 20px 56px rgba(0,0,0,0.7);
+	max-width: 460px;
+	box-shadow:
+		0 0 0 1px rgba(0,0,0,0.5),
+		0 0 24px rgba(from var(--camp-accent) r g b / 0.18),
+		0 24px 60px rgba(0,0,0,0.75);
 }
 .cp-close {
 	position: absolute;
-	top: 10px;
-	right: 12px;
-	width: 32px;
-	height: 32px;
+	top: 8px;
+	right: 10px;
+	width: 30px;
+	height: 30px;
 	background: transparent;
-	border: 0;
-	color: var(--camp-accent);
+	border: 1px solid rgba(255,255,255,0.1);
+	border-radius: 6px;
+	color: rgba(255,255,255,0.5);
 	font-family: inherit;
-	font-size: 22px;
+	font-size: 18px;
 	cursor: pointer;
 	line-height: 1;
+	transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
-.cp-close:hover { color: #ffd968; }
+.cp-close:hover { color: var(--camp-accent); border-color: var(--camp-accent); background: rgba(from var(--camp-accent) r g b / 0.1); }
 .cp-title {
-	font-size: 14px;
+	font-size: 13px;
 	color: var(--camp-accent);
-	margin: 0 0 18px;
+	margin: 0 0 16px;
 	letter-spacing: 1px;
 	text-align: center;
+	text-shadow: 0 0 12px rgba(from var(--camp-accent) r g b / 0.4);
 }
 .cp-card {
 	display: flex;
-	gap: 18px;
-	align-items: center;
-	margin-bottom: 18px;
+	gap: 16px;
+	align-items: flex-start;
+	margin-bottom: 14px;
+	padding: 12px;
+	background: rgba(0,0,0,0.25);
+	border: 1px solid rgba(255,255,255,0.06);
+	border-radius: 10px;
 }
 .cp-portrait {
 	flex: 0 0 auto;
 	image-rendering: pixelated;
 	background-repeat: no-repeat;
-	transform: scale(2.4);
-	transform-origin: top left;
-	margin-right: 60px;
-	margin-bottom: 50px;
+	border-radius: 6px;
 }
-.cp-info { flex: 1 1 auto; min-width: 0; }
-.cp-name { font-size: 14px; color: #fff; margin-bottom: 4px; }
-.cp-form { font-size: 9px; color: #b8b8c8; margin-bottom: 14px; }
-.cp-friendship-label { font-size: 9px; color: var(--camp-accent); margin-bottom: 5px; }
+.cp-info { flex: 1 1 auto; min-width: 0; padding-top: 2px; }
+.cp-name { font-size: 12px; color: #fff; margin-bottom: 3px; letter-spacing: 0.5px; }
+.cp-form { font-size: 8px; color: #8888a8; margin-bottom: 12px; }
+.cp-friendship-label { font-size: 8px; color: var(--camp-accent); margin-bottom: 5px; letter-spacing: 0.5px; }
 .cp-friendship-bar {
-	height: 14px;
-	background: #1a1428;
-	border: 1px solid #6a4a8a;
-	border-radius: 4px;
+	height: 10px;
+	background: rgba(0,0,0,0.4);
+	border: 1px solid rgba(106, 74, 138, 0.5);
+	border-radius: 5px;
 	overflow: hidden;
 	margin-bottom: 4px;
 }
 .cp-friendship-fill {
 	height: 100%;
 	width: 0%;
-	background: linear-gradient(90deg, #ff6080, #ffaab0);
+	background: linear-gradient(90deg, #c840a0, #ff80c0);
 	transition: width 0.4s ease-out;
+	border-radius: 5px;
 }
-.cp-friendship-text { font-size: 9px; color: #c8c8d8; }
+.cp-friendship-text { font-size: 8px; color: #9898b8; }
 .cp-actions {
 	display: flex;
-	gap: 10px;
+	gap: 8px;
 	justify-content: center;
 	flex-wrap: wrap;
-	margin-bottom: 12px;
+	margin-bottom: 10px;
 }
-.cp-btn-alt { background: transparent; color: var(--camp-accent); border: 2px solid var(--camp-accent); }
-.cp-btn-alt:hover { background: rgba(246,200,76,0.15); }
-.cp-count { font-size: 9px; opacity: 0.8; margin-left: 6px; }
+.cp-btn-alt {
+	background: transparent;
+	color: var(--camp-accent);
+	border: 2px solid rgba(from var(--camp-accent) r g b / 0.5);
+	box-shadow: none;
+}
+.cp-btn-alt:hover {
+	background: rgba(from var(--camp-accent) r g b / 0.12);
+	border-color: var(--camp-accent);
+	box-shadow: none;
+	transform: none;
+	filter: none;
+}
+.cp-count { font-size: 8px; opacity: 0.7; margin-left: 4px; }
 .cp-status {
 	min-height: 14px;
-	margin-top: 6px;
+	margin-top: 4px;
 	text-align: center;
-	font-size: 10px;
-	color: #92ffaa;
+	font-size: 9px;
+	color: #80e8a0;
 }
 .cp-status[data-kind="warn"] { color: #ffb070; }
-.cp-status[data-kind="info"] { color: #c0c0e0; }
+.cp-status[data-kind="info"] { color: #a0a0d0; }
 .cp-hint {
-	margin-top: 14px;
-	font-size: 8px;
-	color: rgba(255,255,255,0.5);
+	margin-top: 12px;
+	font-size: 7px;
+	color: rgba(255,255,255,0.35);
 	text-align: center;
 	letter-spacing: 0.3px;
 }
@@ -481,47 +517,71 @@ body.camp-body {
 .camp-mart {
 	position: absolute;
 	inset: 0;
-	background: rgba(8, 4, 8, 0.78);
+	background: rgba(4, 2, 10, 0.88);
 	z-index: 28;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	font-family: 'Press Start 2P', monospace;
 	color: #fff;
-	padding: 20px;
+	padding: 16px;
+	backdrop-filter: blur(2px);
 }
 .cm-panel {
-	background: rgba(16, 22, 36, 0.97);
-	border: 3px solid var(--camp-accent);
-	border-radius: 14px;
-	padding: 22px 26px;
-	max-width: 520px;
+	display: flex;
+	flex-direction: column;
+	background: linear-gradient(180deg, rgba(20, 16, 36, 0.99), rgba(12, 10, 24, 0.99));
+	border: 2px solid var(--camp-accent);
+	border-radius: 16px;
+	max-width: 500px;
 	width: 100%;
-	box-shadow: 0 18px 48px rgba(0,0,0,0.6);
+	max-height: calc(90vh - 32px);
+	box-shadow:
+		0 0 0 1px rgba(0,0,0,0.5),
+		0 0 24px rgba(from var(--camp-accent) r g b / 0.15),
+		0 24px 60px rgba(0,0,0,0.7);
+	overflow: hidden;
 }
+.cm-panel-head {
+	flex: 0 0 auto;
+	padding: 18px 22px 12px;
+	border-bottom: 1px solid rgba(from var(--camp-accent) r g b / 0.2);
+}
+.cm-panel-body {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 0 22px 16px;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(from var(--camp-accent) r g b / 0.4) transparent;
+}
+.cm-panel-body::-webkit-scrollbar { width: 4px; }
+.cm-panel-body::-webkit-scrollbar-track { background: transparent; }
+.cm-panel-body::-webkit-scrollbar-thumb { background: rgba(from var(--camp-accent) r g b / 0.4); border-radius: 2px; }
 .cm-title {
-	font-size: 16px;
+	font-size: 14px;
 	color: var(--camp-accent);
 	margin: 0 0 6px;
 	letter-spacing: 1px;
 	text-align: center;
+	text-shadow: 0 0 12px rgba(from var(--camp-accent) r g b / 0.4);
 }
 .cm-balance {
 	text-align: center;
-	font-size: 12px;
+	font-size: 11px;
 	color: #ffe890;
-	margin-bottom: 18px;
+	margin: 0;
 }
 .cm-section {
-	border-top: 1px solid rgba(246, 200, 76, 0.3);
+	border-top: 1px solid rgba(255,255,255,0.07);
 	padding-top: 12px;
 	margin-top: 12px;
 }
 .cm-section-title {
-	font-size: 11px;
-	color: var(--camp-accent);
+	font-size: 9px;
+	color: rgba(255,255,255,0.5);
 	margin: 0 0 8px;
-	letter-spacing: 0.5px;
+	letter-spacing: 1px;
+	text-transform: uppercase;
 }
 .cm-row {
 	display: flex;
@@ -529,24 +589,29 @@ body.camp-body {
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 6px;
+	padding: 8px 10px;
+	background: rgba(0,0,0,0.2);
+	border: 1px solid rgba(255,255,255,0.05);
+	border-radius: 8px;
 }
-.cm-row-name { flex: 1 1 auto; font-size: 11px; }
-.cm-row-count { color: #b8b8c8; font-size: 9px; }
+.cm-row-name { flex: 1 1 auto; font-size: 10px; line-height: 1.4; }
+.cm-row-count { color: #8888a8; font-size: 8px; }
 .cm-row-cost {
-	font-size: 11px;
+	font-size: 10px;
 	color: #ffe890;
+	white-space: nowrap;
 }
-.cm-action { font-size: 9px; padding: 8px 12px; }
+.cm-action { font-size: 8px; padding: 7px 11px; }
 .cm-status {
 	min-height: 14px;
-	margin-top: 10px;
+	margin-top: 8px;
 	text-align: center;
-	font-size: 10px;
-	color: #92ffaa;
+	font-size: 9px;
+	color: #80e8a0;
 }
 .cm-leave {
 	display: block;
-	margin: 16px auto 0;
+	margin: 14px auto 0;
 	font-size: 10px;
 	padding: 9px 22px;
 }
@@ -932,68 +997,85 @@ body.camp-body {
 .camp-pause {
 	position: absolute;
 	inset: 0;
-	background: rgba(0,0,0,0.55);
+	background: rgba(0,0,0,0.6);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	z-index: 20;
+	backdrop-filter: blur(3px);
 }
 .camp-pause-panel {
-	min-width: 280px;
-	padding: 28px 26px;
-	background: rgba(16, 22, 36, 0.97);
-	border: 3px solid var(--camp-accent);
-	border-radius: 14px;
+	min-width: 260px;
+	padding: 24px 22px 20px;
+	background: linear-gradient(180deg, rgba(20, 16, 36, 0.99), rgba(12, 10, 24, 0.99));
+	border: 2px solid var(--camp-accent);
+	border-radius: 16px;
 	text-align: center;
 	font-family: 'Press Start 2P', monospace;
 	color: #fff;
-	box-shadow: 0 18px 48px rgba(0,0,0,0.6);
+	box-shadow:
+		0 0 0 1px rgba(0,0,0,0.5),
+		0 0 24px rgba(from var(--camp-accent) r g b / 0.18),
+		0 24px 56px rgba(0,0,0,0.7);
 }
 .camp-pause-title {
-	font-size: 16px;
-	letter-spacing: 1px;
+	font-size: 14px;
+	letter-spacing: 1.5px;
 	color: var(--camp-accent);
-	margin-bottom: 18px;
+	margin-bottom: 16px;
+	text-shadow: 0 0 12px rgba(from var(--camp-accent) r g b / 0.4);
 }
 .camp-pause-btn {
 	display: block;
 	width: 100%;
-	margin: 8px 0;
+	margin: 6px 0;
 	padding: 10px 14px;
-	background: var(--camp-accent);
+	background: linear-gradient(180deg, #ffd968, var(--camp-accent) 55%, #c8a030);
 	color: #2a1e08;
 	border: 0;
 	border-radius: 8px;
 	font-family: inherit;
-	font-size: 11px;
+	font-size: 10px;
 	letter-spacing: 0.5px;
 	cursor: pointer;
 	text-decoration: none;
 	text-align: center;
+	box-shadow: 0 3px 0 #6a4a08, 0 4px 10px rgba(0,0,0,0.4);
+	transition: filter 0.1s, transform 0.08s;
 }
-.camp-pause-btn:hover { background: #ffd968; }
+.camp-pause-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.camp-pause-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #6a4a08; }
 .camp-pause-btn--alt {
 	background: transparent;
-	color: var(--camp-accent);
-	border: 2px solid var(--camp-accent);
-}
-.camp-pause-btn--alt:hover { background: rgba(246, 200, 76, 0.15); }
-.camp-pause-btn--save { background: #5cb85c; color: #fff; }
-.camp-pause-btn--save:hover { background: #4cae4c; }
-.camp-pause-btn--music { background: #5b9bd5; color: #fff; }
-.camp-pause-btn--music:hover { background: #4a8ac4; }
-.camp-pause-save-time {
-	font-size: 8px;
 	color: rgba(255,255,255,0.6);
+	border: 1px solid rgba(255,255,255,0.15);
+	box-shadow: none;
+}
+.camp-pause-btn--alt:hover { color: var(--camp-accent); border-color: rgba(from var(--camp-accent) r g b / 0.5); background: rgba(from var(--camp-accent) r g b / 0.08); filter: none; }
+.camp-pause-btn--save {
+	background: linear-gradient(180deg, #72d872, #4a9e4a 55%, #2a6e2a);
+	color: #fff;
+	box-shadow: 0 3px 0 #1e501e, 0 4px 10px rgba(0,0,0,0.4);
+	text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.camp-pause-btn--music {
+	background: linear-gradient(180deg, #7ab8f8, #4a80c8 55%, #2a5090);
+	color: #fff;
+	box-shadow: 0 3px 0 #1a3870, 0 4px 10px rgba(0,0,0,0.4);
+	text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.camp-pause-save-time {
+	font-size: 7px;
+	color: rgba(255,255,255,0.45);
 	text-align: center;
-	min-height: 14px;
-	margin-top: -4px;
+	min-height: 12px;
+	margin-top: -2px;
 	margin-bottom: 4px;
 }
 .camp-pause-hint {
-	margin-top: 14px;
-	font-size: 8px;
-	color: rgba(255,255,255,0.55);
+	margin-top: 12px;
+	font-size: 7px;
+	color: rgba(255,255,255,0.35);
 	letter-spacing: 0.3px;
 }
 
@@ -1001,35 +1083,40 @@ body.camp-body {
 .cp-nickname-row {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	margin: 10px 0 6px;
+	gap: 8px;
+	margin: 8px 0 6px;
+	padding: 8px 10px;
+	background: rgba(0,0,0,0.2);
+	border: 1px solid rgba(255,255,255,0.05);
+	border-radius: 8px;
 }
 .cp-nickname-label {
-	font-size: 9px;
-	color: rgba(255,255,255,0.7);
+	font-size: 8px;
+	color: rgba(255,255,255,0.5);
 	white-space: nowrap;
 }
 .cp-nickname-input {
 	flex: 1;
-	padding: 6px 10px;
-	background: rgba(255,255,255,0.12);
-	border: 1px solid rgba(255,255,255,0.25);
-	border-radius: 6px;
+	padding: 5px 9px;
+	background: rgba(0,0,0,0.3);
+	border: 1px solid rgba(255,255,255,0.15);
+	border-radius: 5px;
 	color: #fff;
 	font-family: inherit;
-	font-size: 10px;
+	font-size: 9px;
 	outline: none;
+	transition: border-color 0.15s, background 0.15s;
 }
-.cp-nickname-input:focus { border-color: var(--camp-accent); background: rgba(255,255,255,0.18); }
+.cp-nickname-input:focus { border-color: var(--camp-accent); background: rgba(0,0,0,0.5); }
 .cp-btn-shiny {
 	background: linear-gradient(135deg, #fffbe6, #ffd700, #ffaa00);
 	color: #5a3000;
-	border: 2px solid #ffd700;
+	border: 0;
+	box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -2px 0 rgba(0,0,0,0.25), 0 3px 0 #8a6000, 0 5px 12px rgba(0,0,0,0.4);
 }
-.cp-btn-shiny:hover { filter: brightness(1.12); }
+.cp-btn-shiny:hover { filter: brightness(1.1); }
 .cp-btn-shiny.is-active {
-	box-shadow: 0 0 12px 4px rgba(255,215,0,0.65);
-	border-color: #fff;
+	box-shadow: 0 0 0 2px #fff, 0 0 16px 4px rgba(255,215,0,0.6), 0 3px 0 #8a6000;
 }
 
 /* ── Mobile / tablet polish ───────────────────────────────────────────── */
@@ -1047,7 +1134,7 @@ body.camp-body {
 	.cb-wheel-rim { width: 220px; height: 220px; }
 	.cb-rhythm-bar { height: 44px; }
 	.camp-dialog { font-size: 11px; padding: 14px 16px 20px; }
-	.camp-inventory { font-size: 9px; padding: 5px 9px; right: 8px; top: 64px; }
+	.camp-inventory { font-size: 8px; padding: 4px 8px; right: 8px; }
 	.camp-prompt { font-size: 8px; padding: 3px 7px; }
 	.camp-minimap { display: none; }
 }
@@ -1058,46 +1145,57 @@ body.camp-body {
 
 /* ── Mart cosmetics section ───────────────────────────────────────────── */
 .cm-cosm-group {
-	margin-bottom: 12px;
+	margin-bottom: 10px;
+	padding: 10px;
+	background: rgba(0,0,0,0.18);
+	border: 1px solid rgba(255,255,255,0.05);
+	border-radius: 8px;
 }
 .cm-cosm-label {
 	font-family: 'Press Start 2P', monospace;
-	font-size: 9px;
-	color: #c8c8d8;
-	margin-bottom: 7px;
+	font-size: 8px;
+	color: rgba(255,255,255,0.45);
+	margin-bottom: 8px;
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 .cm-cosm-row {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 7px;
+	gap: 6px;
 }
+/* Cosmetic buttons — standalone style (no cb-btn dependency) */
 .cm-cosm-btn {
-	font-size: 9px;
-	padding: 8px 11px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	padding: 8px 10px;
 	min-width: 0;
 	flex: 1 1 auto;
-	background: rgba(30, 40, 70, 0.9);
-	border: 2px solid #3a5070;
-	border-radius: 8px;
-	color: #c8d8f0;
-	transition: border-color 0.15s, background 0.15s;
+	background: rgba(255,255,255,0.05);
+	border: 1px solid rgba(255,255,255,0.12);
+	border-radius: 7px;
+	color: #a0b4d0;
+	cursor: pointer;
+	letter-spacing: 0.4px;
+	transition: border-color 0.15s, background 0.15s, color 0.15s;
+	line-height: 1.4;
 }
 .cm-cosm-btn:hover:not(:disabled) {
-	border-color: var(--camp-accent);
-	background: rgba(50, 65, 100, 0.9);
+	border-color: rgba(from var(--camp-accent) r g b / 0.6);
+	background: rgba(from var(--camp-accent) r g b / 0.1);
 	color: #fff;
 }
 .cm-cosm-btn.cm-cosm-owned,
 .cm-cosm-btn:disabled.cm-cosm-owned {
 	border-color: var(--camp-accent);
-	background: rgba(var(--camp-accent), 0.15);
+	background: rgba(from var(--camp-accent) r g b / 0.15);
 	color: var(--camp-accent);
 	opacity: 1;
 }
 .cm-cosm-btn:disabled:not(.cm-cosm-owned) {
-	opacity: 0.4;
+	opacity: 0.35;
 	cursor: not-allowed;
 }

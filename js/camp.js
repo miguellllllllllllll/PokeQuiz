@@ -372,7 +372,9 @@
 				const owned = (cosm.decor || []).includes(key);
 				b.disabled = owned || tokens < COSM_PRICE[key];
 				b.classList.toggle('cm-cosm-owned', owned);
-				b.textContent = owned ? '✓ Placed' : b.dataset.label;
+				b.textContent = owned
+					? '✓ ' + b.dataset.label + ' (placed)'
+					: b.dataset.label + ' · ' + (b.dataset.price || COSM_PRICE[key]) + '💰';
 			});
 		}
 		function setStatus(msg) {
@@ -520,12 +522,14 @@
 			const form = FOLLOWER_FORMS[inv.eeveeForm || 'eevee'] || FOLLOWER_FORMS.eevee;
 			const portrait = $('cpPortrait');
 			if (portrait) {
-				// Show the south-idle frame (row 0, col 0) of the sheet at 4x zoom.
+				// Render south-idle frame at 3× scale by scaling both the element and
+				// the background-size directly (avoids CSS transform layout hacks).
+				const PS = 3;
 				portrait.style.backgroundImage = "url('Pictures/sprites/" + form.sheet + ".png')";
 				portrait.style.backgroundPosition = '0 0';
-				portrait.style.backgroundSize = (form.frameW * form.cols) + 'px ' + (form.frameH * 8) + 'px';
-				portrait.style.width = form.frameW + 'px';
-				portrait.style.height = form.frameH + 'px';
+				portrait.style.backgroundSize = (form.frameW * form.cols * PS) + 'px ' + (form.frameH * 8 * PS) + 'px';
+				portrait.style.width  = (form.frameW  * PS) + 'px';
+				portrait.style.height = (form.frameH * PS) + 'px';
 			}
 			$('cpName') && ($('cpName').textContent = form.displayName);
 			$('cpForm') && ($('cpForm').textContent = inv.eeveeForm === 'eevee' ? 'Stage 1 — can evolve' : 'Stage 2 — terminal evolution');
@@ -1587,14 +1591,16 @@
 		// 🎵 Music toggle.
 		const musicBtn = document.getElementById('campPauseMusic');
 		if (musicBtn) {
+			// Sync initial label with saved preference (HTML default is "On").
+			musicBtn.textContent = '🎵 Music: ' + (Music.isEnabled() ? 'On' : 'Off');
 			musicBtn.addEventListener('click', () => {
 				const next = !Music.isEnabled();
 				Music.setEnabled(next);
 				if (next) {
-					// Re-start music for the current active area.
-					const active = game.scene.getScenes(true);
-					const key = active[0]?.scene?.key;
-					if (key && ['camp', 'house', 'upstairs'].includes(key)) Music.start(key);
+					// getScenes(true) only returns running scenes, but all scenes are paused
+					// while the pause menu is open. Use _pausedKeys[0] instead.
+					const sceneKey = _pausedKeys[0];
+					if (sceneKey && ['camp', 'house', 'upstairs'].includes(sceneKey)) Music.start(sceneKey);
 				}
 				musicBtn.textContent = '🎵 Music: ' + (next ? 'On' : 'Off');
 			});
