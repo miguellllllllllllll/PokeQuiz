@@ -518,15 +518,16 @@
 	}
 
 	// ── Debug HUD ─────────────────────────────────────────────────────────────────
-	// Toggleable on-screen state dump for chasing scene-transition bugs. F8 toggles.
+	// Always-on on-screen state dump for chasing scene-transition bugs. Toggle off
+	// with the backtick key (`) when no longer needed.
 	const Debug = {
-		on: false,
+		on: true,
 		el: null,
 		ensure() {
 			if (this.el) return this.el;
 			const div = document.createElement('div');
 			div.id = 'campDebugHud';
-			div.style.cssText = 'position:absolute;left:14px;top:60px;padding:8px 12px;background:rgba(0,0,0,0.85);color:#7fffa0;font:11px/1.5 ui-monospace,monospace;border:1px solid #295;border-radius:6px;z-index:30;pointer-events:none;white-space:pre;display:none;';
+			div.style.cssText = 'position:absolute;left:14px;top:60px;padding:8px 12px;background:rgba(0,0,0,0.85);color:#7fffa0;font:11px/1.5 ui-monospace,monospace;border:1px solid #295;border-radius:6px;z-index:30;pointer-events:none;white-space:pre;';
 			document.getElementById('campWrap')?.appendChild(div);
 			this.el = div;
 			return div;
@@ -542,9 +543,10 @@
 			this.el.textContent = text;
 		},
 	};
-	// Wire F8 once.
+	// Backtick (`) toggles the HUD off/on. F8 also works on systems where it's
+	// not bound to media keys.
 	document.addEventListener('keydown', (e) => {
-		if (e.key === 'F8') { e.preventDefault(); Debug.toggle(); }
+		if (e.key === '`' || e.key === 'F8') { e.preventDefault(); Debug.toggle(); }
 	});
 
 	// ── Day/night tint ────────────────────────────────────────────────────────────
