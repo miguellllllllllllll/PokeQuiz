@@ -51,6 +51,7 @@
 		const MINIGAMES = ['card', 'rps', 'rhythm', 'sketch'];
 		let resultCb = null;
 		let rhythmState = null;
+		let _endHandler = null;
 
 		function $(id) { return document.getElementById(id); }
 		function show(screen) {
@@ -67,6 +68,14 @@
 		}
 
 		function start(cb) {
+			// Clean up any leftover state from a previous encounter.
+			rhythmState?.stop();
+			rhythmState = null;
+			if (_endHandler) {
+				const btn = $('cbEndBtn');
+				if (btn) btn.removeEventListener('click', _endHandler);
+				_endHandler = null;
+			}
 			resultCb = cb;
 			// Reset wheel UI
 			const disc = $('cbWheelDisc');
@@ -266,12 +275,15 @@
 				: 'The wild Pokémon fled with the prize. Try again!';
 			const btn = $('cbEndBtn');
 			btn.textContent = 'Continue';
+			// Remove any handler left from a previous battle before adding the new one.
+			if (_endHandler) { btn.removeEventListener('click', _endHandler); _endHandler = null; }
 			const handler = () => {
-				btn.removeEventListener('click', handler);
+				_endHandler = null;
 				hideAll();
 				if (resultCb) { const cb = resultCb; resultCb = null; cb(won); }
 			};
-			btn.addEventListener('click', handler);
+			_endHandler = handler;
+			btn.addEventListener('click', handler, { once: true });
 		}
 
 		function wire() {
@@ -456,6 +468,12 @@
 			const root = $('campPartner');
 			if (root) root.hidden = true;
 			openFlag = false;
+			// If the nickname input (or any other input) is focused inside the panel,
+			// hiding the panel won't fire focusout automatically in all browsers.
+			// Explicit blur ensures _sceneKeyboard.enableGlobalCapture() is called.
+			if (document.activeElement && root && root.contains(document.activeElement)) {
+				document.activeElement.blur();
+			}
 		}
 		function isOpen() { return openFlag; }
 		function feed(sceneRef) {
@@ -540,10 +558,10 @@
 		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.80, frameW: 40, frameH: 48, displayName: 'Eevee' },
 		vaporeon: { sheet: 'vaporeon', cols: 4, originY: 32/48, scale: 0.58, frameW: 32, frameH: 48, displayName: 'Vaporeon' },
 		espeon:   { sheet: 'espeon',   cols: 4, originY: 31/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Espeon' },
-		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 28/40, scale: 0.90, frameW: 32, frameH: 40, displayName: 'Umbreon' },
+		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 28/40, scale: 0.60, frameW: 32, frameH: 40, displayName: 'Umbreon' },
 		flareon:  { sheet: 'flareon',  cols: 4, originY: 28/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Flareon' },
 		jolteon:  { sheet: 'jolteon',  cols: 4, originY: 29/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Jolteon' },
-		leafeon:  { sheet: 'leafeon',  cols: 4, originY: 32/48, scale: 0.72, frameW: 32, frameH: 48, displayName: 'Leafeon' },
+		leafeon:  { sheet: 'leafeon',  cols: 4, originY: 32/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Leafeon' },
 	};
 	const Inventory = (() => {
 		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0, eeveeForm: 'eevee', stone: null };
@@ -1346,6 +1364,22 @@
 	// Exposed by setupPauseMenu so the touch ≡ button can open/close the panel.
 	let _pauseToggleFn = null;
 
+	// Phaser calls preventDefault() on every key registered via addKeys(), which
+	// blocks typing those letters (W/A/S/D/E/P/F…) into HTML inputs.  When any
+	// <input> or <textarea> gains focus we pause Phaser's global key capture so
+	// the browser can deliver the characters normally; restore it on blur.
+	let _sceneKeyboard = null;
+	document.addEventListener('focusin', (e) => {
+		if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+			_sceneKeyboard?.disableGlobalCapture();
+		}
+	});
+	document.addEventListener('focusout', (e) => {
+		if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+			_sceneKeyboard?.enableGlobalCapture();
+		}
+	});
+
 	// Wire on-screen action buttons → TouchActions flags.
 	function setupTouchPad() {
 		[['capInteract','interact'],['capPartner','partner'],['capFaceoff','faceoff']].forEach(([id, action]) => {
@@ -1369,15 +1403,19 @@
 		if (!panel || !resumeBtn || panel.dataset.wired) return;
 		panel.dataset.wired = '1';
 
+		// Track which scenes we paused so close() can resume them even though
+		// Phaser's getScenes(true) excludes paused scenes.
+		let _pausedKeys = [];
 		const close = () => {
 			panel.hidden = true;
-			const active = game.scene.getScenes(true);
-			active.forEach(s => game.scene.resume(s.scene.key));
+			_pausedKeys.forEach(key => game.scene.resume(key));
+			_pausedKeys = [];
 		};
 		const open = () => {
 			panel.hidden = false;
 			const active = game.scene.getScenes(true);
-			active.forEach(s => game.scene.pause(s.scene.key));
+			_pausedKeys = active.map(s => s.scene.key);
+			_pausedKeys.forEach(key => game.scene.pause(key));
 			// Refresh save timestamp each time the menu opens.
 			const saveTimeEl = document.getElementById('campPauseSaveTime');
 			if (saveTimeEl) {
@@ -1773,6 +1811,7 @@
 				this.scale.on('resize', this.onResize, this);
 				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
 
+				_sceneKeyboard = this.input.keyboard;
 				this.keys = this.input.keyboard.addKeys({
 					up: Phaser.Input.Keyboard.KeyCodes.UP,
 					down: Phaser.Input.Keyboard.KeyCodes.DOWN,
@@ -1844,7 +1883,7 @@
 				// Nickname label — floats above the follower, updated live.
 				this._followerLabel = this.add.text(this.follower.x, this.follower.y - 12, '', {
 					fontFamily: "'Press Start 2P', monospace",
-					fontSize: '5px',
+					fontSize: '4px',
 					color: '#ffffff',
 					stroke: '#000000',
 					strokeThickness: 3,
@@ -2134,12 +2173,14 @@
 				if (!label || Dialog.isOpen()) { el.hidden = true; return; }
 				if (lbl) lbl.textContent = label;
 				el.hidden = false;
-				// Anchor the prompt above the player's on-screen position
+				// Anchor the prompt above the player's on-screen position,
+				// clamped so it doesn't overlap the bottom touch controls.
 				const cam = this.cameras.main;
 				const sx = (this.player.x - cam.worldView.x) * cam.zoom;
 				const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+				const maxTop = this.scale.height - 180;
 				el.style.left = sx + 'px';
-				el.style.top  = sy + 'px';
+				el.style.top  = Math.min(sy, maxTop) + 'px';
 				el.style.transform = 'translate(-50%, calc(-100% - 12px))';
 			}
 
@@ -2670,6 +2711,7 @@
 				this.scale.on('resize', this.onResize, this);
 				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
 
+				_sceneKeyboard = this.input.keyboard;
 				this.keys = this.input.keyboard.addKeys({
 					up: Phaser.Input.Keyboard.KeyCodes.UP,
 					down: Phaser.Input.Keyboard.KeyCodes.DOWN,
@@ -2858,8 +2900,9 @@
 						const cam = this.cameras.main;
 						const sx = (this.player.x - cam.worldView.x) * cam.zoom;
 						const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+						const maxTop = this.scale.height - 180;
 						pe.style.left = sx + 'px';
-						pe.style.top  = sy + 'px';
+						pe.style.top  = Math.min(sy, maxTop) + 'px';
 						pe.style.transform = 'translate(-50%, calc(-100% - 12px))';
 					} else {
 						pe.hidden = true;
@@ -3022,6 +3065,7 @@
 				this.scale.on('resize', this.onResize, this);
 				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
 
+				_sceneKeyboard = this.input.keyboard;
 				this.keys = this.input.keyboard.addKeys({
 					up: Phaser.Input.Keyboard.KeyCodes.UP,
 					down: Phaser.Input.Keyboard.KeyCodes.DOWN,
@@ -3179,8 +3223,9 @@
 						const cam = this.cameras.main;
 						const sx = (this.player.x - cam.worldView.x) * cam.zoom;
 						const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+						const maxTop = this.scale.height - 180;
 						pe.style.left = sx + 'px';
-						pe.style.top  = sy + 'px';
+						pe.style.top  = Math.min(sy, maxTop) + 'px';
 						pe.style.transform = 'translate(-50%, calc(-100% - 12px))';
 					} else {
 						pe.hidden = true;
