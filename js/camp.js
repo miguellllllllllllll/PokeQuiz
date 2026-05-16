@@ -2405,6 +2405,13 @@
 				// Track stairs re-arming so the spawn-tile-after-coming-down doesn't
 				// instantly send the player back up.
 				this.armedForStairs = !fromUp;
+
+				// Cache prompt DOM refs once per scene boot.
+				this._promptEl  = document.getElementById('campPrompt');
+				this._promptLbl = document.getElementById('campPromptLabel');
+				this.events.once('shutdown', () => {
+					if (this._promptEl) this._promptEl.hidden = true;
+				});
 			}
 
 			onResize() {
@@ -2526,10 +2533,12 @@
 				// gating mirrors door-exit: must step ≥2 tiles away once before the
 				// stairs can trigger, so a from-upstairs spawn doesn't bounce back up.
 				const onStairs = this.map[tr] && this.map[tr][tc] === TST;
-				const distStairs = Math.min(
-					Math.abs(tr - 2) + Math.abs(tc - 12),
-					Math.abs(tr - 2) + Math.abs(tc - 13)
-				);
+				// Rectangle distance to the stair block (rows 1-2, cols 12-13) so
+				// approaching from any direction arms correctly, not just from row 2.
+				const stairMinR = 1, stairMaxR = 2, stairMinC = HOUSE_STAIRS_C, stairMaxC = HOUSE_STAIRS_C + 1;
+				const distStairs =
+					Math.max(0, stairMinR - tr, tr - stairMaxR) +
+					Math.max(0, stairMinC - tc, tc - stairMaxC);
 				if (distStairs >= 2) this.armedForStairs = true;
 				if (onStairs && this.armedForStairs && !this.didTransition) {
 					this.didTransition = true;
@@ -2544,8 +2553,8 @@
 
 				// Show the interaction prompt + E-key exit when standing right next to
 				// the door. The prompt sits above the player on-screen.
-				const pe = document.getElementById('campPrompt');
-				const lbl = document.getElementById('campPromptLabel');
+				const pe = this._promptEl;
+				const lbl = this._promptLbl;
 				const nearDoor = distFromDoor === 1 || onDoor;
 				if (pe && lbl) {
 					if (nearDoor && !dialogOpen) {
@@ -2568,6 +2577,7 @@
 				);
 				if (triggerExit) {
 					this.didTransition = true;
+					if (pe) pe.hidden = true;
 					safeSceneStart(this, 'camp', { from: 'house' });
 				}
 
@@ -2738,6 +2748,14 @@
 				// back down. Start unarmed so the spawn tile (1 step from stairs)
 				// can't trigger immediately if dir was wrong.
 				this.armedForStairs = false;
+
+				// Cache DOM refs once — avoid getElementById every frame, and ensure
+				// the prompt is hidden if the scene shuts down mid-display.
+				this._promptEl  = document.getElementById('campPrompt');
+				this._promptLbl = document.getElementById('campPromptLabel');
+				this.events.once('shutdown', () => {
+					if (this._promptEl) this._promptEl.hidden = true;
+				});
 			}
 
 			onResize() {
@@ -2843,16 +2861,15 @@
 				const tc = Math.floor(this.player.x / TILE);
 				const tr = Math.floor(this.player.y / TILE);
 				const onStairs = this.map[tr] && this.map[tr][tc] === TST;
-				// Re-arm only after the player has stepped at least 2 tiles away from
-				// any stairs tile, so the spawn tile (1 north of stairs) doesn't bounce.
-				const distFromStairs = Math.min(
-					Math.abs(tr - UPSTAIRS_STAIRS_R) + Math.abs(tc - UPSTAIRS_STAIRS_C),
-					Math.abs(tr - UPSTAIRS_STAIRS_R) + Math.abs(tc - (UPSTAIRS_STAIRS_C + 1))
-				);
+				// Rectangle distance to the stair block (1 row × 2 cols) — correct for
+				// any approach direction, unlike the old min-of-two-points formula.
+				const distFromStairs =
+					Math.max(0, UPSTAIRS_STAIRS_R - tr, tr - UPSTAIRS_STAIRS_R) +
+					Math.max(0, UPSTAIRS_STAIRS_C - tc, tc - (UPSTAIRS_STAIRS_C + 1));
 				if (distFromStairs >= 2) this.armedForStairs = true;
 
-				const pe = document.getElementById('campPrompt');
-				const lbl = document.getElementById('campPromptLabel');
+				const pe = this._promptEl;
+				const lbl = this._promptLbl;
 				const nearStairs = distFromStairs === 1 || onStairs;
 				if (pe && lbl) {
 					if (nearStairs && !dialogOpen) {
@@ -2875,6 +2892,7 @@
 				);
 				if (trigger) {
 					this.didTransition = true;
+					if (pe) pe.hidden = true;
 					safeSceneStart(this, 'house', { from: 'upstairs' });
 					return;
 				}
