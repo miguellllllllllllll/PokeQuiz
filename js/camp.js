@@ -369,8 +369,19 @@
 	const GROW_MS = 30 * 1000; // 30 seconds — tunable; deliberately short for Phase 1
 	const SEED_PRICE = 5;
 	const BERRY_PRICE = 10;
+	const FRIENDSHIP_PER_BERRY = 20;
+	const FRIENDSHIP_MAX = 100;
+
+	// Follower form data — each PMD walk sheet has its own frame size and column
+	// count, so the south/east/north/west frame indices are computed per form.
+	const FOLLOWER_FORMS = {
+		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.8, frameW: 40, frameH: 48 },
+		vaporeon: { sheet: 'vaporeon', cols: 4, originY: 32/48, scale: 0.9, frameW: 32, frameH: 48 },
+		espeon:   { sheet: 'espeon',   cols: 4, originY: 32/48, scale: 0.9, frameW: 32, frameH: 48 },
+		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 26/40, scale: 0.9, frameW: 32, frameH: 40 },
+	};
 	const Inventory = (() => {
-		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0 };
+		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0, eeveeForm: 'eevee' };
 		function load() {
 			try {
 				const raw = localStorage.getItem(INVENTORY_KEY);
@@ -1063,8 +1074,12 @@
 				// Load the raw sheet — we'll palette-swap it into a canvas and
 				// register that canvas as the 'player' spritesheet below.
 				this.load.image('player-base', 'Pictures/sprites/calem.png');
-				// PMD walk sheet: 7 frames × 8 directions (rows 0/2/4/6 = S/E/N/W).
-				this.load.spritesheet('eevee', 'Pictures/sprites/eevee.png', { frameWidth: 40, frameHeight: 48 });
+				// PMD walk sheets. Eevee + the three eeveelutions wired in here so the
+				// follower can swap form after evolution without a preload-stage round trip.
+				this.load.spritesheet('eevee',    'Pictures/sprites/eevee.png',    { frameWidth: 40, frameHeight: 48 });
+				this.load.spritesheet('vaporeon', 'Pictures/sprites/vaporeon.png', { frameWidth: 32, frameHeight: 48 });
+				this.load.spritesheet('espeon',   'Pictures/sprites/espeon.png',   { frameWidth: 32, frameHeight: 48 });
+				this.load.spritesheet('umbreon',  'Pictures/sprites/umbreon.png',  { frameWidth: 32, frameHeight: 40 });
 				// NPC sprite sheets (PMD walk; row 0 frame 0 used as the static idle).
 				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
 				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
@@ -1249,26 +1264,31 @@
 				this.dirIdleFrame = [0, 3, 6, 9];
 				this.player.setFrame(this.dirIdleFrame[this.dir]);
 
-				// Eevee follower — trails behind the player via a position-history buffer.
-				// PMD 7-frame walk × 4 cardinal directions (rows 0/2/4/6 of an 8-row sheet).
-				// Origin Y = 30/48 anchors at the feet (sampled from the south-idle frame).
+				// Follower (Eevee or an evolved form) — trails behind the player via a
+				// position-history buffer. Each PMD walk sheet has its own column count;
+				// frame indices are computed from that.
+				const formKey = (Inventory.load().eeveeForm) || 'eevee';
+				const form = FOLLOWER_FORMS[formKey] || FOLLOWER_FORMS.eevee;
+				const cols = form.cols;
+				const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
 				const eeveeAnims = [
-					['eevee-walk-south', [0,1,2,3,4,5,6],        0],   // dir 0 (south)
-					['eevee-walk-west',  [42,43,44,45,46,47,48], 42],  // dir 1 (west) — row 6
-					['eevee-walk-north', [28,29,30,31,32,33,34], 28],  // dir 2 (north) — row 4
-					['eevee-walk-east',  [14,15,16,17,18,19,20], 14],  // dir 3 (east) — row 2
+					[formKey + '-walk-south', rowFrames(0), 0],
+					[formKey + '-walk-west',  rowFrames(6), 6 * cols],
+					[formKey + '-walk-north', rowFrames(4), 4 * cols],
+					[formKey + '-walk-east',  rowFrames(2), 2 * cols],
 				];
 				for (const [key, frames] of eeveeAnims) {
 					if (!this.anims.exists(key)) {
 						this.anims.create({ key, frameRate: 10, repeat: -1,
-							frames: this.anims.generateFrameNumbers('eevee', { frames }) });
+							frames: this.anims.generateFrameNumbers(form.sheet, { frames }) });
 					}
 				}
 				this.eeveeAnimKeys = eeveeAnims.map(([k]) => k);
 				this.eeveeIdleFrame = eeveeAnims.map(([,,idle]) => idle);
-				this.follower = this.add.sprite(this.player.x, this.player.y + 14, 'eevee', this.eeveeIdleFrame[0]);
-				this.follower.setOrigin(0.5, 30/48);
-				this.follower.setScale(0.8);
+				this.followerForm = formKey;
+				this.follower = this.add.sprite(this.player.x, this.player.y + 14, form.sheet, this.eeveeIdleFrame[0]);
+				this.follower.setOrigin(0.5, form.originY);
+				this.follower.setScale(form.scale);
 				this.follower.setDepth(3.5);
 				this.followerHistory = [];
 				this.followerDir = 0;
@@ -1337,7 +1357,12 @@
 				const tr = Math.floor(this.player.y / TILE);
 				const [dvx, dvy] = this.DIR_VEC[this.dir];
 				const candidates = [[tc + dvx, tr + dvy], [tc, tr]];
+				const followerTC = this.follower ? Math.floor(this.follower.x / TILE) : -99;
+				const followerTR = this.follower ? Math.floor(this.follower.y / TILE) : -99;
 				for (const [c, r] of candidates) {
+					if (c === followerTC && r === followerTR) {
+						return { kind: 'feed', r, c, label: 'Feed' };
+					}
 					const npc = this.npcByTile && this.npcByTile[r + ',' + c];
 					if (npc) return { kind: 'npc', r, c, message: npc.dialog, label: npc.label, npcKind: npc.kind };
 					if (!this.map[r] || this.map[r][c] === undefined) continue;
@@ -1458,7 +1483,59 @@
 				const el = document.getElementById('campInventory');
 				if (!el) return;
 				const inv = Inventory.load();
-				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0);
+				const form = inv.eeveeForm || 'eevee';
+				const heart = form === 'eevee' && (inv.friendship || 0) < FRIENDSHIP_MAX
+					? '   ❤️ ' + (inv.friendship || 0) + '/' + FRIENDSHIP_MAX
+					: '';
+				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0) + heart;
+			}
+
+			_handleFeed() {
+				const inv = Inventory.load();
+				if (inv.eeveeForm && inv.eeveeForm !== 'eevee') {
+					Dialog.open(inv.eeveeForm.charAt(0).toUpperCase() + inv.eeveeForm.slice(1) + ' looks up at you happily. (Already evolved!)');
+					return;
+				}
+				if ((inv.friendshipBerries || 0) <= 0) {
+					Dialog.open('Eevee looks hungry, but you have no Friendship Berries.');
+					return;
+				}
+				inv.friendshipBerries -= 1;
+				inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship || 0) + FRIENDSHIP_PER_BERRY);
+				Inventory.save(inv);
+				if (inv.friendship >= FRIENDSHIP_MAX) {
+					this._triggerEvolution();
+				} else {
+					Dialog.open('Eevee gobbled the berry! Friendship is now ' + inv.friendship + ' / ' + FRIENDSHIP_MAX + '.');
+				}
+			}
+
+			_pickEvolutionForm() {
+				// Vaporeon if there's water within 4 tiles of the player; otherwise
+				// day/night decides between Espeon (day/dawn) and Umbreon (night/sunset).
+				const ptc = Math.floor(this.player.x / TILE);
+				const ptr = Math.floor(this.player.y / TILE);
+				for (let dr = -4; dr <= 4; dr++) {
+					for (let dc = -4; dc <= 4; dc++) {
+						const row = this.map[ptr + dr];
+						if (row && row[ptc + dc] === TH2O) return 'vaporeon';
+					}
+				}
+				const t = (performance.now() / 1000) % 360;
+				const isNightish = t > 150 && t < 270;
+				return isNightish ? 'umbreon' : 'espeon';
+			}
+
+			_triggerEvolution() {
+				const newForm = this._pickEvolutionForm();
+				const inv = Inventory.load();
+				inv.eeveeForm = newForm;
+				inv.friendship = FRIENDSHIP_MAX;
+				Inventory.save(inv);
+				Dialog.open('✨ Eevee is evolving into ' + newForm.toUpperCase() + '! ✨');
+				const fade = document.getElementById('campFade');
+				if (fade) fade.classList.remove('is-hidden');
+				setTimeout(() => window.location.reload(), 1800);
 			}
 
 			showPrompt(label) {
@@ -1638,6 +1715,9 @@
 					if (dialogOpen) Dialog.advance();
 					else if (target && (target.kind === 'plant' || target.kind === 'harvest' || target.kind === 'growing')) {
 						this._handlePlantAction(target);
+					}
+					else if (target && target.kind === 'feed') {
+						this._handleFeed();
 					}
 					else if (target && target.kind === 'npc' && target.npcKind === 'mart') {
 						Mart.open();
