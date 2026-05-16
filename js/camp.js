@@ -61,7 +61,7 @@
 			dialog: "Welcome to my shop! I'll buy your berries — come back when you've grown some. (Mart not stocked yet — coming soon.)",
 		},
 		{
-			key: 'farmer', species: 'bulbasaur', r: 19, c: 21,
+			key: 'farmer', species: 'bulbasaur', r: 19, c: 19,
 			label: 'Talk',
 			spriteScale: 0.6, frameHeight: 40,
 			dialog: "These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
@@ -980,9 +980,15 @@
 					if (t === TSO || t === TCR) {
 						const plant = this._findPlantAt(r, c);
 						if (plant) {
-							const ripe = (Date.now() - plant.plantedAt) >= GROW_MS;
+							const elapsed = Date.now() - plant.plantedAt;
+							const ripe = elapsed >= GROW_MS;
 							if (ripe) return { kind: 'harvest', r, c, label: 'Harvest' };
-							return { kind: 'growing', r, c, label: 'Growing…', message: 'A seed is sprouting here. Come back in a bit.' };
+							const pct = Math.min(99, Math.floor(elapsed / GROW_MS * 100));
+							const remaining = Math.max(1, Math.ceil((GROW_MS - elapsed) / 1000));
+							return {
+								kind: 'growing', r, c, label: 'Growing…',
+								message: 'This plant is ' + pct + '% grown — about ' + remaining + 's to go.',
+							};
 						}
 						return { kind: 'plant', r, c, label: 'Plant' };
 					}
@@ -1001,20 +1007,46 @@
 				if (!this.plantContainer) return;
 				this.plantContainer.removeAll(true);
 				this.plantSprites = {};
+				const t = this.tick || 0;
 				for (const p of this.plants) {
-					const ripe = (Date.now() - p.plantedAt) >= GROW_MS;
+					const elapsed = Date.now() - p.plantedAt;
+					const pct = Math.min(1, elapsed / GROW_MS);
+					const stage = pct >= 1 ? 3 : pct >= 0.66 ? 2 : pct >= 0.33 ? 1 : 0;
 					const x = p.c * TILE + TILE/2;
 					const y = p.r * TILE + TILE/2;
 					const g = this.add.graphics();
-					if (ripe) {
-						g.fillStyle(0x2A5018, 1); g.fillRect(x-1, y+2, 2, 3);    // stem
-						g.fillStyle(0xC03838, 1); g.fillCircle(x, y-1, 3);        // berry red
-						g.fillStyle(0xFFB0B0, 1); g.fillRect(x-1, y-2, 1, 1);     // berry highlight
-						g.fillStyle(0x2A5018, 1); g.fillRect(x+1, y-3, 1, 1);     // leaf
-					} else {
-						g.fillStyle(0x2A5018, 1); g.fillRect(x, y, 1, 4);          // stem
-						g.fillStyle(0x62A030, 1); g.fillRect(x-1, y-1, 3, 2);      // leaf cluster
+					if (stage === 0) {
+						// Freshly planted: small mound of dark soil with a seed peeking out.
+						g.fillStyle(0x2C1808, 1); g.fillRect(x-3, y+3, 7, 2);
+						g.fillStyle(0x4A2810, 1); g.fillRect(x-2, y+2, 5, 2);
+						g.fillStyle(0xC8A86C, 1); g.fillRect(x, y+1, 1, 1);
+					} else if (stage === 1) {
+						// First sprout — two tiny leaves.
+						g.fillStyle(0x2A5018, 1); g.fillRect(x, y, 1, 4);
+						g.fillStyle(0x62A030, 1); g.fillRect(x-2, y-1, 5, 1);
 						g.fillStyle(0x9ED860, 1); g.fillRect(x-1, y-1, 1, 1);
+						g.fillStyle(0x9ED860, 1); g.fillRect(x+1, y-1, 1, 1);
+					} else if (stage === 2) {
+						// Growing — taller stem, broad leaves, faint flower hint.
+						g.fillStyle(0x2A5018, 1); g.fillRect(x, y-2, 1, 6);
+						g.fillStyle(0x62A030, 1); g.fillRect(x-2, y-3, 5, 2);
+						g.fillStyle(0x9ED860, 1); g.fillRect(x-2, y-3, 1, 1);
+						g.fillStyle(0x9ED860, 1); g.fillRect(x+2, y-3, 1, 1);
+						g.fillStyle(0xFFB0B0, 0.7); g.fillRect(x, y-4, 1, 1);
+					} else {
+						// Ripe — bobbing berry with sparkle. tick drives a 2-pixel hover.
+						const bob = (Math.sin(t * 0.08) * 1.2) | 0;
+						const sparkleOn = ((t / 24) | 0) % 3 === 0;
+						g.fillStyle(0x2A5018, 1); g.fillRect(x, y-1, 1, 5);
+						g.fillStyle(0x62A030, 1); g.fillRect(x-2, y-2, 5, 2);
+						g.fillStyle(0x2A5018, 1); g.fillRect(x+2, y-4 + bob, 1, 1);  // leaf
+						g.fillStyle(0x9C2020, 1); g.fillCircle(x, y-3 + bob, 3);
+						g.fillStyle(0xC03838, 1); g.fillCircle(x, y-3 + bob, 2);
+						g.fillStyle(0xFFB0B0, 1); g.fillRect(x-1, y-4 + bob, 1, 1);
+						if (sparkleOn) {
+							g.fillStyle(0xFFE890, 1); g.fillRect(x+2, y-5 + bob, 1, 1);
+							g.fillStyle(0xFFFFFF, 0.8); g.fillRect(x-3, y-2 + bob, 1, 1);
+						}
 					}
 					this.plantContainer.add(g);
 					this.plantSprites[p.r + ',' + p.c] = g;
@@ -1267,8 +1299,8 @@
 				this.updateSmoke();
 				this.updateLeaves();
 				this._updateInventoryHud();
-				// Refresh plant visuals once per second to catch ripening.
-				if (this.tick % 60 === 0) this._refreshPlantSprites();
+				// Refresh plant visuals every 8 ticks so the ripe-berry bob animates smoothly.
+				if (this.tick % 8 === 0) this._refreshPlantSprites();
 				this.updateMinimap();
 
 				// Trail mode: sample player position; follower lerps toward the oldest sample
