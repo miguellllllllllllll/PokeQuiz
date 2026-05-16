@@ -16,7 +16,7 @@
 	// the player presses E next to it. Coordinates match camp's MAP tile grid.
 	const SIGN_MESSAGES = {
 		'12,10': "Welcome to Trainer Camp! Walk up to the house and press E at the door to head inside.",
-		'19,11': "Crops grow here — come back later for a harvest minigame.",
+		'19,12': "Crops grow here — talk to the farmer at the garden gate and plant a seed on any soil tile.",
 		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
 	};
 
@@ -61,7 +61,7 @@
 			dialog: "Welcome to my shop! I'll buy your berries — come back when you've grown some. (Mart not stocked yet — coming soon.)",
 		},
 		{
-			key: 'farmer', species: 'bulbasaur', r: 21, c: 22,
+			key: 'farmer', species: 'bulbasaur', r: 19, c: 21,
 			label: 'Talk',
 			spriteScale: 0.6, frameHeight: 40,
 			dialog: "These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
@@ -115,7 +115,7 @@
 
 		// Signs — keys must match SIGN_MESSAGES coordinates above
 		set(12,10,TSG);
-		set(19,11,TSG);
+		set(19,12,TSG);   // moved off the col-11 walking path
 		set(12,4,TSG);
 
 		// Sprinkle autumn-tree variants and bushes for visual variety
