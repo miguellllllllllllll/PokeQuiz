@@ -211,6 +211,25 @@ body.camp-body {
 	transition: opacity 1.5s linear, background 1.5s linear;
 }
 
+/* ── Follower nickname label (floats above the partner sprite) ────────── */
+.camp-follower-name {
+	position: absolute;
+	pointer-events: none;
+	z-index: 8;
+	transform: translate(-50%, -100%);
+	font-family: 'Press Start 2P', monospace;
+	font-size: 7px;
+	color: #fff;
+	text-shadow:
+		-1px -1px 0 #000,
+		 1px -1px 0 #000,
+		-1px  1px 0 #000,
+		 1px  1px 0 #000;
+	white-space: nowrap;
+	image-rendering: pixelated;
+	letter-spacing: 0.5px;
+}
+
 /* ── Interaction prompt (anchored to player center-bottom on-screen) ──── */
 .camp-prompt {
 	position: absolute;

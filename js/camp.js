@@ -147,6 +147,7 @@
 				btn.className = 'cb-card-card';
 				btn.type = 'button';
 				btn.dataset.effect = effClass;
+				btn.dataset.cardType = t; // store type for safe lookup on reveal
 				btn.innerHTML = (TYPE_EMOJI[t] || '') + ' ' + t.toUpperCase() + '<span class="cb-card-tag">(?)</span>';
 				btn.addEventListener('click', () => {
 					const won = eff >= 1;
@@ -154,7 +155,13 @@
 					res.textContent = won
 						? '✅ ' + tag + '! You won the battle.'
 						: '❌ ' + tag + '. The wild Pokémon got away.';
-					handEl.querySelectorAll('button').forEach(b => { b.disabled = true; b.querySelector('.cb-card-tag').textContent = '(' + (EFFECTIVENESS[b.textContent.trim().split(' ')[1].toLowerCase()][foeType] > 1 ? 'super' : EFFECTIVENESS[b.textContent.trim().split(' ')[1].toLowerCase()][foeType] < 1 ? 'weak' : 'ok') + ')'; });
+					handEl.querySelectorAll('button').forEach(b => {
+						b.disabled = true;
+						const bType = b.dataset.cardType;
+						const bEff = EFFECTIVENESS[bType]?.[foeType] ?? 1;
+						const tagEl = b.querySelector('.cb-card-tag');
+						if (tagEl) tagEl.textContent = '(' + (bEff > 1 ? 'super' : bEff < 1 ? 'weak' : 'ok') + ')';
+					});
 					setTimeout(() => end(won), 1500);
 				});
 				handEl.appendChild(btn);
@@ -1880,17 +1887,18 @@
 				this.follower.setScale(form.scale);
 				this.follower.setDepth(3.5);
 
-				// Nickname label — floats above the follower, updated live.
-				this._followerLabel = this.add.text(this.follower.x, this.follower.y - 12, '', {
-					fontFamily: "'Press Start 2P', monospace",
-					fontSize: '4px',
-					color: '#ffffff',
-					stroke: '#000000',
-					strokeThickness: 3,
-				}).setDepth(4).setOrigin(0.5, 1);
+				// Nickname label — HTML overlay for crisp rendering at any DPR.
+				this._followerNameEl = document.getElementById('campFollowerName');
 				this._updateFollowerLabel = () => {
+					const el = this._followerNameEl;
+					if (!el) return;
 					const nick = Partner.loadNickname();
-					this._followerLabel.setText(nick || '');
+					if (nick) {
+						el.textContent = nick;
+						el.hidden = false;
+					} else {
+						el.hidden = true;
+					}
 				};
 				this._updateFollowerLabel();
 
@@ -2506,9 +2514,15 @@
 						}
 					}
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
-					if (this._followerLabel) {
-						this._followerLabel.setPosition(this.follower.x, this.follower.y - 12);
-					}
+				}
+				// Position the HTML nickname label every frame so it tracks the
+				// follower even when it's standing still (followTarget may be null).
+				if (this.follower && this._followerNameEl && !this._followerNameEl.hidden) {
+					const cam = this.cameras.main;
+					const fx = (this.follower.x - cam.worldView.x) * cam.zoom;
+					const fy = (this.follower.y - cam.worldView.y) * cam.zoom - 18;
+					this._followerNameEl.style.left = fx + 'px';
+					this._followerNameEl.style.top  = fy + 'px';
 				}
 
 				// Walk onto the door → enter the house. The player has to walk at least
