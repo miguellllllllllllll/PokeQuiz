@@ -606,11 +606,11 @@
 			const list = $('creItemList');
 			if (!list) return;
 			const items = itemsForScene();
-			const { ownedKey, activeKey } = invKeysForScene();
+			const { ownedKey, placementsKey } = invKeysForScene();
 			const inv = Inventory.load();
 			const cosm = inv.cosmetics || {};
 			const roomItems = cosm[ownedKey] || [];
-			const roomActive = cosm[activeKey] || {};
+			const placements = cosm[placementsKey] || {};
 			const tokens = inv.tokens || 0;
 
 			const tokEl = $('creTokens');
@@ -619,10 +619,22 @@
 			const sceneLbl = $('creSceneLabel');
 			if (sceneLbl) sceneLbl.textContent = activeScene === 'house' ? '🏠 Ground Floor' : '🛏 Bedroom';
 
-			const ownedCount = Object.keys(items).filter(k => roomItems.includes(k)).length;
-			const activeCount = Object.keys(items).filter(k => !!roomActive[k]).length;
+			const placedCount = Object.keys(placements).filter(k => items[k]).length;
+			const ownedCount  = roomItems.filter(k => items[k]).length;
 			const summaryEl = $('creSummary');
-			if (summaryEl) summaryEl.textContent = ownedCount + ' / ' + Object.keys(items).length + ' owned · ' + activeCount + ' placed';
+			if (summaryEl) summaryEl.textContent = ownedCount + ' / ' + Object.keys(items).length + ' owned · ' + placedCount + ' placed';
+
+			const banner = $('crePlacingBanner');
+			if (banner) {
+				if (placingKey) {
+					const item = items[placingKey];
+					banner.hidden = false;
+					const lbl = banner.querySelector('.cre-placing-label');
+					if (lbl) lbl.textContent = 'Click a tile to place ' + (item?.emoji || '') + ' ' + (item?.label?.replace(/^\S+\s/, '') || '');
+				} else {
+					banner.hidden = true;
+				}
+			}
 
 			list.innerHTML = '';
 			const cats = { furniture: [], decor: [] };
@@ -640,10 +652,14 @@
 
 				entries.forEach(([key, item]) => {
 					const owned    = roomItems.includes(key);
-					const active   = !!roomActive[key];
+					const pos      = placements[key];
+					const placed   = !!pos;
+					const isPlacing = placingKey === key;
 					const canAfford = tokens >= item.price;
+
 					const card = document.createElement('div');
-					card.className = 'cre-item' + (active ? ' cre-item--active' : owned ? ' cre-item--owned' : '');
+					card.className = 'cre-item' +
+						(isPlacing ? ' cre-item--placing' : placed ? ' cre-item--active' : owned ? ' cre-item--owned' : '');
 
 					const left = document.createElement('div');
 					left.className = 'cre-item-left';
@@ -657,8 +673,8 @@
 					labelEl.textContent = item.label.replace(/^\S+\s/, '');
 					const statusEl = document.createElement('div');
 					statusEl.className = 'cre-item-status' +
-						(active ? ' cre-item-status--active' : !owned ? ' cre-item-status--price' : '');
-					statusEl.textContent = active ? '✓ In room' : owned ? 'Owned' : item.price + ' 💰';
+						(isPlacing ? ' cre-item-status--placing' : placed ? ' cre-item-status--active' : !owned ? ' cre-item-status--price' : '');
+					statusEl.textContent = isPlacing ? '\u2196 Click a tile\u2026' : placed ? '\u2713 Placed' : owned ? 'In inventory' : item.price + ' \U0001f4b0';
 					infoEl.appendChild(labelEl);
 					infoEl.appendChild(statusEl);
 					left.appendChild(emojiEl);
@@ -667,34 +683,40 @@
 					const right = document.createElement('div');
 					right.className = 'cre-item-right';
 
-					if (active) {
+					if (isPlacing) {
+						const cancelBtn = document.createElement('button');
+						cancelBtn.className = 'cre-btn cre-btn--cancel';
+						cancelBtn.type = 'button';
+						cancelBtn.textContent = 'Cancel';
+						cancelBtn.addEventListener('click', cancelPlace);
+						right.appendChild(cancelBtn);
+					} else if (placed) {
+						const moveBtn = document.createElement('button');
+						moveBtn.className = 'cre-btn cre-btn--activate';
+						moveBtn.type = 'button';
+						moveBtn.textContent = 'Move';
+						moveBtn.addEventListener('click', () => startPlace(key));
 						const removeBtn = document.createElement('button');
 						removeBtn.className = 'cre-btn cre-btn--remove';
 						removeBtn.type = 'button';
-						removeBtn.textContent = 'Remove';
+						removeBtn.textContent = '\u2715 Remove';
 						removeBtn.addEventListener('click', () => {
 							const i = Inventory.load();
 							if (!i.cosmetics) i.cosmetics = {};
-							if (!i.cosmetics[activeKey]) i.cosmetics[activeKey] = {};
-							i.cosmetics[activeKey][key] = false;
+							if (!i.cosmetics[placementsKey]) i.cosmetics[placementsKey] = {};
+							delete i.cosmetics[placementsKey][key];
 							Inventory.save(i);
 							liveUpdate(); refresh();
 						});
+						right.appendChild(moveBtn);
 						right.appendChild(removeBtn);
 					} else if (owned) {
-						const activateBtn = document.createElement('button');
-						activateBtn.className = 'cre-btn cre-btn--activate';
-						activateBtn.type = 'button';
-						activateBtn.textContent = 'Place';
-						activateBtn.addEventListener('click', () => {
-							const i = Inventory.load();
-							if (!i.cosmetics) i.cosmetics = {};
-							if (!i.cosmetics[activeKey]) i.cosmetics[activeKey] = {};
-							i.cosmetics[activeKey][key] = true;
-							Inventory.save(i);
-							liveUpdate(); refresh();
-						});
-						right.appendChild(activateBtn);
+						const placeBtn = document.createElement('button');
+						placeBtn.className = 'cre-btn cre-btn--activate';
+						placeBtn.type = 'button';
+						placeBtn.textContent = 'Place';
+						placeBtn.addEventListener('click', () => startPlace(key));
+						right.appendChild(placeBtn);
 					} else {
 						const buyBtn = document.createElement('button');
 						buyBtn.className = 'cre-btn cre-btn--buy';
@@ -707,14 +729,14 @@
 							i.tokens -= item.price;
 							if (!i.cosmetics) i.cosmetics = {};
 							if (!Array.isArray(i.cosmetics[ownedKey])) i.cosmetics[ownedKey] = [];
-							if (!i.cosmetics[activeKey]) i.cosmetics[activeKey] = {};
 							i.cosmetics[ownedKey].push(key);
-							i.cosmetics[activeKey][key] = true;
 							Inventory.save(i);
 							liveUpdate(); refresh();
+							startPlace(key);
 						});
 						right.appendChild(buyBtn);
 					}
+
 					card.appendChild(left);
 					card.appendChild(right);
 					list.appendChild(card);
@@ -731,6 +753,7 @@
 		}
 
 		function close() {
+			cancelPlace();
 			const panel = $('campRoomEditor');
 			if (panel) panel.hidden = true;
 			openFlag = false;
@@ -761,7 +784,7 @@
 		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
 		else wire();
 
-		return { open, close, isOpen, showEditBtn, liveUpdate, wire };
+		return { open, close, isOpen, showEditBtn, liveUpdate, confirmPlace, wire };
 	})();
 
 	// ── Partner Pokémon panel — dedicated page for the follower ─────────────────
@@ -2081,43 +2104,151 @@
 		return map;
 	}
 
-	// ── Market Centre interior map ───────────────────────────────────────────────
-	// 22 wide × 14 tall — covered plaza with cobblestone path floor, four shop
-	// stalls (counter tiles) along the north wall, exit door at the south. Each
-	// counter is a 3-tile-wide TBKS block treated as an interactable that opens
-	// the existing Mart UI. Vendor positions are remembered in MARKET_STALLS.
-	const MARKET_W = 22;
-	const MARKET_H = 14;
-	const MARKET_DOOR_C = 10;
-	const MARKET_DOOR_R = MARKET_H - 1;
-	const MARKET_STALLS = [
-		// Each stall: north-wall counter spanning cols [c1..c2] at row 2, vendor
-		// tile (where the player presses E) is row 3 col cMid. Same Mart UI fires
-		// for all four — flavor lives in the dialog before opening.
-		{ c1: 2,  c2: 4,  cMid: 3,  name: "Pikachu's Mart" },
-		{ c1: 7,  c2: 9,  cMid: 8,  name: "Berry Stand" },
-		{ c1: 12, c2: 14, cMid: 13, name: "Stone Vendor" },
-		{ c1: 17, c2: 19, cMid: 18, name: "Boutique" },
+	// ── Market Centre outdoor map ────────────────────────────────────────────────
+	// 30 wide × 22 tall — open-air plaza in the same pixel style as the camp:
+	// grass surround, tree border with a north-edge gap (mirroring camp's south
+	// exit), cobblestone paths, flower beds, a small fountain pond, and four
+	// vendor NPCs spread around the plaza, each selling a different category.
+	const MARKET_W = 30;
+	const MARKET_H = 22;
+	// North-edge column where the player walks in/out of the market. Lines up
+	// with camp's south-exit col (11) only conceptually — the actual transition
+	// snaps the player to whichever spawn point each scene uses, so they don't
+	// need to match numerically.
+	const MARKET_NORTH_C = 15;
+	// Vendor NPCs — each has a sprite species, a position, and a shopKind that
+	// selects which inventory list opens when the player presses E on them.
+	const MARKET_NPCS = [
+		{
+			key: 'm-pikachu', species: 'pikachu', r: 7, c: 7,
+			label: 'Shop', shopKind: 'general',
+			spriteScale: 0.55, frameHeight: 40,
+			dialog: "Pika! Seeds and berries at the trainer's mart.",
+		},
+		{
+			key: 'm-bulbasaur', species: 'bulbasaur', r: 7, c: 22,
+			label: 'Shop', shopKind: 'berries',
+			spriteScale: 0.6, frameHeight: 40,
+			dialog: "Bulba! Fresh-picked berries straight from my patch.",
+		},
+		{
+			key: 'm-vaporeon', species: 'vaporeon', r: 14, c: 7,
+			label: 'Shop', shopKind: 'cosmetics',
+			spriteScale: 0.6, frameHeight: 48,
+			dialog: "Vapor~ Wallpapers and accents to spruce up your camp.",
+		},
+		{
+			key: 'm-umbreon', species: 'umbreon', r: 14, c: 22,
+			label: 'Shop', shopKind: 'stones',
+			spriteScale: 0.6, frameHeight: 40,
+			dialog: "Umbre... Evolution stones, if you've got the tokens.",
+		},
 	];
+	// Per-vendor inventories. Action strings map to handlers in MarketShop.
+	const MARKET_SHOPS = {
+		general: {
+			title: "Pikachu's Mart",
+			items: [
+				{ label: '🌱 Berry Seed',         cost: 5,  action: 'buySeed' },
+				{ label: '🍓 Sell 1 Berry',       sells: 10, action: 'sellBerry' },
+				{ label: '🍓 Sell All Berries',   sells: 10, action: 'sellAllBerries' },
+			],
+		},
+		berries: {
+			title: 'Berry Stand',
+			items: [
+				{ label: '🍓 Sell 1 Berry',     sells: 10, action: 'sellBerry' },
+				{ label: '🍓 Sell All Berries', sells: 10, action: 'sellAllBerries' },
+				{ label: '🌱 Berry Seed',       cost: 5,  action: 'buySeed' },
+			],
+		},
+		cosmetics: {
+			title: 'Vaporeon Boutique',
+			items: [
+				{ label: '🌸 Sakura Wallpaper',  cost: 15, action: 'buyWallpaper', key: 'sakura'  },
+				{ label: '🌊 Ocean Wallpaper',   cost: 15, action: 'buyWallpaper', key: 'ocean'   },
+				{ label: '🌲 Forest Wallpaper',  cost: 15, action: 'buyWallpaper', key: 'forest'  },
+				{ label: '⭐ Dusk Wallpaper',    cost: 15, action: 'buyWallpaper', key: 'dusk'    },
+				{ label: '🔴 Red Accent',        cost: 20, action: 'buyAccent',    key: 'red'    },
+				{ label: '🔵 Blue Accent',       cost: 20, action: 'buyAccent',    key: 'blue'   },
+				{ label: '🟢 Green Accent',      cost: 20, action: 'buyAccent',    key: 'green'  },
+			],
+		},
+		stones: {
+			title: 'Umbreon Stone Vendor',
+			items: [
+				{ label: '🔥 Fire Stone',    cost: 50, action: 'buyStone', key: 'fire'    },
+				{ label: '⚡ Thunder Stone', cost: 50, action: 'buyStone', key: 'thunder' },
+				{ label: '🌿 Leaf Stone',    cost: 50, action: 'buyStone', key: 'leaf'    },
+			],
+		},
+	};
+	// Sign text shown when standing next to each market sign tile.
+	const SIGN_MESSAGES_MARKET = {
+		'9,7':   "Pikachu's Mart — seeds, basics, and berry trades.",
+		'9,22':  "Berry Stand — sells berries by the bunch.",
+		'16,7':  "Boutique — wallpapers and camp accent colors.",
+		'16,22': "Stone Vendor — evolution stones for the worthy.",
+	};
 	function buildMarketMap() {
-		const map = Array.from({ length: MARKET_H }, () => new Array(MARKET_W).fill(TP));
-		for (let c = 0; c < MARKET_W; c++) { map[0][c] = TIW; map[MARKET_H - 1][c] = TIW; }
-		for (let r = 0; r < MARKET_H; r++) { map[r][0] = TIW; map[r][MARKET_W - 1] = TIW; }
-		map[MARKET_DOOR_R][MARKET_DOOR_C] = TD;
-		// Stall counters along the north wall (row 2). Vendor "stand" tile at row 3
-		// (a flower planter) is purely decorative — the player walks up to col=cMid,
-		// row=3 and presses E on the counter (row 2) to shop.
-		for (const s of MARKET_STALLS) {
-			for (let c = s.c1; c <= s.c2; c++) map[2][c] = TBKS;
+		const map = Array.from({ length: MARKET_H }, () => new Array(MARKET_W).fill(TG));
+		const set = (r, c, t) => { if (r>=0 && r<MARKET_H && c>=0 && c<MARKET_W) map[r][c] = t; };
+		const fill = (r1, c1, r2, c2, t) => { for (let r=r1;r<=r2;r++) for (let c=c1;c<=c2;c++) set(r,c,t); };
+
+		// Sprinkle grass variants for that BW2 organic look (same density as camp).
+		let rng = 31415;
+		const rand = () => { rng^=rng<<13; rng^=rng>>17; rng^=rng<<5; return (rng>>>0)/0xFFFFFFFF; };
+		for (let r=2;r<MARKET_H-2;r++) for (let c=2;c<MARKET_W-2;c++) {
+			if (rand() < 0.10) map[r][c] = TG2;
 		}
-		// Decorative flower planters between stalls
-		const planters = [[3, 5], [3, 10], [3, 15], [3, 20]];
-		planters.forEach(([r, c]) => { if (map[r][c] === TP) map[r][c] = TFR; });
-		// Rug runner down the middle of the plaza
-		for (let c = 4; c <= MARKET_W - 5; c++) {
-			if (map[8][c] === TP) map[8][c] = TRU;
-			if (map[9][c] === TP) map[9][c] = TRU;
-		}
+
+		// Tree border around the edges — leaves a 3-tile gap at the north for the
+		// road back to camp.
+		for (let c=0;c<MARKET_W;c++){ set(0,c,TTR); set(1,c,TTR); set(MARKET_H-1,c,TTR); set(MARKET_H-2,c,TTR); }
+		for (let r=0;r<MARKET_H;r++){ set(r,0,TTR); set(r,1,TTR); set(r,MARKET_W-1,TTR); set(r,MARKET_W-2,TTR); }
+		for (let c = MARKET_NORTH_C - 1; c <= MARKET_NORTH_C + 1; c++) { set(0,c,TG); set(1,c,TG); }
+
+		// Vertical road from the north entry into the plaza
+		for (let r=0;r<=MARKET_H-5;r++) set(r, MARKET_NORTH_C, TP);
+		// East-west cross path through the plaza
+		for (let c=5;c<=MARKET_W-6;c++) set(11, c, TP);
+
+		// Cobblestone pads in front of each vendor stall
+		const stallPads = [
+			[6, 5, 8, 9],    // pikachu (NW)
+			[6, 20, 8, 24],  // bulbasaur (NE)
+			[13, 5, 15, 9],  // vaporeon (SW)
+			[13, 20, 15, 24],// umbreon (SE)
+		];
+		stallPads.forEach(([r1,c1,r2,c2]) => fill(r1,c1,r2,c2,TP));
+
+		// 3-wide TBKS counter behind each vendor (gives a stall silhouette)
+		const counters = [
+			[5,6,5,8],   // pikachu
+			[5,21,5,23], // bulbasaur
+			[12,6,12,8], // vaporeon
+			[12,21,12,23],// umbreon
+		];
+		counters.forEach(([r1,c1,r2,c2]) => fill(r1,c1,r2,c2,TBKS));
+
+		// Decorative flower beds
+		[
+			[4,4,TFR],[4,5,TFY],[4,10,TFR],[4,11,TFY],
+			[4,24,TFR],[4,25,TFY],[10,4,TFY],[10,25,TFR],
+			[16,4,TFR],[16,25,TFY],[18,12,TFR],[18,17,TFY],
+		].forEach(([r,c,t]) => { if (map[r][c] === TG || map[r][c] === TG2) set(r,c,t); });
+
+		// Bushes for texture
+		[[3,10],[3,20],[10,15],[16,8],[16,22],[18,4],[18,25]].forEach(([r,c]) => {
+			if (map[r][c] === TG || map[r][c] === TG2) set(r,c,TBSH);
+		});
+
+		// Small fountain pond bottom-center for atmosphere
+		fill(17, 13, 18, 16, TH2O);
+
+		// Signs in front of each stall — text comes from SIGN_MESSAGES_MARKET
+		[[9,7],[9,22],[16,7],[16,22]].forEach(([r,c]) => set(r,c,TSG));
+
 		return map;
 	}
 
@@ -3354,16 +3485,39 @@
 				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
 				const _houseWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
 				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_houseWp]?.house || '#1a0e08');
-				// Pre-create ground floor item overlays driven by houseRoomActive.
+				// Pre-create ground floor item overlays — positioned from stored placements.
 				const _houseRoomInv = Inventory.load();
-				const _houseRoomActive = _houseRoomInv.cosmetics?.houseRoomActive || {};
+				const _housePlacements = _houseRoomInv.cosmetics?.housePlacements || {};
 				this._roomItemObjs = {};
 				Object.entries(HOUSE_ITEMS).forEach(([key, item]) => {
-					const x = item.c * TILE + TILE / 2;
-					const y = item.r * TILE + TILE / 2;
-					const obj = this.add.text(x, y, item.emoji, { fontSize: '13px', resolution: 2 })
-						.setOrigin(0.5).setDepth(2).setVisible(!!_houseRoomActive[key]);
+					const pos = _housePlacements[key];
+					const x = (pos ? pos.c : item.c) * TILE + TILE / 2;
+					const y = (pos ? pos.r : item.r) * TILE + TILE / 2;
+					const obj = this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
+						.setOrigin(0.5).setDepth(2).setVisible(!!pos);
 					this._roomItemObjs[key] = obj;
+				});
+				// Grid overlay + ghost for tile-snap placement mode.
+				this._gridGraphics = this.add.graphics().setDepth(10);
+				this._gridGhost = this.add.text(0, 0, '', { fontSize: '14px', resolution: 2 })
+					.setOrigin(0.5).setDepth(11).setAlpha(0.7).setVisible(false);
+				this.input.on('pointerdown', (pointer) => {
+					const gm = window.__gridMode;
+					if (!gm?.active || gm.sceneKey !== 'house') return;
+					const tc = Math.floor(pointer.worldX / TILE);
+					const tr = Math.floor(pointer.worldY / TILE);
+					if (tc <= 0 || tr <= 0 || tc >= HOUSE_W - 1 || tr >= HOUSE_H - 1) return;
+					if (SOLID.has(this.map[tr]?.[tc])) return;
+					RoomEditor.confirmPlace(tr, tc);
+				});
+				this.input.on('pointermove', (pointer) => {
+					const gm = window.__gridMode;
+					if (!gm?.active || gm.sceneKey !== 'house') return;
+					gm.hoverR = Math.floor(pointer.worldY / TILE);
+					gm.hoverC = Math.floor(pointer.worldX / TILE);
+				});
+				this.events.once('shutdown', () => {
+					if (window.__gridMode) window.__gridMode.active = false;
 				});
 				RoomEditor.showEditBtn(true, 'house');
 				this.events.once('shutdown', () => { RoomEditor.showEditBtn(false); });
@@ -3491,8 +3645,48 @@
 				}));
 			}
 
+			_tickGrid() {
+				const gm = window.__gridMode;
+				const g = this._gridGraphics;
+				const ghost = this._gridGhost;
+				if (!g) return;
+				g.clear();
+				if (!gm?.active || gm.sceneKey !== 'house') {
+					if (ghost) ghost.setVisible(false);
+					return;
+				}
+				g.lineStyle(0.5, 0xffffff, 0.18);
+				for (let r = 1; r < HOUSE_H; r++) {
+					g.moveTo(TILE, r * TILE); g.lineTo((HOUSE_W - 1) * TILE, r * TILE);
+				}
+				for (let c = 1; c < HOUSE_W; c++) {
+					g.moveTo(c * TILE, TILE); g.lineTo(c * TILE, (HOUSE_H - 1) * TILE);
+				}
+				g.strokePath();
+				const hr = gm.hoverR ?? -1, hc = gm.hoverC ?? -1;
+				if (hr > 0 && hc > 0 && hr < HOUSE_H - 1 && hc < HOUSE_W - 1) {
+					const solid = SOLID.has(this.map[hr]?.[hc]);
+					const canPlace = !solid;
+					g.fillStyle(canPlace ? 0x88ffaa : 0xff5555, 0.3);
+					g.fillRect(hc * TILE, hr * TILE, TILE, TILE);
+					g.lineStyle(1, canPlace ? 0x88ffaa : 0xff5555, 0.8);
+					g.strokeRect(hc * TILE, hr * TILE, TILE, TILE);
+					if (ghost && gm.key) {
+						const item = HOUSE_ITEMS[gm.key];
+						if (item && canPlace) {
+							ghost.setText(item.emoji);
+							ghost.setPosition(hc * TILE + TILE / 2, hr * TILE + TILE / 2);
+							ghost.setVisible(true);
+						} else { ghost.setVisible(false); }
+					}
+				} else {
+					if (ghost) ghost.setVisible(false);
+				}
+			}
+
 			update() {
 				this.tick++;
+				this._tickGrid();
 				// If we've already triggered the exit, freeze the scene so we don't
 				// keep writing to shared DOM elements (prompt/HUD) on top of CampScene
 				// while the queued transition is still processing.
@@ -3724,16 +3918,39 @@
 				const _upWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
 				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_upWp]?.upstairs || '#140a18');
 
-				// Pre-create room item overlays; visibility is driven by cosmetics.roomActive.
+				// Pre-create room item overlays — positioned from stored placements.
 				const _roomInv = Inventory.load();
-				const _roomActive = _roomInv.cosmetics?.roomActive || {};
+				const _roomPlacements = _roomInv.cosmetics?.roomPlacements || {};
 				this._roomItemObjs = {};
 				Object.entries(ROOM_ITEMS).forEach(([key, item]) => {
-					const x = item.c * TILE + TILE / 2;
-					const y = item.r * TILE + TILE / 2;
-					const obj = this.add.text(x, y, item.emoji, { fontSize: '13px', resolution: 2 })
-						.setOrigin(0.5).setDepth(2).setVisible(!!_roomActive[key]);
+					const pos = _roomPlacements[key];
+					const x = (pos ? pos.c : item.c) * TILE + TILE / 2;
+					const y = (pos ? pos.r : item.r) * TILE + TILE / 2;
+					const obj = this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
+						.setOrigin(0.5).setDepth(2).setVisible(!!pos);
 					this._roomItemObjs[key] = obj;
+				});
+				// Grid overlay + ghost for tile-snap placement mode.
+				this._gridGraphics = this.add.graphics().setDepth(10);
+				this._gridGhost = this.add.text(0, 0, '', { fontSize: '14px', resolution: 2 })
+					.setOrigin(0.5).setDepth(11).setAlpha(0.7).setVisible(false);
+				this.input.on('pointerdown', (pointer) => {
+					const gm = window.__gridMode;
+					if (!gm?.active || gm.sceneKey !== 'upstairs') return;
+					const tc = Math.floor(pointer.worldX / TILE);
+					const tr = Math.floor(pointer.worldY / TILE);
+					if (tc <= 0 || tr <= 0 || tc >= UPSTAIRS_W - 1 || tr >= UPSTAIRS_H - 1) return;
+					if (SOLID.has(this.map[tr]?.[tc])) return;
+					RoomEditor.confirmPlace(tr, tc);
+				});
+				this.input.on('pointermove', (pointer) => {
+					const gm = window.__gridMode;
+					if (!gm?.active || gm.sceneKey !== 'upstairs') return;
+					gm.hoverR = Math.floor(pointer.worldY / TILE);
+					gm.hoverC = Math.floor(pointer.worldX / TILE);
+				});
+				this.events.once('shutdown', () => {
+					if (window.__gridMode) window.__gridMode.active = false;
 				});
 				// Show edit button while in this scene; hide on exit.
 				RoomEditor.showEditBtn(true, 'upstairs');
@@ -3851,8 +4068,48 @@
 				}));
 			}
 
+			_tickGrid() {
+				const gm = window.__gridMode;
+				const g = this._gridGraphics;
+				const ghost = this._gridGhost;
+				if (!g) return;
+				g.clear();
+				if (!gm?.active || gm.sceneKey !== 'upstairs') {
+					if (ghost) ghost.setVisible(false);
+					return;
+				}
+				g.lineStyle(0.5, 0xffffff, 0.18);
+				for (let r = 1; r < UPSTAIRS_H; r++) {
+					g.moveTo(TILE, r * TILE); g.lineTo((UPSTAIRS_W - 1) * TILE, r * TILE);
+				}
+				for (let c = 1; c < UPSTAIRS_W; c++) {
+					g.moveTo(c * TILE, TILE); g.lineTo(c * TILE, (UPSTAIRS_H - 1) * TILE);
+				}
+				g.strokePath();
+				const hr = gm.hoverR ?? -1, hc = gm.hoverC ?? -1;
+				if (hr > 0 && hc > 0 && hr < UPSTAIRS_H - 1 && hc < UPSTAIRS_W - 1) {
+					const solid = SOLID.has(this.map[hr]?.[hc]);
+					const canPlace = !solid;
+					g.fillStyle(canPlace ? 0x88ffaa : 0xff5555, 0.3);
+					g.fillRect(hc * TILE, hr * TILE, TILE, TILE);
+					g.lineStyle(1, canPlace ? 0x88ffaa : 0xff5555, 0.8);
+					g.strokeRect(hc * TILE, hr * TILE, TILE, TILE);
+					if (ghost && gm.key) {
+						const item = ROOM_ITEMS[gm.key];
+						if (item && canPlace) {
+							ghost.setText(item.emoji);
+							ghost.setPosition(hc * TILE + TILE / 2, hr * TILE + TILE / 2);
+							ghost.setVisible(true);
+						} else { ghost.setVisible(false); }
+					}
+				} else {
+					if (ghost) ghost.setVisible(false);
+				}
+			}
+
 			update() {
 				this.tick++;
+				this._tickGrid();
 				if (this.didTransition) {
 					this.player.setVelocity(0, 0);
 					return;
@@ -3937,6 +4194,132 @@
 		};
 	}
 
+	// ── Market vendor shop UI ────────────────────────────────────────────────────
+	// Dynamic DOM panel (no HTML/CSS file edits needed) styled to match the
+	// existing Mart aesthetic. Each vendor pulls its inventory from
+	// MARKET_SHOPS[shopKind]; transactions go through Inventory.load/save.
+	const MarketShop = (() => {
+		let root = null, openFlag = false, currentVendor = null;
+		let titleEl, balanceEl, itemsEl, statusEl;
+		function btn(primary) {
+			return [
+				'display:inline-block','padding:9px 16px','font-family:inherit','font-size:10px',
+				'letter-spacing:0.6px','color:' + (primary ? '#2a1e08' : '#e8eaf0'),
+				'background:' + (primary
+					? 'linear-gradient(180deg, #ffd968, #f6c84c 55%, #d6a83a)'
+					: 'linear-gradient(180deg, #4a5e80, #2a3a52)'),
+				'border:0','border-radius:8px','cursor:pointer',
+				'box-shadow:inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -3px 0 rgba(0,0,0,0.4), 0 3px 0 rgba(0,0,0,0.5), 0 5px 12px rgba(0,0,0,0.45)'
+			].join(';');
+		}
+		function ensureRoot() {
+			if (root) return;
+			root = document.createElement('div');
+			root.id = 'campMarketShop';
+			root.setAttribute('role', 'dialog');
+			root.hidden = true;
+			root.style.cssText = 'position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);font-family:"Press Start 2P", monospace';
+			const panel = document.createElement('div');
+			panel.style.cssText = 'width:min(440px,92%);max-height:80vh;overflow-y:auto;background:linear-gradient(180deg,#1a2440 0%,#0e1826 100%);border:2px solid #f6c84c;border-radius:10px;padding:14px 16px 12px;color:#e8eaf0;box-shadow:0 0 0 2px rgba(0,0,0,0.4),0 0 24px rgba(246,200,76,0.18),0 14px 32px rgba(0,0,0,0.65)';
+			const head = document.createElement('div');
+			head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid rgba(246,200,76,0.2)';
+			titleEl = document.createElement('span');
+			titleEl.style.cssText = 'font-size:12px;color:#f6c84c;letter-spacing:1.2px;text-shadow:0 0 10px rgba(246,200,76,0.4)';
+			balanceEl = document.createElement('span');
+			balanceEl.style.cssText = 'font-size:10px;color:#f6c84c';
+			head.append(titleEl, balanceEl);
+			itemsEl = document.createElement('div');
+			itemsEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:4px 0 10px';
+			statusEl = document.createElement('div');
+			statusEl.style.cssText = 'font-size:9px;color:#a8c8e8;min-height:14px;padding:2px 0 8px';
+			const foot = document.createElement('div');
+			foot.style.cssText = 'display:flex;justify-content:flex-end;gap:8px';
+			const leave = document.createElement('button');
+			leave.type = 'button'; leave.textContent = 'Leave'; leave.style.cssText = btn(false);
+			leave.addEventListener('click', close);
+			foot.append(leave);
+			panel.append(head, itemsEl, statusEl, foot);
+			root.append(panel);
+			document.body.append(root);
+			document.addEventListener('keydown', (e) => {
+				if (openFlag && e.key === 'Escape') { e.preventDefault(); close(); }
+			});
+		}
+		function setStatus(msg) { if (statusEl) statusEl.textContent = msg || ''; }
+		function refresh() {
+			if (!currentVendor) return;
+			const cfg = MARKET_SHOPS[currentVendor.shopKind];
+			if (!cfg) return;
+			const inv = Inventory.load();
+			titleEl.textContent = cfg.title;
+			balanceEl.textContent = '💰 ' + (inv.tokens || 0);
+			itemsEl.innerHTML = '';
+			cfg.items.forEach((it) => {
+				const row = document.createElement('div');
+				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0';
+				const lbl = document.createElement('span');
+				lbl.style.cssText = 'font-size:10px;line-height:1.5;flex:1 1 auto';
+				const priceStr = it.cost != null ? ' — ' + it.cost + '💰'
+				             : it.sells != null ? ' — +' + it.sells + '💰'
+				             : '';
+				lbl.textContent = it.label + priceStr;
+				const b = document.createElement('button');
+				b.type = 'button'; b.style.cssText = btn(true);
+				b.textContent = it.cost != null ? 'Buy' : 'Sell';
+				b.addEventListener('click', () => doAction(it));
+				row.append(lbl, b);
+				itemsEl.append(row);
+			});
+		}
+		function doAction(it) {
+			const inv = Inventory.load();
+			if (!inv.cosmetics) inv.cosmetics = {};
+			switch (it.action) {
+				case 'buySeed':
+					if ((inv.tokens||0) < it.cost) { setStatus('Not enough Tokens.'); return; }
+					inv.tokens -= it.cost; inv.seeds = (inv.seeds||0)+1;
+					setStatus('Bought 1 Seed for ' + it.cost + ' Tokens.');
+					break;
+				case 'sellBerry':
+					if ((inv.friendshipBerries||0) <= 0) { setStatus('No berries to sell.'); return; }
+					inv.friendshipBerries -= 1; inv.tokens = (inv.tokens||0) + it.sells;
+					setStatus('Sold 1 Berry for ' + it.sells + ' Tokens.');
+					break;
+				case 'sellAllBerries': {
+					const n = inv.friendshipBerries||0;
+					if (n<=0) { setStatus('No berries to sell.'); return; }
+					inv.friendshipBerries = 0; inv.tokens = (inv.tokens||0) + n*it.sells;
+					setStatus('Sold ' + n + ' Berries for ' + (n*it.sells) + ' Tokens.');
+					break;
+				}
+				case 'buyStone':
+					if (inv.stone === it.key) { setStatus('Already holding that stone.'); return; }
+					if ((inv.tokens||0) < it.cost) { setStatus('Not enough Tokens.'); return; }
+					inv.tokens -= it.cost; inv.stone = it.key;
+					setStatus('Bought ' + it.key.toUpperCase() + ' Stone!');
+					break;
+				case 'buyWallpaper':
+					if ((inv.tokens||0) < it.cost) { setStatus('Not enough Tokens.'); return; }
+					inv.tokens -= it.cost; inv.cosmetics.wallpaper = it.key;
+					setStatus('Wallpaper changed!');
+					break;
+				case 'buyAccent':
+					if ((inv.tokens||0) < it.cost) { setStatus('Not enough Tokens.'); return; }
+					inv.tokens -= it.cost; inv.cosmetics.accent = it.key;
+					applyCampAccent(it.key);
+					setStatus('Camp accent changed!');
+					break;
+				default: setStatus('Unknown action.');
+			}
+			Inventory.save(inv);
+			refresh();
+		}
+		function open(vendor) { ensureRoot(); currentVendor = vendor; setStatus(''); refresh(); root.hidden = false; openFlag = true; }
+		function close() { if (root) root.hidden = true; openFlag = false; currentVendor = null; }
+		function isOpen() { return openFlag; }
+		return { open, close, isOpen };
+	})();
+
 	function makeMarketSceneClass() {
 		return class MarketScene extends Phaser.Scene {
 			constructor() { super({ key: 'market' }); }
@@ -3947,6 +4330,10 @@
 
 			preload() {
 				this.load.image('player-base', 'Pictures/sprites/calem.png');
+				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
+				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
+				this.load.spritesheet('npc-vaporeon',  'Pictures/sprites/vaporeon.png',  { frameWidth: 32, frameHeight: 48 });
+				this.load.spritesheet('npc-umbreon',   'Pictures/sprites/umbreon.png',   { frameWidth: 32, frameHeight: 40 });
 			}
 
 			create() {
@@ -4033,9 +4420,9 @@
 				mkAnim('m-walk-north', [7, 6, 8, 6]);
 				mkAnim('m-walk-east',  [10, 9, 11, 9]);
 
-				// Spawn just north of the south exit door
-				const spawnX = MARKET_DOOR_C*TILE + TILE/2;
-				const spawnY = (MARKET_DOOR_R - 1)*TILE + TILE/2;
+				// Spawn one tile south of the north-edge entry, facing south.
+				const spawnX = MARKET_NORTH_C*TILE + TILE/2;
+				const spawnY = 3*TILE + TILE/2;
 				this.player = this.physics.add.sprite(spawnX, spawnY, 'player-market', 0);
 				this.player.setOrigin(0.5, 36/38);
 				this.player.setScale(0.75);
@@ -4055,10 +4442,29 @@
 				}
 				this.physics.add.collider(this.player, this.solids);
 
+				// Spawn vendor NPCs from MARKET_NPCS — same pattern as camp's NPCS.
+				this.npcByTile = {};
+				const npcSolids = this.physics.add.staticGroup();
+				for (const npc of MARKET_NPCS) {
+					const x = npc.c * TILE + TILE/2;
+					const y = npc.r * TILE + TILE/2;
+					const sprite = this.add.sprite(x, y, 'npc-' + npc.species, 0);
+					sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
+					sprite.setScale(npc.spriteScale);
+					sprite.setDepth(3);
+					const rect = this.add.rectangle(x, y, TILE, TILE);
+					this.physics.add.existing(rect, true);
+					npcSolids.add(rect);
+					this.npcByTile[npc.r + ',' + npc.c] = npc;
+				}
+				this.physics.add.collider(this.player, npcSolids);
+
 				this.physics.world.setBounds(0, 0, W, H);
 				this.player.setCollideWorldBounds(true);
 				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
-				this.cameras.main.setBackgroundColor('#1a0e08');
+				// Use a soft grass-edge color so any gap around the world looks natural,
+				// matching the camp's outdoor feel.
+				this.cameras.main.setBackgroundColor('#3a5026');
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);
@@ -4082,12 +4488,14 @@
 				Music.start('camp');
 				this.events.once('shutdown', () => Music.stop());
 
-				this.dir = 2; // facing north — just walked in from the south
+				this.dir = 0; // facing south — just walked in from camp at the north edge
 				this.dirAnimKeys = ['m-walk-south', 'm-walk-west', 'm-walk-north', 'm-walk-east'];
 				this.dirIdleFrame = [0, 3, 6, 9];
 				this.player.setFrame(this.dirIdleFrame[this.dir]);
 				this.didTransition = false;
-				this.armedForExit = true;
+				// Re-arming for the north exit: don't fire immediately on spawn — wait
+				// until the player has stepped at least two tiles south of the entry.
+				this.armedForExit = false;
 
 				this._promptEl  = document.getElementById('campPrompt');
 				this._promptLbl = document.getElementById('campPromptLabel');
@@ -4167,11 +4575,26 @@
 				}));
 			}
 
-			findStallFor(tc, tr) {
-				// Player is standing one tile south of a counter when tr === 3 and tc
-				// falls within a stall's c1..c2 range. Counter is at row 2.
-				if (tr !== 3) return null;
-				return MARKET_STALLS.find(s => tc >= s.c1 && tc <= s.c2) || null;
+			// Find the vendor NPC, sign, or other interactable directly in front of
+			// the player (one tile in the direction they're facing). Adjacency only —
+			// the player must be next to the thing, not on top of it.
+			findInteractTarget() {
+				const tc = Math.floor(this.player.x / TILE);
+				const tr = Math.floor(this.player.y / TILE);
+				// Direction vector: 0=south, 1=west, 2=north, 3=east
+				const DV = [[0,1],[-1,0],[0,-1],[1,0]];
+				const [dc, dr] = DV[this.dir] || [0, 1];
+				const fc = tc + dc, fr = tr + dr;
+				const npcKey = fr + ',' + fc;
+				if (this.npcByTile && this.npcByTile[npcKey]) {
+					return { kind: 'npc', npc: this.npcByTile[npcKey] };
+				}
+				const t = this.map[fr] && this.map[fr][fc];
+				if (t === TSG) {
+					const msg = SIGN_MESSAGES_MARKET[fr + ',' + fc];
+					if (msg) return { kind: 'sign', message: msg };
+				}
+				return null;
 			}
 
 			update() {
@@ -4183,10 +4606,10 @@
 				applyDayNight();
 				Dialog.tick();
 				const dialogOpen = Dialog.isOpen();
-				const martOpen = Mart.isOpen();
+				const shopOpen = MarketShop.isOpen();
 				const k = this.keys, d = this.dpad;
 				let vx = 0, vy = 0;
-				if (!dialogOpen && !martOpen) {
+				if (!dialogOpen && !shopOpen) {
 					if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
 					if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
 					if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
@@ -4208,20 +4631,23 @@
 
 				const tc = Math.floor(this.player.x / TILE);
 				const tr = Math.floor(this.player.y / TILE);
-				const onDoor = tc === MARKET_DOOR_C && tr === MARKET_DOOR_R;
-				const distFromDoor = Math.abs(tr - MARKET_DOOR_R) + Math.abs(tc - MARKET_DOOR_C);
-				if (distFromDoor >= 2) this.armedForExit = true;
 
-				const stall = this.findStallFor(tc, tr);
+				// North-edge exit — walk onto the entry tile (row 1, col MARKET_NORTH_C)
+				// to head back to camp. Arm only after the player has stepped at least
+				// two tiles away so the spawn doesn't bounce back instantly.
+				const onExitTile = tc === MARKET_NORTH_C && tr <= 1;
+				const distFromExit = Math.max(0, tr - 1) + Math.abs(tc - MARKET_NORTH_C);
+				if (distFromExit >= 2) this.armedForExit = true;
+
+				const target = this.findInteractTarget();
 				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
 
 				const pe = this._promptEl;
 				const lbl = this._promptLbl;
-				const nearDoor = distFromDoor === 1 || onDoor;
-				const showPrompt = (!dialogOpen && !martOpen) && (stall || nearDoor);
+				const showPrompt = !dialogOpen && !shopOpen && target;
 				if (pe && lbl) {
 					if (showPrompt) {
-						lbl.textContent = stall ? 'Shop' : 'Exit';
+						lbl.textContent = target.kind === 'npc' ? (target.npc.label || 'Shop') : 'Read';
 						pe.hidden = false;
 						const cam = this.cameras.main;
 						const sx = (this.player.x - cam.worldView.x) * cam.zoom;
@@ -4235,14 +4661,17 @@
 					}
 				}
 
-				if (ePressed && stall && !dialogOpen && !martOpen) {
-					Mart.open();
+				if (ePressed && !shopOpen) {
+					if (dialogOpen) {
+						Dialog.advance();
+					} else if (target && target.kind === 'npc') {
+						MarketShop.open(target.npc);
+					} else if (target && target.kind === 'sign') {
+						Dialog.open(target.message);
+					}
 				}
 
-				const triggerExit = !this.didTransition && this.armedForExit && (
-					onDoor || (ePressed && nearDoor && !stall && !martOpen)
-				);
-				if (triggerExit) {
+				if (!this.didTransition && this.armedForExit && onExitTile && !shopOpen && !dialogOpen) {
 					this.didTransition = true;
 					if (pe) pe.hidden = true;
 					safeSceneStart(this, 'camp', { from: 'market' });
@@ -4251,9 +4680,9 @@
 				Debug.render(
 					'MARKET\n' +
 					'tile  ' + tc + ',' + tr + '\n' +
-					'stall ' + (stall ? stall.name : '-') + '\n' +
-					'door  ' + MARKET_DOOR_C + ',' + MARKET_DOOR_R + '\n' +
-					'distD ' + distFromDoor + '\n' +
+					'target ' + (target ? (target.kind === 'npc' ? target.npc.key : target.kind) : '-') + '\n' +
+					'exit  ' + MARKET_NORTH_C + ',1\n' +
+					'distE ' + distFromExit + '\n' +
 					'armed ' + this.armedForExit + '\n' +
 					'trans ' + this.didTransition + '\n' +
 					(Debug.lastError ? 'ERR ' + Debug.lastError : '')
