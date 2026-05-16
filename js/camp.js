@@ -214,8 +214,15 @@
 				if (hits >= 3) finish(true);
 				else if (misses >= 3) finish(false);
 			};
+			const onTap = (e) => { e.preventDefault(); onKey({ key: ' ' }); };
+			const rhythmBar = document.querySelector('.cb-rhythm-bar');
+			if (rhythmBar) rhythmBar.addEventListener('pointerdown', onTap);
 			document.addEventListener('keydown', onKey);
-			rhythmState = { stop: () => { if (raf) cancelAnimationFrame(raf); document.removeEventListener('keydown', onKey); } };
+			rhythmState = { stop: () => {
+				if (raf) cancelAnimationFrame(raf);
+				document.removeEventListener('keydown', onKey);
+				if (rhythmBar) rhythmBar.removeEventListener('pointerdown', onTap);
+			}};
 		}
 
 		// ── Silhouette / sketch ───────────────────────────────────────────────────
@@ -1314,8 +1321,46 @@
 			fullText = ''; shownLen = 0;
 		}
 		function isOpen() { return isOpenFlag; }
+		// Tap anywhere on the dialog box to advance — essential for touch users.
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', () => {
+				document.getElementById('campDialog')?.addEventListener('pointerup', advance);
+			});
+		} else {
+			document.getElementById('campDialog')?.addEventListener('pointerup', advance);
+		}
 		return { open, tick, advance, close, isOpen };
 	})();
+
+	// ── Touch action flags ────────────────────────────────────────────────────────
+	// On-screen buttons set these; each scene's update() consumes them once so
+	// they behave like a keyboard JustDown (fire once per tap, not every frame).
+	const TouchActions = (() => {
+		const f = {};
+		return {
+			fire(action)    { f[action] = true; },
+			consume(action) { const v = !!f[action]; f[action] = false; return v; },
+		};
+	})();
+
+	// Exposed by setupPauseMenu so the touch ≡ button can open/close the panel.
+	let _pauseToggleFn = null;
+
+	// Wire on-screen action buttons → TouchActions flags.
+	function setupTouchPad() {
+		[['capInteract','interact'],['capPartner','partner'],['capFaceoff','faceoff']].forEach(([id, action]) => {
+			document.getElementById(id)?.addEventListener('pointerdown', (e) => {
+				e.preventDefault();
+				TouchActions.fire(action);
+			});
+		});
+		document.getElementById('capMenu')?.addEventListener('pointerdown', (e) => {
+			e.preventDefault();
+			_pauseToggleFn?.();
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupTouchPad);
+	else setupTouchPad();
 
 	// ── Pause menu (shared) ───────────────────────────────────────────────────────
 	function setupPauseMenu(game) {
@@ -1349,6 +1394,7 @@
 		};
 
 		resumeBtn.addEventListener('click', close);
+		_pauseToggleFn = () => { panel.hidden ? open() : close(); };
 
 		// 💾 Save button — writes the current timestamp to localStorage.
 		const saveBtn = document.getElementById('campPauseSave');
@@ -2281,7 +2327,7 @@
 				// freezes and E advances/closes the dialog instead of moving them.
 				const target = this.findInteractTarget();
 				this.showPrompt(target ? (target.label || (target.kind === 'door' ? 'Enter' : target.kind === 'npc' ? 'Talk' : 'Read')) : null);
-				if (k.partner && Phaser.Input.Keyboard.JustDown(k.partner) && !dialogOpen) {
+				if ((k.partner && Phaser.Input.Keyboard.JustDown(k.partner) || TouchActions.consume('partner')) && !dialogOpen) {
 					Partner.wire(this);
 					Partner.open();
 				}
@@ -2296,7 +2342,7 @@
 				if (k.rain && Phaser.Input.Keyboard.JustDown(k.rain) && !dialogOpen) {
 					this.isRaining = !this.isRaining;
 				}
-				if (Phaser.Input.Keyboard.JustDown(k.interact)) {
+				if (Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact')) {
 					if (dialogOpen) Dialog.advance();
 					else if (target && (target.kind === 'plant' || target.kind === 'harvest' || target.kind === 'growing')) {
 						this._handlePlantAction(target);
@@ -2366,7 +2412,7 @@
 						if (this.followerHistory.length > 8) this.followerHistory.shift();
 					}
 				}
-				if (Phaser.Input.Keyboard.JustDown(k.faceoff) && !dialogOpen && this.followerMode === 'trail') {
+				if ((Phaser.Input.Keyboard.JustDown(k.faceoff) || TouchActions.consume('faceoff')) && !dialogOpen && this.followerMode === 'trail') {
 					this.followerMode = 'faceoff';
 					this.followerHistory = [];
 					const [dvx, dvy] = this.DIR_VEC[this.dir];
@@ -2820,7 +2866,7 @@
 					}
 				}
 
-				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact);
+				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
 				const triggerExit = !this.didTransition && this.armedForExit && (
 					onDoor || (ePressed && nearDoor)
 				);
@@ -3141,7 +3187,7 @@
 					}
 				}
 
-				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact);
+				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
 				const trigger = !this.didTransition && this.armedForStairs && (
 					onStairs || (ePressed && nearStairs)
 				);

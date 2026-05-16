@@ -79,6 +79,18 @@
 			</div>
 		</div>
 
+		<!-- Touch action pad (bottom-left) — mirrors the joystick on the right -->
+		<div class="camp-action-pad" id="campActionPad" aria-hidden="true">
+			<div class="cap-row cap-row--top">
+				<button class="cap-btn cap-btn--sm" id="capFaceoff" type="button" aria-label="Face Pokémon (F)">F</button>
+				<button class="cap-btn cap-btn--sm cap-btn--menu" id="capMenu" type="button" aria-label="Menu (Esc)">☰</button>
+			</div>
+			<div class="cap-row cap-row--main">
+				<button class="cap-btn cap-btn--b" id="capPartner" type="button" aria-label="Partner (P)">P</button>
+				<button class="cap-btn cap-btn--a" id="capInteract" type="button" aria-label="Interact (E)">A</button>
+			</div>
+		</div>
+
 		<!-- Day/night tint — full-screen overlay whose opacity follows the clock -->
 		<div class="camp-tint" id="campTint" aria-hidden="true"></div>
 
@@ -225,7 +237,7 @@
 			<!-- Rhythm-meter minigame -->
 			<div class="cb-screen cb-rhythm" data-screen="rhythm" hidden>
 				<h2 class="cb-title">Rhythm Strike</h2>
-				<p class="cb-rhythm-hint">Press <b>Space</b> when the cursor hits the green zone — three hits wins!</p>
+				<p class="cb-rhythm-hint">Tap the bar or press <b>Space</b> when the cursor hits the green zone — three hits wins!</p>
 				<div class="cb-rhythm-bar">
 					<div class="cb-rhythm-zone"></div>
 					<div class="cb-rhythm-cursor" id="cbRhythmCursor"></div>
