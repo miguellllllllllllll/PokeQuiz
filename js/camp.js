@@ -704,10 +704,21 @@
 			battleOscs = [];
 		}
 
+		// Preload all tracks immediately so there's no network lag when start() fires.
+		const _pool = {};
+		Object.entries(URLS).forEach(([key, url]) => {
+			const a = new Audio();
+			a.preload = 'auto';
+			a.loop    = true;
+			a.volume  = 0.45;
+			a.src     = url;   // setting src starts buffering
+			_pool[key] = a;
+		});
+
 		function stopAudio() {
 			if (current) {
 				current.pause();
-				current.src = '';
+				current.currentTime = 0;
 				current = null;
 			}
 		}
@@ -718,11 +729,9 @@
 			stop();
 			area = key;
 			if (key === 'battle') { playBattleLoop(); return; }
-			const url = URLS[key];
-			if (!url) return;
-			const audio = new Audio(url);
-			audio.loop = true;
-			audio.volume = 0.45;
+			const audio = _pool[key];
+			if (!audio) return;
+			audio.currentTime = 0;
 			audio.play().catch(() => {});   // browsers may block until a gesture
 			current = audio;
 		}
@@ -1442,11 +1451,11 @@
 		// Trigger the black fade-in so the screen stays dark through the reload.
 		const fade = document.getElementById('campFade');
 		if (fade) fade.classList.remove('is-hidden');
-		// Short delay so the fade animation has time to land before the reload.
+		// Wait for the 350ms fade transition to fully complete before reloading.
 		setTimeout(() => {
 			window.location.hash = '#' + key + (from ? '|' + from : '');
 			window.location.reload();
-		}, 220);
+		}, 400);
 	}
 
 	// Read the hash on boot to figure out which scene to start. Captured once at
@@ -1571,6 +1580,10 @@
 				try {
 					this._buildCamp();
 					console.log('[CampScene] create() ok');
+					requestAnimationFrame(() => requestAnimationFrame(() => {
+						const f = document.getElementById('campFade');
+						if (f) f.classList.add('is-hidden');
+					}));
 				} catch (e) {
 					console.error('[CampScene] create failed:', e);
 					Debug.lastError = 'CampScene.create: ' + e.message;
@@ -2478,6 +2491,10 @@
 				try {
 					this._buildHouse();
 					console.log('[HouseScene] create() ok — player at', this.player?.x, this.player?.y);
+					requestAnimationFrame(() => requestAnimationFrame(() => {
+						const f = document.getElementById('campFade');
+						if (f) f.classList.add('is-hidden');
+					}));
 				} catch (e) {
 					console.error('[HouseScene] create failed:', e);
 					// Fall back to camp so the player isn't stranded on a black screen.
@@ -2849,6 +2866,10 @@
 				try {
 					this._buildUpstairs();
 					console.log('[UpstairsScene] create() ok — player at', this.player?.x, this.player?.y);
+					requestAnimationFrame(() => requestAnimationFrame(() => {
+						const f = document.getElementById('campFade');
+						if (f) f.classList.add('is-hidden');
+					}));
 				} catch (e) {
 					console.error('[UpstairsScene] create failed:', e);
 					this.scene.start('house', { from: 'upstairs' });
@@ -3193,11 +3214,8 @@
 		if (window.location.hash) {
 			history.replaceState(null, '', window.location.pathname + window.location.search);
 		}
-		// Fade out the black overlay once the first scene has had a moment to paint.
-		setTimeout(() => {
-			const fade = document.getElementById('campFade');
-			if (fade) fade.classList.add('is-hidden');
-		}, 250);
+		// Fade-out is now triggered from inside each scene's create() after Phaser
+		// has painted, so we don't need a fixed timeout here.
 	}
 
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
