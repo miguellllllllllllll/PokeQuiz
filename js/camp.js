@@ -343,6 +343,37 @@
 			document.querySelectorAll('.cm-stone-status').forEach(el => {
 				el.textContent = inv.stone === el.dataset.stone ? '(held)' : '';
 			});
+			// Cosmetics — mark owned items and disable if already active or too poor.
+			const cosm = inv.cosmetics || {};
+			const tokens = inv.tokens || 0;
+			document.querySelectorAll('[data-buy-wallpaper]').forEach(b => {
+				const key = b.dataset.buyWallpaper;
+				const active = (cosm.wallpaper || 'default') === key;
+				b.disabled = active || tokens < COSM_PRICE.wallpaper;
+				b.classList.toggle('cm-cosm-owned', active);
+				b.textContent = active ? '✓ Active' : b.dataset.label;
+			});
+			document.querySelectorAll('[data-buy-accent]').forEach(b => {
+				const key = b.dataset.buyAccent;
+				const active = (cosm.accent || 'default') === key;
+				b.disabled = active || tokens < COSM_PRICE.accent;
+				b.classList.toggle('cm-cosm-owned', active);
+				b.textContent = active ? '✓ Active' : b.dataset.label;
+			});
+			document.querySelectorAll('[data-buy-scale]').forEach(b => {
+				const key = b.dataset.buyScale;
+				const active = (cosm.partnerScale || 'normal') === key;
+				b.disabled = active || (key !== 'normal' && tokens < COSM_PRICE.scale);
+				b.classList.toggle('cm-cosm-owned', active);
+				b.textContent = active ? '✓ Active' : b.dataset.label;
+			});
+			document.querySelectorAll('[data-buy-decor]').forEach(b => {
+				const key = b.dataset.buyDecor;
+				const owned = (cosm.decor || []).includes(key);
+				b.disabled = owned || tokens < COSM_PRICE[key];
+				b.classList.toggle('cm-cosm-owned', owned);
+				b.textContent = owned ? '✓ Placed' : b.dataset.label;
+			});
 		}
 		function setStatus(msg) {
 			const el = $('cmStatus');
@@ -410,6 +441,67 @@
 				});
 			});
 			$('cmClose') && $('cmClose').addEventListener('click', close);
+
+			// ── Cosmetics ─────────────────────────────────────────────────────────
+			function buyCosmetic(key, applyFn) {
+				const inv = Inventory.load();
+				if (!inv.cosmetics) inv.cosmetics = {};
+				applyFn(inv);
+				Inventory.save(inv);
+				applyCampAccent(inv.cosmetics.accent);
+				refresh();
+			}
+			document.querySelectorAll('[data-buy-wallpaper]').forEach(b => {
+				b.addEventListener('click', () => {
+					const inv = Inventory.load();
+					const key = b.dataset.buyWallpaper;
+					if ((inv.tokens || 0) < COSM_PRICE.wallpaper) return;
+					inv.tokens -= COSM_PRICE.wallpaper;
+					inv.cosmetics.wallpaper = key;
+					Inventory.save(inv);
+					setStatus('Wallpaper changed to ' + b.dataset.label + '!');
+					refresh();
+				});
+			});
+			document.querySelectorAll('[data-buy-accent]').forEach(b => {
+				b.addEventListener('click', () => {
+					const inv = Inventory.load();
+					const key = b.dataset.buyAccent;
+					if ((inv.tokens || 0) < COSM_PRICE.accent) return;
+					inv.tokens -= COSM_PRICE.accent;
+					inv.cosmetics.accent = key;
+					Inventory.save(inv);
+					applyCampAccent(key);
+					setStatus('Camp accent changed to ' + b.dataset.label + '!');
+					refresh();
+				});
+			});
+			document.querySelectorAll('[data-buy-scale]').forEach(b => {
+				b.addEventListener('click', () => {
+					const inv = Inventory.load();
+					const key = b.dataset.buyScale;
+					const price = key === 'normal' ? 0 : COSM_PRICE.scale;
+					if ((inv.tokens || 0) < price) return;
+					inv.tokens -= price;
+					inv.cosmetics.partnerScale = key;
+					Inventory.save(inv);
+					setStatus('Partner size set to ' + b.dataset.label + '! Reopen camp to apply.');
+					refresh();
+				});
+			});
+			document.querySelectorAll('[data-buy-decor]').forEach(b => {
+				b.addEventListener('click', () => {
+					const inv = Inventory.load();
+					const key = b.dataset.buyDecor;
+					if ((inv.cosmetics.decor || []).includes(key)) return;
+					if ((inv.tokens || 0) < COSM_PRICE[key]) return;
+					inv.tokens -= COSM_PRICE[key];
+					inv.cosmetics.decor = [...(inv.cosmetics.decor || []), key];
+					Inventory.save(inv);
+					setStatus(b.dataset.label + ' placed in camp!');
+					refresh();
+				});
+			});
 		}
 		if (document.readyState === 'loading') {
 			document.addEventListener('DOMContentLoaded', wire);
@@ -570,14 +662,46 @@
 		jolteon:  { sheet: 'jolteon',  cols: 4, originY: 29/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Jolteon' },
 		leafeon:  { sheet: 'leafeon',  cols: 4, originY: 32/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Leafeon' },
 	};
+	// ── Cosmetic lookup tables ────────────────────────────────────────────────────
+	const WALLPAPER_BG = {
+		default: { house: '#1a0e08', upstairs: '#140a18' },
+		sakura:  { house: '#2e0e16', upstairs: '#280c14' },
+		ocean:   { house: '#081428', upstairs: '#060e1e' },
+		forest:  { house: '#081e08', upstairs: '#061806' },
+		dusk:    { house: '#180828', upstairs: '#140620' },
+	};
+	const ACCENT_HEX = {
+		default: '#f6c84c',
+		red:     '#e84040',
+		blue:    '#4488ff',
+		green:   '#40c870',
+	};
+	const SCALE_MULT = { normal: 1.0, small: 0.68, large: 1.38 };
+	// Fixed world-pixel positions for static decor objects (TILE = 16)
+	const DECOR_POS = {
+		flowers: { x: 14 * 16 + 8, y: 10 * 16 + 8 },
+		lantern: { x:  9 * 16 + 8, y: 13 * 16 + 8 },
+	};
+	const COSM_PRICE = { wallpaper: 15, accent: 20, scale: 10, flowers: 25, lantern: 30 };
+
 	const Inventory = (() => {
-		const DEFAULT = { seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0, eeveeForm: 'eevee', stone: null };
+		const DEFAULT = {
+			seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0,
+			eeveeForm: 'eevee', stone: null,
+			cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [] },
+		};
 		function load() {
 			try {
 				const raw = localStorage.getItem(INVENTORY_KEY);
-				if (raw) return Object.assign({}, DEFAULT, JSON.parse(raw));
+				if (raw) {
+					const parsed = JSON.parse(raw);
+					// Deep-merge cosmetics so new keys added to DEFAULT are always present.
+					const cosm = Object.assign({}, DEFAULT.cosmetics, parsed.cosmetics || {});
+					if (!Array.isArray(cosm.decor)) cosm.decor = [];
+					return Object.assign({}, DEFAULT, parsed, { cosmetics: cosm });
+				}
 			} catch {}
-			return Object.assign({}, DEFAULT);
+			return Object.assign({}, DEFAULT, { cosmetics: Object.assign({}, DEFAULT.cosmetics) });
 		}
 		function save(inv) {
 			try { localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv)); } catch {}
@@ -1284,6 +1408,14 @@
 		}
 	}
 
+	// Applies the chosen accent colour as a CSS custom property on #campWrap
+	// so the location badge, prompt border, and other chrome inherit it live.
+	function applyCampAccent(accentKey) {
+		const hex = ACCENT_HEX[accentKey] || ACCENT_HEX.default;
+		const wrap = document.getElementById('campWrap');
+		if (wrap) wrap.style.setProperty('--camp-accent', hex);
+	}
+
 	function applyWrapTop() {
 		const header = document.querySelector('.site-header');
 		const wrap = document.getElementById('campWrap');
@@ -1840,6 +1972,11 @@
 				Music.start('camp');
 				this.events.once('shutdown', () => Music.stop());
 
+				// Apply saved accent colour immediately so chrome is correct before
+				// the player interacts with anything.
+				const _startInv = Inventory.load();
+				applyCampAccent(_startInv.cosmetics?.accent);
+
 				// Chimney smoke particles + container behind the player so puffs don't
 				// occlude the trainer. The chimney tile is at row 2 col 7 in the map.
 				this.smokeContainer = this.add.container(0, 0).setDepth(2);
@@ -1882,9 +2019,12 @@
 				this.eeveeAnimKeys = eeveeAnims.map(([k]) => k);
 				this.eeveeIdleFrame = eeveeAnims.map(([,,idle]) => idle);
 				this.followerForm = formKey;
+				const _followerInv = Inventory.load();
+				const _scaleMult = SCALE_MULT[_followerInv.cosmetics?.partnerScale] ?? 1;
 				this.follower = this.add.sprite(this.player.x, this.player.y + 14, form.sheet, this.eeveeIdleFrame[0]);
 				this.follower.setOrigin(0.5, form.originY);
-				this.follower.setScale(form.scale);
+				this.follower.setScale(form.scale * _scaleMult);
+				this._followerScaleMult = _scaleMult;
 				this.follower.setDepth(3.5);
 
 				// Nickname label — HTML overlay for crisp rendering at any DPR.
@@ -1955,6 +2095,27 @@
 				this._refreshPlantSprites();
 
 				// Pre-render the static mini-map once. It mirrors the full map at tiny
+				// ── Cosmetic decor — render bought items at fixed world positions ─────
+				const _decorInv = Inventory.load();
+				const _decor = _decorInv.cosmetics?.decor || [];
+				if (_decor.includes('flowers')) {
+					const fp = DECOR_POS.flowers;
+					// Three flower emoji at slight offsets for a natural patch look.
+					[[-6,-4],[4,-2],[0,6]].forEach(([dx,dy]) => {
+						this.add.text(fp.x + dx, fp.y + dy, '🌸', { fontSize: '10px' })
+							.setDepth(2).setOrigin(0.5);
+					});
+				}
+				if (_decor.includes('lantern')) {
+					const lp = DECOR_POS.lantern;
+					this.add.text(lp.x, lp.y, '🏮', { fontSize: '13px' })
+						.setDepth(2).setOrigin(0.5);
+					// Soft glow circle underneath
+					const gfx = this.add.graphics().setDepth(1.5);
+					gfx.fillStyle(0xff8040, 0.18);
+					gfx.fillCircle(lp.x, lp.y + 2, 20);
+				}
+
 				// scale; the player dot is overlaid every frame in updateMinimap().
 				this.minimapEl = document.getElementById('campMinimap');
 				if (this.minimapEl) {
@@ -2517,12 +2678,15 @@
 				}
 				// Position the HTML nickname label every frame so it tracks the
 				// follower even when it's standing still (followTarget may be null).
-				// Use getBounds().top so it sits above the actual sprite pixels,
-				// regardless of each eeveelution's different originY anchor.
+				// Manually derive world-space sprite top from the form config so the
+				// result is exact for every eeveelution and scale multiplier.
 				if (this.follower && this._followerNameEl && !this._followerNameEl.hidden) {
 					const cam = this.cameras.main;
-					const fx = (this.follower.x - cam.worldView.x) * cam.zoom;
-					const fy = (this.follower.getBounds().top - cam.worldView.y) * cam.zoom - 4;
+					const fc = FOLLOWER_FORMS[this.followerForm] || FOLLOWER_FORMS.eevee;
+					const effectiveScale = fc.scale * (this._followerScaleMult ?? 1);
+					const worldTop = this.follower.y - fc.originY * fc.frameH * effectiveScale;
+					const fx = (this.follower.x  - cam.worldView.x) * cam.zoom;
+					const fy = (worldTop          - cam.worldView.y) * cam.zoom - 5;
 					this._followerNameEl.style.left = fx + 'px';
 					this._followerNameEl.style.top  = fy + 'px';
 				}
@@ -2721,7 +2885,8 @@
 				// negative scroll when the viewport is bigger than the room without
 				// being clamped to zero.
 				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
-				this.cameras.main.setBackgroundColor('#1a0e08');
+				const _houseWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
+				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_houseWp]?.house || '#1a0e08');
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);
@@ -3075,7 +3240,8 @@
 				this.physics.world.setBounds(0, 0, W, H);
 				this.player.setCollideWorldBounds(true);
 				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
-				this.cameras.main.setBackgroundColor('#140a18');
+				const _upWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
+				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_upWp]?.upstairs || '#140a18');
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);

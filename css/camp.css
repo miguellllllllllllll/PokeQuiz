@@ -14,6 +14,8 @@ body.camp-body {
 	bottom: 0;
 	background: #68A028;
 	overflow: hidden;
+	/* Default accent — overridden at runtime by applyCampAccent() */
+	--camp-accent: #f6c84c;
 }
 
 /* Phaser injects its canvas inside #campWrap */
@@ -243,7 +245,7 @@ body.camp-body {
 	gap: 6px;
 	padding: 4px 9px;
 	background: rgba(20, 28, 44, 0.92);
-	border: 2px solid #f6c84c;
+	border: 2px solid var(--camp-accent);
 	border-radius: 8px;
 	font-family: 'Press Start 2P', monospace;
 	font-size: 9px;
@@ -253,13 +255,13 @@ body.camp-body {
 	animation: campPromptBob 0.9s ease-in-out infinite alternate;
 }
 .camp-prompt-arrow {
-	color: #f6c84c;
+	color: var(--camp-accent);
 	font-size: 9px;
 	line-height: 1;
 }
 .camp-prompt-key {
 	display: inline-block;
-	background: #f6c84c;
+	background: var(--camp-accent);
 	color: #2a1e08;
 	padding: 1px 5px;
 	border-radius: 3px;
@@ -280,7 +282,7 @@ body.camp-body {
 	min-height: 100px;
 	padding: 16px 20px 22px;
 	background: rgba(12, 18, 32, 0.96);
-	border: 3px solid #f6c84c;
+	border: 3px solid var(--camp-accent);
 	border-radius: 12px;
 	color: #f5f0e0;
 	font-family: 'Press Start 2P', monospace;
@@ -296,7 +298,7 @@ body.camp-body {
 	position: absolute;
 	right: 14px;
 	bottom: 10px;
-	color: #f6c84c;
+	color: var(--camp-accent);
 	font-size: 12px;
 	animation: campPromptBob 0.6s ease-in-out infinite alternate;
 }
@@ -331,7 +333,7 @@ body.camp-body {
 	width: 36px;
 	height: 36px;
 	background: rgba(16, 24, 44, 0.88);
-	border: 2px solid #f6c84c;
+	border: 2px solid var(--camp-accent);
 	border-radius: 8px;
 	text-decoration: none;
 	z-index: 7;
@@ -347,7 +349,7 @@ body.camp-body {
 	top: 50px;
 	padding: 6px 12px;
 	background: rgba(16, 24, 44, 0.88);
-	border: 2px solid #f6c84c;
+	border: 2px solid var(--camp-accent);
 	border-radius: 6px;
 	color: #fff;
 	font-family: 'Press Start 2P', monospace;
@@ -385,7 +387,7 @@ body.camp-body {
 .cp-panel {
 	position: relative;
 	background: rgba(16, 22, 36, 0.98);
-	border: 3px solid #f6c84c;
+	border: 3px solid var(--camp-accent);
 	border-radius: 14px;
 	padding: 24px 26px 18px;
 	width: 100%;
@@ -400,7 +402,7 @@ body.camp-body {
 	height: 32px;
 	background: transparent;
 	border: 0;
-	color: #f6c84c;
+	color: var(--camp-accent);
 	font-family: inherit;
 	font-size: 22px;
 	cursor: pointer;
@@ -409,7 +411,7 @@ body.camp-body {
 .cp-close:hover { color: #ffd968; }
 .cp-title {
 	font-size: 14px;
-	color: #f6c84c;
+	color: var(--camp-accent);
 	margin: 0 0 18px;
 	letter-spacing: 1px;
 	text-align: center;
@@ -432,7 +434,7 @@ body.camp-body {
 .cp-info { flex: 1 1 auto; min-width: 0; }
 .cp-name { font-size: 14px; color: #fff; margin-bottom: 4px; }
 .cp-form { font-size: 9px; color: #b8b8c8; margin-bottom: 14px; }
-.cp-friendship-label { font-size: 9px; color: #f6c84c; margin-bottom: 5px; }
+.cp-friendship-label { font-size: 9px; color: var(--camp-accent); margin-bottom: 5px; }
 .cp-friendship-bar {
 	height: 14px;
 	background: #1a1428;
@@ -455,7 +457,7 @@ body.camp-body {
 	flex-wrap: wrap;
 	margin-bottom: 12px;
 }
-.cp-btn-alt { background: transparent; color: #f6c84c; border: 2px solid #f6c84c; }
+.cp-btn-alt { background: transparent; color: var(--camp-accent); border: 2px solid var(--camp-accent); }
 .cp-btn-alt:hover { background: rgba(246,200,76,0.15); }
 .cp-count { font-size: 9px; opacity: 0.8; margin-left: 6px; }
 .cp-status {
@@ -490,7 +492,7 @@ body.camp-body {
 }
 .cm-panel {
 	background: rgba(16, 22, 36, 0.97);
-	border: 3px solid #f6c84c;
+	border: 3px solid var(--camp-accent);
 	border-radius: 14px;
 	padding: 22px 26px;
 	max-width: 520px;
@@ -499,7 +501,7 @@ body.camp-body {
 }
 .cm-title {
 	font-size: 16px;
-	color: #f6c84c;
+	color: var(--camp-accent);
 	margin: 0 0 6px;
 	letter-spacing: 1px;
 	text-align: center;
@@ -517,7 +519,7 @@ body.camp-body {
 }
 .cm-section-title {
 	font-size: 11px;
-	color: #f6c84c;
+	color: var(--camp-accent);
 	margin: 0 0 8px;
 	letter-spacing: 0.5px;
 }
@@ -553,10 +555,10 @@ body.camp-body {
 @keyframes cb-fade-in     { from { opacity: 0; } to { opacity: 1; } }
 @keyframes cb-screen-in   { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes cb-bg-drift    { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-@keyframes cb-title-glow  { 0%,100% { text-shadow: 0 0 6px #f6c84c, 0 2px 0 #2a1e08; } 50% { text-shadow: 0 0 14px #ffe890, 0 0 22px #f6c84c, 0 2px 0 #2a1e08; } }
-@keyframes cb-rim-pulse   { 0%,100% { box-shadow: 0 0 0 4px #f6c84c, 0 0 22px rgba(246,200,76,0.5), 0 14px 32px rgba(0,0,0,0.65); } 50% { box-shadow: 0 0 0 4px #ffe890, 0 0 36px rgba(255,232,144,0.85), 0 14px 32px rgba(0,0,0,0.65); } }
+@keyframes cb-title-glow  { 0%,100% { text-shadow: 0 0 6px var(--camp-accent), 0 2px 0 #2a1e08; } 50% { text-shadow: 0 0 14px #ffe890, 0 0 22px var(--camp-accent), 0 2px 0 #2a1e08; } }
+@keyframes cb-rim-pulse   { 0%,100% { box-shadow: 0 0 0 4px var(--camp-accent), 0 0 22px rgba(246,200,76,0.5), 0 14px 32px rgba(0,0,0,0.65); } 50% { box-shadow: 0 0 0 4px #ffe890, 0 0 36px rgba(255,232,144,0.85), 0 14px 32px rgba(0,0,0,0.65); } }
 @keyframes cb-zone-pulse  { 0%,100% { box-shadow: inset 0 0 8px rgba(146,255,170,0.45); } 50% { box-shadow: inset 0 0 18px rgba(146,255,170,0.85); } }
-@keyframes cb-cursor-glow { 0%,100% { box-shadow: 0 0 6px #f6c84c, 0 0 12px #ffd968; } 50% { box-shadow: 0 0 12px #ffe890, 0 0 22px #ffd968; } }
+@keyframes cb-cursor-glow { 0%,100% { box-shadow: 0 0 6px var(--camp-accent), 0 0 12px #ffd968; } 50% { box-shadow: 0 0 12px #ffe890, 0 0 22px #ffd968; } }
 
 .camp-battle {
 	position: absolute;
@@ -589,7 +591,7 @@ body.camp-body {
 	position: relative;
 	background:
 		linear-gradient(180deg, rgba(28, 24, 52, 0.97), rgba(14, 10, 28, 0.98));
-	border: 3px solid #f6c84c;
+	border: 3px solid var(--camp-accent);
 	border-radius: 16px;
 	padding: 24px 28px;
 	max-width: 660px;
@@ -611,7 +613,7 @@ body.camp-body {
 }
 .cb-title {
 	font-size: 17px;
-	color: #f6c84c;
+	color: var(--camp-accent);
 	margin: 0 0 18px;
 	letter-spacing: 1.5px;
 	animation: cb-title-glow 2.4s ease-in-out infinite;
@@ -620,7 +622,7 @@ body.camp-body {
 	display: inline-block;
 	padding: 12px 24px;
 	margin: 4px 6px;
-	background: linear-gradient(180deg, #ffd968, #f6c84c 55%, #d6a83a);
+	background: linear-gradient(180deg, #ffd968, var(--camp-accent) 55%, #d6a83a);
 	color: #2a1e08;
 	border: 0;
 	border-radius: 10px;
@@ -662,10 +664,10 @@ body.camp-body {
 	margin: 6px auto 22px;
 	border-radius: 50%;
 	background: #1a0e08;
-	border: 4px solid #f6c84c;
+	border: 4px solid var(--camp-accent);
 	overflow: hidden;
 	box-shadow:
-		0 0 0 4px #f6c84c,
+		0 0 0 4px var(--camp-accent),
 		0 0 22px rgba(246,200,76,0.5),
 		0 14px 32px rgba(0,0,0,0.65);
 	animation: cb-rim-pulse 2.6s ease-in-out infinite;
@@ -677,7 +679,7 @@ body.camp-body {
 	transform: translate(-50%, -50%);
 	width: 38px; height: 38px;
 	border-radius: 50%;
-	background: radial-gradient(circle at 35% 35%, #fff8c8, #f6c84c 55%, #8a5e1a);
+	background: radial-gradient(circle at 35% 35%, #fff8c8, var(--camp-accent) 55%, #8a5e1a);
 	box-shadow: 0 0 0 3px #2a1e08, 0 0 14px rgba(246,200,76,0.6);
 	z-index: 3;
 }
@@ -759,7 +761,7 @@ body.camp-body {
 		linear-gradient(180deg, rgba(248,200,76,0.22), rgba(248,200,76,0.06)),
 		linear-gradient(180deg, #2a223c, #1a1426);
 	background-clip: padding-box;
-	border: 2px solid #f6c84c;
+	border: 2px solid var(--camp-accent);
 	color: #fff;
 	font-family: inherit;
 	font-size: 12px;
@@ -791,7 +793,7 @@ body.camp-body {
 .cb-card-card[data-effect="weak"] { border-color: #ffa07a; }
 .cb-card-card[data-effect="super"] .cb-card-tag { color: #92ffaa; }
 .cb-card-card[data-effect="weak"]  .cb-card-tag { color: #ffa07a; }
-.cb-card-tag { display: block; font-size: 10px; margin-top: 8px; color: #f6c84c; letter-spacing: 1px; }
+.cb-card-tag { display: block; font-size: 10px; margin-top: 8px; color: var(--camp-accent); letter-spacing: 1px; }
 .cb-card-result { margin-top: 14px; font-size: 12px; }
 
 /* Type RPS */
@@ -881,9 +883,9 @@ body.camp-body {
 	top: 3px; bottom: 3px;
 	width: 6px;
 	left: 0;
-	background: linear-gradient(180deg, #ffe890, #f6c84c);
+	background: linear-gradient(180deg, #ffe890, var(--camp-accent));
 	border-radius: 2px;
-	box-shadow: 0 0 6px #f6c84c, 0 0 12px #ffd968;
+	box-shadow: 0 0 6px var(--camp-accent), 0 0 12px #ffd968;
 	animation: cb-cursor-glow 0.8s ease-in-out infinite;
 }
 .cb-rhythm-score { font-size: 11px; color: #f8d090; letter-spacing: 0.6px; }
@@ -896,7 +898,7 @@ body.camp-body {
 	background:
 		radial-gradient(circle at 50% 40%, rgba(246,200,76,0.18), transparent 70%),
 		linear-gradient(180deg, #0a0e22, #04060e);
-	border: 3px solid #f6c84c;
+	border: 3px solid var(--camp-accent);
 	border-radius: 14px;
 	display: flex;
 	align-items: center;
@@ -940,7 +942,7 @@ body.camp-body {
 	min-width: 280px;
 	padding: 28px 26px;
 	background: rgba(16, 22, 36, 0.97);
-	border: 3px solid #f6c84c;
+	border: 3px solid var(--camp-accent);
 	border-radius: 14px;
 	text-align: center;
 	font-family: 'Press Start 2P', monospace;
@@ -950,7 +952,7 @@ body.camp-body {
 .camp-pause-title {
 	font-size: 16px;
 	letter-spacing: 1px;
-	color: #f6c84c;
+	color: var(--camp-accent);
 	margin-bottom: 18px;
 }
 .camp-pause-btn {
@@ -958,7 +960,7 @@ body.camp-body {
 	width: 100%;
 	margin: 8px 0;
 	padding: 10px 14px;
-	background: #f6c84c;
+	background: var(--camp-accent);
 	color: #2a1e08;
 	border: 0;
 	border-radius: 8px;
@@ -972,8 +974,8 @@ body.camp-body {
 .camp-pause-btn:hover { background: #ffd968; }
 .camp-pause-btn--alt {
 	background: transparent;
-	color: #f6c84c;
-	border: 2px solid #f6c84c;
+	color: var(--camp-accent);
+	border: 2px solid var(--camp-accent);
 }
 .camp-pause-btn--alt:hover { background: rgba(246, 200, 76, 0.15); }
 .camp-pause-btn--save { background: #5cb85c; color: #fff; }
@@ -1018,7 +1020,7 @@ body.camp-body {
 	font-size: 10px;
 	outline: none;
 }
-.cp-nickname-input:focus { border-color: #f6c84c; background: rgba(255,255,255,0.18); }
+.cp-nickname-input:focus { border-color: var(--camp-accent); background: rgba(255,255,255,0.18); }
 .cp-btn-shiny {
 	background: linear-gradient(135deg, #fffbe6, #ffd700, #ffaa00);
 	color: #5a3000;
@@ -1052,4 +1054,50 @@ body.camp-body {
 @media (max-width: 420px) {
 	.cb-wheel-slice { font-size: 9px; padding-top: 28px; }
 	.cb-sketch-buttons { grid-template-columns: 1fr; }
+}
+
+/* ── Mart cosmetics section ───────────────────────────────────────────── */
+.cm-cosm-group {
+	margin-bottom: 12px;
+}
+.cm-cosm-label {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: #c8c8d8;
+	margin-bottom: 7px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.cm-cosm-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+}
+.cm-cosm-btn {
+	font-size: 9px;
+	padding: 8px 11px;
+	min-width: 0;
+	flex: 1 1 auto;
+	background: rgba(30, 40, 70, 0.9);
+	border: 2px solid #3a5070;
+	border-radius: 8px;
+	color: #c8d8f0;
+	transition: border-color 0.15s, background 0.15s;
+}
+.cm-cosm-btn:hover:not(:disabled) {
+	border-color: var(--camp-accent);
+	background: rgba(50, 65, 100, 0.9);
+	color: #fff;
+}
+.cm-cosm-btn.cm-cosm-owned,
+.cm-cosm-btn:disabled.cm-cosm-owned {
+	border-color: var(--camp-accent);
+	background: rgba(var(--camp-accent), 0.15);
+	color: var(--camp-accent);
+	opacity: 1;
+}
+.cm-cosm-btn:disabled:not(.cm-cosm-owned) {
+	opacity: 0.4;
+	cursor: not-allowed;
 }
