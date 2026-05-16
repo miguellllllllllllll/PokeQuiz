@@ -230,14 +230,34 @@
 				if (hits >= 3) finish(true);
 				else if (misses >= 3) finish(false);
 			};
+			// Tap or click anywhere on the bar to register a hit. iOS Safari can
+			// drop pointerdown if the gesture is interpreted as a scroll attempt,
+			// so listen for touchstart too and bind on the whole rhythm screen as
+			// a fallback (the bar's children — cursor/zone — sometimes intercept
+			// taps on small screens).
 			const onTap = (e) => { e.preventDefault(); onKey({ key: ' ' }); };
 			const rhythmBar = document.querySelector('.cb-rhythm-bar');
-			if (rhythmBar) rhythmBar.addEventListener('pointerdown', onTap);
+			const rhythmScreen = document.querySelector('.cb-rhythm');
+			if (rhythmBar) {
+				rhythmBar.addEventListener('pointerdown', onTap);
+				rhythmBar.addEventListener('touchstart', onTap, { passive: false });
+			}
+			if (rhythmScreen) {
+				rhythmScreen.addEventListener('pointerdown', onTap);
+				rhythmScreen.addEventListener('touchstart', onTap, { passive: false });
+			}
 			document.addEventListener('keydown', onKey);
 			rhythmState = { stop: () => {
 				if (raf) cancelAnimationFrame(raf);
 				document.removeEventListener('keydown', onKey);
-				if (rhythmBar) rhythmBar.removeEventListener('pointerdown', onTap);
+				if (rhythmBar) {
+					rhythmBar.removeEventListener('pointerdown', onTap);
+					rhythmBar.removeEventListener('touchstart', onTap);
+				}
+				if (rhythmScreen) {
+					rhythmScreen.removeEventListener('pointerdown', onTap);
+					rhythmScreen.removeEventListener('touchstart', onTap);
+				}
 			}};
 		}
 
