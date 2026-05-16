@@ -535,7 +535,8 @@
 	// ── Room Editor — upstairs room decoration panel ──────────────────────────
 	const RoomEditor = (() => {
 		let openFlag = false;
-		let activeScene = 'upstairs'; // 'upstairs' | 'house'
+		let activeScene = 'upstairs';
+		let placingKey = null;
 		function $(id) { return document.getElementById(id); }
 
 		function itemsForScene() {
@@ -544,21 +545,61 @@
 
 		function invKeysForScene() {
 			return activeScene === 'house'
-				? { ownedKey: 'houseRoomItems', activeKey: 'houseRoomActive' }
-				: { ownedKey: 'roomItems',      activeKey: 'roomActive' };
+				? { ownedKey: 'houseRoomItems', placementsKey: 'housePlacements' }
+				: { ownedKey: 'roomItems',      placementsKey: 'roomPlacements' };
 		}
 
 		function liveUpdate() {
 			const items = itemsForScene();
-			const { activeKey } = invKeysForScene();
+			const { placementsKey } = invKeysForScene();
 			const inv = Inventory.load();
-			const roomActive = inv.cosmetics?.[activeKey] || {};
+			const placements = inv.cosmetics?.[placementsKey] || {};
 			const scene = activeScene === 'house' ? window.__houseScene : window.__upstairsScene;
 			if (!scene || !scene._roomItemObjs) return;
-			Object.keys(items).forEach(key => {
+			Object.entries(items).forEach(([key]) => {
 				const obj = scene._roomItemObjs[key];
-				if (obj) obj.setVisible(!!roomActive[key]);
+				const pos = placements[key];
+				if (obj) {
+					if (pos) {
+						obj.setPosition(pos.c * 16 + 8, pos.r * 16 + 8);
+						obj.setVisible(true);
+					} else {
+						obj.setVisible(false);
+					}
+				}
 			});
+		}
+
+		function startPlace(key) {
+			placingKey = key;
+			if (!window.__gridMode) window.__gridMode = {};
+			window.__gridMode.active = true;
+			window.__gridMode.key = key;
+			window.__gridMode.sceneKey = activeScene;
+			window.__gridMode.hoverR = -1;
+			window.__gridMode.hoverC = -1;
+			refresh();
+		}
+
+		function cancelPlace() {
+			placingKey = null;
+			if (window.__gridMode) window.__gridMode.active = false;
+			refresh();
+		}
+
+		function confirmPlace(r, c) {
+			if (!placingKey) return;
+			const { ownedKey, placementsKey } = invKeysForScene();
+			const i = Inventory.load();
+			if (!i.cosmetics) i.cosmetics = {};
+			if (!Array.isArray(i.cosmetics[ownedKey])) i.cosmetics[ownedKey] = [];
+			if (!i.cosmetics[placementsKey]) i.cosmetics[placementsKey] = {};
+			if (!i.cosmetics[ownedKey].includes(placingKey)) i.cosmetics[ownedKey].push(placingKey);
+			i.cosmetics[placementsKey][placingKey] = { r, c };
+			Inventory.save(i);
+			cancelPlace();
+			liveUpdate();
+			refresh();
 		}
 
 		function refresh() {
@@ -1049,6 +1090,8 @@
 		return {
 			plant:   () => play([392, 523],            0.07, 'triangle'),
 			harvest: () => play([523, 659, 784],       0.09, 'triangle'),
+			scythe:  () => play([880, 660, 440],       0.05, 'sawtooth', 0.05),
+			equip:   () => play([523, 784],            0.06, 'square'),
 			chime:   () => play([880],                 0.10, 'sine'),
 			door:    () => play([330, 220],            0.10, 'square'),
 			win:     () => play([523, 659, 784, 1047], 0.10, 'square'),
@@ -2277,6 +2320,7 @@
 					faceoff: Phaser.Input.Keyboard.KeyCodes.F,
 					bonus:   Phaser.Input.Keyboard.KeyCodes.B,
 					rain:    Phaser.Input.Keyboard.KeyCodes.R,
+					scythe:  Phaser.Input.Keyboard.KeyCodes.Q,
 				});
 				this.dpad = { up:false, down:false, left:false, right:false };
 				this.setupJoystick();
@@ -2542,6 +2586,20 @@
 					}
 					this.plantContainer.add(g);
 					this.plantSprites[p.r + ',' + p.c] = g;
+
+					// Floating countdown above growing plants — disappears when ripe.
+					if (stage < 3) {
+						const remaining = Math.max(1, Math.ceil((GROW_MS - elapsed) / 1000));
+						const label = this.add.text(x, y - 10, remaining + 's', {
+							fontFamily: 'monospace',
+							fontSize: '7px',
+							color: '#FFFFFF',
+							stroke: '#000000',
+							strokeThickness: 2,
+							resolution: 2,
+						}).setOrigin(0.5, 1).setDepth(2);
+						this.plantContainer.add(label);
+					}
 				}
 			}
 
@@ -2562,13 +2620,19 @@
 				}
 				if (target.kind === 'harvest') {
 					this.plants = this.plants.filter(p => !(p.r === target.r && p.c === target.c));
-					Plants.save(this.plants);
 					inv.friendshipBerries = (inv.friendshipBerries || 0) + 1;
+					let replantMsg = '';
+					if ((inv.seeds || 0) > 0) {
+						inv.seeds -= 1;
+						this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now() });
+						replantMsg = ' A fresh seed was replanted automatically.';
+					}
+					Plants.save(this.plants);
 					Inventory.save(inv);
 					this._refreshPlantSprites();
 					Sound.harvest();
 					Stats.increment('totalHarvests');
-					Dialog.open('You harvested a Friendship Berry!');
+					Dialog.open('You harvested a Friendship Berry!' + replantMsg);
 					return true;
 				}
 				if (target.kind === 'growing') {
@@ -2576,6 +2640,42 @@
 					return true;
 				}
 				return false;
+			}
+
+			_scytheSwing() {
+				const inv = Inventory.load();
+				if (!inv.hasScythe || !inv.scytheEquipped) return false;
+				const ptc = Math.floor(this.player.x / TILE);
+				const ptr = Math.floor(this.player.y / TILE);
+				const ripe = this.plants.filter(p => {
+					if (Math.abs(p.r - ptr) + Math.abs(p.c - ptc) > SCYTHE_RADIUS) return false;
+					return (Date.now() - p.plantedAt) >= GROW_MS;
+				});
+				if (ripe.length === 0) {
+					Dialog.open('You swing the scythe, but there’s nothing ripe nearby.');
+					Sound.scythe && Sound.scythe();
+					return true;
+				}
+				const ripeSet = new Set(ripe.map(p => p.r + ',' + p.c));
+				this.plants = this.plants.filter(p => !ripeSet.has(p.r + ',' + p.c));
+				let replanted = 0;
+				for (const p of ripe) {
+					if ((inv.seeds || 0) > 0) {
+						inv.seeds -= 1;
+						this.plants.push({ r: p.r, c: p.c, plantedAt: Date.now() });
+						replanted += 1;
+					}
+				}
+				inv.friendshipBerries = (inv.friendshipBerries || 0) + ripe.length;
+				Plants.save(this.plants);
+				Inventory.save(inv);
+				this._refreshPlantSprites();
+				Sound.scythe && Sound.scythe();
+				Sound.harvest();
+				Stats.increment('totalHarvests', ripe.length);
+				const extra = replanted > 0 ? ' (' + replanted + ' replanted)' : '';
+				Dialog.open('🌾 Scythe sweep! Harvested ' + ripe.length + ' berries' + extra + '.');
+				return true;
 			}
 
 			_updateInventoryHud() {
@@ -2586,7 +2686,10 @@
 				const heart = form === 'eevee' && (inv.friendship || 0) < FRIENDSHIP_MAX
 					? '   ❤️ ' + (inv.friendship || 0) + '/' + FRIENDSHIP_MAX
 					: '';
-				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0) + heart;
+				const scythe = inv.hasScythe
+					? '   ' + (inv.scytheEquipped ? '🌾 equipped' : '🌾 (Q)')
+					: '';
+				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0) + heart + scythe;
 			}
 
 			_handleFeed() {
@@ -2865,8 +2968,24 @@
 				if (k.rain && Phaser.Input.Keyboard.JustDown(k.rain) && !dialogOpen) {
 					this.isRaining = !this.isRaining;
 				}
+				if (k.scythe && Phaser.Input.Keyboard.JustDown(k.scythe) && !dialogOpen) {
+					const inv = Inventory.load();
+					if (!inv.hasScythe) {
+						Dialog.open('You don’t own a Scythe yet. Buy one at Pikachu’s Mart!');
+					} else {
+						inv.scytheEquipped = !inv.scytheEquipped;
+						Inventory.save(inv);
+						Sound.equip && Sound.equip();
+						Dialog.open(inv.scytheEquipped
+							? '\u{1F33E} Scythe equipped. Press E near ripe crops to sweep the field.'
+							: 'Scythe holstered.');
+					}
+				}
 				if (Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact')) {
 					if (dialogOpen) Dialog.advance();
+					else if (Inventory.load().scytheEquipped && this._scytheSwing()) {
+						/* scythe handled the input */
+					}
 					else if (target && (target.kind === 'plant' || target.kind === 'harvest' || target.kind === 'growing')) {
 						this._handlePlantAction(target);
 					}
@@ -2894,6 +3013,31 @@
 					if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 				}
 				this.player.setVelocity(vx, vy);
+
+				// Sweep planting — while holding E and walking, auto-plant on each new
+				// soil tile entered (one plant per tile, not per frame).
+				if (!dialogOpen && k.interact && k.interact.isDown && (vx !== 0 || vy !== 0)) {
+					const ptc = Math.floor(this.player.x / TILE);
+					const ptr = Math.floor(this.player.y / TILE);
+					const sweepKey = ptr + ',' + ptc;
+					if (this._lastSweepTile !== sweepKey) {
+						this._lastSweepTile = sweepKey;
+						const tile = this.map[ptr] && this.map[ptr][ptc];
+						if ((tile === TSO || tile === TCR) && !this._findPlantAt(ptr, ptc)) {
+							const inv = Inventory.load();
+							if ((inv.seeds || 0) > 0) {
+								inv.seeds -= 1;
+								Inventory.save(inv);
+								this.plants.push({ r: ptr, c: ptc, plantedAt: Date.now() });
+								Plants.save(this.plants);
+								this._refreshPlantSprites();
+								Sound.plant();
+							}
+						}
+					}
+				} else if (vx === 0 && vy === 0) {
+					this._lastSweepTile = null;
+				}
 
 				const moving = vx !== 0 || vy !== 0;
 				const animKey = this.dirAnimKeys[this.dir];
