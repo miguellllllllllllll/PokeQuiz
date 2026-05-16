@@ -516,14 +516,27 @@
 	// ── Room Editor — upstairs room decoration panel ──────────────────────────
 	const RoomEditor = (() => {
 		let openFlag = false;
+		let activeScene = 'upstairs'; // 'upstairs' | 'house'
 		function $(id) { return document.getElementById(id); }
 
+		function itemsForScene() {
+			return activeScene === 'house' ? HOUSE_ITEMS : ROOM_ITEMS;
+		}
+
+		function invKeysForScene() {
+			return activeScene === 'house'
+				? { ownedKey: 'houseRoomItems', activeKey: 'houseRoomActive' }
+				: { ownedKey: 'roomItems',      activeKey: 'roomActive' };
+		}
+
 		function liveUpdate() {
-			const scene = window.__upstairsScene;
-			if (!scene || !scene._roomItemObjs) return;
+			const items = itemsForScene();
+			const { activeKey } = invKeysForScene();
 			const inv = Inventory.load();
-			const roomActive = inv.cosmetics?.roomActive || {};
-			Object.keys(ROOM_ITEMS).forEach(key => {
+			const roomActive = inv.cosmetics?.[activeKey] || {};
+			const scene = activeScene === 'house' ? window.__houseScene : window.__upstairsScene;
+			if (!scene || !scene._roomItemObjs) return;
+			Object.keys(items).forEach(key => {
 				const obj = scene._roomItemObjs[key];
 				if (obj) obj.setVisible(!!roomActive[key]);
 			});
@@ -532,91 +545,120 @@
 		function refresh() {
 			const list = $('creItemList');
 			if (!list) return;
+			const items = itemsForScene();
+			const { ownedKey, activeKey } = invKeysForScene();
 			const inv = Inventory.load();
 			const cosm = inv.cosmetics || {};
-			const roomItems = cosm.roomItems || [];
-			const roomActive = cosm.roomActive || {};
+			const roomItems = cosm[ownedKey] || [];
+			const roomActive = cosm[activeKey] || {};
 			const tokens = inv.tokens || 0;
+
 			const tokEl = $('creTokens');
 			if (tokEl) tokEl.textContent = tokens;
+
+			const sceneLbl = $('creSceneLabel');
+			if (sceneLbl) sceneLbl.textContent = activeScene === 'house' ? '🏠 Ground Floor' : '🛏 Bedroom';
+
+			const ownedCount = Object.keys(items).filter(k => roomItems.includes(k)).length;
+			const activeCount = Object.keys(items).filter(k => !!roomActive[k]).length;
+			const summaryEl = $('creSummary');
+			if (summaryEl) summaryEl.textContent = ownedCount + ' / ' + Object.keys(items).length + ' owned · ' + activeCount + ' placed';
+
 			list.innerHTML = '';
-			Object.entries(ROOM_ITEMS).forEach(([key, item]) => {
-				const owned    = roomItems.includes(key);
-				const active   = !!roomActive[key];
-				const canAfford = tokens >= item.price;
-				const card = document.createElement('div');
-				card.className = 'cre-item' + (active ? ' cre-item--active' : owned ? ' cre-item--owned' : '');
-				const left = document.createElement('div');
-				left.className = 'cre-item-left';
-				left.innerHTML = '<span class="cre-item-emoji">' + item.emoji + '</span><span class="cre-item-label">' + item.label + '</span>';
-				const right = document.createElement('div');
-				right.className = 'cre-item-right';
-				if (active) {
-					const badge = document.createElement('span');
-					badge.className = 'cre-badge cre-badge--active';
-					badge.textContent = '✓ Active';
-					const removeBtn = document.createElement('button');
-					removeBtn.className = 'cre-btn cre-btn--remove';
-					removeBtn.type = 'button';
-					removeBtn.textContent = 'Remove';
-					removeBtn.addEventListener('click', () => {
-						const i = Inventory.load();
-						if (!i.cosmetics) i.cosmetics = {};
-						if (!i.cosmetics.roomActive) i.cosmetics.roomActive = {};
-						i.cosmetics.roomActive[key] = false;
-						Inventory.save(i);
-						liveUpdate();
-						refresh();
-					});
-					right.appendChild(badge);
-					right.appendChild(removeBtn);
-				} else if (owned) {
-					const badge = document.createElement('span');
-					badge.className = 'cre-badge cre-badge--owned';
-					badge.textContent = 'Owned';
-					const activateBtn = document.createElement('button');
-					activateBtn.className = 'cre-btn cre-btn--activate';
-					activateBtn.type = 'button';
-					activateBtn.textContent = 'Place';
-					activateBtn.addEventListener('click', () => {
-						const i = Inventory.load();
-						if (!i.cosmetics) i.cosmetics = {};
-						if (!i.cosmetics.roomActive) i.cosmetics.roomActive = {};
-						i.cosmetics.roomActive[key] = true;
-						Inventory.save(i);
-						liveUpdate();
-						refresh();
-					});
-					right.appendChild(badge);
-					right.appendChild(activateBtn);
-				} else {
-					const price = document.createElement('span');
-					price.className = 'cre-price';
-					price.textContent = item.price + '💰';
-					const buyBtn = document.createElement('button');
-					buyBtn.className = 'cre-btn cre-btn--buy';
-					buyBtn.type = 'button';
-					buyBtn.textContent = 'Buy';
-					buyBtn.disabled = !canAfford;
-					buyBtn.addEventListener('click', () => {
-						const i = Inventory.load();
-						if ((i.tokens || 0) < item.price) return;
-						i.tokens -= item.price;
-						if (!i.cosmetics) i.cosmetics = {};
-						if (!Array.isArray(i.cosmetics.roomItems)) i.cosmetics.roomItems = [];
-						if (!i.cosmetics.roomActive) i.cosmetics.roomActive = {};
-						i.cosmetics.roomItems.push(key);
-						i.cosmetics.roomActive[key] = true;
-						Inventory.save(i);
-						liveUpdate();
-						refresh();
-					});
-					right.appendChild(price);
-					right.appendChild(buyBtn);
-				}
-				card.appendChild(left);
-				card.appendChild(right);
-				list.appendChild(card);
+			const cats = { furniture: [], decor: [] };
+			Object.entries(items).forEach(([key, item]) => {
+				(item.cat === 'decor' ? cats.decor : cats.furniture).push([key, item]);
+			});
+			const catLabels = { furniture: '🪑 Furniture', decor: '🌸 Decor' };
+
+			Object.entries(cats).forEach(([cat, entries]) => {
+				if (!entries.length) return;
+				const hdr = document.createElement('div');
+				hdr.className = 'cre-cat-header';
+				hdr.textContent = catLabels[cat];
+				list.appendChild(hdr);
+
+				entries.forEach(([key, item]) => {
+					const owned    = roomItems.includes(key);
+					const active   = !!roomActive[key];
+					const canAfford = tokens >= item.price;
+					const card = document.createElement('div');
+					card.className = 'cre-item' + (active ? ' cre-item--active' : owned ? ' cre-item--owned' : '');
+
+					const left = document.createElement('div');
+					left.className = 'cre-item-left';
+					const emojiEl = document.createElement('span');
+					emojiEl.className = 'cre-item-emoji';
+					emojiEl.textContent = item.emoji;
+					const infoEl = document.createElement('div');
+					infoEl.className = 'cre-item-info';
+					const labelEl = document.createElement('div');
+					labelEl.className = 'cre-item-label';
+					labelEl.textContent = item.label.replace(/^\S+\s/, '');
+					const statusEl = document.createElement('div');
+					statusEl.className = 'cre-item-status' +
+						(active ? ' cre-item-status--active' : !owned ? ' cre-item-status--price' : '');
+					statusEl.textContent = active ? '✓ In room' : owned ? 'Owned' : item.price + ' 💰';
+					infoEl.appendChild(labelEl);
+					infoEl.appendChild(statusEl);
+					left.appendChild(emojiEl);
+					left.appendChild(infoEl);
+
+					const right = document.createElement('div');
+					right.className = 'cre-item-right';
+
+					if (active) {
+						const removeBtn = document.createElement('button');
+						removeBtn.className = 'cre-btn cre-btn--remove';
+						removeBtn.type = 'button';
+						removeBtn.textContent = 'Remove';
+						removeBtn.addEventListener('click', () => {
+							const i = Inventory.load();
+							if (!i.cosmetics) i.cosmetics = {};
+							if (!i.cosmetics[activeKey]) i.cosmetics[activeKey] = {};
+							i.cosmetics[activeKey][key] = false;
+							Inventory.save(i);
+							liveUpdate(); refresh();
+						});
+						right.appendChild(removeBtn);
+					} else if (owned) {
+						const activateBtn = document.createElement('button');
+						activateBtn.className = 'cre-btn cre-btn--activate';
+						activateBtn.type = 'button';
+						activateBtn.textContent = 'Place';
+						activateBtn.addEventListener('click', () => {
+							const i = Inventory.load();
+							if (!i.cosmetics) i.cosmetics = {};
+							if (!i.cosmetics[activeKey]) i.cosmetics[activeKey] = {};
+							i.cosmetics[activeKey][key] = true;
+							Inventory.save(i);
+							liveUpdate(); refresh();
+						});
+						right.appendChild(activateBtn);
+					} else {
+						const buyBtn = document.createElement('button');
+						buyBtn.className = 'cre-btn cre-btn--buy';
+						buyBtn.type = 'button';
+						buyBtn.textContent = 'Buy';
+						buyBtn.disabled = !canAfford;
+						buyBtn.addEventListener('click', () => {
+							const i = Inventory.load();
+							if ((i.tokens || 0) < item.price) return;
+							i.tokens -= item.price;
+							if (!i.cosmetics) i.cosmetics = {};
+							if (!Array.isArray(i.cosmetics[ownedKey])) i.cosmetics[ownedKey] = [];
+							if (!i.cosmetics[activeKey]) i.cosmetics[activeKey] = {};
+							i.cosmetics[ownedKey].push(key);
+							i.cosmetics[activeKey][key] = true;
+							Inventory.save(i);
+							liveUpdate(); refresh();
+						});
+						right.appendChild(buyBtn);
+					}
+					card.appendChild(left);
+					card.appendChild(right);
+					list.appendChild(card);
+				});
 			});
 		}
 
@@ -636,7 +678,8 @@
 
 		function isOpen() { return openFlag; }
 
-		function showEditBtn(show) {
+		function showEditBtn(show, sceneKey) {
+			if (show && sceneKey) activeScene = sceneKey;
 			const btn = $('campRoomEditBtn');
 			if (btn) btn.hidden = !show;
 			if (!show) close();
@@ -837,19 +880,42 @@
 	};
 	const COSM_PRICE = { wallpaper: 15, accent: 20, scale: 10, flowers: 25, lantern: 30 };
 	const ROOM_ITEMS = {
-		desk:   { label: '🖥️ Study Desk',   price: 30, emoji: '🖥️', r: 3, c: 8 },
-		lamp:   { label: '🪔 Cozy Lamp',    price: 20, emoji: '🪔', r: 3, c: 9 },
-		plant:  { label: '🪴 Indoor Plant', price: 20, emoji: '🪴', r: 6, c: 9 },
-		poster: { label: '🖼️ Wall Art',     price: 15, emoji: '🖼️', r: 2, c: 6 },
-		radio:  { label: '📻 Music Player', price: 25, emoji: '📻', r: 3, c: 2 },
-		mirror: { label: '🪞 Mirror',       price: 30, emoji: '🪞', r: 6, c: 2 },
+		// Furniture
+		desk:    { label: '🖥️ Study Desk',   price: 30, emoji: '🖥️', r: 3, c: 8, cat: 'furniture' },
+		lamp:    { label: '🪔 Cozy Lamp',    price: 20, emoji: '🪔', r: 3, c: 9, cat: 'furniture' },
+		radio:   { label: '📻 Music Player', price: 25, emoji: '📻', r: 3, c: 2, cat: 'furniture' },
+		mirror:  { label: '🪞 Mirror',       price: 30, emoji: '🪞', r: 6, c: 2, cat: 'furniture' },
+		gaming:  { label: '🎮 Game Console', price: 35, emoji: '🎮', r: 3, c: 6, cat: 'furniture' },
+		curtain: { label: '🪟 Window',       price: 20, emoji: '🪟', r: 2, c: 10, cat: 'furniture' },
+		// Decor
+		plant:   { label: '🪴 Indoor Plant', price: 20, emoji: '🪴', r: 6, c: 9, cat: 'decor' },
+		poster:  { label: '🖼️ Wall Art',     price: 15, emoji: '🖼️', r: 2, c: 6, cat: 'decor' },
+		trophy:  { label: '🏆 Trophy',       price: 40, emoji: '🏆', r: 2, c: 2, cat: 'decor' },
+		book:    { label: '📖 Story Books',  price: 15, emoji: '📖', r: 2, c: 4, cat: 'decor' },
+		bear:    { label: '🧸 Stuffed Bear', price: 15, emoji: '🧸', r: 6, c: 7, cat: 'decor' },
+		stars:   { label: '⭐ Star Mobile',  price: 25, emoji: '⭐', r: 5, c: 4, cat: 'decor' },
+	};
+
+	const HOUSE_ITEMS = {
+		// Furniture
+		tv:       { label: '📺 Television',  price: 40, emoji: '📺', r: 2, c: 5,  cat: 'furniture' },
+		couch:    { label: '🛋️ Couch',       price: 35, emoji: '🛋️', r: 5, c: 4,  cat: 'furniture' },
+		bookcase: { label: '📚 Bookcase',    price: 30, emoji: '📚', r: 2, c: 9,  cat: 'furniture' },
+		clock:    { label: '🕰️ Wall Clock',  price: 25, emoji: '🕰️', r: 2, c: 7,  cat: 'furniture' },
+		floorlamp:{ label: '🕯️ Floor Lamp',  price: 20, emoji: '🕯️', r: 5, c: 13, cat: 'furniture' },
+		// Decor
+		plant:    { label: '🌿 Floor Plant', price: 20, emoji: '🌿', r: 2, c: 2,  cat: 'decor' },
+		kettle:   { label: '🫖 Tea Kettle',  price: 15, emoji: '🫖', r: 9, c: 4,  cat: 'decor' },
+		vase:     { label: '💐 Flower Vase', price: 20, emoji: '💐', r: 9, c: 11, cat: 'decor' },
+		frame:    { label: '🖼️ Photo Frame', price: 15, emoji: '🖼️', r: 2, c: 11, cat: 'decor' },
+		plush:    { label: '🐱 Plush Cat',   price: 25, emoji: '🐱', r: 7, c: 12, cat: 'decor' },
 	};
 
 	const Inventory = (() => {
 		const DEFAULT = {
 			seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0,
 			eeveeForm: 'eevee', stone: null,
-			cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [], roomItems: [], roomActive: {} },
+			cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [], roomItems: [], roomActive: {}, houseRoomItems: [], houseRoomActive: {} },
 		};
 		function load() {
 			try {
@@ -861,6 +927,8 @@
 					if (!Array.isArray(cosm.decor)) cosm.decor = [];
 					if (!Array.isArray(cosm.roomItems)) cosm.roomItems = [];
 					if (!cosm.roomActive || typeof cosm.roomActive !== 'object') cosm.roomActive = {};
+					if (!Array.isArray(cosm.houseRoomItems)) cosm.houseRoomItems = [];
+					if (!cosm.houseRoomActive || typeof cosm.houseRoomActive !== 'object') cosm.houseRoomActive = {};
 					return Object.assign({}, DEFAULT, parsed, { cosmetics: cosm });
 				}
 			} catch {}
@@ -3105,6 +3173,20 @@
 				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
 				const _houseWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
 				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_houseWp]?.house || '#1a0e08');
+				// Pre-create ground floor item overlays driven by houseRoomActive.
+				const _houseRoomInv = Inventory.load();
+				const _houseRoomActive = _houseRoomInv.cosmetics?.houseRoomActive || {};
+				this._roomItemObjs = {};
+				Object.entries(HOUSE_ITEMS).forEach(([key, item]) => {
+					const x = item.c * TILE + TILE / 2;
+					const y = item.r * TILE + TILE / 2;
+					const obj = this.add.text(x, y, item.emoji, { fontSize: '13px', resolution: 2 })
+						.setOrigin(0.5).setDepth(2).setVisible(!!_houseRoomActive[key]);
+					this._roomItemObjs[key] = obj;
+				});
+				RoomEditor.showEditBtn(true, 'house');
+				this.events.once('shutdown', () => { RoomEditor.showEditBtn(false); });
+
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);
@@ -3473,7 +3555,7 @@
 					this._roomItemObjs[key] = obj;
 				});
 				// Show edit button while in this scene; hide on exit.
-				RoomEditor.showEditBtn(true);
+				RoomEditor.showEditBtn(true, 'upstairs');
 				this.events.once('shutdown', () => { RoomEditor.showEditBtn(false); });
 
 				this.cameras.main.setRoundPixels(true);
@@ -3674,6 +3756,323 @@
 		};
 	}
 
+	function makeMarketSceneClass() {
+		return class MarketScene extends Phaser.Scene {
+			constructor() { super({ key: 'market' }); }
+
+			init(data) {
+				this.spawnFrom = (data && data.from) || consumeBootFrom('market') || null;
+			}
+
+			preload() {
+				this.load.image('player-base', 'Pictures/sprites/calem.png');
+			}
+
+			create() {
+				console.log('[MarketScene] create()');
+				try {
+					this._buildMarket();
+					requestAnimationFrame(() => requestAnimationFrame(() => {
+						const f = document.getElementById('campFade');
+						if (f) f.classList.add('is-hidden');
+					}));
+				} catch (e) {
+					console.error('[MarketScene] create failed:', e);
+					Debug.lastError = 'MarketScene.create: ' + e.message;
+					this.scene.start('camp', { from: 'market' });
+				}
+				if (typeof window !== 'undefined') window.__marketScene = this;
+			}
+
+			_buildMarket() {
+				this.tick = 0;
+				this.map = buildMarketMap();
+				const W = MARKET_W * TILE, H = MARKET_H * TILE;
+
+				if (!this.textures.exists('marketBase')) {
+					this.baseTex = this.textures.createCanvas('marketBase', W, H);
+					if (!this.baseTex) throw new Error('createCanvas("marketBase") returned null');
+					const baseCtx = this.baseTex.getContext();
+					baseCtx.imageSmoothingEnabled = false;
+					for (let r = 0; r < MARKET_H; r++) {
+						for (let c = 0; c < MARKET_W; c++) {
+							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+						}
+					}
+					this.baseTex.refresh();
+				} else {
+					this.baseTex = this.textures.get('marketBase');
+				}
+				this.add.image(0, 0, 'marketBase').setOrigin(0).setDepth(0);
+
+				// Palette-swap the trainer sheet (same pipeline as HouseScene)
+				try {
+					if (!this.textures.exists('player-base')) {
+						throw new Error('player-base texture missing');
+					}
+					const baseImg = this.textures.get('player-base').getSourceImage();
+					const pw = baseImg.width, ph = baseImg.height;
+					this._playerCanvas = document.createElement('canvas');
+					this._playerCanvas.width = pw;
+					this._playerCanvas.height = ph;
+					this._playerCtx = this._playerCanvas.getContext('2d');
+					const applyPalette = () => {
+						if (window.TrainerPalette) {
+							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
+						} else {
+							this._playerCtx.clearRect(0, 0, pw, ph);
+							this._playerCtx.drawImage(baseImg, 0, 0);
+						}
+					};
+					applyPalette();
+					if (!this.textures.exists('player-market') && this._playerCanvas) {
+						this.textures.addSpriteSheet('player-market', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+					} else if (this.textures.exists('player-market')) {
+						this.textures.get('player-market').refresh();
+					}
+					this._onStorage = (e) => {
+						if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
+							applyPalette();
+							this.textures.get('player-market').refresh();
+						}
+					};
+					window.addEventListener('storage', this._onStorage);
+					this.events.once('shutdown', () => window.removeEventListener('storage', this._onStorage));
+				} catch (e) {
+					console.error('[MarketScene] palette swap failed:', e);
+				}
+
+				const mkAnim = (key, frames) => {
+					if (this.anims.exists(key)) this.anims.remove(key);
+					this.anims.create({ key, frameRate: 6, repeat: -1,
+						frames: this.anims.generateFrameNumbers('player-market', { frames }) });
+				};
+				mkAnim('m-walk-south', [1, 0, 2, 0]);
+				mkAnim('m-walk-west',  [4, 3, 5, 3]);
+				mkAnim('m-walk-north', [7, 6, 8, 6]);
+				mkAnim('m-walk-east',  [10, 9, 11, 9]);
+
+				// Spawn just north of the south exit door
+				const spawnX = MARKET_DOOR_C*TILE + TILE/2;
+				const spawnY = (MARKET_DOOR_R - 1)*TILE + TILE/2;
+				this.player = this.physics.add.sprite(spawnX, spawnY, 'player-market', 0);
+				this.player.setOrigin(0.5, 36/38);
+				this.player.setScale(0.75);
+				this.player.setDepth(3);
+				this.player.body.setSize(10, 6);
+				this.player.body.setOffset((22-10)/2, 38-8);
+
+				this.solids = this.physics.add.staticGroup();
+				for (let r = 0; r < MARKET_H; r++) {
+					for (let c = 0; c < MARKET_W; c++) {
+						if (SOLID.has(this.map[r][c])) {
+							const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
+							this.physics.add.existing(rect, true);
+							this.solids.add(rect);
+						}
+					}
+				}
+				this.physics.add.collider(this.player, this.solids);
+
+				this.physics.world.setBounds(0, 0, W, H);
+				this.player.setCollideWorldBounds(true);
+				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
+				this.cameras.main.setBackgroundColor('#1a0e08');
+				this.cameras.main.setRoundPixels(true);
+				this.applyZoom();
+				this.scale.on('resize', this.onResize, this);
+				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
+
+				_sceneKeyboard = this.input.keyboard;
+				this.keys = this.input.keyboard.addKeys({
+					up: Phaser.Input.Keyboard.KeyCodes.UP,
+					down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+					left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+					right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+					w: Phaser.Input.Keyboard.KeyCodes.W,
+					a: Phaser.Input.Keyboard.KeyCodes.A,
+					s: Phaser.Input.Keyboard.KeyCodes.S,
+					d: Phaser.Input.Keyboard.KeyCodes.D,
+					interact: Phaser.Input.Keyboard.KeyCodes.E,
+				});
+				this.dpad = { up:false, down:false, left:false, right:false };
+				this.setupJoystick();
+				setupPauseMenu(this.game);
+				Music.start('camp');
+				this.events.once('shutdown', () => Music.stop());
+
+				this.dir = 2; // facing north — just walked in from the south
+				this.dirAnimKeys = ['m-walk-south', 'm-walk-west', 'm-walk-north', 'm-walk-east'];
+				this.dirIdleFrame = [0, 3, 6, 9];
+				this.player.setFrame(this.dirIdleFrame[this.dir]);
+				this.didTransition = false;
+				this.armedForExit = true;
+
+				this._promptEl  = document.getElementById('campPrompt');
+				this._promptLbl = document.getElementById('campPromptLabel');
+				this.events.once('shutdown', () => {
+					if (this._promptEl) this._promptEl.hidden = true;
+				});
+			}
+
+			onResize() { applyWrapTop(); this.applyZoom(); }
+
+			applyZoom() {
+				const vw = this.scale.width, vh = this.scale.height;
+				if (vw <= 0 || vh <= 0) {
+					this.events.once('postupdate', () => this.applyZoom());
+					return;
+				}
+				const roomW = MARKET_W * TILE, roomH = MARKET_H * TILE;
+				let s = Math.min(vw / roomW, vh / roomH);
+				s = Math.max(2, Math.floor(s));
+				s = Math.min(s, 5);
+				const cam = this.cameras.main;
+				cam.setZoom(s);
+				cam.centerOn(roomW / 2, roomH / 2);
+			}
+
+			setupJoystick() {
+				const base = document.getElementById('joystickBase');
+				const knob = document.getElementById('joystickKnob');
+				if (!base || !knob) return;
+				base.__campDpad = this.dpad;
+				if (base.dataset.wired) return;
+				base.dataset.wired = '1';
+				const RADIUS = 42, DEAD = 0.18;
+				let active = false, pointerId = null;
+				const reset = () => {
+					active = false; pointerId = null;
+					const d = base.__campDpad;
+					if (d) { d.up = d.down = d.left = d.right = false; }
+					knob.style.transform = 'translate(-50%,-50%)';
+				};
+				const applyJoy = (dx, dy) => {
+					const d = base.__campDpad;
+					if (!d) return;
+					const dist = Math.sqrt(dx*dx + dy*dy);
+					const clamp = Math.min(dist, RADIUS);
+					const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
+					knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
+					const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
+					const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
+					d.left = fx < -DEAD; d.right = fx > DEAD;
+					d.up   = fy < -DEAD; d.down  = fy > DEAD;
+				};
+				base.addEventListener('pointerdown', e => {
+					if (active) return;
+					active = true; pointerId = e.pointerId;
+					base.setPointerCapture(e.pointerId); e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				base.addEventListener('pointermove', e => {
+					if (!active || e.pointerId !== pointerId) return;
+					e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				['pointerup','pointercancel'].forEach(ev => base.addEventListener(ev, e => {
+					if (e.pointerId !== pointerId) return;
+					e.preventDefault(); reset();
+				}));
+			}
+
+			findStallFor(tc, tr) {
+				// Player is standing one tile south of a counter when tr === 3 and tc
+				// falls within a stall's c1..c2 range. Counter is at row 2.
+				if (tr !== 3) return null;
+				return MARKET_STALLS.find(s => tc >= s.c1 && tc <= s.c2) || null;
+			}
+
+			update() {
+				this.tick++;
+				if (this.didTransition) {
+					this.player.setVelocity(0, 0);
+					return;
+				}
+				applyDayNight();
+				Dialog.tick();
+				const dialogOpen = Dialog.isOpen();
+				const martOpen = Mart.isOpen();
+				const k = this.keys, d = this.dpad;
+				let vx = 0, vy = 0;
+				if (!dialogOpen && !martOpen) {
+					if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+					if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+					if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+					if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+					if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				}
+				this.player.setVelocity(vx, vy);
+
+				const moving = vx !== 0 || vy !== 0;
+				const animKey = this.dirAnimKeys[this.dir];
+				if (moving) {
+					if (!this.player.anims.isPlaying || this.player.anims.currentAnim?.key !== animKey) {
+						this.player.anims.play(animKey, true);
+					}
+				} else {
+					this.player.anims.stop();
+					this.player.setFrame(this.dirIdleFrame[this.dir]);
+				}
+
+				const tc = Math.floor(this.player.x / TILE);
+				const tr = Math.floor(this.player.y / TILE);
+				const onDoor = tc === MARKET_DOOR_C && tr === MARKET_DOOR_R;
+				const distFromDoor = Math.abs(tr - MARKET_DOOR_R) + Math.abs(tc - MARKET_DOOR_C);
+				if (distFromDoor >= 2) this.armedForExit = true;
+
+				const stall = this.findStallFor(tc, tr);
+				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
+
+				const pe = this._promptEl;
+				const lbl = this._promptLbl;
+				const nearDoor = distFromDoor === 1 || onDoor;
+				const showPrompt = (!dialogOpen && !martOpen) && (stall || nearDoor);
+				if (pe && lbl) {
+					if (showPrompt) {
+						lbl.textContent = stall ? 'Shop' : 'Exit';
+						pe.hidden = false;
+						const cam = this.cameras.main;
+						const sx = (this.player.x - cam.worldView.x) * cam.zoom;
+						const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+						const maxTop = this.scale.height - 180;
+						pe.style.left = sx + 'px';
+						pe.style.top  = Math.min(sy, maxTop) + 'px';
+						pe.style.transform = 'translate(-50%, calc(-100% - 12px))';
+					} else {
+						pe.hidden = true;
+					}
+				}
+
+				if (ePressed && stall && !dialogOpen && !martOpen) {
+					Mart.open();
+				}
+
+				const triggerExit = !this.didTransition && this.armedForExit && (
+					onDoor || (ePressed && nearDoor && !stall && !martOpen)
+				);
+				if (triggerExit) {
+					this.didTransition = true;
+					if (pe) pe.hidden = true;
+					safeSceneStart(this, 'camp', { from: 'market' });
+				}
+
+				Debug.render(
+					'MARKET\n' +
+					'tile  ' + tc + ',' + tr + '\n' +
+					'stall ' + (stall ? stall.name : '-') + '\n' +
+					'door  ' + MARKET_DOOR_C + ',' + MARKET_DOOR_R + '\n' +
+					'distD ' + distFromDoor + '\n' +
+					'armed ' + this.armedForExit + '\n' +
+					'trans ' + this.didTransition + '\n' +
+					(Debug.lastError ? 'ERR ' + Debug.lastError : '')
+				);
+			}
+		};
+	}
+
 	function start() {
 		const wrap = document.getElementById('campWrap');
 		if (!wrap) return;
@@ -3695,10 +4094,12 @@
 		const CampClass = makeSceneClass();
 		const HouseClass = makeHouseSceneClass();
 		const UpstairsClass = makeUpstairsSceneClass();
+		const MarketClass = makeMarketSceneClass();
 		let sceneList;
-		if (boot.scene === 'house')        sceneList = [HouseClass, CampClass, UpstairsClass];
-		else if (boot.scene === 'upstairs') sceneList = [UpstairsClass, CampClass, HouseClass];
-		else                                sceneList = [CampClass, HouseClass, UpstairsClass];
+		if (boot.scene === 'house')        sceneList = [HouseClass, CampClass, UpstairsClass, MarketClass];
+		else if (boot.scene === 'upstairs') sceneList = [UpstairsClass, CampClass, HouseClass, MarketClass];
+		else if (boot.scene === 'market')   sceneList = [MarketClass, CampClass, HouseClass, UpstairsClass];
+		else                                sceneList = [CampClass, HouseClass, UpstairsClass, MarketClass];
 		new Phaser.Game({
 			type: Phaser.AUTO,
 			parent: 'campWrap',
