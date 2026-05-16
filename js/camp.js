@@ -2073,6 +2073,7 @@
 
 			create() {
 				console.log('[CampScene] create()');
+				if (typeof window !== 'undefined') window.__campScene = this;
 				try {
 					this._buildCamp();
 					console.log('[CampScene] create() ok');
@@ -2151,7 +2152,7 @@
 
 				const applyPalette = () => {
 					if (window.TrainerPalette) {
-						window.TrainerPalette.recolor(this._playerBaseImg, window.TrainerPalette.load(), this._playerCtx);
+						window.TrainerPalette.recolor(this._playerBaseImg, window.TrainerPalette.load(), this._playerCtx, window.TrainerPalette.loadBody && window.TrainerPalette.loadBody());
 					} else {
 						this._playerCtx.clearRect(0, 0, pw, ph);
 						this._playerCtx.drawImage(this._playerBaseImg, 0, 0);
@@ -2165,7 +2166,7 @@
 				}
 
 				this._onStorage = (e) => {
-					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
+					if ((e.key === 'pokequiz_trainer_palette' || e.key === 'pokequiz_trainer_body') && window.TrainerPalette) {
 						applyPalette();
 						this.textures.get('player').refresh();
 					}
@@ -3097,7 +3098,7 @@
 					this._playerCtx = this._playerCanvas.getContext('2d');
 					const applyPalette = () => {
 						if (window.TrainerPalette) {
-							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
+							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx, window.TrainerPalette.loadBody && window.TrainerPalette.loadBody());
 						} else {
 							this._playerCtx.clearRect(0, 0, pw, ph);
 							this._playerCtx.drawImage(baseImg, 0, 0);
@@ -3117,7 +3118,7 @@
 					this.textures.get('player-house').refresh();
 				}
 				this._onStorage = (e) => {
-					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
+					if ((e.key === 'pokequiz_trainer_palette' || e.key === 'pokequiz_trainer_body') && window.TrainerPalette) {
 						applyPalette();
 						this.textures.get('player-house').refresh();
 					}
@@ -3480,7 +3481,7 @@
 					this._playerCtx = this._playerCanvas.getContext('2d');
 					const applyPalette = () => {
 						if (window.TrainerPalette) {
-							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
+							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx, window.TrainerPalette.loadBody && window.TrainerPalette.loadBody());
 						} else {
 							this._playerCtx.clearRect(0, 0, pw, ph);
 							this._playerCtx.drawImage(baseImg, 0, 0);
@@ -3497,7 +3498,7 @@
 					this.textures.get('player-upstairs').refresh();
 				}
 				this._onStorage = (e) => {
-					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette && this._applyPalette) {
+					if ((e.key === 'pokequiz_trainer_palette' || e.key === 'pokequiz_trainer_body') && window.TrainerPalette && this._applyPalette) {
 						this._applyPalette();
 						this.textures.get('player-upstairs').refresh();
 					}
@@ -3818,7 +3819,7 @@
 					this._playerCtx = this._playerCanvas.getContext('2d');
 					const applyPalette = () => {
 						if (window.TrainerPalette) {
-							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
+							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx, window.TrainerPalette.loadBody && window.TrainerPalette.loadBody());
 						} else {
 							this._playerCtx.clearRect(0, 0, pw, ph);
 							this._playerCtx.drawImage(baseImg, 0, 0);
@@ -3831,7 +3832,7 @@
 						this.textures.get('player-market').refresh();
 					}
 					this._onStorage = (e) => {
-						if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette) {
+						if ((e.key === 'pokequiz_trainer_palette' || e.key === 'pokequiz_trainer_body') && window.TrainerPalette) {
 							applyPalette();
 							this.textures.get('player-market').refresh();
 						}
@@ -3910,8 +3911,16 @@
 
 				this._promptEl  = document.getElementById('campPrompt');
 				this._promptLbl = document.getElementById('campPromptLabel');
+				// Swap the top-left location badge so it reads "MARKET CENTRE" while
+				// here, then restore the original on shutdown.
+				this._locEl = document.querySelector('.camp-location-name');
+				if (this._locEl) {
+					this._prevLocText = this._locEl.textContent;
+					this._locEl.textContent = 'MARKET CENTRE';
+				}
 				this.events.once('shutdown', () => {
 					if (this._promptEl) this._promptEl.hidden = true;
+					if (this._locEl && this._prevLocText) this._locEl.textContent = this._prevLocText;
 				});
 			}
 
