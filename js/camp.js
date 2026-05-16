@@ -636,27 +636,38 @@
 			}
 
 			create() {
+				console.log('[CampScene] create()');
+				try {
+					this._buildCamp();
+					console.log('[CampScene] create() ok');
+				} catch (e) {
+					console.error('[CampScene] create failed:', e);
+					Debug.lastError = 'CampScene.create: ' + e.message;
+				}
+			}
+
+			_buildCamp() {
 				this.tick = 0;
 				this.map = buildMap();
 
 				const W = MAP_W * TILE, H = MAP_H * TILE;
-				// Skip-if-exists: removing canvas textures and recreating them with the
-				// same key has produced null returns in Phaser 3 on the second boot,
-				// blanking the world. Reuse the existing textures across scene boots
-				// — the camp base is static and the animated overlay is re-drawn every
-				// frame so a single canvas per session works fine.
-				if (!this.textures.exists('campBase')) {
-					this.baseTex = this.textures.createCanvas('campBase', W, H);
-				} else {
-					this.baseTex = this.textures.get('campBase');
-				}
-				if (!this.textures.exists('campAnim')) {
-					this.animTex = this.textures.createCanvas('campAnim', W, H);
-				} else {
-					this.animTex = this.textures.get('campAnim');
-				}
+				// Reuse the existing canvas textures across scene boots — but only if
+				// the existing entry is actually a CanvasTexture (has getContext). On
+				// some Phaser builds textures.get() can return a base Texture on the
+				// second boot, which would silently throw inside getContext() and abort
+				// CampScene.create() — leaving the HOUSE scene wedged.
+				const grabCanvasTex = (key) => {
+					const existing = this.textures.exists(key) ? this.textures.get(key) : null;
+					if (existing && typeof existing.getContext === 'function') return existing;
+					if (existing) {
+						try { this.textures.remove(key); } catch (_) {}
+					}
+					return this.textures.createCanvas(key, W, H);
+				};
+				this.baseTex = grabCanvasTex('campBase');
+				this.animTex = grabCanvasTex('campAnim');
 				if (!this.baseTex || !this.animTex) {
-					console.error('[CampScene] createCanvas returned null', { baseTex: this.baseTex, animTex: this.animTex });
+					throw new Error('createCanvas returned null for camp textures');
 				}
 				const baseCtx = this.baseTex.getContext();
 				const animCtx = this.animTex.getContext();
