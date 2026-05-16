@@ -645,124 +645,71 @@
 	})();
 
 	// ── Background music ─────────────────────────────────────────────────────────
-	// Multi-voice chiptune per area. Each track is an array of voices played in
-	// parallel; each voice is { type, vol, notes: [[freq_hz, dur_s], ...] }.
-	// freq=0 is a rest. All voices in a track must have the same total duration.
+	// Streams real Pokémon MP3s from archive.org via HTML5 Audio.
+	// Falls back to silence gracefully if the network is unavailable.
+	// battle keeps the synthesised square-wave loop so it doesn't need a network
+	// round-trip when a wild encounter fires mid-session.
 	const Music = (() => {
-		let musicCtx = null;
-		let oscs = [];
-		let loopTimer = null;
-		let area = null;
-		let on = true;
-
-		// Shorthand durations at ~120 BPM
-		const q=0.5, e=0.25, h=1.0, dh=1.5;
-
-		const TRACKS = {
-			// ── Camp — Pallet Town-inspired calming melody, 7.0 s loop, C major ──
-			camp: [
-				// Voice 1 · melody (triangle)
-				{ type:'triangle', vol:0.026, notes:[
-					[659,q],[587,e],[523,e],[587,q],[659,q],[784,q],[880,h],   // phrase A
-					[523,q],[494,e],[440,e],[392,q],[440,q],[392,e],[329,e],[262,h], // phrase B
-				]},
-				// Voice 2 · harmony a 3rd below (triangle, softer)
-				{ type:'triangle', vol:0.015, notes:[
-					[523,q],[494,e],[392,e],[494,q],[523,q],[659,q],[699,h],
-					[440,q],[392,e],[349,e],[329,q],[349,q],[329,e],[262,e],[220,h],
-				]},
-				// Voice 3 · bass (sine)
-				{ type:'sine', vol:0.020, notes:[
-					[262,h],[196,h],[262,q],[220,h],   // phrase A  (total 3.5 s)
-					[175,h],[196,h],[131,dh],           // phrase B  (total 3.5 s)
-				]},
-			],
-
-			// ── House — cozy Pokémon Center-style tune, 4.0 s loop, C major ──
-			house: [
-				{ type:'triangle', vol:0.022, notes:[
-					[523,q],[659,q],[784,q],[659,q],[587,q],[699,q],[659,q],[523,q],
-				]},
-				{ type:'triangle', vol:0.013, notes:[
-					[440,q],[523,q],[659,q],[523,q],[494,q],[523,q],[523,q],[440,q],
-				]},
-				{ type:'sine', vol:0.018, notes:[
-					[262,h],[196,h],[247,q],[262,dh],
-				]},
-			],
-
-			// ── Upstairs — lighter, higher register, 4.0 s loop ──
-			upstairs: [
-				{ type:'triangle', vol:0.022, notes:[
-					[784,q],[880,q],[784,q],[659,q],[784,q],[659,q],[587,q],[523,q],
-				]},
-				{ type:'triangle', vol:0.013, notes:[
-					[659,q],[699,q],[659,q],[523,q],[659,q],[523,q],[494,q],[440,q],
-				]},
-				{ type:'sine', vol:0.018, notes:[
-					[262,h],[220,h],[196,h],[175,h],
-				]},
-			],
-
-			// ── Battle — energetic square-wave loop, 1.44 s ──
-			battle: [
-				{ type:'square', vol:0.020, notes:[
-					[440,.09],[494,.09],[523,.09],[587,.09],
-					[523,.09],[440,.18],[415,.09],[440,.18],
-				]},
-			],
+		const BASE = 'https://archive.org/download/pkmn-frlg-soundtrack/Disc%201/';
+		const URLS = {
+			camp:     BASE + '04%20-%20Pallet%20Town.mp3',
+			house:    BASE + '16%20-%20Pok%C3%A9mon%20Center.mp3',
+			upstairs: BASE + '12%20-%20Route%201.mp3',
 		};
+
+		let current = null;   // the active HTMLAudioElement
+		let area    = null;
+		let on      = true;
+
+		// Battle stays synthesised — fast, no network latency on encounter.
+		let musicCtx = null;
+		let battleOscs = [];
+		let battleTimer = null;
+		const BATTLE_NOTES = [440,.09,494,.09,523,.09,587,.09,523,.09,440,.18,415,.09,440,.18];
 
 		function ensureCtx() {
 			try {
 				if (!musicCtx) musicCtx = new (window.AudioContext || window.webkitAudioContext)();
 				if (musicCtx.state === 'suspended') musicCtx.resume();
-			} catch (e) { musicCtx = null; }
+			} catch(e) { musicCtx = null; }
 			return musicCtx;
 		}
 
-		// Schedule all voices of a track in parallel; return total duration.
-		function scheduleVoices(voices, startTime) {
-			const c = musicCtx;
-			let maxDur = 0;
-			voices.forEach(voice => {
-				let t = startTime;
-				const v = voice.vol || 0.022;
-				voice.notes.forEach(([freq, dur]) => {
-					if (freq > 0) {
-						const osc = c.createOscillator();
-						const g = c.createGain();
-						osc.connect(g).connect(c.destination);
-						osc.frequency.value = freq;
-						osc.type = voice.type || 'triangle';
-						const atk = Math.min(0.04, dur * 0.12);
-						const rel = Math.min(0.10, dur * 0.25);
-						g.gain.setValueAtTime(0.0001, t);
-						g.gain.linearRampToValueAtTime(v, t + atk);
-						g.gain.setValueAtTime(v, t + dur - rel);
-						g.gain.linearRampToValueAtTime(0.0001, t + dur);
-						osc.start(t);
-						osc.stop(t + dur + 0.05);
-						oscs.push(osc);
-					}
-					t += dur;
-				});
-				maxDur = Math.max(maxDur, t - startTime);
-			});
-			return maxDur;
-		}
-
-		function loop(key) {
-			if (!on || key !== area) return;
+		function playBattleLoop() {
+			if (!on || area !== 'battle') return;
 			const c = ensureCtx();
 			if (!c) return;
-			const voices = TRACKS[key];
-			if (!voices) return;
-			const dur = scheduleVoices(voices, c.currentTime);
-			loopTimer = setTimeout(() => {
-				oscs = oscs.filter(o => { try { o.stop(0); } catch {} return false; });
-				loop(key);
-			}, (dur - 0.12) * 1000);
+			let t = c.currentTime, totalDur = 0;
+			const notes = BATTLE_NOTES;
+			for (let i = 0; i < notes.length; i += 2) {
+				const freq = notes[i], dur = notes[i+1];
+				const osc = c.createOscillator(), g = c.createGain();
+				osc.connect(g).connect(c.destination);
+				osc.frequency.value = freq; osc.type = 'square';
+				g.gain.setValueAtTime(0.020, t);
+				g.gain.exponentialRampToValueAtTime(0.0001, t + dur - 0.01);
+				osc.start(t); osc.stop(t + dur);
+				battleOscs.push(osc);
+				t += dur; totalDur += dur;
+			}
+			battleTimer = setTimeout(() => {
+				battleOscs = battleOscs.filter(o => { try { o.stop(0); } catch {} return false; });
+				playBattleLoop();
+			}, (totalDur - 0.05) * 1000);
+		}
+
+		function stopBattle() {
+			if (battleTimer) { clearTimeout(battleTimer); battleTimer = null; }
+			battleOscs.forEach(o => { try { o.stop(0); } catch {} });
+			battleOscs = [];
+		}
+
+		function stopAudio() {
+			if (current) {
+				current.pause();
+				current.src = '';
+				current = null;
+			}
 		}
 
 		function start(key) {
@@ -770,21 +717,25 @@
 			if (area === key) return;
 			stop();
 			area = key;
-			const c = ensureCtx();
-			if (!c) return;
-			loop(key);
+			if (key === 'battle') { playBattleLoop(); return; }
+			const url = URLS[key];
+			if (!url) return;
+			const audio = new Audio(url);
+			audio.loop = true;
+			audio.volume = 0.45;
+			audio.play().catch(() => {});   // browsers may block until a gesture
+			current = audio;
 		}
 
 		function stop() {
 			area = null;
-			if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
-			oscs.forEach(o => { try { o.stop(0); } catch {} });
-			oscs = [];
+			stopAudio();
+			stopBattle();
 		}
 
 		function setEnabled(flag) {
 			on = !!flag;
-			if (!on) stop();
+			if (!on) { stop(); return; }
 			try { localStorage.setItem('pokequiz_music_on', flag ? '1' : '0'); } catch {}
 		}
 		function isEnabled() { return on; }
