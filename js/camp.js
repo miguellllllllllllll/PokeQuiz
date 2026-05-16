@@ -2517,10 +2517,12 @@
 				}
 				// Position the HTML nickname label every frame so it tracks the
 				// follower even when it's standing still (followTarget may be null).
+				// Use getBounds().top so it sits above the actual sprite pixels,
+				// regardless of each eeveelution's different originY anchor.
 				if (this.follower && this._followerNameEl && !this._followerNameEl.hidden) {
 					const cam = this.cameras.main;
 					const fx = (this.follower.x - cam.worldView.x) * cam.zoom;
-					const fy = (this.follower.y - cam.worldView.y) * cam.zoom - 18;
+					const fy = (this.follower.getBounds().top - cam.worldView.y) * cam.zoom - 4;
 					this._followerNameEl.style.left = fx + 'px';
 					this._followerNameEl.style.top  = fy + 'px';
 				}
