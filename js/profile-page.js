@@ -324,11 +324,173 @@
 		});
 	}
 
+	// ── Outfit Presets ───────────────────────────────────────────────────────────
+	const PRESETS_KEY = 'pokequiz_outfit_presets';
+	const PRESET_COUNT = 5;
+	// preview colours shown in the strip (in display order)
+	const STRIP_CATS = ['cap', 'outfit', 'shirt', 'hair', 'skin'];
+
+	function loadPresets() {
+		try {
+			const raw = localStorage.getItem(PRESETS_KEY);
+			const arr = raw ? JSON.parse(raw) : [];
+			// ensure always exactly PRESET_COUNT entries
+			while (arr.length < PRESET_COUNT) arr.push(null);
+			return arr.slice(0, PRESET_COUNT);
+		} catch {
+			return Array(PRESET_COUNT).fill(null);
+		}
+	}
+
+	function savePresets(presets) {
+		try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)); } catch {}
+	}
+
+	function initPresets() {
+		const TP = window.TrainerPalette;
+		const grid = document.getElementById('opGrid');
+		if (!grid) return;
+
+		let presets = loadPresets();
+
+		function buildSlot(idx) {
+			const preset = presets[idx];
+			const isFilled = preset !== null;
+			const defaultName = `Outfit ${idx + 1}`;
+
+			const slot = document.createElement('div');
+			slot.className = 'op-slot ' + (isFilled ? 'is-filled' : 'is-empty');
+			slot.dataset.idx = idx;
+
+			// Header row: slot number + name input
+			const header = document.createElement('div');
+			header.className = 'op-slot-header';
+
+			const numLabel = document.createElement('span');
+			numLabel.className = 'op-slot-num';
+			numLabel.textContent = idx + 1;
+
+			const nameInput = document.createElement('input');
+			nameInput.type = 'text';
+			nameInput.className = 'op-name-input';
+			nameInput.maxLength = 20;
+			nameInput.placeholder = defaultName;
+			nameInput.value = isFilled ? (preset.name || defaultName) : '';
+			nameInput.setAttribute('aria-label', `Preset ${idx + 1} name`);
+
+			header.appendChild(numLabel);
+			header.appendChild(nameInput);
+
+			// Color preview strip
+			const strip = document.createElement('div');
+			strip.className = 'op-preview-strip';
+			STRIP_CATS.forEach((cat) => {
+				const swatch = document.createElement('div');
+				swatch.className = 'op-swatch';
+				swatch.title = cat;
+				if (isFilled && preset.palette) {
+					const defaults = TP ? TP.DEFAULTS : {};
+					swatch.style.background = preset.palette[cat] || defaults[cat] || '#ccc';
+				}
+				strip.appendChild(swatch);
+			});
+
+			// Action buttons
+			const actions = document.createElement('div');
+			actions.className = 'op-actions';
+
+			const saveBtn = document.createElement('button');
+			saveBtn.type = 'button';
+			saveBtn.className = 'op-btn op-btn-save';
+			saveBtn.textContent = 'SAVE';
+			saveBtn.setAttribute('aria-label', `Save current outfit to slot ${idx + 1}`);
+
+			const loadBtn = document.createElement('button');
+			loadBtn.type = 'button';
+			loadBtn.className = 'op-btn op-btn-load';
+			loadBtn.textContent = 'LOAD';
+			loadBtn.disabled = !isFilled;
+			loadBtn.setAttribute('aria-label', `Load outfit from slot ${idx + 1}`);
+
+			actions.appendChild(saveBtn);
+			actions.appendChild(loadBtn);
+
+			slot.appendChild(header);
+			slot.appendChild(strip);
+			if (!isFilled) {
+				const emptyLabel = document.createElement('div');
+				emptyLabel.className = 'op-empty-label';
+				emptyLabel.textContent = 'Empty slot';
+				slot.appendChild(emptyLabel);
+			}
+			slot.appendChild(actions);
+
+			// Wire save
+			saveBtn.addEventListener('click', () => {
+				const currentPalette = TP ? TP.load() : {};
+				const slotName = nameInput.value.trim() || defaultName;
+				presets[idx] = { name: slotName, palette: Object.assign({}, currentPalette) };
+				savePresets(presets);
+				// Rebuild this slot in place
+				const newSlot = buildSlot(idx);
+				grid.replaceChild(newSlot, slot);
+			});
+
+			// Wire load
+			loadBtn.addEventListener('click', () => {
+				if (!presets[idx]) return;
+				const p = presets[idx];
+				if (TP) {
+					TP.save(p.palette);
+					// Dispatch storage event so camp.js and the customizer canvas pick it up
+					window.dispatchEvent(new StorageEvent('storage', { key: TP.KEY || 'pokequiz_trainer_palette' }));
+					// Also re-init the customizer controls to reflect loaded values
+					refreshCustomizerPickers(p.palette);
+				}
+				// Brief visual feedback on the button
+				const orig = loadBtn.textContent;
+				loadBtn.textContent = 'LOADED!';
+				setTimeout(() => { loadBtn.textContent = orig; }, 1200);
+			});
+
+			return slot;
+		}
+
+		function render() {
+			grid.innerHTML = '';
+			for (let i = 0; i < PRESET_COUNT; i++) {
+				grid.appendChild(buildSlot(i));
+			}
+		}
+
+		render();
+	}
+
+	// Update the existing color picker UI and canvas when a preset is loaded.
+	function refreshCustomizerPickers(palette) {
+		const TP = window.TrainerPalette;
+		if (!TP) return;
+		const defaults = TP.DEFAULTS || {};
+		Object.keys(defaults).forEach((cat) => {
+			const row = document.querySelector(`.tc-row[data-cat="${cat}"]`);
+			if (!row) return;
+			const picker = row.querySelector('.tc-color-picker');
+			const hexEl = row.querySelector('[data-hex]');
+			const val = (palette[cat] || defaults[cat]).toLowerCase();
+			if (picker) picker.value = val;
+			if (hexEl) hexEl.textContent = val.toUpperCase();
+		});
+		// Trigger a recolor on the canvas by dispatching an input event on any picker
+		const firstPicker = document.querySelector('.tc-color-picker');
+		if (firstPicker) firstPicker.dispatchEvent(new Event('input', { bubbles: true }));
+	}
+
 	function init() {
 		renderAvatarOnButton();
 		renderHero();
 		renderPicker();
 		initCustomizer();
+		initPresets();
 		wireEdit();
 		wireManage();
 		renderStats();

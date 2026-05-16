@@ -1,0 +1,487 @@
+/* ── Trainer Card Page ─────────────────────────────────────────────────────── */
+
+.tc-page {
+	max-width: 960px;
+}
+
+/* Back link — reuse profile-page pattern */
+.back-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--muted);
+	text-decoration: none;
+	margin-bottom: 18px;
+	letter-spacing: 0.3px;
+}
+.back-link:hover { color: var(--poke-red); }
+
+/* ── Card spacing ──────────────────────────────────────────────────────────── */
+.tc-card {
+	margin-bottom: 22px;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────────────────── */
+.tc-hero {
+	position: relative;
+	background: #0d0d0d;
+	border-radius: 22px;
+	border: 2px solid var(--poke-yellow);
+	box-shadow:
+		0 0 0 4px rgba(246, 200, 76, 0.12),
+		0 12px 40px rgba(0, 0, 0, 0.45),
+		inset 0 1px 0 rgba(255, 255, 255, 0.06);
+	padding: 36px 40px;
+	margin-bottom: 28px;
+	overflow: hidden;
+}
+
+.tc-hero-bg {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(ellipse 60% 80% at 90% 50%, rgba(246, 200, 76, 0.08) 0%, transparent 70%),
+		radial-gradient(ellipse 40% 60% at 10% 50%, rgba(238, 21, 21, 0.07) 0%, transparent 70%);
+}
+
+/* Pokéball watermark */
+.tc-hero-bg::after {
+	content: '';
+	position: absolute;
+	right: -80px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 320px;
+	height: 320px;
+	background-image: url('../Pictures/pokeball.png');
+	background-size: contain;
+	background-repeat: no-repeat;
+	opacity: 0.04;
+	animation: tcSpin 40s linear infinite;
+}
+
+@keyframes tcSpin {
+	from { transform: translateY(-50%) rotate(0deg); }
+	to   { transform: translateY(-50%) rotate(360deg); }
+}
+
+.tc-hero-inner {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 24px;
+	flex-wrap: wrap;
+}
+
+.tc-eyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-family: 'Inter', sans-serif;
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--poke-yellow);
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	margin-bottom: 12px;
+	opacity: 0.85;
+}
+
+.tc-dot {
+	width: 7px;
+	height: 7px;
+	background: var(--poke-yellow);
+	border-radius: 50%;
+	box-shadow: 0 0 8px rgba(246, 200, 76, 0.6);
+	animation: tcPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes tcPulse {
+	0%, 100% { box-shadow: 0 0 8px rgba(246, 200, 76, 0.6); }
+	50%       { box-shadow: 0 0 16px rgba(246, 200, 76, 0.2); }
+}
+
+.tc-trainer-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 28px;
+	color: var(--poke-yellow);
+	text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6), 0 0 20px rgba(246, 200, 76, 0.2);
+	margin: 0 0 8px;
+	line-height: 1.2;
+	word-break: break-word;
+}
+
+.tc-trainer-id {
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.45);
+	margin: 0;
+}
+
+.tc-id-code {
+	font-family: 'JetBrains Mono', ui-monospace, monospace;
+	background: rgba(255, 255, 255, 0.06);
+	padding: 2px 8px;
+	border-radius: 6px;
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.6);
+	letter-spacing: 1px;
+}
+
+/* Badge row in hero */
+.tc-badge-row {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.tc-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 14px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(246, 200, 76, 0.25);
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.75);
+	transition: border-color 0.15s, background 0.15s;
+}
+
+.tc-badge:hover {
+	border-color: rgba(246, 200, 76, 0.55);
+	background: rgba(246, 200, 76, 0.08);
+}
+
+.tc-badge-icon {
+	color: var(--poke-yellow);
+	font-size: 11px;
+}
+
+.tc-badge-val {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 10px;
+	color: var(--poke-yellow);
+}
+
+/* ── Partner Section ────────────────────────────────────────────────────────── */
+.tc-partner-layout {
+	display: grid;
+	grid-template-columns: 180px 1fr;
+	gap: 32px;
+	align-items: start;
+}
+
+.tc-partner-sprite-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+}
+
+.tc-partner-sprite {
+	width: 140px;
+	height: 140px;
+	border-radius: 50%;
+	background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+	border: 3px solid var(--poke-yellow);
+	box-shadow:
+		0 6px 0 rgba(180, 140, 20, 0.5),
+		0 10px 30px rgba(0, 0, 0, 0.2),
+		inset 0 0 40px rgba(246, 200, 76, 0.05);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	overflow: hidden;
+}
+
+.tc-partner-img {
+	width: 96px;
+	height: 96px;
+	object-fit: contain;
+	image-rendering: pixelated;
+	position: relative;
+	z-index: 1;
+}
+
+.tc-partner-img[src=""] { display: none; }
+
+.tc-partner-placeholder {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 40px;
+	color: rgba(246, 200, 76, 0.3);
+	line-height: 1;
+	user-select: none;
+}
+
+.tc-partner-placeholder.hidden { display: none; }
+
+.tc-partner-form-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: var(--poke-yellow);
+	text-align: center;
+	margin: 0;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+	letter-spacing: 0.5px;
+}
+
+/* Partner stat rows */
+.tc-partner-stats {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	padding-top: 4px;
+}
+
+.tc-pstat {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tc-pstat-label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	color: var(--muted);
+}
+
+.tc-pstat-val {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 18px;
+	color: var(--poke-red);
+	text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.08);
+}
+
+.tc-form-pill {
+	display: inline-block;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 10px;
+	background: linear-gradient(135deg, #1a1a2e, #16213e);
+	color: var(--poke-yellow);
+	border: 1px solid rgba(246, 200, 76, 0.35);
+	padding: 6px 14px;
+	border-radius: 999px;
+	text-shadow: none;
+	letter-spacing: 0.5px;
+}
+
+/* Friendship bar */
+.tc-friendship-bar-wrap {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.tc-friendship-bar {
+	flex: 1;
+	height: 14px;
+	background: rgba(0, 0, 0, 0.07);
+	border-radius: 999px;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	overflow: hidden;
+}
+
+.tc-friendship-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--poke-red) 0%, #ff6b6b 50%, var(--poke-yellow) 100%);
+	border-radius: 999px;
+	transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+	min-width: 0;
+}
+
+.tc-friendship-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	color: var(--poke-red);
+	min-width: 28px;
+	text-align: right;
+}
+
+/* ── Stats Grid ─────────────────────────────────────────────────────────────── */
+.tc-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 14px;
+}
+
+.tc-stat-tile {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	padding: 20px;
+	background: linear-gradient(160deg, #0d0d0d 0%, #1a1a1a 100%);
+	border: 1px solid rgba(246, 200, 76, 0.15);
+	border-radius: 16px;
+	transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+	position: relative;
+	overflow: hidden;
+}
+
+.tc-stat-tile::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(135deg, rgba(246, 200, 76, 0.03) 0%, transparent 60%);
+	pointer-events: none;
+}
+
+.tc-stat-tile:hover {
+	border-color: rgba(246, 200, 76, 0.4);
+	transform: translateY(-2px);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.tc-tile-icon {
+	font-size: 22px;
+	line-height: 1;
+	flex: 0 0 auto;
+	margin-top: 2px;
+}
+
+.tc-tile-tokens .tc-tile-icon  { color: var(--poke-yellow); }
+.tc-tile-catches .tc-tile-icon { color: #ef4444; }
+.tc-tile-harvests .tc-tile-icon { color: #22c55e; }
+.tc-tile-streak .tc-tile-icon  { color: var(--poke-yellow); }
+.tc-tile-days .tc-tile-icon    { color: #60a5fa; }
+.tc-tile-bonus .tc-tile-icon   { color: #c084fc; }
+
+.tc-tile-body {
+	min-width: 0;
+}
+
+.tc-tile-label {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 1.2px;
+	color: rgba(255, 255, 255, 0.45);
+	margin-bottom: 6px;
+}
+
+.tc-tile-value {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 24px;
+	color: var(--poke-yellow);
+	line-height: 1.1;
+	text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+	word-break: break-all;
+}
+
+.tc-tile-value--date {
+	font-size: 11px;
+	line-height: 1.4;
+	padding-top: 3px;
+}
+
+.tc-tile-value.is-empty {
+	color: rgba(255, 255, 255, 0.2);
+	font-family: inherit;
+	font-size: 14px;
+	font-style: italic;
+	text-shadow: none;
+}
+
+.tc-tile-meta {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.3);
+	margin-top: 6px;
+}
+
+/* ── Inventory Grid ─────────────────────────────────────────────────────────── */
+.tc-inventory-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 12px;
+}
+
+.tc-inv-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 18px 14px;
+	background: linear-gradient(160deg, #f9f5e7 0%, #fdf6d8 100%);
+	border: 2px solid rgba(246, 200, 76, 0.3);
+	border-radius: 14px;
+	text-align: center;
+	transition: border-color 0.15s, transform 0.1s;
+}
+
+.tc-inv-item:hover {
+	border-color: var(--poke-yellow);
+	transform: translateY(-2px);
+}
+
+.tc-inv-icon {
+	font-size: 20px;
+	line-height: 1;
+	color: var(--poke-red);
+}
+
+.tc-inv-label {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+	color: var(--muted);
+}
+
+.tc-inv-val {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 16px;
+	color: var(--poke-red);
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+	.tc-hero {
+		padding: 24px 22px;
+	}
+
+	.tc-trainer-name {
+		font-size: 18px;
+	}
+
+	.tc-hero-inner {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
+	}
+
+	.tc-partner-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.tc-partner-sprite-wrap {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.tc-stats-grid {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.tc-tile-value {
+		font-size: 18px;
+	}
+}
+
+@media (max-width: 420px) {
+	.tc-stats-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.tc-inventory-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}

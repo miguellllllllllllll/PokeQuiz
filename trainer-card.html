@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Trainer Card &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/trainer-card.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="trainer-card.html" class="active">Trainer Card</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container tc-page">
+		<a class="back-link" href="index.html">&larr; Back to Home</a>
+
+		<!-- Hero / Card Header -->
+		<div class="tc-hero">
+			<div class="tc-hero-bg" aria-hidden="true"></div>
+			<div class="tc-hero-inner">
+				<div class="tc-id-block">
+					<div class="tc-eyebrow">
+						<span class="tc-dot"></span>
+						<span>Trainer Card</span>
+					</div>
+					<h1 class="tc-trainer-name" id="tcTrainerName">Trainer</h1>
+					<p class="tc-trainer-id">Trainer ID: <code class="tc-id-code" id="tcTrainerId">&mdash;</code></p>
+				</div>
+				<div class="tc-badge-row" aria-label="Trainer badges">
+					<span class="tc-badge" id="tcBadgeStreak" title="Login Streak">
+						<span class="tc-badge-icon">&#9733;</span>
+						<span class="tc-badge-val" id="tcBadgeStreakVal">0</span>
+					</span>
+					<span class="tc-badge" id="tcBadgeCatches" title="Total Catches">
+						<span class="tc-badge-icon">&#9679;</span>
+						<span class="tc-badge-val" id="tcBadgeCatchesVal">0</span>
+					</span>
+					<span class="tc-badge" id="tcBadgeDays" title="Days Played">
+						<span class="tc-badge-icon">&#9632;</span>
+						<span class="tc-badge-val" id="tcBadgeDaysVal">0</span>
+					</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Partner Pokemon -->
+		<section class="card tc-card" id="tcPartnerSection">
+			<header class="section-head">
+				<h2>Partner Pok&eacute;mon</h2>
+				<p>Your camp companion and friendship stats.</p>
+			</header>
+			<div class="tc-partner-layout">
+				<div class="tc-partner-sprite-wrap" aria-hidden="true">
+					<div class="tc-partner-sprite" id="tcPartnerSprite">
+						<img id="tcPartnerImg" src="" alt="" class="tc-partner-img">
+						<div class="tc-partner-placeholder" id="tcPartnerPlaceholder">?</div>
+					</div>
+					<p class="tc-partner-form-name" id="tcPartnerFormName">Eevee</p>
+				</div>
+				<div class="tc-partner-stats">
+					<div class="tc-pstat">
+						<span class="tc-pstat-label">Friendship</span>
+						<div class="tc-friendship-bar-wrap">
+							<div class="tc-friendship-bar" id="tcFriendshipBar">
+								<div class="tc-friendship-fill" id="tcFriendshipFill" style="width: 0%"></div>
+							</div>
+							<span class="tc-friendship-num" id="tcFriendshipNum">0</span>
+						</div>
+					</div>
+					<div class="tc-pstat">
+						<span class="tc-pstat-label">Friendship Berries</span>
+						<span class="tc-pstat-val" id="tcFriendshipBerries">0</span>
+					</div>
+					<div class="tc-pstat">
+						<span class="tc-pstat-label">Current Form</span>
+						<span class="tc-pstat-val tc-form-pill" id="tcCurrentForm">Eevee</span>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Stats Grid -->
+		<section class="card tc-card">
+			<header class="section-head">
+				<h2>Trainer Stats</h2>
+				<p>Your adventure history in the PokeQuiz world.</p>
+			</header>
+			<div class="tc-stats-grid">
+
+				<div class="tc-stat-tile tc-tile-tokens">
+					<div class="tc-tile-icon" aria-hidden="true">&#9670;</div>
+					<div class="tc-tile-body">
+						<div class="tc-tile-label">Tokens</div>
+						<div class="tc-tile-value" id="tcTokens">0</div>
+						<div class="tc-tile-meta">Current balance</div>
+					</div>
+				</div>
+
+				<div class="tc-stat-tile tc-tile-catches">
+					<div class="tc-tile-icon" aria-hidden="true">&#9679;</div>
+					<div class="tc-tile-body">
+						<div class="tc-tile-label">Wild Encounters</div>
+						<div class="tc-tile-value" id="tcCatches">0</div>
+						<div class="tc-tile-meta">Total Pok&eacute;mon caught</div>
+					</div>
+				</div>
+
+				<div class="tc-stat-tile tc-tile-harvests">
+					<div class="tc-tile-icon" aria-hidden="true">&#9830;</div>
+					<div class="tc-tile-body">
+						<div class="tc-tile-label">Berries Harvested</div>
+						<div class="tc-tile-value" id="tcHarvests">0</div>
+						<div class="tc-tile-meta">Total berries collected</div>
+					</div>
+				</div>
+
+				<div class="tc-stat-tile tc-tile-streak">
+					<div class="tc-tile-icon" aria-hidden="true">&#9733;</div>
+					<div class="tc-tile-body">
+						<div class="tc-tile-label">Login Streak</div>
+						<div class="tc-tile-value" id="tcStreak">0</div>
+						<div class="tc-tile-meta">Consecutive days</div>
+					</div>
+				</div>
+
+				<div class="tc-stat-tile tc-tile-days">
+					<div class="tc-tile-icon" aria-hidden="true">&#9632;</div>
+					<div class="tc-tile-body">
+						<div class="tc-tile-label">Days Played</div>
+						<div class="tc-tile-value" id="tcDays">0</div>
+						<div class="tc-tile-meta">Total active days</div>
+					</div>
+				</div>
+
+				<div class="tc-stat-tile tc-tile-bonus">
+					<div class="tc-tile-icon" aria-hidden="true">&#9668;</div>
+					<div class="tc-tile-body">
+						<div class="tc-tile-label">Last Daily Bonus</div>
+						<div class="tc-tile-value tc-tile-value--date" id="tcLastBonus">&mdash;</div>
+						<div class="tc-tile-meta">Most recent claim</div>
+					</div>
+				</div>
+
+			</div>
+		</section>
+
+		<!-- Camp Inventory -->
+		<section class="card tc-card">
+			<header class="section-head">
+				<h2>Camp Inventory</h2>
+				<p>Items and resources in your camp right now.</p>
+			</header>
+			<div class="tc-inventory-grid">
+				<div class="tc-inv-item">
+					<span class="tc-inv-icon" aria-hidden="true">&#9670;</span>
+					<span class="tc-inv-label">Tokens</span>
+					<span class="tc-inv-val" id="tcInvTokens">0</span>
+				</div>
+				<div class="tc-inv-item">
+					<span class="tc-inv-icon" aria-hidden="true">&#9829;</span>
+					<span class="tc-inv-label">Friendship</span>
+					<span class="tc-inv-val" id="tcInvFriendship">0</span>
+				</div>
+				<div class="tc-inv-item">
+					<span class="tc-inv-icon" aria-hidden="true">&#9830;</span>
+					<span class="tc-inv-label">Friendship Berries</span>
+					<span class="tc-inv-val" id="tcInvBerries">0</span>
+				</div>
+				<div class="tc-inv-item">
+					<span class="tc-inv-icon" aria-hidden="true">&#9824;</span>
+					<span class="tc-inv-label">Seeds</span>
+					<span class="tc-inv-val" id="tcInvSeeds">0</span>
+				</div>
+				<div class="tc-inv-item">
+					<span class="tc-inv-icon" aria-hidden="true">&#9900;</span>
+					<span class="tc-inv-label">Plants Placed</span>
+					<span class="tc-inv-val" id="tcInvPlants">0</span>
+				</div>
+				<div class="tc-inv-item">
+					<span class="tc-inv-icon" aria-hidden="true">&#9654;</span>
+					<span class="tc-inv-label">Evolution Stone</span>
+					<span class="tc-inv-val" id="tcInvStone">&mdash;</span>
+				</div>
+			</div>
+		</section>
+
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/trainer-card.js" defer></script>
+</body>
+</html>
