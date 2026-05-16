@@ -559,8 +559,14 @@
 		try { Dialog.close(); } catch (_) {}
 		const from = (data && data.from) || '';
 		console.log('[scene] reload →', key, 'from', from);
-		window.location.hash = '#' + key + (from ? '|' + from : '');
-		window.location.reload();
+		// Trigger the black fade-in so the screen stays dark through the reload.
+		const fade = document.getElementById('campFade');
+		if (fade) fade.classList.remove('is-hidden');
+		// Short delay so the fade animation has time to land before the reload.
+		setTimeout(() => {
+			window.location.hash = '#' + key + (from ? '|' + from : '');
+			window.location.reload();
+		}, 220);
 	}
 
 	// Read the hash on boot to figure out which scene to start. Captured once at
@@ -1583,6 +1589,11 @@
 		if (window.location.hash) {
 			history.replaceState(null, '', window.location.pathname + window.location.search);
 		}
+		// Fade out the black overlay once the first scene has had a moment to paint.
+		setTimeout(() => {
+			const fade = document.getElementById('campFade');
+			if (fade) fade.classList.add('is-hidden');
+		}, 250);
 	}
 
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

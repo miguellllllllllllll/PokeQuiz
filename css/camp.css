@@ -227,6 +227,18 @@ body.camp-body {
 	.camp-minimap { width: 100px; height: 75px; right: 8px; bottom: 142px; }
 }
 
+/* ── Scene-transition fade — black overlay during page reload ─────────── */
+.camp-fade {
+	position: fixed;
+	inset: 0;
+	background: #000;
+	z-index: 1000;
+	pointer-events: none;
+	opacity: 1;
+	transition: opacity 0.35s ease-out;
+}
+.camp-fade.is-hidden { opacity: 0; }
+
 /* ── Pause menu ───────────────────────────────────────────────────────── */
 .camp-pause {
 	position: absolute;
