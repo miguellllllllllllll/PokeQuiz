@@ -20,6 +20,23 @@
 		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
 	};
 
+	// Camp NPCs. Stationary for Phase 1 — each renders frame 0 of its walk sheet
+	// (south-facing idle) and uses Manhattan-1 adjacency for the E-key dialog.
+	const NPCS = [
+		{
+			key: 'mart-keeper', species: 'pikachu', r: 14, c: 13,
+			label: 'Talk',
+			spriteScale: 0.55, frameHeight: 40,
+			dialog: "Welcome to my shop! I'll buy your berries — come back when you've grown some. (Mart not stocked yet — coming soon.)",
+		},
+		{
+			key: 'farmer', species: 'bulbasaur', r: 21, c: 22,
+			label: 'Talk',
+			spriteScale: 0.6, frameHeight: 40,
+			dialog: "These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
+		},
+	];
+
 	// ── Map ──────────────────────────────────────────────────────────────────────
 	function buildMap() {
 		const map = Array.from({ length: MAP_H }, () => new Array(MAP_W).fill(TG));
@@ -646,6 +663,9 @@
 				this.load.image('player-base', 'Pictures/sprites/calem.png');
 				// PMD walk sheet: 7 frames × 8 directions (rows 0/2/4/6 = S/E/N/W).
 				this.load.spritesheet('eevee', 'Pictures/sprites/eevee.png', { frameWidth: 40, frameHeight: 48 });
+				// NPC sprite sheets (PMD walk; row 0 frame 0 used as the static idle).
+				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
+				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
 			}
 
 			create() {
@@ -864,6 +884,25 @@
 				// without this — wait until they step OFF the door area to re-arm.
 				this.armedForDoor = this.spawnFrom !== 'house';
 
+				// Spawn NPCs from the NPCS table. They render frame 0 of their walk
+				// sheet (south idle), block movement via static collision rects, and
+				// register into npcByTile for the E-key interaction prompt.
+				this.npcByTile = {};
+				const npcSolids = this.physics.add.staticGroup();
+				for (const npc of NPCS) {
+					const x = npc.c * TILE + TILE/2;
+					const y = npc.r * TILE + TILE/2;
+					const sprite = this.add.sprite(x, y, 'npc-' + npc.species, 0);
+					sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
+					sprite.setScale(npc.spriteScale);
+					sprite.setDepth(3);
+					const rect = this.add.rectangle(x, y, TILE, TILE);
+					this.physics.add.existing(rect, true);
+					npcSolids.add(rect);
+					this.npcByTile[npc.r + ',' + npc.c] = npc;
+				}
+				this.physics.add.collider(this.player, npcSolids);
+
 				// Pre-render the static mini-map once. It mirrors the full map at tiny
 				// scale; the player dot is overlaid every frame in updateMinimap().
 				this.minimapEl = document.getElementById('campMinimap');
@@ -890,6 +929,8 @@
 				const [dvx, dvy] = this.DIR_VEC[this.dir];
 				const candidates = [[tc + dvx, tr + dvy], [tc, tr]];
 				for (const [c, r] of candidates) {
+					const npc = this.npcByTile && this.npcByTile[r + ',' + c];
+					if (npc) return { kind: 'npc', r, c, message: npc.dialog, label: npc.label };
 					if (!this.map[r] || this.map[r][c] === undefined) continue;
 					const t = this.map[r][c];
 					if (t === TSG) {
@@ -1066,7 +1107,7 @@
 				// Interaction prompt + E to read signs. When the dialog is open the player
 				// freezes and E advances/closes the dialog instead of moving them.
 				const target = this.findInteractTarget();
-				this.showPrompt(target ? (target.kind === 'door' ? 'Enter' : 'Read') : null);
+				this.showPrompt(target ? (target.label || (target.kind === 'door' ? 'Enter' : target.kind === 'npc' ? 'Talk' : 'Read')) : null);
 				if (Phaser.Input.Keyboard.JustDown(k.interact)) {
 					if (dialogOpen) Dialog.advance();
 					else if (target && target.message) Dialog.open(target.message);
