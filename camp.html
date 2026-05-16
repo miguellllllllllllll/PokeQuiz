@@ -97,6 +97,22 @@
 		<!-- Follower nickname label — floats above the partner sprite, crisp HTML text -->
 		<div class="camp-follower-name" id="campFollowerName" hidden aria-hidden="true"></div>
 
+		<!-- Room edit button — only visible while in the upstairs scene -->
+		<button class="camp-room-edit-btn" id="campRoomEditBtn" hidden type="button" aria-label="Edit Room">✏️ Edit Room</button>
+
+		<!-- Room editor side panel -->
+		<div class="camp-room-editor" id="campRoomEditor" hidden role="dialog" aria-label="Room Editor">
+			<div class="cre-panel">
+				<div class="cre-header">
+					<span class="cre-title">Room Decoration</span>
+					<span class="cre-tokens">💰 <span id="creTokens">0</span></span>
+					<button class="cre-close" id="creClose" type="button" aria-label="Close">✕</button>
+				</div>
+				<div class="cre-subtitle">Buy and place items in your room. Changes apply live.</div>
+				<div class="cre-item-list" id="creItemList"></div>
+			</div>
+		</div>
+
 		<!-- Interaction prompt — anchored to the player on-screen, shown when next to something interactable -->
 		<div class="camp-prompt" id="campPrompt" hidden aria-hidden="true">
 			<span class="camp-prompt-arrow">&#x25BC;</span>

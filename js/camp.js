@@ -513,6 +513,154 @@
 		return { open, close, isOpen };
 	})();
 
+	// ── Room Editor — upstairs room decoration panel ──────────────────────────
+	const RoomEditor = (() => {
+		let openFlag = false;
+		function $(id) { return document.getElementById(id); }
+
+		function liveUpdate() {
+			const scene = window.__upstairsScene;
+			if (!scene || !scene._roomItemObjs) return;
+			const inv = Inventory.load();
+			const roomActive = inv.cosmetics?.roomActive || {};
+			Object.keys(ROOM_ITEMS).forEach(key => {
+				const obj = scene._roomItemObjs[key];
+				if (obj) obj.setVisible(!!roomActive[key]);
+			});
+		}
+
+		function refresh() {
+			const list = $('creItemList');
+			if (!list) return;
+			const inv = Inventory.load();
+			const cosm = inv.cosmetics || {};
+			const roomItems = cosm.roomItems || [];
+			const roomActive = cosm.roomActive || {};
+			const tokens = inv.tokens || 0;
+			const tokEl = $('creTokens');
+			if (tokEl) tokEl.textContent = tokens;
+			list.innerHTML = '';
+			Object.entries(ROOM_ITEMS).forEach(([key, item]) => {
+				const owned    = roomItems.includes(key);
+				const active   = !!roomActive[key];
+				const canAfford = tokens >= item.price;
+				const card = document.createElement('div');
+				card.className = 'cre-item' + (active ? ' cre-item--active' : owned ? ' cre-item--owned' : '');
+				const left = document.createElement('div');
+				left.className = 'cre-item-left';
+				left.innerHTML = '<span class="cre-item-emoji">' + item.emoji + '</span><span class="cre-item-label">' + item.label + '</span>';
+				const right = document.createElement('div');
+				right.className = 'cre-item-right';
+				if (active) {
+					const badge = document.createElement('span');
+					badge.className = 'cre-badge cre-badge--active';
+					badge.textContent = '✓ Active';
+					const removeBtn = document.createElement('button');
+					removeBtn.className = 'cre-btn cre-btn--remove';
+					removeBtn.type = 'button';
+					removeBtn.textContent = 'Remove';
+					removeBtn.addEventListener('click', () => {
+						const i = Inventory.load();
+						if (!i.cosmetics) i.cosmetics = {};
+						if (!i.cosmetics.roomActive) i.cosmetics.roomActive = {};
+						i.cosmetics.roomActive[key] = false;
+						Inventory.save(i);
+						liveUpdate();
+						refresh();
+					});
+					right.appendChild(badge);
+					right.appendChild(removeBtn);
+				} else if (owned) {
+					const badge = document.createElement('span');
+					badge.className = 'cre-badge cre-badge--owned';
+					badge.textContent = 'Owned';
+					const activateBtn = document.createElement('button');
+					activateBtn.className = 'cre-btn cre-btn--activate';
+					activateBtn.type = 'button';
+					activateBtn.textContent = 'Place';
+					activateBtn.addEventListener('click', () => {
+						const i = Inventory.load();
+						if (!i.cosmetics) i.cosmetics = {};
+						if (!i.cosmetics.roomActive) i.cosmetics.roomActive = {};
+						i.cosmetics.roomActive[key] = true;
+						Inventory.save(i);
+						liveUpdate();
+						refresh();
+					});
+					right.appendChild(badge);
+					right.appendChild(activateBtn);
+				} else {
+					const price = document.createElement('span');
+					price.className = 'cre-price';
+					price.textContent = item.price + '💰';
+					const buyBtn = document.createElement('button');
+					buyBtn.className = 'cre-btn cre-btn--buy';
+					buyBtn.type = 'button';
+					buyBtn.textContent = 'Buy';
+					buyBtn.disabled = !canAfford;
+					buyBtn.addEventListener('click', () => {
+						const i = Inventory.load();
+						if ((i.tokens || 0) < item.price) return;
+						i.tokens -= item.price;
+						if (!i.cosmetics) i.cosmetics = {};
+						if (!Array.isArray(i.cosmetics.roomItems)) i.cosmetics.roomItems = [];
+						if (!i.cosmetics.roomActive) i.cosmetics.roomActive = {};
+						i.cosmetics.roomItems.push(key);
+						i.cosmetics.roomActive[key] = true;
+						Inventory.save(i);
+						liveUpdate();
+						refresh();
+					});
+					right.appendChild(price);
+					right.appendChild(buyBtn);
+				}
+				card.appendChild(left);
+				card.appendChild(right);
+				list.appendChild(card);
+			});
+		}
+
+		function open() {
+			const panel = $('campRoomEditor');
+			if (!panel) return;
+			panel.hidden = false;
+			openFlag = true;
+			refresh();
+		}
+
+		function close() {
+			const panel = $('campRoomEditor');
+			if (panel) panel.hidden = true;
+			openFlag = false;
+		}
+
+		function isOpen() { return openFlag; }
+
+		function showEditBtn(show) {
+			const btn = $('campRoomEditBtn');
+			if (btn) btn.hidden = !show;
+			if (!show) close();
+		}
+
+		function wire() {
+			const btn = $('campRoomEditBtn');
+			if (btn && !btn.dataset.wired) {
+				btn.dataset.wired = '1';
+				btn.addEventListener('click', () => openFlag ? close() : open());
+			}
+			const closeBtn = $('creClose');
+			if (closeBtn && !closeBtn.dataset.wired) {
+				closeBtn.dataset.wired = '1';
+				closeBtn.addEventListener('click', close);
+			}
+		}
+
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+		else wire();
+
+		return { open, close, isOpen, showEditBtn, liveUpdate, wire };
+	})();
+
 	// ── Partner Pokémon panel — dedicated page for the follower ─────────────────
 	const Partner = (() => {
 		let openFlag = false;
@@ -635,6 +783,7 @@
 		if (Dialog.isOpen()) { Dialog.close(); e.preventDefault(); return; }
 		if (Partner.isOpen()) { Partner.close(); e.preventDefault(); return; }
 		if (Mart.isOpen()) { Mart.close(); e.preventDefault(); return; }
+		if (RoomEditor.isOpen()) { RoomEditor.close(); e.preventDefault(); return; }
 		// (Battle/pause have their own Escape handling.)
 	});
 
@@ -687,12 +836,20 @@
 		lantern: { x:  9 * 16 + 8, y: 13 * 16 + 8 },
 	};
 	const COSM_PRICE = { wallpaper: 15, accent: 20, scale: 10, flowers: 25, lantern: 30 };
+	const ROOM_ITEMS = {
+		desk:   { label: '🖥️ Study Desk',   price: 30, emoji: '🖥️', r: 3, c: 8 },
+		lamp:   { label: '🪔 Cozy Lamp',    price: 20, emoji: '🪔', r: 3, c: 9 },
+		plant:  { label: '🪴 Indoor Plant', price: 20, emoji: '🪴', r: 6, c: 9 },
+		poster: { label: '🖼️ Wall Art',     price: 15, emoji: '🖼️', r: 2, c: 6 },
+		radio:  { label: '📻 Music Player', price: 25, emoji: '📻', r: 3, c: 2 },
+		mirror: { label: '🪞 Mirror',       price: 30, emoji: '🪞', r: 6, c: 2 },
+	};
 
 	const Inventory = (() => {
 		const DEFAULT = {
 			seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0,
 			eeveeForm: 'eevee', stone: null,
-			cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [] },
+			cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [], roomItems: [], roomActive: {} },
 		};
 		function load() {
 			try {
@@ -702,6 +859,8 @@
 					// Deep-merge cosmetics so new keys added to DEFAULT are always present.
 					const cosm = Object.assign({}, DEFAULT.cosmetics, parsed.cosmetics || {});
 					if (!Array.isArray(cosm.decor)) cosm.decor = [];
+					if (!Array.isArray(cosm.roomItems)) cosm.roomItems = [];
+					if (!cosm.roomActive || typeof cosm.roomActive !== 'object') cosm.roomActive = {};
 					return Object.assign({}, DEFAULT, parsed, { cosmetics: cosm });
 				}
 			} catch {}
@@ -1005,7 +1164,7 @@
 		[[3,30],[3,36],[9,30],[9,36],[3,31],[9,31],[3,35],[9,35],[4,30],[4,36],[8,30],[8,36]
 		].forEach(([r,c])=>set(r,c,TG));
 
-		for(let r=12;r<=27;r++) set(r,11,TP);
+		for(let r=12;r<=MAP_H-1;r++) set(r,11,TP);
 		for(let c=11;c<=22;c++) set(20,c,TP);
 
 		for(let c=20;c<=36;c++){set(12,c,TFN);set(27,c,TFN);}
@@ -1775,6 +1934,46 @@
 		return map;
 	}
 
+	// ── Market Centre interior map ───────────────────────────────────────────────
+	// 22 wide × 14 tall — covered plaza with cobblestone path floor, four shop
+	// stalls (counter tiles) along the north wall, exit door at the south. Each
+	// counter is a 3-tile-wide TBKS block treated as an interactable that opens
+	// the existing Mart UI. Vendor positions are remembered in MARKET_STALLS.
+	const MARKET_W = 22;
+	const MARKET_H = 14;
+	const MARKET_DOOR_C = 10;
+	const MARKET_DOOR_R = MARKET_H - 1;
+	const MARKET_STALLS = [
+		// Each stall: north-wall counter spanning cols [c1..c2] at row 2, vendor
+		// tile (where the player presses E) is row 3 col cMid. Same Mart UI fires
+		// for all four — flavor lives in the dialog before opening.
+		{ c1: 2,  c2: 4,  cMid: 3,  name: "Pikachu's Mart" },
+		{ c1: 7,  c2: 9,  cMid: 8,  name: "Berry Stand" },
+		{ c1: 12, c2: 14, cMid: 13, name: "Stone Vendor" },
+		{ c1: 17, c2: 19, cMid: 18, name: "Boutique" },
+	];
+	function buildMarketMap() {
+		const map = Array.from({ length: MARKET_H }, () => new Array(MARKET_W).fill(TP));
+		for (let c = 0; c < MARKET_W; c++) { map[0][c] = TIW; map[MARKET_H - 1][c] = TIW; }
+		for (let r = 0; r < MARKET_H; r++) { map[r][0] = TIW; map[r][MARKET_W - 1] = TIW; }
+		map[MARKET_DOOR_R][MARKET_DOOR_C] = TD;
+		// Stall counters along the north wall (row 2). Vendor "stand" tile at row 3
+		// (a flower planter) is purely decorative — the player walks up to col=cMid,
+		// row=3 and presses E on the counter (row 2) to shop.
+		for (const s of MARKET_STALLS) {
+			for (let c = s.c1; c <= s.c2; c++) map[2][c] = TBKS;
+		}
+		// Decorative flower planters between stalls
+		const planters = [[3, 5], [3, 10], [3, 15], [3, 20]];
+		planters.forEach(([r, c]) => { if (map[r][c] === TP) map[r][c] = TFR; });
+		// Rug runner down the middle of the plaza
+		for (let c = 4; c <= MARKET_W - 5; c++) {
+			if (map[8][c] === TP) map[8][c] = TRU;
+			if (map[9][c] === TP) map[9][c] = TRU;
+		}
+		return map;
+	}
+
 	// ── Phaser Scenes ────────────────────────────────────────────────────────────
 	function makeSceneClass() {
 		return class CampScene extends Phaser.Scene {
@@ -1922,7 +2121,9 @@
 
 				// Spawn just south of the camp door if coming back from inside the house,
 				// otherwise the default starting position on the path.
-				const spawnTileR = this.spawnFrom === 'house' ? 12 : 14;
+				const spawnTileR = this.spawnFrom === 'house'  ? 12
+				                 : this.spawnFrom === 'market' ? MAP_H - 2
+				                 : 14;
 				this.player = this.physics.add.sprite(11*TILE + TILE/2, spawnTileR*TILE + TILE/2, 'player', 0);
 				// Origin: feet at the bottom-centre of the frame (foot point ≈ y=36 in 38-tall frame)
 				this.player.setOrigin(0.5, 36/38);
@@ -1997,7 +2198,7 @@
 				this.raindrops = [];
 				this.isRaining = false;
 
-				this.dir = 0;
+				this.dir = this.spawnFrom === 'market' ? 2 : 0;
 				this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
 				// Idle frame index per direction (frame 0 of each row)
 				this.dirIdleFrame = [0, 3, 6, 9];
@@ -2073,6 +2274,7 @@
 				// door. The door check would re-fire the moment they walk north onto it
 				// without this — wait until they step OFF the door area to re-arm.
 				this.armedForDoor = this.spawnFrom !== 'house';
+				this.armedForSouth = this.spawnFrom !== 'market';
 
 				// Spawn NPCs from the NPCS table. They render frame 0 of their walk
 				// sheet (south idle), block movement via static collision rects, and
@@ -2729,6 +2931,16 @@
 					safeSceneStart(this, 'house', { from: 'camp' });
 				}
 
+				// South-edge market exit — walk onto the road tile at the bottom of the
+				// camp path (row MAP_H-1, col 11) to head to the Market Centre.
+				const onSouthExit = tr === MAP_H - 1 && tc === 11;
+				const distFromSouth = Math.abs((MAP_H - 1) - tr) + Math.abs(tc - 11);
+				if (distFromSouth >= 2) this.armedForSouth = true;
+				if (this.armedForSouth && onSouthExit && !this.didTransition) {
+					this.didTransition = true;
+					safeSceneStart(this, 'market', { from: 'camp' });
+				}
+
 				Debug.render(
 					'CAMP\n' +
 					'tile  ' + tc + ',' + tr + '\n' +
@@ -3248,6 +3460,22 @@
 				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
 				const _upWp = (Inventory.load().cosmetics?.wallpaper) || 'default';
 				this.cameras.main.setBackgroundColor(WALLPAPER_BG[_upWp]?.upstairs || '#140a18');
+
+				// Pre-create room item overlays; visibility is driven by cosmetics.roomActive.
+				const _roomInv = Inventory.load();
+				const _roomActive = _roomInv.cosmetics?.roomActive || {};
+				this._roomItemObjs = {};
+				Object.entries(ROOM_ITEMS).forEach(([key, item]) => {
+					const x = item.c * TILE + TILE / 2;
+					const y = item.r * TILE + TILE / 2;
+					const obj = this.add.text(x, y, item.emoji, { fontSize: '13px', resolution: 2 })
+						.setOrigin(0.5).setDepth(2).setVisible(!!_roomActive[key]);
+					this._roomItemObjs[key] = obj;
+				});
+				// Show edit button while in this scene; hide on exit.
+				RoomEditor.showEditBtn(true);
+				this.events.once('shutdown', () => { RoomEditor.showEditBtn(false); });
+
 				this.cameras.main.setRoundPixels(true);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);
