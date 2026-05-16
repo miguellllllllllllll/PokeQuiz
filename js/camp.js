@@ -7,9 +7,9 @@
 	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25;
 
-	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TTR2, TFN, TIW, TST, TSG, TBSH]);
+	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TTR2, TFN, TIW, TSG, TBSH, TBED, TBKS]);
 	const ANIMATED = new Set([TWN, TH2O, TCR]);
 
 	// Signs placed on the camp map — key is "r,c", value is the message shown when
@@ -81,6 +81,7 @@
 		function spin() {
 			const sb = $('cbSpinBtn');
 			if (sb) { sb.disabled = true; sb.textContent = 'Spinning…'; }
+			Sound.spin();
 			const choice = MINIGAMES[Math.floor(Math.random() * MINIGAMES.length)];
 			const idx = MINIGAMES.indexOf(choice);
 			// Each slice is 90deg; pointer is at the top. Rotate the disc so the chosen
@@ -247,6 +248,7 @@
 		// ── Result screen ─────────────────────────────────────────────────────────
 		function end(won) {
 			show('end');
+			if (won) Sound.win(); else Sound.lose();
 			$('cbEndTitle').textContent = won ? 'You Won!' : 'You Lost!';
 			$('cbEndBody').textContent = won
 				? '+1 Friendship Berry 🍓 added to your bag.'
@@ -536,6 +538,76 @@
 
 	// Camp NPCs. Stationary for Phase 1 — each renders frame 0 of its walk sheet
 	// (south-facing idle) and uses Manhattan-1 adjacency for the E-key dialog.
+	// ── Sound — synthesized 8-bit beeps via Web Audio, no asset downloads ────────
+	const Sound = (() => {
+		let ctx = null;
+		let enabled = true;
+		function ensure() {
+			try {
+				if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+				if (ctx.state === 'suspended') ctx.resume();
+			} catch (e) { ctx = null; }
+			return ctx;
+		}
+		function play(notes, duration, type, vol) {
+			if (!enabled) return;
+			const c = ensure();
+			if (!c) return;
+			const t0 = c.currentTime;
+			const dur = duration || 0.08;
+			const v = vol == null ? 0.05 : vol;
+			notes.forEach((freq, i) => {
+				const osc = c.createOscillator();
+				const gain = c.createGain();
+				osc.connect(gain).connect(c.destination);
+				osc.frequency.value = freq;
+				osc.type = type || 'square';
+				const startT = t0 + i * dur;
+				gain.gain.setValueAtTime(v, startT);
+				gain.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+				osc.start(startT);
+				osc.stop(startT + dur + 0.02);
+			});
+		}
+		function chord(notes, duration, type, vol) {
+			if (!enabled) return;
+			const c = ensure();
+			if (!c) return;
+			const t0 = c.currentTime;
+			const dur = duration || 0.18;
+			const v = vol == null ? 0.04 : vol;
+			notes.forEach(freq => {
+				const osc = c.createOscillator();
+				const gain = c.createGain();
+				osc.connect(gain).connect(c.destination);
+				osc.frequency.value = freq;
+				osc.type = type || 'square';
+				gain.gain.setValueAtTime(v, t0);
+				gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+				osc.start(t0);
+				osc.stop(t0 + dur + 0.02);
+			});
+		}
+		// Resume audio context on the first user gesture (browser autoplay policy).
+		const prime = () => ensure();
+		document.addEventListener('pointerdown', prime, { once: true });
+		document.addEventListener('keydown', prime, { once: true });
+		function setEnabled(on) { enabled = !!on; }
+		return {
+			plant:   () => play([392, 523],            0.07, 'triangle'),
+			harvest: () => play([523, 659, 784],       0.09, 'triangle'),
+			chime:   () => play([880],                 0.10, 'sine'),
+			door:    () => play([330, 220],            0.10, 'square'),
+			win:     () => play([523, 659, 784, 1047], 0.10, 'square'),
+			lose:    () => play([392, 330, 262],       0.15, 'square'),
+			spin:    () => play([440, 494, 523, 587],  0.05, 'square'),
+			evolve:  () => chord([523, 659, 784, 1047], 0.6,  'triangle'),
+			click:   () => play([880],                 0.04, 'square', 0.03),
+			setEnabled,
+			isEnabled: () => enabled,
+		};
+	})();
+
 	// ── Daily login bonus ────────────────────────────────────────────────────────
 	const Daily = (() => {
 		function lastClaim() {
@@ -961,6 +1033,38 @@
 				ctx.fillStyle='#BFF880'; ctx.fillRect(x+5,y+6,1,1);
 				break;
 			}
+			case TBED: {
+				// Bed — wooden frame with red blanket and white pillow.
+				ctx.fillStyle='#D8B878'; ctx.fillRect(x,y,d,d);                       // floor under
+				ctx.fillStyle='#5C3010'; ctx.fillRect(x,y+2,d,12);                    // frame
+				ctx.fillStyle='#8C5828'; ctx.fillRect(x+1,y+3,d-2,10);                // inner wood
+				ctx.fillStyle='#B83838'; ctx.fillRect(x+1,y+5,d-2,7);                 // blanket
+				ctx.fillStyle='#E04050'; ctx.fillRect(x+1,y+5,d-2,1);                 // blanket highlight
+				ctx.fillStyle='#7C1818'; ctx.fillRect(x+1,y+11,d-2,1);                // blanket shadow
+				ctx.fillStyle='#F0E8C0'; ctx.fillRect(x+2,y+4,5,3);                   // pillow
+				ctx.fillStyle='#FFFFFF'; ctx.fillRect(x+2,y+4,5,1);                   // pillow highlight
+				ctx.fillStyle='#3C1F08'; ctx.fillRect(x,y+13,d,1);                    // base shadow
+				break;
+			}
+			case TBKS: {
+				// Bookshelf — wooden cabinet with colored book spines.
+				ctx.fillStyle='#D8B878'; ctx.fillRect(x,y,d,d);                       // floor under
+				ctx.fillStyle='#3C1F08'; ctx.fillRect(x,y,d,d);                       // shelf body
+				ctx.fillStyle='#5C3010'; ctx.fillRect(x+1,y+1,d-2,d-2);               // shelf inner
+				// Two rows of book spines
+				ctx.fillStyle='#C03838'; ctx.fillRect(x+2,y+2,2,5);
+				ctx.fillStyle='#3858A8'; ctx.fillRect(x+4,y+2,2,5);
+				ctx.fillStyle='#2E8050'; ctx.fillRect(x+6,y+3,2,4);
+				ctx.fillStyle='#D89050'; ctx.fillRect(x+8,y+2,2,5);
+				ctx.fillStyle='#9C50C8'; ctx.fillRect(x+10,y+3,2,4);
+				ctx.fillStyle='#3C1F08'; ctx.fillRect(x,y+7,d,1);                     // shelf divider
+				ctx.fillStyle='#D08838'; ctx.fillRect(x+2,y+9,2,4);
+				ctx.fillStyle='#3858A8'; ctx.fillRect(x+4,y+9,2,4);
+				ctx.fillStyle='#7C1818'; ctx.fillRect(x+6,y+10,2,3);
+				ctx.fillStyle='#2E8050'; ctx.fillRect(x+8,y+9,2,4);
+				ctx.fillStyle='#C03838'; ctx.fillRect(x+10,y+10,2,3);
+				break;
+			}
 			case TTG: {
 				// Tall grass — distinctly darker green with vertical blade pattern.
 				// Walking onto this tile rolls for a wild encounter.
@@ -1133,6 +1237,7 @@
 	// is read on boot to start the right scene with the right spawn point.
 	function safeSceneStart(scene, key, data) {
 		try { Dialog.close(); } catch (_) {}
+		try { Sound.door(); } catch (_) {}
 		const from = (data && data.from) || '';
 		console.log('[scene] reload →', key, 'from', from);
 		// Trigger the black fade-in so the screen stays dark through the reload.
@@ -1202,6 +1307,34 @@
 		// Stairs in the north-east corner, two tiles wide
 		map[1][12] = TST; map[1][13] = TST;
 		map[2][12] = TST; map[2][13] = TST;
+		return map;
+	}
+	// Coordinates used by both HouseScene (for from-upstairs spawn) and
+	// UpstairsScene (for stairs-down tile and player spawn).
+	const HOUSE_STAIRS_C = 12;   // landing tile when descending
+	const HOUSE_STAIRS_R = 3;    // one south of the stairs block
+
+	// ── Upstairs interior map ────────────────────────────────────────────────────
+	// 12 wide × 9 tall — cozy bedroom: wainscot walls, wood floor, bed in the
+	// north-east, bookshelf along the north wall, rug accent, stairs-down at south.
+	const UPSTAIRS_W = 12;
+	const UPSTAIRS_H = 9;
+	const UPSTAIRS_STAIRS_C = 2;
+	const UPSTAIRS_STAIRS_R = UPSTAIRS_H - 2;
+	function buildUpstairsMap() {
+		const map = Array.from({ length: UPSTAIRS_H }, () => new Array(UPSTAIRS_W).fill(TIF));
+		for (let c = 0; c < UPSTAIRS_W; c++) { map[0][c] = TIW; map[UPSTAIRS_H - 1][c] = TIW; }
+		for (let r = 0; r < UPSTAIRS_H; r++) { map[r][0] = TIW; map[r][UPSTAIRS_W - 1] = TIW; }
+		// Stairs going back down — two tiles wide at south-west.
+		map[UPSTAIRS_STAIRS_R][UPSTAIRS_STAIRS_C]     = TST;
+		map[UPSTAIRS_STAIRS_R][UPSTAIRS_STAIRS_C + 1] = TST;
+		// Bed in the north-east corner (2 tiles wide).
+		map[1][UPSTAIRS_W - 3] = TBED; map[1][UPSTAIRS_W - 2] = TBED;
+		// Bookshelves along the north wall.
+		map[1][3] = TBKS; map[1][4] = TBKS; map[1][5] = TBKS;
+		// Rug accent in the middle.
+		map[4][5] = TRU; map[4][6] = TRU;
+		map[5][5] = TRU; map[5][6] = TRU;
 		return map;
 	}
 
@@ -1617,6 +1750,7 @@
 					this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now() });
 					Plants.save(this.plants);
 					this._refreshPlantSprites();
+					Sound.plant();
 					return true;
 				}
 				if (target.kind === 'harvest') {
@@ -1625,6 +1759,7 @@
 					inv.friendshipBerries = (inv.friendshipBerries || 0) + 1;
 					Inventory.save(inv);
 					this._refreshPlantSprites();
+					Sound.harvest();
 					Dialog.open('You harvested a Friendship Berry!');
 					return true;
 				}
@@ -1698,6 +1833,7 @@
 				inv.friendship = FRIENDSHIP_MAX;
 				inv.stone = null;  // stones are consumed on use
 				Inventory.save(inv);
+				Sound.evolve();
 				Dialog.open('✨ Eevee is evolving into ' + newForm.toUpperCase() + '! ✨');
 				const fade = document.getElementById('campFade');
 				if (fade) fade.classList.remove('is-hidden');
@@ -2199,9 +2335,16 @@
 				mkAnim('h-walk-north', [7, 6, 8, 6]);
 				mkAnim('h-walk-east',  [10, 9, 11, 9]);
 
-				// Spawn one tile north of the exit door, facing north.
-				const spawnX = HOUSE_DOOR_C*TILE + TILE/2;
-				const spawnY = (HOUSE_DOOR_R - 1)*TILE + TILE/2;
+				// Spawn position depends on where we came from:
+				// - from upstairs → land one tile south of the in-house stairs, facing south
+				// - default       → one tile north of the exit door, facing north
+				const fromUp = this.spawnFrom === 'upstairs';
+				const spawnX = fromUp
+					? HOUSE_STAIRS_C*TILE + TILE/2
+					: HOUSE_DOOR_C*TILE + TILE/2;
+				const spawnY = fromUp
+					? HOUSE_STAIRS_R*TILE + TILE/2
+					: (HOUSE_DOOR_R - 1)*TILE + TILE/2;
 				this.player = this.physics.add.sprite(spawnX, spawnY, 'player-house', 0);
 				this.player.setOrigin(0.5, 36/38);
 				this.player.setScale(0.75);
@@ -2249,15 +2392,19 @@
 				this.setupJoystick();
 				setupPauseMenu(this.game);
 
-				this.dir = 2; // facing north (player just stepped through the door)
+				// fromUp: face south (just walked down stairs); else face north (just came in from outside)
+				this.dir = fromUp ? 0 : 2;
 				this.dirAnimKeys = ['h-walk-south', 'h-walk-west', 'h-walk-north', 'h-walk-east'];
 				this.dirIdleFrame = [0, 3, 6, 9];
 				this.player.setFrame(this.dirIdleFrame[this.dir]);
 				this.didTransition = false;
-				// The player spawns one tile north of the door, so the exit is just a
-				// single step south. Start armed — there's no risk of re-bouncing here
-				// because Phaser fully tears down CampScene before this scene runs.
+				// When entering from outside, the player spawns one tile north of the
+				// door — start armed so a single step south exits. When coming down
+				// the stairs, the player spawns far from the door, so being armed is fine.
 				this.armedForExit = true;
+				// Track stairs re-arming so the spawn-tile-after-coming-down doesn't
+				// instantly send the player back up.
+				this.armedForStairs = !fromUp;
 			}
 
 			onResize() {
@@ -2375,6 +2522,20 @@
 				const tc = Math.floor(this.player.x / TILE);
 				const tr = Math.floor(this.player.y / TILE);
 				const onDoor = tc === HOUSE_DOOR_C && tr === HOUSE_DOOR_R;
+				// Walking onto the stairs tile (TST) sends you upstairs. Stair-distance
+				// gating mirrors door-exit: must step ≥2 tiles away once before the
+				// stairs can trigger, so a from-upstairs spawn doesn't bounce back up.
+				const onStairs = this.map[tr] && this.map[tr][tc] === TST;
+				const distStairs = Math.min(
+					Math.abs(tr - 2) + Math.abs(tc - 12),
+					Math.abs(tr - 2) + Math.abs(tc - 13)
+				);
+				if (distStairs >= 2) this.armedForStairs = true;
+				if (onStairs && this.armedForStairs && !this.didTransition) {
+					this.didTransition = true;
+					safeSceneStart(this, 'upstairs', { from: 'house' });
+					return;
+				}
 				// Require at least two tiles of distance before re-arming so a quick
 				// step-onto-the-door right after spawn doesn't bounce the player back
 				// to camp. Same shape as CampScene's armedForDoor logic.
@@ -2429,6 +2590,310 @@
 		};
 	}
 
+	function makeUpstairsSceneClass() {
+		return class UpstairsScene extends Phaser.Scene {
+			constructor() { super({ key: 'upstairs' }); }
+
+			init(data) {
+				this.spawnFrom = (data && data.from) || consumeBootFrom('upstairs') || null;
+			}
+
+			preload() {
+				this.load.image('player-base', 'Pictures/sprites/calem.png');
+			}
+
+			create() {
+				console.log('[UpstairsScene] create()');
+				try {
+					this._buildUpstairs();
+					console.log('[UpstairsScene] create() ok — player at', this.player?.x, this.player?.y);
+				} catch (e) {
+					console.error('[UpstairsScene] create failed:', e);
+					this.scene.start('house', { from: 'upstairs' });
+				}
+				if (typeof window !== 'undefined') window.__upstairsScene = this;
+			}
+
+			_buildUpstairs() {
+				this.tick = 0;
+				this.map = buildUpstairsMap();
+				const W = UPSTAIRS_W * TILE, H = UPSTAIRS_H * TILE;
+
+				if (!this.textures.exists('upstairsBase')) {
+					this.baseTex = this.textures.createCanvas('upstairsBase', W, H);
+					if (!this.baseTex) throw new Error('createCanvas("upstairsBase") returned null');
+					const baseCtx = this.baseTex.getContext();
+					baseCtx.imageSmoothingEnabled = false;
+					for (let r = 0; r < UPSTAIRS_H; r++) {
+						for (let c = 0; c < UPSTAIRS_W; c++) {
+							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+						}
+					}
+					this.baseTex.refresh();
+				} else {
+					this.baseTex = this.textures.get('upstairsBase');
+				}
+				this.add.image(0, 0, 'upstairsBase').setOrigin(0).setDepth(0);
+
+				try {
+					if (!this.textures.exists('player-base')) {
+						throw new Error('player-base texture missing');
+					}
+					const baseImg = this.textures.get('player-base').getSourceImage();
+					const pw = baseImg.width, ph = baseImg.height;
+					this._playerCanvas = document.createElement('canvas');
+					this._playerCanvas.width = pw;
+					this._playerCanvas.height = ph;
+					this._playerCtx = this._playerCanvas.getContext('2d');
+					const applyPalette = () => {
+						if (window.TrainerPalette) {
+							window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx);
+						} else {
+							this._playerCtx.clearRect(0, 0, pw, ph);
+							this._playerCtx.drawImage(baseImg, 0, 0);
+						}
+					};
+					applyPalette();
+					this._applyPalette = applyPalette;
+				} catch (e) {
+					console.error('[UpstairsScene] palette swap failed:', e);
+				}
+				if (!this.textures.exists('player-upstairs') && this._playerCanvas) {
+					this.textures.addSpriteSheet('player-upstairs', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+				} else if (this.textures.exists('player-upstairs')) {
+					this.textures.get('player-upstairs').refresh();
+				}
+				this._onStorage = (e) => {
+					if (e.key === 'pokequiz_trainer_palette' && window.TrainerPalette && this._applyPalette) {
+						this._applyPalette();
+						this.textures.get('player-upstairs').refresh();
+					}
+				};
+				window.addEventListener('storage', this._onStorage);
+				this.events.once('shutdown', () => window.removeEventListener('storage', this._onStorage));
+
+				const mkAnim = (key, frames) => {
+					if (this.anims.exists(key)) this.anims.remove(key);
+					this.anims.create({ key, frameRate: 6, repeat: -1,
+						frames: this.anims.generateFrameNumbers('player-upstairs', { frames }) });
+				};
+				mkAnim('u-walk-south', [1, 0, 2, 0]);
+				mkAnim('u-walk-west',  [4, 3, 5, 3]);
+				mkAnim('u-walk-north', [7, 6, 8, 6]);
+				mkAnim('u-walk-east',  [10, 9, 11, 9]);
+
+				// Spawn one tile north of the stairs, facing north (just stepped up).
+				const spawnX = UPSTAIRS_STAIRS_C*TILE + TILE/2;
+				const spawnY = (UPSTAIRS_STAIRS_R - 1)*TILE + TILE/2;
+				this.player = this.physics.add.sprite(spawnX, spawnY, 'player-upstairs', 6);
+				this.player.setOrigin(0.5, 36/38);
+				this.player.setScale(0.75);
+				this.player.setDepth(3);
+				this.player.body.setSize(10, 6);
+				this.player.body.setOffset((22-10)/2, 38-8);
+
+				this.solids = this.physics.add.staticGroup();
+				for (let r = 0; r < UPSTAIRS_H; r++) {
+					for (let c = 0; c < UPSTAIRS_W; c++) {
+						if (SOLID.has(this.map[r][c])) {
+							const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
+							this.physics.add.existing(rect, true);
+							this.solids.add(rect);
+						}
+					}
+				}
+				this.physics.add.collider(this.player, this.solids);
+
+				this.physics.world.setBounds(0, 0, W, H);
+				this.player.setCollideWorldBounds(true);
+				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
+				this.cameras.main.setBackgroundColor('#140a18');
+				this.cameras.main.setRoundPixels(true);
+				this.applyZoom();
+				this.scale.on('resize', this.onResize, this);
+				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
+
+				this.keys = this.input.keyboard.addKeys({
+					up: Phaser.Input.Keyboard.KeyCodes.UP,
+					down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+					left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+					right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+					w: Phaser.Input.Keyboard.KeyCodes.W,
+					a: Phaser.Input.Keyboard.KeyCodes.A,
+					s: Phaser.Input.Keyboard.KeyCodes.S,
+					d: Phaser.Input.Keyboard.KeyCodes.D,
+					interact: Phaser.Input.Keyboard.KeyCodes.E,
+				});
+				this.dpad = { up:false, down:false, left:false, right:false };
+				this.setupJoystick();
+				setupPauseMenu(this.game);
+
+				this.dir = 2; // facing north — just emerged from stairs
+				this.dirAnimKeys = ['u-walk-south', 'u-walk-west', 'u-walk-north', 'u-walk-east'];
+				this.dirIdleFrame = [0, 3, 6, 9];
+				this.player.setFrame(this.dirIdleFrame[this.dir]);
+				this.didTransition = false;
+				// Player spawned one tile north of stairs. Require ≥2-tile distance
+				// before re-arming so quick south-tap right after spawn doesn't bounce
+				// back down. Start unarmed so the spawn tile (1 step from stairs)
+				// can't trigger immediately if dir was wrong.
+				this.armedForStairs = false;
+			}
+
+			onResize() {
+				applyWrapTop();
+				this.applyZoom();
+			}
+
+			applyZoom() {
+				const vw = this.scale.width;
+				const vh = this.scale.height;
+				if (vw <= 0 || vh <= 0) {
+					this.events.once('postupdate', () => this.applyZoom());
+					return;
+				}
+				const roomW = UPSTAIRS_W * TILE;
+				const roomH = UPSTAIRS_H * TILE;
+				let s = Math.min(vw / roomW, vh / roomH);
+				s = Math.max(2, Math.floor(s));
+				s = Math.min(s, 5);
+				const cam = this.cameras.main;
+				cam.setZoom(s);
+				cam.centerOn(roomW / 2, roomH / 2);
+			}
+
+			setupJoystick() {
+				const base = document.getElementById('joystickBase');
+				const knob = document.getElementById('joystickKnob');
+				if (!base || !knob) return;
+				base.__campDpad = this.dpad;
+				if (base.dataset.wired) return;
+				base.dataset.wired = '1';
+				const RADIUS = 42, DEAD = 0.18;
+				let active = false, pointerId = null;
+				const reset = () => {
+					active = false; pointerId = null;
+					const d = base.__campDpad;
+					if (d) { d.up = d.down = d.left = d.right = false; }
+					knob.style.transform = 'translate(-50%,-50%)';
+				};
+				const applyJoy = (dx, dy) => {
+					const d = base.__campDpad;
+					if (!d) return;
+					const dist = Math.sqrt(dx*dx + dy*dy);
+					const clamp = Math.min(dist, RADIUS);
+					const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
+					knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
+					const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
+					const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
+					d.left = fx < -DEAD; d.right = fx > DEAD;
+					d.up   = fy < -DEAD; d.down  = fy > DEAD;
+				};
+				base.addEventListener('pointerdown', e => {
+					if (active) return;
+					active = true; pointerId = e.pointerId;
+					base.setPointerCapture(e.pointerId);
+					e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				base.addEventListener('pointermove', e => {
+					if (!active || e.pointerId !== pointerId) return;
+					e.preventDefault();
+					const r = base.getBoundingClientRect();
+					applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+				});
+				['pointerup','pointercancel'].forEach(ev => base.addEventListener(ev, e => {
+					if (e.pointerId !== pointerId) return;
+					e.preventDefault(); reset();
+				}));
+			}
+
+			update() {
+				this.tick++;
+				if (this.didTransition) {
+					this.player.setVelocity(0, 0);
+					return;
+				}
+				applyDayNight();
+				Dialog.tick();
+				const dialogOpen = Dialog.isOpen();
+				const k = this.keys, d = this.dpad;
+				let vx = 0, vy = 0;
+				if (!dialogOpen) {
+					if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+					if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+					if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+					if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+					if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+				}
+				this.player.setVelocity(vx, vy);
+
+				const moving = vx !== 0 || vy !== 0;
+				const animKey = this.dirAnimKeys[this.dir];
+				if (moving) {
+					if (!this.player.anims.isPlaying || this.player.anims.currentAnim?.key !== animKey) {
+						this.player.anims.play(animKey, true);
+					}
+				} else {
+					this.player.anims.stop();
+					this.player.setFrame(this.dirIdleFrame[this.dir]);
+				}
+
+				const tc = Math.floor(this.player.x / TILE);
+				const tr = Math.floor(this.player.y / TILE);
+				const onStairs = this.map[tr] && this.map[tr][tc] === TST;
+				// Re-arm only after the player has stepped at least 2 tiles away from
+				// any stairs tile, so the spawn tile (1 north of stairs) doesn't bounce.
+				const distFromStairs = Math.min(
+					Math.abs(tr - UPSTAIRS_STAIRS_R) + Math.abs(tc - UPSTAIRS_STAIRS_C),
+					Math.abs(tr - UPSTAIRS_STAIRS_R) + Math.abs(tc - (UPSTAIRS_STAIRS_C + 1))
+				);
+				if (distFromStairs >= 2) this.armedForStairs = true;
+
+				const pe = document.getElementById('campPrompt');
+				const lbl = document.getElementById('campPromptLabel');
+				const nearStairs = distFromStairs === 1 || onStairs;
+				if (pe && lbl) {
+					if (nearStairs && !dialogOpen) {
+						lbl.textContent = 'Down';
+						pe.hidden = false;
+						const cam = this.cameras.main;
+						const sx = (this.player.x - cam.worldView.x) * cam.zoom;
+						const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+						pe.style.left = sx + 'px';
+						pe.style.top  = sy + 'px';
+						pe.style.transform = 'translate(-50%, calc(-100% - 12px))';
+					} else {
+						pe.hidden = true;
+					}
+				}
+
+				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact);
+				const trigger = !this.didTransition && this.armedForStairs && (
+					onStairs || (ePressed && nearStairs)
+				);
+				if (trigger) {
+					this.didTransition = true;
+					safeSceneStart(this, 'house', { from: 'upstairs' });
+					return;
+				}
+
+				Debug.render(
+					'UPSTAIRS\n' +
+					'tile  ' + tc + ',' + tr + '\n' +
+					'pos   ' + Math.round(this.player.x) + ',' + Math.round(this.player.y) + '\n' +
+					'dir   ' + ['S','W','N','E'][this.dir] + '\n' +
+					'distS ' + distFromStairs + '\n' +
+					'onS   ' + onStairs + '\n' +
+					'armed ' + this.armedForStairs + '\n' +
+					'trans ' + this.didTransition + '\n' +
+					(Debug.lastError ? 'ERR ' + Debug.lastError : '')
+				);
+			}
+		};
+	}
+
 	function start() {
 		const wrap = document.getElementById('campWrap');
 		if (!wrap) return;
@@ -2449,7 +2914,11 @@
 		const boot = _bootData;
 		const CampClass = makeSceneClass();
 		const HouseClass = makeHouseSceneClass();
-		const sceneList = boot.scene === 'house' ? [HouseClass, CampClass] : [CampClass, HouseClass];
+		const UpstairsClass = makeUpstairsSceneClass();
+		let sceneList;
+		if (boot.scene === 'house')        sceneList = [HouseClass, CampClass, UpstairsClass];
+		else if (boot.scene === 'upstairs') sceneList = [UpstairsClass, CampClass, HouseClass];
+		else                                sceneList = [CampClass, HouseClass, UpstairsClass];
 		new Phaser.Game({
 			type: Phaser.AUTO,
 			parent: 'campWrap',
