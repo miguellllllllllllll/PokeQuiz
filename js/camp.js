@@ -1046,6 +1046,12 @@
 
 			update() {
 				this.tick++;
+				// Freeze the scene the moment we've triggered a transition so we don't
+				// keep updating the shared HUD/prompt DOM while HouseScene boots.
+				if (this.didTransition) {
+					this.player.setVelocity(0, 0);
+					return;
+				}
 				applyDayNight();
 				Dialog.tick();
 
@@ -1440,6 +1446,13 @@
 
 			update() {
 				this.tick++;
+				// If we've already triggered the exit, freeze the scene so we don't
+				// keep writing to shared DOM elements (prompt/HUD) on top of CampScene
+				// while the queued transition is still processing.
+				if (this.didTransition) {
+					this.player.setVelocity(0, 0);
+					return;
+				}
 				applyDayNight();
 				Dialog.tick();
 				const dialogOpen = Dialog.isOpen();
