@@ -16,9 +16,9 @@
 	// body parts.
 	const BASE = {
 		cap: [
-			{ color: '#701028', yMax: 19 },
-			{ color: '#C03838', yMax: 17 },
-			{ color: '#F06848', yMax: 17 },
+			{ color: '#701028', yMax: 23 },
+			{ color: '#C03838', yMax: 23 },
+			{ color: '#F06848', yMax: 23 },
 		],
 		skin:    ['#885028', '#D09870', '#D8A078', '#F8D0B8'],
 		hair: [
@@ -74,12 +74,13 @@
 		classic: { label: 'Classic', mod: null },
 		hood: {
 			label: 'Hood',
-			// Recolour the side/back hair pixels into the cap shade, so the cap
-			// appears to extend down as a hood.
+			// Recolour every visible hair pixel into the cap shade, so the cap
+			// appears to extend down as a hood. The cap rules have been
+			// widened (yMax 23) so user-chosen cap colour still applies to the
+			// hooded pixels.
 			mod: function (fx, fy, hex) {
 				if (hex !== '#28272C' && hex !== '#424149') return null;
-				// Sides of the head + back of the neck.
-				if (fy >= 11 && fy <= 22 && (fx <= 4 || fx >= 17)) {
+				if (fy >= 10 && fy <= 23) {
 					return hex === '#28272C' ? '#701028' : '#C03838';
 				}
 				return null;

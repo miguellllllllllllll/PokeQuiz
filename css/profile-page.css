@@ -362,26 +362,29 @@
 }
 .tc-body-options {
 	display: flex;
-	flex-wrap: wrap;
 	gap: 6px;
+	flex: 1;
 }
 .tc-body-btn {
+	flex: 1;
 	font: inherit;
 	font-size: 12px;
 	font-weight: 700;
 	letter-spacing: 0.4px;
-	padding: 6px 12px;
+	padding: 8px 10px;
 	border: 2px solid rgba(0,0,0,0.12);
 	border-radius: 8px;
 	background: #fff;
 	cursor: pointer;
-	transition: background 0.12s, border-color 0.12s, color 0.12s;
+	transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.08s;
+	white-space: nowrap;
 }
-.tc-body-btn:hover { border-color: var(--poke-red); }
+.tc-body-btn:hover { border-color: var(--poke-red); background: #fff5f5; }
 .tc-body-btn.is-active {
 	background: var(--poke-red);
 	border-color: var(--poke-red);
 	color: #fff;
+	transform: scale(1.02);
 }
 
 .tc-row {

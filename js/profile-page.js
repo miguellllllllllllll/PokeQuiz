@@ -441,8 +441,9 @@
 			// Wire save
 			saveBtn.addEventListener('click', () => {
 				const currentPalette = TP ? TP.load() : {};
+				const currentBody = TP && TP.loadBody ? TP.loadBody() : 'classic';
 				const slotName = nameInput.value.trim() || defaultName;
-				presets[idx] = { name: slotName, palette: Object.assign({}, currentPalette) };
+				presets[idx] = { name: slotName, palette: Object.assign({}, currentPalette), body: currentBody };
 				savePresets(presets);
 				// Rebuild this slot in place
 				const newSlot = buildSlot(idx);
@@ -455,10 +456,12 @@
 				const p = presets[idx];
 				if (TP) {
 					TP.save(p.palette);
+					if (TP.saveBody) TP.saveBody(p.body || 'classic');
 					// Dispatch storage event so camp.js and the customizer canvas pick it up
 					window.dispatchEvent(new StorageEvent('storage', { key: TP.KEY || 'pokequiz_trainer_palette' }));
+					window.dispatchEvent(new StorageEvent('storage', { key: TP.BODY_KEY || 'pokequiz_trainer_body' }));
 					// Also re-init the customizer controls to reflect loaded values
-					refreshCustomizerPickers(p.palette);
+					refreshCustomizerPickers(p.palette, p.body || 'classic');
 				}
 				// Brief visual feedback on the button
 				const orig = loadBtn.textContent;
@@ -480,7 +483,7 @@
 	}
 
 	// Update the existing color picker UI and canvas when a preset is loaded.
-	function refreshCustomizerPickers(palette) {
+	function refreshCustomizerPickers(palette, body) {
 		const TP = window.TrainerPalette;
 		if (!TP) return;
 		const defaults = TP.DEFAULTS || {};
@@ -493,9 +496,15 @@
 			if (picker) picker.value = val;
 			if (hexEl) hexEl.textContent = val.toUpperCase();
 		});
-		// Trigger a recolor on the canvas by dispatching an input event on any picker
-		const firstPicker = document.querySelector('.tc-color-picker');
-		if (firstPicker) firstPicker.dispatchEvent(new Event('input', { bubbles: true }));
+		// Dispatch input on every picker so the customizer closure picks up
+		// each new colour, not just the first. The redraw runs per picker.
+		document.querySelectorAll('.tc-color-picker').forEach((picker) => {
+			picker.dispatchEvent(new Event('input', { bubbles: true }));
+		});
+		if (body) {
+			const target = document.querySelector(`.tc-body-btn[data-body="${body}"]`);
+			if (target) target.click();
+		}
 	}
 
 	function init() {
