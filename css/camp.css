@@ -83,6 +83,13 @@ body.camp-body {
 	padding: 0 2px;
 }
 
+.ctrl-label {
+	font-size: 7px;
+	color: #6a8090;
+	font-family: 'Press Start 2P', monospace;
+	padding: 0 1px;
+}
+
 @media (max-width: 600px) {
 	.camp-controls-hint { display: none; }
 	.camp-location-name { font-size: 8px; }

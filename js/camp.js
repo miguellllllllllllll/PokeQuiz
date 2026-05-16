@@ -1729,6 +1729,7 @@
 					d: Phaser.Input.Keyboard.KeyCodes.D,
 					interact: Phaser.Input.Keyboard.KeyCodes.E,
 					partner: Phaser.Input.Keyboard.KeyCodes.P,
+					faceoff: Phaser.Input.Keyboard.KeyCodes.F,
 					bonus:   Phaser.Input.Keyboard.KeyCodes.B,
 					rain:    Phaser.Input.Keyboard.KeyCodes.R,
 				});
@@ -2342,9 +2343,9 @@
 				this.updateMinimap();
 
 				// Trail mode: sample player position; follower lerps toward the oldest sample
-				// so it lags ~1 sprite-width behind. Once the player stops, switch to face-off
-				// mode: route Eevee around the player via a side waypoint, then to a tile
-				// in front of the player, ending facing them.
+				// so it lags ~1 sprite-width behind.
+				// F key manually triggers face-off: routes the follower around to a tile
+				// in front of the player so they look at each other.
 				if (moving) {
 					if (this.followerMode !== 'trail') {
 						this.followerMode = 'trail';
@@ -2355,10 +2356,8 @@
 						this.followerHistory.push({ x: this.player.x, y: this.player.y });
 						if (this.followerHistory.length > 8) this.followerHistory.shift();
 					}
-				} else if (this.followerMode === 'trail') {
-					// Player just stopped — build a two-step path around the player.
-					// Step 1: a tile perpendicular to the player's facing (right side),
-					// Step 2: a tile in front of the player (final face-off position).
+				}
+				if (Phaser.Input.Keyboard.JustDown(k.faceoff) && !dialogOpen && this.followerMode === 'trail') {
 					this.followerMode = 'faceoff';
 					this.followerHistory = [];
 					const [dvx, dvy] = this.DIR_VEC[this.dir];
