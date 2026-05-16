@@ -227,6 +227,26 @@ body.camp-body {
 	.camp-minimap { width: 100px; height: 75px; right: 8px; bottom: 142px; }
 }
 
+/* ── Trainer Card shortcut icon ──────────────────────────────────────── */
+.camp-tc-btn {
+	position: absolute;
+	right: 14px;
+	top: 88px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	background: rgba(16, 24, 44, 0.88);
+	border: 2px solid #f6c84c;
+	border-radius: 8px;
+	text-decoration: none;
+	z-index: 7;
+	transition: background 0.15s, transform 0.1s;
+}
+.camp-tc-btn:hover { background: rgba(246, 200, 76, 0.25); transform: scale(1.1); }
+.camp-tc-icon { font-size: 18px; line-height: 1; }
+
 /* ── Inventory HUD — corner readout for seeds + berries ──────────────── */
 .camp-inventory {
 	position: absolute;
