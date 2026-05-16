@@ -550,39 +550,37 @@
 		if (e.key === '`' || e.key === 'F8') { e.preventDefault(); Debug.toggle(); }
 	});
 
-	// Single entry point for scene transitions so we can guard every line and
-	// surface any thrown error on the HUD instead of silently leaving the
-	// player parked on the doorstep. The actual scene swap is deferred via
-	// setTimeout(0) so it runs OUTSIDE of Phaser's update loop — calling
-	// scene.start from inside an update has produced cases where the current
-	// scene was never actually stopped, leaving two scenes ticking together.
+	// Scene transitions use a hard page reload with a URL hash. Phaser's
+	// scene.start / manager.start were silently failing to fully shut down
+	// the current scene in this project, leaving two scenes ticking together
+	// and the player wedged. Reloading guarantees a clean state and the hash
+	// is read on boot to start the right scene with the right spawn point.
 	function safeSceneStart(scene, key, data) {
-		try {
-			Dialog.close();
-		} catch (e) {
-			console.error('Dialog.close failed:', e);
-			Debug.lastError = 'Dialog.close: ' + e.message;
+		try { Dialog.close(); } catch (_) {}
+		const from = (data && data.from) || '';
+		console.log('[scene] reload →', key, 'from', from);
+		window.location.hash = '#' + key + (from ? '|' + from : '');
+		window.location.reload();
+	}
+
+	// Read the hash on boot to figure out which scene to start. Captured once at
+	// start() so we can clear the hash immediately and the result is still
+	// available when each scene's init() runs on the first game step.
+	let _bootData = { scene: 'camp', from: '' };
+	function readBootHash() {
+		const raw = (window.location.hash || '').replace(/^#/, '');
+		if (!raw) return { scene: 'camp', from: '' };
+		const [scene, from] = raw.split('|');
+		return { scene: scene || 'camp', from: from || '' };
+	}
+	function consumeBootFrom(sceneKey) {
+		// Only return boot 'from' once, and only if it matches the scene asking.
+		if (_bootData && _bootData.scene === sceneKey && _bootData.from) {
+			const from = _bootData.from;
+			_bootData = { scene: 'camp', from: '' };
+			return from;
 		}
-		try {
-			if (scene.input && scene.input.keyboard && typeof scene.input.keyboard.resetKeys === 'function') {
-				scene.input.keyboard.resetKeys();
-			}
-		} catch (e) {
-			console.error('resetKeys failed:', e);
-			Debug.lastError = 'resetKeys: ' + e.message;
-		}
-		const fromKey = scene.scene.key;
-		setTimeout(() => {
-			try {
-				console.log('[scene] stop', fromKey, '→ start', key, data);
-				const mgr = scene.scene.manager;
-				mgr.stop(fromKey);
-				mgr.start(key, data);
-			} catch (e) {
-				console.error('scene swap failed:', e);
-				Debug.lastError = 'swap: ' + e.message;
-			}
-		}, 0);
+		return '';
 	}
 
 	// ── Day/night tint ────────────────────────────────────────────────────────────
@@ -631,8 +629,9 @@
 			constructor() { super({ key: 'camp' }); }
 
 			init(data) {
-				// 'from-house' spawns the player just south of the camp door
-				this.spawnFrom = (data && data.from) || null;
+				// 'from-house' spawns the player just south of the camp door.
+				// Prefer init data; fall back to URL-hash boot data captured at start().
+				this.spawnFrom = (data && data.from) || consumeBootFrom('camp') || null;
 			}
 
 			preload() {
@@ -1209,6 +1208,12 @@
 		return class HouseScene extends Phaser.Scene {
 			constructor() { super({ key: 'house' }); }
 
+			init(data) {
+				// Consume any boot-hash from-data to keep parity with CampScene; the
+				// house spawn is always one tile north of the exit door regardless.
+				this.spawnFrom = (data && data.from) || consumeBootFrom('house') || null;
+			}
+
 			preload() {
 				this.load.image('player-base', 'Pictures/sprites/calem.png');
 			}
@@ -1547,6 +1552,15 @@
 			document.fonts.ready.then(applyWrapTop);
 		}
 
+		// Reorder the scene list so Phaser auto-starts the right one. The hash
+		// is captured into _bootData here and cleared from the URL immediately so
+		// a refresh-after-walking-around doesn't teleport the player back. Each
+		// scene's init() consumes the boot 'from' value via consumeBootFrom().
+		_bootData = readBootHash();
+		const boot = _bootData;
+		const CampClass = makeSceneClass();
+		const HouseClass = makeHouseSceneClass();
+		const sceneList = boot.scene === 'house' ? [HouseClass, CampClass] : [CampClass, HouseClass];
 		new Phaser.Game({
 			type: Phaser.AUTO,
 			parent: 'campWrap',
@@ -1562,8 +1576,13 @@
 				default: 'arcade',
 				arcade: { gravity: { y: 0 }, debug: false },
 			},
-			scene: [makeSceneClass(), makeHouseSceneClass()],
+			scene: sceneList,
 		});
+		// Clear the hash so a refresh from inside the house doesn't permanently
+		// reboot you into the house, and so the back-button doesn't loop you in.
+		if (window.location.hash) {
+			history.replaceState(null, '', window.location.pathname + window.location.search);
+		}
 	}
 
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
