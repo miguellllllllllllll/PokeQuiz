@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Pok&eacute;dex Entry &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle.css">
+	<link rel="stylesheet" href="css/puzzle-dex.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row"><span class="pp-row-label">Name</span><span class="pp-name-view">&mdash;</span></div>
+				<div class="pp-row"><span class="pp-row-label">Best Score</span><span class="pp-score-view">&mdash;</span></div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card puzzle-card">
+			<div class="puzzle-bg" aria-hidden="true"><img class="puzzle-pokeball" src="Pictures/pokeball.png" alt=""></div>
+
+			<div id="modeSelect" class="puzzle-inner mode-select">
+				<a class="back-link" href="puzzle.html" aria-label="Back to Puzzle Hub">&larr; Puzzle Hub</a>
+				<div class="mode-select-head">
+					<div class="eyebrow"><span class="dot"></span><span>Choose Your Trial</span></div>
+					<h1 class="mode-title-big">Pok&eacute;<span class="title-flicker">dex</span> Entry</h1>
+					<p class="lede">Read the Pok&eacute;dex flavor &mdash; the name is redacted as <strong>???</strong>. Guess the Pok&eacute;mon.</p>
+				</div>
+
+				<div class="mode-grid">
+					<button class="mode-card mode-card-casual" data-mode="casual" type="button" style="--stagger:0">
+						<span class="diff-pill diff-easy">Easy</span>
+						<div class="mode-art"><div class="pokeball pokeball-heal" aria-hidden="true"><span class="pb-top"></span><span class="pb-belt"></span><span class="pb-button"></span></div></div>
+						<strong class="mode-title">Casual</strong>
+						<span class="mode-subtitle">Heal Ball Trial</span>
+						<span class="mode-desc">Take your time. Hints add the typing.</span>
+						<ul class="mode-stats"><li><span class="ms-num">&infin;</span><span class="ms-label">Hearts</span></li><li><span class="ms-num">&infin;</span><span class="ms-label">Mistakes</span></li></ul>
+						<span class="mode-best"><span class="mb-label">Best Streak</span><span class="mb-num" id="bestCasual">0</span></span>
+					</button>
+					<button class="mode-card mode-card-standard" data-mode="standard" type="button" style="--stagger:1">
+						<span class="diff-pill diff-medium">Medium</span>
+						<div class="mode-art"><div class="pokeball pokeball-classic" aria-hidden="true"><span class="pb-top"></span><span class="pb-belt"></span><span class="pb-button"></span><span class="pb-shine"></span></div></div>
+						<strong class="mode-title">Standard</strong>
+						<span class="mode-subtitle">Pok&eacute; Ball Trial</span>
+						<span class="mode-desc">Three hearts. The classic challenge.</span>
+						<ul class="mode-stats"><li><span class="ms-num">3</span><span class="ms-label">Hearts</span></li><li><span class="ms-num">3</span><span class="ms-label">Mistakes</span></li></ul>
+						<span class="mode-best"><span class="mb-label">Best Streak</span><span class="mb-num" id="bestStandard">0</span></span>
+					</button>
+					<button class="mode-card mode-card-hardcore" data-mode="hardcore" type="button" style="--stagger:2">
+						<span class="diff-pill diff-hard">Hard</span>
+						<div class="mode-art"><div class="pokeball pokeball-master" aria-hidden="true"><span class="pb-top"></span><span class="pb-mletter">M</span><span class="pb-mdot pb-mdot-l"></span><span class="pb-mdot pb-mdot-r"></span><span class="pb-belt"></span><span class="pb-button"></span></div></div>
+						<strong class="mode-title">Hardcore</strong>
+						<span class="mode-subtitle">Master Ball Trial</span>
+						<span class="mode-desc">One heart. No hints. Pure lore.</span>
+						<ul class="mode-stats"><li><span class="ms-num">1</span><span class="ms-label">Heart</span></li><li><span class="ms-num">0</span><span class="ms-label">Mistakes</span></li></ul>
+						<span class="mode-best"><span class="mb-label">Best Streak</span><span class="mb-num" id="bestHardcore">0</span></span>
+					</button>
+				</div>
+
+				<div class="mode-tip"><span class="mode-tip-icon" aria-hidden="true">!</span><span><strong>Hint</strong> reveals the typing in Casual & Standard. Hardcore has no hints.</span></div>
+			</div>
+
+			<div id="gameView" class="puzzle-inner" hidden>
+				<div class="puzzle-head">
+					<div class="puzzle-head-left">
+						<div class="mode-badge" id="modeBadge">Casual</div>
+						<h1>Pok&eacute;dex Entry</h1>
+					</div>
+					<div class="puzzle-head-right">
+						<div class="hearts-row" id="heartsRow"></div>
+						<div class="streak-stats">
+							<div class="streak-tile"><span class="stat-num" id="streakNum">0</span><span class="stat-label">Streak</span></div>
+							<div class="streak-tile"><span class="stat-num" id="bestNum">0</span><span class="stat-label">Best</span></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="dex-stage">
+					<div class="dex-screen" id="dexScreen">
+						<div class="dex-lights" aria-hidden="true"><span class="dl dl-red"></span><span class="dl dl-yellow"></span><span class="dl dl-green"></span></div>
+						<div class="dex-meta">
+							<span class="dex-num" id="dexNum">No. ???</span>
+							<span class="dex-types" id="dexTypes" hidden></span>
+						</div>
+						<p class="dex-text" id="dexText">Loading entry&hellip;</p>
+						<img class="dex-sprite" id="dexSprite" src="" alt="" hidden>
+					</div>
+					<div id="revealNameWrap" class="reveal-name" hidden>
+						<span class="reveal-prefix">It's</span> <strong id="revealName"></strong>!
+					</div>
+				</div>
+
+				<form id="guessForm" class="guess-form" autocomplete="off" novalidate>
+					<input id="guessInput" class="guess-input" type="text" placeholder="Type the Pok&eacute;mon's name&hellip;" autofocus maxlength="32" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+					<button class="btn" type="submit">Guess</button>
+				</form>
+				<div id="feedback" class="feedback" aria-live="polite"></div>
+				<div class="puzzle-controls">
+					<button id="hintBtn" type="button" class="btn btn-secondary">Hint (Type)</button>
+					<button id="skipBtn" type="button" class="btn btn-ghost">Skip</button>
+					<button id="nextBtn" type="button" class="btn" hidden>Next Pok&eacute;mon &rarr;</button>
+					<button id="quitBtn" type="button" class="btn btn-ghost">End Run</button>
+				</div>
+			</div>
+
+			<div id="gameOver" class="puzzle-inner game-over" hidden>
+				<div class="eyebrow eyebrow-end"><span class="dot"></span><span>Run Complete</span></div>
+				<h1 id="gameOverTitle">Game Over</h1>
+				<div class="game-over-stats">
+					<div class="streak-tile big"><span class="stat-num" id="finalStreak">0</span><span class="stat-label">Final Streak</span></div>
+					<div class="streak-tile big"><span class="stat-num" id="finalBest">0</span><span class="stat-label">Mode Best</span></div>
+				</div>
+				<p id="gameOverMessage" class="game-over-msg"></p>
+				<div class="game-over-actions">
+					<button class="btn" id="retryBtn" type="button">Try Again</button>
+					<button class="btn btn-secondary" id="changeModeBtn" type="button">Change Mode</button>
+					<a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle-dex.js" defer></script>
+</body>
+</html>

@@ -27,6 +27,11 @@ const GAMES = {
 	cry:        { key: 'pokequiz:leaderboard:cry',            maxTotal: 500, modes: ['casual','standard','hardcore'] },
 	higherlower:{ key: 'pokequiz:leaderboard:higherlower',    maxTotal: 500, modes: ['weight','height','hp','atk','spd','random'] },
 	memory:     { key: 'pokequiz:leaderboard:memory',         maxTotal: 0,   timeBased: true, modes: ['6','8','12'] },
+	zoom:       { key: 'pokequiz:leaderboard:zoom',           maxTotal: 500, modes: ['casual','standard','hardcore'] },
+	dex:        { key: 'pokequiz:leaderboard:dex',            maxTotal: 500, modes: ['casual','standard','hardcore'] },
+	type:       { key: 'pokequiz:leaderboard:type',           maxTotal: 500, modes: ['mono','dual','random'] },
+	stats:      { key: 'pokequiz:leaderboard:stats',          maxTotal: 500, modes: ['easy','medium','hard'] },
+	sprint:     { key: 'pokequiz:leaderboard:sprint',         maxTotal: 200, modes: ['30','60','120'] },
 };
 
 // Minimum physically-possible completion times per memory board size (ms).

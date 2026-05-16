@@ -1,0 +1,90 @@
+@import url('pokemon-types.css');
+
+.dex-stage {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 18px;
+	margin: 24px 0;
+}
+
+.dex-screen {
+	position: relative;
+	max-width: 640px;
+	width: 100%;
+	padding: 24px 26px 22px;
+	border-radius: 18px;
+	background: linear-gradient(180deg, #f3f5e7 0%, #e8eed6 100%);
+	border: 4px solid var(--poke-black);
+	box-shadow: 0 6px 0 var(--poke-red-deep), inset 0 2px 0 #fff, inset 0 -2px 0 rgba(0,0,0,0.08);
+	font-family: 'VT323', 'Press Start 2P', monospace;
+	transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dex-screen.is-revealed {
+	border-color: var(--poke-yellow);
+	box-shadow: 0 6px 0 var(--poke-red-deep), 0 0 0 4px var(--poke-yellow), inset 0 2px 0 #fff;
+}
+
+.dex-lights {
+	display: flex;
+	gap: 8px;
+	position: absolute;
+	top: -10px;
+	left: 18px;
+}
+.dl {
+	width: 14px; height: 14px;
+	border-radius: 50%;
+	border: 2px solid var(--poke-black);
+	box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25);
+}
+.dl-red    { background: radial-gradient(circle at 30% 30%, #ff8a8a, #c41e1e); }
+.dl-yellow { background: radial-gradient(circle at 30% 30%, #fff3a8, #d9b800); }
+.dl-green  { background: radial-gradient(circle at 30% 30%, #b3f0a8, #2e8a1c); }
+
+.dex-meta {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+	padding-bottom: 10px;
+	border-bottom: 2px dashed rgba(0,0,0,0.15);
+}
+
+.dex-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 10px;
+	color: var(--poke-red-deep);
+	letter-spacing: 1px;
+}
+
+.dex-types {
+	display: inline-flex;
+	gap: 6px;
+}
+
+.dex-text {
+	margin: 0;
+	font-family: 'VT323', 'Press Start 2P', monospace;
+	font-size: 22px;
+	line-height: 1.45;
+	color: var(--ink);
+	letter-spacing: 0.3px;
+}
+
+.dex-sprite {
+	display: block;
+	margin: 14px auto 0;
+	width: 130px;
+	height: 130px;
+	object-fit: contain;
+	image-rendering: -webkit-optimize-contrast;
+	filter: drop-shadow(0 4px 0 rgba(0,0,0,0.18));
+}
+
+@media (max-width: 600px) {
+	.dex-text { font-size: 19px; }
+	.dex-sprite { width: 110px; height: 110px; }
+}

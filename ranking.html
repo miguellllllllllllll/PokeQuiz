@@ -84,6 +84,26 @@
 					<span class="lb-tab-icon">🎴</span>
 					<span class="lb-tab-label">Memory Match</span>
 				</button>
+				<button type="button" class="lb-tab" data-game="zoom" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🔎</span>
+					<span class="lb-tab-label">Zoomed-In</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="dex" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">📖</span>
+					<span class="lb-tab-label">Pokédex Entry</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="type" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🧪</span>
+					<span class="lb-tab-label">Type Chart</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="stats" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">📊</span>
+					<span class="lb-tab-label">Stat Spread</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="sprint" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">⏱️</span>
+					<span class="lb-tab-label">Gen Sprint</span>
+				</button>
 			</div>
 
 			<div id="modeTabs" class="lb-mode-tabs" hidden></div>
@@ -162,6 +182,46 @@
 						{ key: '12', label: 'Hard (12 pairs)' },
 					],
 				},
+				zoom: {
+					label: 'Zoomed-In', scoreLabel: 'Streak', timeBased: false,
+					modes: [
+						{ key: 'casual',   label: 'Casual' },
+						{ key: 'standard', label: 'Standard' },
+						{ key: 'hardcore', label: 'Hardcore' },
+					],
+				},
+				dex: {
+					label: 'Pokédex Entry', scoreLabel: 'Streak', timeBased: false,
+					modes: [
+						{ key: 'casual',   label: 'Casual' },
+						{ key: 'standard', label: 'Standard' },
+						{ key: 'hardcore', label: 'Hardcore' },
+					],
+				},
+				type: {
+					label: 'Type Chart', scoreLabel: 'Streak', timeBased: false,
+					modes: [
+						{ key: 'mono',   label: 'Mono-type' },
+						{ key: 'dual',   label: 'Dual-type' },
+						{ key: 'random', label: 'Random' },
+					],
+				},
+				stats: {
+					label: 'Stat Spread', scoreLabel: 'Streak', timeBased: false,
+					modes: [
+						{ key: 'easy',   label: 'Easy (4 choices)' },
+						{ key: 'medium', label: 'Medium (6 choices)' },
+						{ key: 'hard',   label: 'Hard (8 choices)' },
+					],
+				},
+				sprint: {
+					label: 'Gen Sprint', scoreLabel: 'Caught', timeBased: false,
+					modes: [
+						{ key: '30',  label: '30 seconds' },
+						{ key: '60',  label: '60 seconds' },
+						{ key: '120', label: '2 minutes' },
+					],
+				},
 			};
 
 			const tabsEl = document.querySelectorAll('.lb-tab');
@@ -199,11 +259,20 @@
 				if (game === 'memory') {
 					return ({ '6': 'Easy', '8': 'Medium', '12': 'Hard' })[mode] || mode;
 				}
-				if (game === 'silhouette' || game === 'cry') {
+				if (game === 'silhouette' || game === 'cry' || game === 'zoom' || game === 'dex') {
 					return mode.charAt(0).toUpperCase() + mode.slice(1);
 				}
 				if (game === 'higherlower') {
 					return ({ weight: 'Weight', height: 'Height', hp: 'HP', atk: 'Attack', spd: 'Speed', random: 'Random' })[mode] || mode;
+				}
+				if (game === 'type') {
+					return ({ mono: 'Mono-type', dual: 'Dual-type', random: 'Random' })[mode] || mode;
+				}
+				if (game === 'stats') {
+					return ({ easy: 'Easy', medium: 'Medium', hard: 'Hard' })[mode] || mode;
+				}
+				if (game === 'sprint') {
+					return ({ '30': '30s', '60': '60s', '120': '2 min' })[mode] || mode;
 				}
 				return mode;
 			}
