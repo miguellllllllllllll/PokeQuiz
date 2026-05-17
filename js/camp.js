@@ -2723,7 +2723,7 @@
 	// grass surround, tree border with a north-edge gap (mirroring camp's south
 	// exit), cobblestone paths, flower beds, a small fountain pond, and four
 	// vendor NPCs spread around the plaza, each selling a different category.
-	const MARKET_W = 30;
+	const MARKET_W = 50;
 	const MARKET_H = 22;
 	// North-edge column where the player walks in/out of the market. Lines up
 	// with camp's south-exit col (11) only conceptually — the actual transition
@@ -2756,6 +2756,18 @@
 			label: 'Shop', shopKind: 'stones',
 			spriteScale: 0.6, frameHeight: 40,
 			dialog: "Umbre... Evolution stones, if you've got the tokens.",
+		},
+		{
+			key: 'm-espeon', species: 'espeon', r: 5, c: 34,
+			label: 'Heal', shopKind: 'pokecenter',
+			spriteScale: 0.6, frameHeight: 48,
+			dialog: "Espe~! Welcome to the Pokémon Center. We restore your Pokémon to full health — free of charge!",
+		},
+		{
+			key: 'm-jolteon', species: 'jolteon', r: 5, c: 43,
+			label: 'Café', shopKind: 'cafe',
+			spriteScale: 0.6, frameHeight: 40,
+			dialog: "Jolt! Welcome to my café — grab something energizing before your next quiz!",
 		},
 	];
 	// Per-vendor inventories. Action strings map to handlers in MarketShop.
@@ -2796,6 +2808,24 @@
 				{ label: '🌿 Leaf Stone',    cost: 50, action: 'buyStone', key: 'leaf'    },
 			],
 		},
+		pokecenter: {
+			title: "Pokémon Center",
+			items: [
+				{ label: '💊 Heal Partner Pokémon', cost: 0, action: 'healPokemon' },
+				{ label: '🍓 Complimentary Berry',  cost: 0, action: 'freeBerry'   },
+			],
+		},
+		cafe: {
+			title: "Jolteon's Café",
+			items: [
+				{ label: '☕ Espresso Shot',    cost: 8,  action: 'cafeBuy', gives: 'seed',     amount: 1 },
+				{ label: '🧋 Bubble Tea',       cost: 10, action: 'cafeBuy', gives: 'berry',    amount: 3 },
+				{ label: '🍰 Berry Cake',       cost: 15, action: 'cafeBuy', gives: 'berry',    amount: 5 },
+				{ label: '🍵 Herbal Tea',       cost: 18, action: 'cafeBuy', gives: 'seed',     amount: 2 },
+				{ label: '🥐 Croissant',        cost: 5,  action: 'cafeBuy', gives: 'berry',    amount: 2 },
+				{ label: '🍫 Choco Bar',        cost: 12, action: 'cafeBuy', gives: 'tokens',   amount: 8 },
+			],
+		},
 	};
 	// Sign text shown when standing next to each market sign tile.
 	const SIGN_MESSAGES_MARKET = {
@@ -2803,6 +2833,8 @@
 		'9,22':  "Berry Stand — sells berries by the bunch.",
 		'16,7':  "Boutique — wallpapers and camp accent colors.",
 		'16,22': "Stone Vendor — evolution stones for the worthy.",
+		'10,31': "Pokémon Center — free healing and a complimentary berry!",
+		'2,43':  "Jolteon's Café — energizing beverages and treats!",
 	};
 	function buildMarketMap() {
 		const map = Array.from({ length: MARKET_H }, () => new Array(MARKET_W).fill(TG));
@@ -2862,6 +2894,51 @@
 
 		// Signs in front of each stall — text comes from SIGN_MESSAGES_MARKET
 		[[9,7],[9,22],[16,7],[16,22]].forEach(([r,c]) => set(r,c,TSG));
+
+		// ── Pokémon Center (cols 30–37, rows 3–9) ─────────────────────────────
+		// Outer walls
+		fill(3, 30, 3, 37, TIW);              // top wall
+		fill(4, 30, 9, 30, TIW);              // left wall
+		fill(4, 37, 9, 37, TIW);              // right wall
+		fill(9, 30, 9, 32, TIW);              // south wall left of entrance
+		fill(9, 35, 9, 37, TIW);              // south wall right of entrance
+		// Interior floor
+		fill(4, 31, 9, 36, TIF);
+		// Reception counter
+		fill(4, 31, 4, 36, TBKS);
+		// Healing machine (centre of room)
+		fill(6, 33, 7, 34, TH2O);
+		// Entrance corridor from south wall down to main path
+		fill(9, 33, 10, 34, TP);
+		// Decorative flowers flanking the entrance
+		set(2, 30, TFR); set(2, 37, TFY);
+		set(3, 29, TFY); set(3, 38, TFR);
+		// Sign south of entrance
+		set(10, 31, TSG);
+
+		// ── Big Café (cols 40–47, rows 3–18) ──────────────────────────────────
+		// Floor — fill the whole interior first
+		fill(3, 40, 18, 47, TIF);
+		// Outer walls (solid TIW), leaving row 11 col 40 open as the entrance
+		fill(3, 40, 3, 47, TIW);              // top wall
+		for (let r = 4; r <= 18; r++) { if (r !== 11) set(r, 40, TIW); } // left wall, gap at row 11
+		fill(4, 47, 18, 47, TIW);             // right wall
+		fill(18, 41, 18, 46, TIW);            // bottom wall
+		// Service counter (top of dining room, row 4)
+		fill(4, 41, 4, 46, TBKS);
+		// Kitchen / service floor row 5–7 stays TIF (already filled above)
+		// Seating rugs
+		fill(8,  41, 9,  44, TRU);
+		fill(12, 41, 13, 44, TRU);
+		fill(15, 41, 16, 44, TRU);
+		// Potted plants between seating sections
+		set(10, 41, TFR); set(10, 44, TFY);
+		set(14, 41, TFY); set(14, 44, TFR);
+		set(17, 41, TFR); set(17, 44, TFY);
+		// Windows: small flower accents on the right wall side
+		set(7,  46, TFY); set(10, 46, TFR); set(13, 46, TFY); set(16, 46, TFR);
+		// Sign above the café (row 2, in the open grass above top wall)
+		set(2, 43, TSG);
 
 		return map;
 	}
@@ -4909,7 +4986,7 @@
 				lbl.textContent = it.label + priceStr;
 				const b = document.createElement('button');
 				b.type = 'button'; b.style.cssText = btn(true);
-				b.textContent = it.cost != null ? 'Buy' : 'Sell';
+				b.textContent = it.cost != null ? (it.cost === 0 ? 'Free' : 'Buy') : 'Sell';
 				b.addEventListener('click', () => doAction(it));
 				row.append(lbl, b);
 				itemsEl.append(row);
@@ -4953,6 +5030,26 @@
 					applyCampAccent(it.key);
 					setStatus('Camp accent changed!');
 					break;
+				case 'cafeBuy': {
+					if ((inv.tokens||0) < it.cost) { setStatus('Not enough tokens.'); return; }
+					inv.tokens -= it.cost;
+					if (it.gives === 'seed')   { inv.seeds             = (inv.seeds            ||0) + it.amount; setStatus('Got ' + it.amount + ' seed' + (it.amount>1?'s':'') + '!'); }
+					if (it.gives === 'berry')  { inv.friendshipBerries = (inv.friendshipBerries ||0) + it.amount; setStatus('Got ' + it.amount + ' berr' + (it.amount>1?'ies':'y') + '!'); }
+					if (it.gives === 'tokens') { inv.tokens            = (inv.tokens            ||0) + it.amount; setStatus('Got ' + it.amount + ' bonus tokens!'); }
+					break;
+				}
+				case 'healPokemon':
+					inv.partnerHp = 100;
+					setStatus('Your Pokémon has been fully healed! ♥');
+					break;
+				case 'freeBerry': {
+					const now = Date.now();
+					if ((inv.lastFreeBerry || 0) > now - 3600000) { setStatus('Come back in an hour for another berry!'); return; }
+					inv.lastFreeBerry = now;
+					inv.friendshipBerries = (inv.friendshipBerries || 0) + 1;
+					setStatus("Nurse Joy gave you a berry! ♥");
+					break;
+				}
 				default: setStatus('Unknown action.');
 			}
 			Inventory.save(inv);
@@ -4978,6 +5075,8 @@
 				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
 				this.load.spritesheet('npc-vaporeon',  'Pictures/sprites/vaporeon.png',  { frameWidth: 32, frameHeight: 48 });
 				this.load.spritesheet('npc-umbreon',   'Pictures/sprites/umbreon.png',   { frameWidth: 32, frameHeight: 40 });
+				this.load.spritesheet('npc-espeon',    'Pictures/sprites/espeon.png',    { frameWidth: 32, frameHeight: 48 });
+				this.load.spritesheet('npc-jolteon',   'Pictures/sprites/jolteon.png',   { frameWidth: 32, frameHeight: 40 });
 			}
 
 			create() {
