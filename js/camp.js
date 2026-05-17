@@ -5209,6 +5209,7 @@
 				// matching the camp's outdoor feel.
 				this.cameras.main.setBackgroundColor('#3a5026');
 				this.cameras.main.setRoundPixels(true);
+				this.cameras.main.startFollow(this.player, true, 1, 1);
 				this.applyZoom();
 				this.scale.on('resize', this.onResize, this);
 				this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
@@ -5264,12 +5265,17 @@
 					return;
 				}
 				const roomW = MARKET_W * TILE, roomH = MARKET_H * TILE;
+				// Fit the entire market into the viewport — no min-zoom floor so it
+				// always fits on phones, capped at 4× on large screens.
 				let s = Math.min(vw / roomW, vh / roomH);
-				s = Math.max(0.5, Math.min(s, 4));
+				s = Math.max(0.25, Math.min(s, 4));
 				const cam = this.cameras.main;
 				cam.setZoom(s);
 				cam.setBounds(0, 0, roomW, roomH);
-				cam.centerOn(roomW / 2, roomH / 2);
+				// If the player is loaded, the camera is following them — just update
+				// zoom and let Phaser re-center on the player. Otherwise fall back to
+				// map center (initial load before player exists).
+				if (!this.player) cam.centerOn(roomW / 2, roomH / 2);
 			}
 
 			setupJoystick() {
