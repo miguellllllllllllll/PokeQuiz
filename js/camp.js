@@ -19,6 +19,8 @@
 		'19,12': "Crops grow here — talk to the farmer at the garden gate and plant a seed on any soil tile.",
 		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
 		'10,30': "A peaceful lake — press E near the water to fish!",
+		'17,9':  '__mailbox__',
+		'25,11': '__camprating__',
 	};
 
 	// ── Pokédex ───────────────────────────────────────────────────────────────────
@@ -599,6 +601,7 @@
 					Inventory.save(inv2);
 					showToast('🍛 ' + recipe.label + ' cooked! ' + recipe.desc);
 					Achievements.unlock('chef');
+					TrainerLevel.addXP('cook');
 					panel.hidden = true;
 				});
 			});
@@ -913,7 +916,7 @@
 				document.removeEventListener('keydown', onKey);
 				res.hidden = false;
 				res.textContent = won ? '✅ Rhythm mastered!' : '❌ Out of sync.';
-				if (won) { DailyQuests.increment('rhythm'); Achievements.increment('rhythm100'); }
+				if (won) { DailyQuests.increment('rhythm'); Achievements.increment('rhythm100'); TrainerLevel.addXP('rhythm'); }
 				setTimeout(() => end(won, won ? hits : 0), 1300);
 			};
 			const onKey = (e) => {
@@ -2586,18 +2589,30 @@
 						const awayMs = Date.now() - parsed.lastLogin;
 						const awayHours = awayMs / 3600000;
 						if (awayHours >= 1) {
+							// Camp rating bonus (calculated here since CampRating module not yet defined;
+							// we replicate the logic inline to avoid forward-reference issues)
+							const _placements = Object.keys({
+								...(parsed.cosmetics?.roomPlacements || {}),
+								...(parsed.cosmetics?.housePlacements || {}),
+							}).length;
+							let _rScore = Math.min(2, Math.floor(_placements / 2));
+							try { const _pl = JSON.parse(localStorage.getItem('pokequiz_plants') || '[]'); if (_pl.length >= 2) _rScore += 1; } catch {}
+							if ((parsed.pcBox || []).length >= 3) _rScore += 1;
+							if ((parsed.friendship || 0) >= 80) _rScore += 1;
+							const _rMult = 1 + (Math.min(5, Math.max(1, _rScore)) - 1) * 0.2;
+
 							let msg = '';
 							if (awayHours >= 8) {
-								parsed.seeds = (parsed.seeds||0) + 3;
-								parsed.friendshipBerries = (parsed.friendshipBerries||0) + 2;
-								parsed.tokens = (parsed.tokens||0) + 10;
-								msg = 'Away 8h+: found 3 seeds, 2 berries, 10 tokens!';
+								parsed.seeds = (parsed.seeds||0) + Math.round(3 * _rMult);
+								parsed.friendshipBerries = (parsed.friendshipBerries||0) + Math.round(2 * _rMult);
+								parsed.tokens = (parsed.tokens||0) + Math.round(10 * _rMult);
+								msg = 'Away 8h+: found seeds, berries & tokens! (×' + _rMult.toFixed(1) + ' camp bonus)';
 							} else if (awayHours >= 4) {
-								parsed.seeds = (parsed.seeds||0) + 2;
-								parsed.friendshipBerries = (parsed.friendshipBerries||0) + 1;
-								msg = 'Away 4h+: found 2 seeds, 1 berry!';
+								parsed.seeds = (parsed.seeds||0) + Math.round(2 * _rMult);
+								parsed.friendshipBerries = (parsed.friendshipBerries||0) + Math.round(1 * _rMult);
+								msg = 'Away 4h+: found seeds & berries! (×' + _rMult.toFixed(1) + ')';
 							} else if (awayHours >= 1) {
-								parsed.seeds = (parsed.seeds||0) + 1;
+								parsed.seeds = (parsed.seeds||0) + Math.round(1 * _rMult);
 								msg = 'Away 1h+: found a seed!';
 							}
 							if (msg) {
@@ -2907,6 +2922,13 @@
 				"New quests reset at midnight. Have you done yours?",
 				"Complete all quests for bonus tokens!",
 			],
+		},
+		{
+			key: 'visiting-camper', species: 'bulbasaur', r: 16, c: 8,
+			label: 'Talk',
+			kind: 'camper',
+			spriteScale: 0.6, frameHeight: 40,
+			dialog: ["..."],  // overridden by NpcCampers.openDialog
 		},
 	];
 
@@ -4116,6 +4138,7 @@
 
 				Inventory.save(inv);
 				DailyQuests.increment('fish');
+				TrainerLevel.addXP('fish');
 				Achievements.unlock('firstCatch');
 				if (caught.rarity === 'rare' || caught.rarity === 'shiny') Achievements.unlock('rareFish');
 
@@ -4175,6 +4198,13 @@
 			{ id: 'explorer',     label: '🗺️ Explorer',         desc: 'Reveal the entire camp map'         },
 			{ id: 'mysteryGift',  label: '🎁 Gift Receiver',    desc: 'Claim a Mystery Gift'               },
 			{ id: 'wonderTrade',  label: '🔄 Wonder Trade',     desc: 'Complete a Wonder Trade'            },
+			{ id: 'trainer10',    label: '⭐ Rising Trainer',   desc: 'Reach Trainer Level 10'             },
+			{ id: 'trainer30',    label: '⭐ Ace Trainer',      desc: 'Reach Trainer Level 30'             },
+			{ id: 'fiveStarCamp', label: '🌟 Five-Star Camp',  desc: 'Earn a 5-star camp rating'          },
+			{ id: 'storytime',    label: '📖 Storyteller',     desc: 'Read a campfire story'              },
+			{ id: 'postcard',     label: '✉️ Pen Pal',          desc: 'Send your first postcard'           },
+			{ id: 'composted',    label: '🌿 Composter',       desc: 'Make your first compost'            },
+			{ id: 'camperMet',    label: '👋 Good Company',    desc: 'Meet a visiting trainer'            },
 		];
 		function load() {
 			const raw = localStorage.getItem('pokequiz_achievements');
@@ -4198,6 +4228,568 @@
 		}
 		function getAll() { return { defs: DEFS, unlocked: load() }; }
 		return { unlock, increment, getAll };
+	})();
+
+	// ── Trainer Level ─────────────────────────────────────────────────────────────
+	const TrainerLevel = (() => {
+		// XP needed to advance FROM each level (level 1 → needs XP_TABLE[1] to reach 2)
+		const XP_TABLE = [0];
+		for (let i = 1; i <= 50; i++) XP_TABLE[i] = Math.floor(18 * i * i * 0.85);
+
+		const XP_SOURCES = { fish:15, harvest:10, rhythm:25, quest:20, cook:15, evolve:50,
+			amie:8, contest:30, compost:12, postcard:18, camper:10, battle:10, egg:40 };
+
+		function load() {
+			try { return JSON.parse(localStorage.getItem('pokequiz_trainer_level') || '{"level":1,"xp":0,"totalXp":0}'); }
+			catch { return { level:1, xp:0, totalXp:0 }; }
+		}
+		function save(d) { localStorage.setItem('pokequiz_trainer_level', JSON.stringify(d)); }
+
+		function addXP(source) {
+			const amount = XP_SOURCES[source] || 5;
+			const d = load();
+			d.xp = (d.xp || 0) + amount;
+			d.totalXp = (d.totalXp || 0) + amount;
+			let leveled = false;
+			while (d.level < 50 && d.xp >= XP_TABLE[d.level]) {
+				d.xp -= XP_TABLE[d.level];
+				d.level++;
+				leveled = true;
+			}
+			save(d);
+			if (leveled) {
+				showToast('⭐ Level Up! Trainer Level ' + d.level + '!');
+				if (d.level >= 10) Achievements.unlock('trainer10');
+				if (d.level >= 30) Achievements.unlock('trainer30');
+			}
+			updateHUD();
+		}
+
+		function updateHUD() {
+			const el = document.getElementById('trainerLevelBadge');
+			if (!el) return;
+			const d = load();
+			el.textContent = 'Lv.' + d.level;
+			const next = d.level < 50 ? XP_TABLE[d.level] : '---';
+			el.title = 'XP: ' + d.xp + ' / ' + next + '  |  Total: ' + d.totalXp;
+		}
+
+		function getLevel() { return load().level; }
+		return { addXP, updateHUD, getLevel };
+	})();
+
+	// ── Camp Rating ───────────────────────────────────────────────────────────────
+	const CampRating = (() => {
+		function calculate() {
+			const inv = Inventory.load();
+			let score = 0;
+			const placements = Object.keys({
+				...(inv.cosmetics?.roomPlacements || {}),
+				...(inv.cosmetics?.housePlacements || {}),
+			}).length;
+			score += Math.min(2, Math.floor(placements / 2));
+			const plants = Plants.load();
+			if (plants.length >= 2) score += 1;
+			const boxSize = (inv.pcBox || []).length;
+			if (boxSize >= 3) score += 1;
+			if ((inv.friendship || 0) >= 80) score += 1;
+			const stars = Math.min(5, Math.max(1, score));
+			return stars;
+		}
+
+		function getAwayMultiplier() {
+			const stars = calculate();
+			return 1 + (stars - 1) * 0.2; // 1.0× at ★1, up to 1.8× at ★5
+		}
+
+		function displayOnGate() {
+			const stars = calculate();
+			const el = document.getElementById('campRatingGate');
+			if (el) {
+				el.textContent = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+				el.title = stars + '-Star Camp';
+			}
+			if (stars === 5) Achievements.unlock('fiveStarCamp');
+			return stars;
+		}
+
+		return { calculate, getAwayMultiplier, displayOnGate };
+	})();
+
+	// ── Campfire Stories ──────────────────────────────────────────────────────────
+	const CampfireStories = (() => {
+		const STORIES = [
+			{ title:'The Legend of Ho-Oh', pages:[
+				"Long ago, when Pokémon and humans first learned to live together...",
+				"A great fire burned in the mountains of Johto.",
+				"From the flames rose Ho-Oh, its wings spanning the sky.",
+				"It left behind three sacred beasts — Entei, Raikou, and Suicune.",
+				"They say on a clear evening you can still see Ho-Oh's rainbow trail.",
+			]},
+			{ title:"Eevee's Secret", pages:[
+				"It is said that Eevee holds more potential than any Pokémon alive.",
+				"Its DNA is uniquely irregular — able to adapt to any environment.",
+				"In old stories, a trainer once befriended an Eevee deep in a forest.",
+				"By sharing every adventure, the Eevee found its truest form...",
+				"Not from a stone — but from the unbreakable bond between two hearts.",
+			]},
+			{ title:'The Wandering Snorlax', pages:[
+				"Travelers in Kanto once reported a mountain that snored.",
+				"It wasn't a mountain. It was Snorlax — the biggest of its kind.",
+				"For seven days it slept across Route 12, blocking all passage.",
+				"Only the Poké Flute could stir it... and even then, just barely.",
+				"They say it went back to sleep in the forest. It's still there.",
+			]},
+			{ title:'The Old Man and the Magikarp', pages:[
+				"An old fisherman sat at the same lake every day for thirty years.",
+				"Every day, he caught only Magikarp. He never once complained.",
+				"'The water knows patience,' he would say.",
+				"On his last fishing day, his line went taut with impossible weight.",
+				"A giant Gyarados leaped from the lake and bowed its head.",
+				"It was his oldest Magikarp — finally evolved. Old friends at last.",
+			]},
+			{ title:'The Celestial Tower', pages:[
+				"In Unova stands a tower where Pokémon go when they have passed.",
+				"Trainers ring the bell at the top to honor them.",
+				"The bell's tone carries for miles — some say it reaches the sky.",
+				"On foggy nights, small lights circle the tower.",
+				"The locals don't fear them. 'They're just saying hello,' they say.",
+			]},
+			{ title:'Mew and the Sea', pages:[
+				"Before maps existed, Mew swam every ocean on Earth.",
+				"It carried a copy of every Pokémon's DNA in its tiny body.",
+				"Scientists call it a myth. But sailors still leave out offerings.",
+				"A pink ripple seen at dawn. A giggle on the wind.",
+				"Mew hasn't forgotten anyone. It never does.",
+			]},
+		];
+
+		function getWeather() {
+			try { return window.__campScene?.isRaining ? 'rain' : 'clear'; } catch { return 'clear'; }
+		}
+
+		function getStoryForToday() {
+			const month = new Date().getMonth();
+			const day   = Math.floor(Date.now() / 86400000);
+			// Seasonal overrides
+			if (month === 11 || month === 0 || month === 1) return STORIES[4]; // winter → tower
+			if (month >= 2 && month <= 4)  return STORIES[1]; // spring → eevee
+			if (getWeather() === 'rain')   return STORIES[2]; // rain → snorlax
+			return STORIES[day % STORIES.length];
+		}
+
+		function open() {
+			const story = getStoryForToday();
+			let page = 0;
+			let panel = document.getElementById('storyPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'storyPanel';
+				document.body.appendChild(panel);
+			}
+			panel.hidden = false;
+
+			function render() {
+				panel.className = 'pk-backdrop';
+				panel.innerHTML = '';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal pk-modal-sm';
+				inner.style.textAlign = 'center';
+				inner.innerHTML = '<div class="pk-modal-head">' +
+					'<span class="pk-modal-title" style="color:#f0c860">📖 ' + story.title.toUpperCase() + '</span>' +
+					'</div>';
+				const body = document.createElement('div');
+				body.className = 'pk-modal-body';
+				body.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:14px';
+
+				const fire = document.createElement('div');
+				fire.style.cssText = 'font-size:28px';
+				fire.textContent = '🔥';
+
+				const text = document.createElement('div');
+				text.style.cssText = 'font-size:8px;color:var(--pk-text);line-height:1.9;min-height:56px;text-align:center;padding:0 8px;max-width:300px';
+				text.textContent = story.pages[page];
+
+				const pageNum = document.createElement('div');
+				pageNum.style.cssText = 'font-size:7px;color:var(--pk-faint)';
+				pageNum.textContent = (page+1) + ' / ' + story.pages.length;
+
+				const btns = document.createElement('div');
+				btns.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
+
+				if (page < story.pages.length - 1) {
+					const next = document.createElement('button');
+					next.className = 'pk-btn pk-btn-gold pk-btn-sm';
+					next.textContent = 'Next ▶';
+					next.addEventListener('click', () => { page++; render(); });
+					btns.appendChild(next);
+				} else {
+					const done = document.createElement('button');
+					done.className = 'pk-btn pk-btn-green pk-btn-sm';
+					done.textContent = '✔ The End';
+					done.addEventListener('click', () => {
+						panel.hidden = true;
+						const inv = Inventory.load();
+						inv.tokens = (inv.tokens||0) + 5;
+						Inventory.save(inv);
+						showToast('📖 Story complete! +5🪙');
+						Achievements.unlock('storytime');
+						TrainerLevel.addXP('quest');
+					});
+					btns.appendChild(done);
+				}
+
+				const skip = document.createElement('button');
+				skip.className = 'pk-btn pk-btn-dark pk-btn-sm';
+				skip.textContent = 'Close';
+				skip.addEventListener('click', () => { panel.hidden = true; });
+				btns.appendChild(skip);
+
+				body.appendChild(fire);
+				body.appendChild(text);
+				body.appendChild(pageNum);
+				body.appendChild(btns);
+				inner.appendChild(body);
+				panel.appendChild(inner);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+			}
+			render();
+		}
+
+		return { open };
+	})();
+
+	// ── Postcard System ───────────────────────────────────────────────────────────
+	const PostcardSystem = (() => {
+		const MAX_CARDS = 10;
+		const PROMPTS = [
+			"What's your favourite Pokémon and why?",
+			"Describe your camp in three words.",
+			"What adventure do you wish for today?",
+			"Write a message to your future trainer self.",
+			"What would you name your dream team?",
+			"What Pokémon would you want as a partner in real life?",
+			"Describe the best Pokémon battle you've ever imagined.",
+		];
+
+		function load() {
+			try { return JSON.parse(localStorage.getItem('pokequiz_postcards') || '[]'); }
+			catch { return []; }
+		}
+		function save(cards) { localStorage.setItem('pokequiz_postcards', JSON.stringify(cards)); }
+
+		function open() {
+			let panel = document.getElementById('postcardPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'postcardPanel';
+				document.body.appendChild(panel);
+				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+			}
+			panel.hidden = false;
+			renderList(panel);
+		}
+
+		function renderList(panel) {
+			const cards = load();
+			panel.className = 'pk-backdrop';
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">✉️ POSTCARDS</span>' +
+				'<button id="postcardClose" class="pk-close" type="button">✕</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+
+			const sub = document.createElement('div');
+			sub.style.cssText = 'font-size:7px;color:var(--pk-muted);margin-bottom:12px';
+			sub.textContent = cards.length + ' / ' + MAX_CARDS + ' postcards saved';
+			body.appendChild(sub);
+
+			if (cards.length > 0) {
+				const list = document.createElement('div');
+				list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:12px';
+				cards.forEach((card, i) => {
+					const row = document.createElement('div');
+					row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--pk-border);border-radius:var(--pk-radius-sm);background:rgba(255,255,255,0.03);cursor:pointer;gap:8px';
+					const info = document.createElement('div');
+					info.style.flex = '1';
+					const date = document.createElement('div');
+					date.style.cssText = 'font-size:7px;color:var(--pk-gold)';
+					date.textContent = '✉️ ' + new Date(card.ts).toLocaleDateString();
+					const preview = document.createElement('div');
+					preview.style.cssText = 'font-size:7px;color:var(--pk-muted);margin-top:2px';
+					preview.textContent = card.text.length > 40 ? card.text.slice(0,40)+'…' : card.text;
+					info.appendChild(date);
+					info.appendChild(preview);
+					const del = document.createElement('button');
+					del.className = 'pk-btn pk-btn-red pk-btn-xs';
+					del.textContent = '🗑';
+					del.addEventListener('click', e => {
+						e.stopPropagation();
+						const c2 = load(); c2.splice(i,1); save(c2);
+						renderList(panel);
+					});
+					info.addEventListener('click', () => renderRead(panel, card));
+					row.appendChild(info);
+					row.appendChild(del);
+					list.appendChild(row);
+				});
+				body.appendChild(list);
+			} else {
+				const empty = document.createElement('div');
+				empty.style.cssText = 'text-align:center;color:var(--pk-faint);font-size:8px;padding:18px 0';
+				empty.textContent = 'No postcards yet. Write your first!';
+				body.appendChild(empty);
+			}
+
+			if (cards.length < MAX_CARDS) {
+				const writeBtn = document.createElement('button');
+				writeBtn.className = 'pk-btn pk-btn-gold pk-btn-full pk-btn-sm';
+				writeBtn.textContent = '✏️ Write New Postcard';
+				writeBtn.addEventListener('click', () => renderWrite(panel));
+				body.appendChild(writeBtn);
+			}
+
+			inner.appendChild(body);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('postcardClose')?.addEventListener('click', () => { panel.hidden = true; });
+		}
+
+		function renderWrite(panel) {
+			const prompt = PROMPTS[Math.floor(Date.now() / 86400000) % PROMPTS.length];
+			panel.className = 'pk-backdrop';
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">✏️ WRITE</span>' +
+				'<button id="postcardBack" class="pk-close" type="button">←</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			body.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+
+			const hint = document.createElement('div');
+			hint.style.cssText = 'font-size:7px;color:var(--pk-gold);padding:8px;background:rgba(246,200,76,0.06);border-radius:6px';
+			hint.textContent = '💭 ' + prompt;
+
+			const ta = document.createElement('textarea');
+			ta.style.cssText = 'width:100%;min-height:90px;background:rgba(255,255,255,0.05);border:1px solid var(--pk-border);border-radius:6px;color:var(--pk-text);font-family:inherit;font-size:8px;padding:8px;resize:none;box-sizing:border-box;line-height:1.7';
+			ta.maxLength = 200;
+			ta.placeholder = 'Write here… (max 200 chars)';
+
+			const counter = document.createElement('div');
+			counter.style.cssText = 'font-size:7px;color:var(--pk-faint);text-align:right';
+			counter.textContent = '0 / 200';
+			ta.addEventListener('input', () => { counter.textContent = ta.value.length + ' / 200'; });
+
+			const saveBtn = document.createElement('button');
+			saveBtn.className = 'pk-btn pk-btn-gold pk-btn-full pk-btn-sm';
+			saveBtn.textContent = '📮 Send Postcard';
+			saveBtn.addEventListener('click', () => {
+				const text = ta.value.trim();
+				if (!text) { showToast('Write something first!'); return; }
+				const c2 = load();
+				c2.unshift({ text, ts: Date.now(), prompt });
+				if (c2.length > MAX_CARDS) c2.length = MAX_CARDS;
+				save(c2);
+				TrainerLevel.addXP('postcard');
+				Achievements.unlock('postcard');
+				showToast('✉️ Postcard saved!');
+				renderList(panel);
+			});
+
+			body.appendChild(hint);
+			body.appendChild(ta);
+			body.appendChild(counter);
+			body.appendChild(saveBtn);
+			inner.appendChild(body);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('postcardBack')?.addEventListener('click', () => renderList(panel));
+		}
+
+		function renderRead(panel, card) {
+			panel.className = 'pk-backdrop';
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">📬 POSTCARD</span>' +
+				'<button id="postcardBack3" class="pk-close" type="button">←</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			body.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+
+			const date = document.createElement('div');
+			date.style.cssText = 'font-size:7px;color:var(--pk-muted)';
+			date.textContent = '📅 ' + new Date(card.ts).toLocaleDateString();
+
+			if (card.prompt) {
+				const pr = document.createElement('div');
+				pr.style.cssText = 'font-size:7px;color:var(--pk-gold);font-style:italic';
+				pr.textContent = '"' + card.prompt + '"';
+				body.appendChild(date);
+				body.appendChild(pr);
+			} else {
+				body.appendChild(date);
+			}
+
+			const text = document.createElement('div');
+			text.style.cssText = 'font-size:9px;color:var(--pk-text);line-height:1.9;padding:12px;background:rgba(246,200,76,0.05);border:1px solid var(--pk-border);border-radius:8px';
+			text.textContent = card.text;
+			body.appendChild(text);
+			inner.appendChild(body);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('postcardBack3')?.addEventListener('click', () => renderList(panel));
+		}
+
+		return { open };
+	})();
+
+	// ── Berry Composting ──────────────────────────────────────────────────────────
+	const BerryCompost = (() => {
+		const COST = 3;
+		function canMake() { return (Inventory.load().friendshipBerries || 0) >= COST; }
+		function hasCompost() { return (Inventory.load().boosts?.compost || 0) > 0; }
+
+		function make() {
+			if (!canMake()) { showToast('Need ' + COST + ' berries to compost!'); return; }
+			const inv = Inventory.load();
+			inv.friendshipBerries -= COST;
+			if (!inv.boosts) inv.boosts = {};
+			inv.boosts.compost = (inv.boosts.compost || 0) + 1;
+			Inventory.save(inv);
+			TrainerLevel.addXP('compost');
+			Achievements.unlock('composted');
+			showToast('🌿 Compost made! Next planting grows 50% faster.');
+		}
+
+		function applyOnPlant(inv) {
+			// Called when planting to consume a compost charge, boosting grow speed
+			if ((inv.boosts?.compost || 0) > 0) {
+				inv.boosts.compost -= 1;
+				if (!inv.boosts) inv.boosts = {};
+				// fast-grow for 30 minutes
+				inv.boosts.fastGrow = Math.max(inv.boosts.fastGrow || 0, Date.now() + 30 * 60 * 1000);
+				showToast('🌿 Compost applied! Faster growth for 30 min.');
+			}
+		}
+
+		function openPanel() {
+			let panel = document.getElementById('compostPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'compostPanel';
+				document.body.appendChild(panel);
+				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+			}
+			panel.hidden = false;
+			render(panel);
+		}
+
+		function render(panel) {
+			const inv = Inventory.load();
+			const berries = inv.friendshipBerries || 0;
+			const charges = inv.boosts?.compost || 0;
+			panel.className = 'pk-backdrop';
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title" style="color:#7ec860">🌿 COMPOSTING</span>' +
+				'<button id="compostClose" class="pk-close" style="color:#7ec860" type="button">✕</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			body.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+
+			const info = document.createElement('div');
+			info.style.cssText = 'font-size:8px;color:var(--pk-text);padding:10px;background:rgba(126,200,96,0.08);border:1px solid rgba(126,200,96,0.25);border-radius:8px';
+			info.innerHTML = '🍓 Berries: <strong>' + berries + '</strong>&nbsp;&nbsp;|&nbsp;&nbsp;🌿 Compost charges: <strong>' + charges + '</strong>';
+
+			const desc = document.createElement('div');
+			desc.style.cssText = 'font-size:7px;color:var(--pk-muted);line-height:1.7';
+			desc.textContent = 'Combine ' + COST + ' berries into compost. Compost is automatically used on your next planting, giving 50% faster growth for 30 minutes.';
+
+			const btn = document.createElement('button');
+			btn.className = 'pk-btn pk-btn-green pk-btn-full pk-btn-sm';
+			btn.disabled = !canMake();
+			btn.textContent = canMake() ? '🌿 Make Compost (' + COST + '🍓 → 1 charge)' : 'Not enough berries (' + berries + '/' + COST + ')';
+			btn.addEventListener('click', () => {
+				make();
+				render(panel);
+			});
+
+			body.appendChild(info);
+			body.appendChild(desc);
+			body.appendChild(btn);
+			inner.appendChild(body);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('compostClose')?.addEventListener('click', () => { panel.hidden = true; });
+		}
+
+		return { canMake, hasCompost, make, applyOnPlant, openPanel };
+	})();
+
+	// ── NPC Campers ───────────────────────────────────────────────────────────────
+	const NpcCampers = (() => {
+		const CAMPERS = [
+			{ name:'Red',   emoji:'🧢', gift:{ tokens:10 }, giftLabel:'+10🪙',
+			  dialog:["...", "...", "...", "Take this. You'll need it.", "..."] },
+			{ name:'Leaf',  emoji:'🌿', gift:{ seeds:2 }, giftLabel:'+2🌱',
+			  dialog:["Hey! Your camp looks cosy.", "Your Pokémon looks really happy!", "I found these on my travels — take them!"] },
+			{ name:'Blue',  emoji:'😤', gift:{ tokens:15 }, giftLabel:'+15🪙',
+			  dialog:["Oh, it's you. Your camp's... passable.", "Not as good as mine, obviously.", "Fine, take this. Don't read into it."] },
+			{ name:'May',   emoji:'💛', gift:{ berries:3 }, giftLabel:'+3🍓',
+			  dialog:["Hi there! Exploring camps is so fun!", "Your partner Pokémon is adorable!", "I baked extra this morning — have some!"] },
+			{ name:'Lucas', emoji:'📔', gift:{ tokens:8 }, giftLabel:'+8🪙',
+			  dialog:["I've been sketching Pokémon all morning.", "Your camp has really nice spots.", "Here — found this near the lake!"] },
+			{ name:'Dawn',  emoji:'🌸', gift:{ berries:2, seeds:1 }, giftLabel:'+2🍓+1🌱',
+			  dialog:["Hi! I love how your camp is set up.", "Contests are so fun — have you tried them?", "Take these — I had extras!"] },
+		];
+
+		function getTodayCamper() {
+			const day = Math.floor(Date.now() / 86400000);
+			return CAMPERS[day % CAMPERS.length];
+		}
+
+		function isVisitHour() {
+			const h = new Date().getHours();
+			return (h >= 6 && h <= 12) || (h >= 17 && h <= 22);
+		}
+
+		function todayKey() { return 'pokequiz_camper_' + new Date().toISOString().slice(0,10); }
+		function hasClaimedToday() { return !!localStorage.getItem(todayKey()); }
+
+		function openDialog(camperName) {
+			const camper = CAMPERS.find(c => c.name === camperName) || getTodayCamper();
+			if (hasClaimedToday()) {
+				Dialog.open(camper.emoji + ' ' + camper.name + ': "Come back tomorrow — I\'ll have something new!"');
+				return;
+			}
+			const lines = [...camper.dialog, camper.emoji + ' ' + camper.name + ' gives you something! (' + camper.giftLabel + ')'];
+			Dialog.open(lines.join('\n'));
+			// Give gift
+			localStorage.setItem(todayKey(), '1');
+			const inv = Inventory.load();
+			if (camper.gift.tokens)  inv.tokens = (inv.tokens||0) + camper.gift.tokens;
+			if (camper.gift.seeds)   inv.seeds  = (inv.seeds||0) + camper.gift.seeds;
+			if (camper.gift.berries) inv.friendshipBerries = (inv.friendshipBerries||0) + camper.gift.berries;
+			Inventory.save(inv);
+			TrainerLevel.addXP('camper');
+			Achievements.unlock('camperMet');
+			showToast(camper.emoji + ' ' + camper.name + ' visited! ' + camper.giftLabel);
+		}
+
+		return { getTodayCamper, isVisitHour, hasClaimedToday, openDialog };
 	})();
 
 	const DailyQuests = (() => {
@@ -4240,6 +4832,7 @@
 			const bonusEl = document.getElementById('questBonus');
 			if (bonusEl) bonusEl.textContent = '🎉 All done! +' + totalReward + ' tokens claimed!';
 			showToast('🎉 Daily quests done! +' + totalReward + ' tokens!');
+			TrainerLevel.addXP('quest');
 			Achievements.unlock('questStreak');
 		}
 		function refresh() {
@@ -4702,6 +5295,66 @@
 					gfx.fillCircle(lp.x, lp.y + 2, 20);
 				}
 
+				// ── Seasonal decorations ────────────────────────────────────────────
+				{
+					const month = new Date().getMonth(); // 0-11
+					const seasonLayer = this.add.container(0, 0).setDepth(1.8).setScrollFactor(1);
+					this._seasonParticles = [];
+					this._seasonContainer = seasonLayer;
+
+					if (month >= 2 && month <= 4) {
+						// Spring — cherry blossom petals scattered around the camp
+						const petalPositions = [[5,18],[6,22],[4,27],[7,15],[8,20],[5,24],[3,30]];
+						petalPositions.forEach(([r,c]) => {
+							const t = this.add.text(c*TILE+4, r*TILE+4, '🌸', { fontSize:'9px' })
+								.setDepth(1.8).setOrigin(0.5);
+							seasonLayer.add(t);
+						});
+						showToast('🌸 Cherry blossoms are in bloom!');
+					} else if (month >= 5 && month <= 7) {
+						// Summer — sunflowers near the garden
+						[[18,20],[20,21],[18,22]].forEach(([r,c]) => {
+							const t = this.add.text(c*TILE, r*TILE, '🌻', { fontSize:'10px' })
+								.setDepth(1.8).setOrigin(0.5);
+							seasonLayer.add(t);
+						});
+					} else if (month >= 8 && month <= 10) {
+						// Autumn — coloured leaf decorations on trees (leaves already fall in updateLeaves)
+						[[3,5],[4,8],[5,12],[3,22],[4,25]].forEach(([r,c]) => {
+							const t = this.add.text(c*TILE, r*TILE, '🍂', { fontSize:'10px' })
+								.setDepth(1.8).setOrigin(0.5);
+							seasonLayer.add(t);
+						});
+					} else {
+						// Winter — snowflake accents + snowfall
+						this._snowflakes = [];
+						this._snowActive = true;
+						[[2,8],[3,15],[2,22],[4,30]].forEach(([r,c]) => {
+							const t = this.add.text(c*TILE+6, r*TILE+6, '❄️', { fontSize:'9px' })
+								.setDepth(1.8).setOrigin(0.5);
+							seasonLayer.add(t);
+						});
+					}
+				}
+
+				// ── Camp rating display near south gate ───────────────────────────
+				{
+					const stars = CampRating.calculate();
+					const starStr = '★'.repeat(stars) + '☆'.repeat(5-stars);
+					this.add.text(11*TILE + TILE/2, 26*TILE, starStr, {
+						fontFamily: '"Press Start 2P", monospace',
+						fontSize: '6px',
+						color: '#f6c84c',
+						stroke: '#000000',
+						strokeThickness: 2,
+					}).setDepth(3).setOrigin(0.5);
+					TrainerLevel.updateHUD();
+				}
+
+				// ── Surfing current state ─────────────────────────────────────────
+				this._surfDriftTick = 0;
+				this._surfDiscoveredIsland = false;
+
 				// scale; the player dot is overlaid every frame in updateMinimap().
 				this.minimapEl = document.getElementById('campMinimap');
 				if (this.minimapEl) {
@@ -4709,14 +5362,6 @@
 					this.minimapEl.height = MAP_H * 3;
 					const mctx = this.minimapEl.getContext('2d');
 					mctx.imageSmoothingEnabled = false;
-					// Fog-of-war: blank initially — tiles revealed as player explores
-					mctx.fillStyle = '#000';
-					mctx.fillRect(0, 0, this.minimapEl.width, this.minimapEl.height);
-				}
-				// Initialize fog for spawn area
-				{
-					const spawnFogInv = Inventory.load();
-					if (!spawnFogInv.fog) { spawnFogInv.fog = []; Inventory.save(spawnFogInv); }
 				}
 			}
 
@@ -4739,6 +5384,8 @@
 					const t = this.map[r][c];
 					if (t === TSG) {
 						const msg = SIGN_MESSAGES[r + ',' + c];
+						if (msg === '__mailbox__') return { kind: 'sign', r, c, message: '__mailbox__', label: 'Mailbox' };
+						if (msg === '__camprating__') return { kind: 'sign', r, c, message: '__camprating__', label: 'Camp ★' };
 						if (msg) return { kind: 'sign', r, c, message: msg };
 					}
 					if (t === TD) return { kind: 'door', r, c };
@@ -4871,6 +5518,7 @@
 						return true;
 					}
 					inv.seeds -= 1;
+					BerryCompost.applyOnPlant(inv);
 					Inventory.save(inv);
 					this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now(), type: 'pecha' });
 					Plants.save(this.plants);
@@ -4907,6 +5555,7 @@
 					Sound.harvest();
 					Stats.increment('totalHarvests');
 					DailyQuests.increment('harvest');
+					TrainerLevel.addXP('harvest');
 					Achievements.increment('berryFarmer');
 					Dialog.open('You harvested a ' + berryDef.emoji + ' ' + berryDef.label + '! (+' + berryDef.friendship + ' friendship)' + replantMsg);
 					return true;
@@ -5026,6 +5675,7 @@
 				inv.stone = null;  // stones are consumed on use
 				Inventory.save(inv);
 				Achievements.unlock('firstEvol');
+				TrainerLevel.addXP('evolve');
 				Sound.evolve();
 				// Flash overlay for dramatic effect
 				const flash = document.createElement('div');
@@ -5041,6 +5691,57 @@
 				const fade = document.getElementById('campFade');
 				if (fade) fade.classList.remove('is-hidden');
 				setTimeout(() => window.location.reload(), 1800);
+			}
+
+			_showCampfireMenu() {
+				let panel = document.getElementById('campfireChoicePanel');
+				if (!panel) {
+					panel = document.createElement('div');
+					panel.id = 'campfireChoicePanel';
+					document.body.appendChild(panel);
+					panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+				}
+				panel.hidden = false;
+				panel.className = 'pk-backdrop';
+				panel.innerHTML = '';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal pk-modal-sm';
+				inner.style.textAlign = 'center';
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🔥 CAMPFIRE</span>' +
+					'<button id="campfireChoiceClose" class="pk-close" type="button">✕</button></div>';
+				const body = document.createElement('div');
+				body.className = 'pk-modal-body';
+				body.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+
+				const cookBtn = document.createElement('button');
+				cookBtn.className = 'pk-btn pk-btn-sm pk-btn-full';
+				cookBtn.style.cssText = 'background:linear-gradient(180deg,#ff9820,#cc6600);color:#fff';
+				cookBtn.textContent = '🍛 Cook Curry';
+				cookBtn.addEventListener('click', () => { panel.hidden = true; CurryCooking.open(); });
+
+				const compostBtn = document.createElement('button');
+				compostBtn.className = 'pk-btn pk-btn-green pk-btn-full pk-btn-sm';
+				compostBtn.textContent = '🌿 Composting';
+				compostBtn.addEventListener('click', () => { panel.hidden = true; BerryCompost.openPanel(); });
+
+				const storyBtn = document.createElement('button');
+				storyBtn.className = 'pk-btn pk-btn-gold pk-btn-full pk-btn-sm';
+				storyBtn.textContent = '📖 Hear a Story';
+				storyBtn.addEventListener('click', () => { panel.hidden = true; CampfireStories.open(); });
+
+				const closeBtn2 = document.createElement('button');
+				closeBtn2.className = 'pk-btn pk-btn-dark pk-btn-full pk-btn-sm';
+				closeBtn2.textContent = 'Cancel';
+				closeBtn2.addEventListener('click', () => { panel.hidden = true; });
+
+				body.appendChild(cookBtn);
+				body.appendChild(compostBtn);
+				body.appendChild(storyBtn);
+				body.appendChild(closeBtn2);
+				inner.appendChild(body);
+				panel.appendChild(inner);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				document.getElementById('campfireChoiceClose')?.addEventListener('click', () => { panel.hidden = true; });
 			}
 
 			showPrompt(label) {
@@ -5144,19 +5845,40 @@
 				}
 			}
 
+			_updateSeasonalParticles() {
+				// Winter snowfall — small white flakes drifting down the screen
+				const month = new Date().getMonth();
+				if (month === 11 || month === 0 || month === 1) {
+					if (!this._snowflakes) this._snowflakes = [];
+					if (!this._snowContainer) {
+						this._snowContainer = this.add.container(0,0).setDepth(5).setScrollFactor(0);
+					}
+					const vw = this.scale.width, vh = this.scale.height;
+					if (this.tick % 12 === 0 && this._snowflakes.length < 30) {
+						const flake = this.add.rectangle(Math.random()*vw, -6, 2, 2, 0xffffff, 0.7);
+						flake.setOrigin(0.5);
+						this._snowContainer.add(flake);
+						this._snowflakes.push({ obj: flake, vy: 0.5 + Math.random()*0.6, vx: (Math.random()-0.5)*0.4, sway: Math.random()*Math.PI*2 });
+					}
+					for (let i = this._snowflakes.length - 1; i >= 0; i--) {
+						const s = this._snowflakes[i];
+						s.sway += 0.04;
+						s.obj.x += s.vx + Math.sin(s.sway) * 0.3;
+						s.obj.y += s.vy;
+						if (s.obj.y > vh + 10) { s.obj.destroy(); this._snowflakes.splice(i,1); }
+					}
+				}
+			}
+
 			updateMinimap() {
 				if (!this.minimapEl) return;
 				const mctx = this.minimapEl.getContext('2d');
 				mctx.fillStyle = '#000';
 				mctx.fillRect(0, 0, this.minimapEl.width, this.minimapEl.height);
-				const fogInvM = Inventory.load();
-				const fog = new Set(fogInvM.fog || []);
 				for (let r = 0; r < MAP_H; r++) {
 					for (let c = 0; c < MAP_W; c++) {
-						if (fog.has(r+','+c)) {
-							mctx.fillStyle = miniMapColor(this.map[r][c]);
-							mctx.fillRect(c*3, r*3, 3, 3);
-						}
+						mctx.fillStyle = miniMapColor(this.map[r][c]);
+						mctx.fillRect(c*3, r*3, 3, 3);
 					}
 				}
 				// Player dot — bright yellow
@@ -5322,20 +6044,44 @@
 					else if (target && target.kind === 'npc' && target.npcKind === 'quests') {
 						DailyQuests.open();
 					}
+					else if (target && target.kind === 'npc' && target.npcKind === 'camper') {
+						const camper = NpcCampers.getTodayCamper();
+						NpcCampers.openDialog(camper.name);
+					}
 					else if (target && target.kind === 'fire') {
-						CurryCooking.open();
+						// Campfire: offer Cook vs Story choice
+						this._showCampfireMenu();
 					}
 					else if (target && target.kind === 'boulder') {
 						const invB = Inventory.load();
 						if (!invB.hasRockSmash) { Dialog.open('It\'s a large boulder. You need Rock Smash to break it!'); }
 						else {
 							this.map[target.r][target.c] = TG;
-							// Rebuild solid bodies for the changed tile — simplest: just hide the solid
-							Dialog.open('💥 Smashed the boulder! The path is clear.');
-							showToast('💥 Rock Smash!');
+							// Rock Smash drops: chance of bonus items
+							const rollDrop = Math.random();
 							const invB2 = Inventory.load();
-							invB2.tokens = (invB2.tokens||0) + 15;
+							invB2.tokens = (invB2.tokens||0) + 5;
+							let dropMsg = '💥 Smashed! +5🪙';
+							if (rollDrop < 0.08) {
+								// Rare: Fossil (Pokédex unlock for a fossil Pokémon)
+								const fossils = [138,139,140,141,142]; // Omanyte, Omastar, Kabuto, Kabutops, Aerodactyl
+								const fid = fossils[Math.floor(Math.random()*fossils.length)];
+								Pokedex.markSeen(fid);
+								invB2.tokens = (invB2.tokens||0) + 30;
+								dropMsg = '🦴 Fossil found! A ' + [,'','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','Omanyte','Omastar','Kabuto','Kabutops','Aerodactyl'][fid] + ' fossil! +30🪙';
+							} else if (rollDrop < 0.25) {
+								// Uncommon: Shards
+								invB2.tokens = (invB2.tokens||0) + 20;
+								dropMsg = '💎 Shard found! +20🪙';
+							} else if (rollDrop < 0.45) {
+								// Common: Berry
+								invB2.friendshipBerries = (invB2.friendshipBerries||0) + 1;
+								dropMsg = '🍓 Berry hidden inside! +1🍓';
+							}
 							Inventory.save(invB2);
+							showToast(dropMsg);
+							Dialog.open('💥 ' + dropMsg + ' The path is clear.');
+							TrainerLevel.addXP('harvest');
 						}
 					}
 					else if (target && target.kind === 'radar') {
@@ -5344,8 +6090,16 @@
 						Battle.start((won) => {
 							window.__radarEncounter = false;
 							Music.start('camp');
-							if (won) { DailyQuests.increment('minigame'); }
+							if (won) { DailyQuests.increment('minigame'); TrainerLevel.addXP('battle'); }
 						});
+					}
+					else if (target && target.message === '__mailbox__') {
+						PostcardSystem.open();
+					}
+					else if (target && target.message === '__camprating__') {
+						const stars = CampRating.calculate();
+						const mult = CampRating.getAwayMultiplier();
+						Dialog.open('🌟 Camp Rating: ' + '★'.repeat(stars) + '☆'.repeat(5-stars) + '\nAway reward bonus: +' + Math.round((mult-1)*100) + '%\nMore furniture, berries & Pokémon = higher stars!');
 					}
 					else if (target && target.message) Dialog.open(target.message);
 					else if (target && target.kind === 'door' && !this.didTransition && this.armedForDoor) {
@@ -5371,15 +6125,37 @@
 					if (this._eggStepAccum >= 8) { this._eggStepAccum = 0; EggSystem.stepUpdate(); }
 				}
 
-				// Surf: Vaporeon water-walk tint
+				// Surf: Vaporeon water-walk tint + current drift
 				{
 					const _ptile_r = Math.floor(this.player.y / TILE);
 					const _ptile_c = Math.floor(this.player.x / TILE);
 					const _ptile = this.map[_ptile_r] && this.map[_ptile_r][_ptile_c];
-					if (_ptile === TH2O && (Inventory.load().eeveeForm === 'vaporeon')) {
+					const _isVaporeon = Inventory.load().eeveeForm === 'vaporeon';
+					if (_ptile === TH2O && _isVaporeon) {
 						this.player.setTint(0x88bbff);
+						// Surfing current: gentle eastward drift when on water and idle
+						if (vx === 0 && vy === 0) {
+							this._surfDriftTick = (this._surfDriftTick || 0) + 1;
+							if (this._surfDriftTick % 4 === 0) {
+								this.player.x = Math.min(this.player.x + 0.5, MAP_W * TILE - TILE);
+							}
+						} else {
+							this._surfDriftTick = 0;
+						}
+						// Hidden island discovery — reach the far east of the lake
+						if (!this._surfDiscoveredIsland && _ptile_c >= 36 && _ptile_r >= 8 && _ptile_r <= 13) {
+							this._surfDiscoveredIsland = true;
+							const inv = Inventory.load();
+							inv.tokens = (inv.tokens||0) + 25;
+							inv.friendshipBerries = (inv.friendshipBerries||0) + 3;
+							Inventory.save(inv);
+							showToast('🌊 Hidden Cove discovered! +25🪙 +3🍓');
+							Achievements.unlock('explorer');
+							DailyQuests.increment('fish');
+						}
 					} else {
 						this.player.clearTint();
+						this._surfDriftTick = 0;
 					}
 				}
 
@@ -5428,32 +6204,12 @@
 				this.updateSmoke();
 				this.updateLeaves();
 				this.updateRain();
+				this._updateSeasonalParticles();
 				this._updateInventoryHud();
 				// Refresh plant visuals every 8 ticks so the ripe-berry bob animates smoothly.
 				if (this.tick % 8 === 0) this._refreshPlantSprites();
 				this.updateMinimap();
 
-				// Fog of war: reveal tiles around player every 6 ticks
-				if (this.tick % 6 === 0) {
-					const pr = Math.floor(this.player.y / TILE);
-					const pc = Math.floor(this.player.x / TILE);
-					const fogInv = Inventory.load();
-					if (!fogInv.fog) fogInv.fog = [];
-					const fogSet = new Set(fogInv.fog);
-					let fogChanged = false;
-					for (let dr = -3; dr <= 3; dr++) {
-						for (let dc = -3; dc <= 3; dc++) {
-							const key = (pr+dr)+','+(pc+dc);
-							if (!fogSet.has(key)) { fogSet.add(key); fogChanged = true; }
-						}
-					}
-					if (fogChanged) {
-						fogInv.fog = [...fogSet];
-						Inventory.save(fogInv);
-						// Check explorer achievement: 90% of map revealed
-						if (fogInv.fog.length >= MAP_W * MAP_H * 0.9) Achievements.unlock('explorer');
-					}
-				}
 
 				// Radar sparkle graphics
 				if (this._radarGfx) this._radarGfx.clear();
@@ -7262,4 +8018,13 @@
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireAchievementsPanel);
 	else wireAchievementsPanel();
+
+	// ── Postcard button wiring ────────────────────────────────────────────────────
+	function wirePostcardBtn() {
+		document.getElementById('campPostcardBtn')?.addEventListener('click', () => PostcardSystem.open());
+		TrainerLevel.updateHUD();
+		CampRating.displayOnGate();
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wirePostcardBtn);
+	else wirePostcardBtn();
 })();

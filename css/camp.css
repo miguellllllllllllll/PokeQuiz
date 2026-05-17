@@ -368,6 +368,27 @@ body.camp-body {
 	pointer-events: none;
 	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
+
+/* Trainer level badge */
+.camp-level-badge {
+	position: absolute;
+	left: 12px;
+	bottom: 160px;
+	padding: 4px 9px;
+	background: linear-gradient(135deg, #1a2440, #0e1826);
+	border: 1.5px solid var(--pk-gold);
+	border-radius: 20px;
+	color: var(--pk-gold);
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	z-index: 10;
+	pointer-events: none;
+	box-shadow: 0 0 8px rgba(246,200,76,0.25), 0 2px 6px rgba(0,0,0,0.5);
+	letter-spacing: 0.5px;
+}
+@media (max-width: 700px) {
+	.camp-level-badge { bottom: 170px; font-size: 7px; padding: 3px 7px; }
+}
 /* On mobile the controls hint is hidden so we can reclaim the top-right slot */
 @media (max-width: 600px) {
 	.camp-inventory { top: 10px; }
