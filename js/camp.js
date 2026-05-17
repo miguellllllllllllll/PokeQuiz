@@ -2889,13 +2889,13 @@
 			if (map[r][c] === TG || map[r][c] === TG2) set(r,c,TBSH);
 		});
 
-		// Small fountain pond bottom-center for atmosphere
-		fill(17, 13, 18, 16, TH2O);
+		// Cobblestone feature plaza bottom-center
+		fill(17, 13, 18, 16, TP);
 
 		// Extra bottom-area decorations in the new rows (19–25)
 		[[19,5,TBSH],[19,10,TBSH],[19,20,TBSH],[19,25,TBSH]].forEach(([r,c,t]) => set(r,c,t));
 		[[20,7,TFR],[20,9,TFY],[20,21,TFR],[20,23,TFY]].forEach(([r,c,t]) => set(r,c,t));
-		fill(22, 13, 23, 16, TH2O); // second small pond at the south end
+		fill(22, 13, 23, 16, TP); // second cobblestone plaza at the south end
 		[[21,12,TFY],[21,17,TFR],[24,12,TFR],[24,17,TFY]].forEach(([r,c,t]) => set(r,c,t));
 		[[23,4,TBSH],[23,25,TBSH]].forEach(([r,c,t]) => set(r,c,t));
 
@@ -2913,8 +2913,8 @@
 		fill(9, 35, 9, 37, TIW);              // south wall right of entrance
 		// Reception counter
 		fill(4, 31, 4, 36, TBKS);
-		// Healing machine (centre of room)
-		fill(6, 33, 7, 34, TH2O);
+		// Healing rug (centre of room)
+		fill(6, 33, 7, 34, TRU);
 		// Entrance corridor from south wall down to main path
 		fill(9, 33, 10, 34, TP);
 		// Decorative flowers flanking the entrance
