@@ -30,6 +30,7 @@
 	const PostcardSystem  = (window.CAMP_SYSTEMS || {}).PostcardSystem;
 	const PhotoMode       = (window.CAMP_SYSTEMS || {}).PhotoMode;
 	const ShinyEncounters = (window.CAMP_SYSTEMS || {}).ShinyEncounters;
+	const Music           = (window.CAMP_SYSTEMS || {}).Music;
 	const applyWrapTop    = (window.CAMP_SYSTEMS || {}).applyWrapTop;
 	const readBootHash    = (window.CAMP_SYSTEMS || {}).readBootHash;
 	const updateDayNightTint = (window.CAMP_SYSTEMS || {}).updateDayNightTint;
@@ -228,5 +229,27 @@
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireShinyBtn);
 	else wireShinyBtn();
+
+	// ── Music Toggle ──────────────────────────────────────────────────────────────
+	function syncMusicBtn(btn) {
+		if (!btn) return;
+		const on = Music?.isEnabled();
+		btn.innerHTML = on
+			? '<i class="bi bi-music-note-beamed"></i>'
+			: '<i class="bi bi-music-note-beamed" style="opacity:.4"></i>';
+		btn.title = on ? 'Music: On (click to mute)' : 'Music: Off (click to unmute)';
+		btn.setAttribute('aria-label', on ? 'Mute music' : 'Unmute music');
+	}
+	function wireMusicBtn() {
+		const btn = document.getElementById('campMusicBtn');
+		if (!btn || !Music) return;
+		syncMusicBtn(btn);
+		btn.addEventListener('click', () => {
+			Music.setEnabled(!Music.isEnabled());
+			syncMusicBtn(btn);
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireMusicBtn);
+	else wireMusicBtn();
 
 })();

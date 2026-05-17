@@ -632,7 +632,7 @@
 	
 			let current = null;   // the active HTMLAudioElement
 			let area    = null;
-			let on      = true;
+			let on      = false;
 	
 			// Battle stays synthesised — fast, no network latency on encounter.
 			let musicCtx = null;
@@ -717,11 +717,16 @@
 	
 			function setEnabled(flag) {
 				on = !!flag;
+				try { localStorage.setItem('pokequiz_music_on', on ? '1' : '0'); } catch {}
 				if (!on) { stop(); return; }
-				try { localStorage.setItem('pokequiz_music_on', flag ? '1' : '0'); } catch {}
 			}
 			function isEnabled() { return on; }
-			try { const saved = localStorage.getItem('pokequiz_music_on'); if (saved === '0') on = false; } catch {}
+			try {
+				const saved = localStorage.getItem('pokequiz_music_on');
+				if (saved === '1') on = true;
+				else if (saved === '0') on = false;
+				// if null (never set), keep the default (false)
+			} catch {}
 	
 			return { start, stop, setEnabled, isEnabled };
 		})();
