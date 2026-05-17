@@ -2724,7 +2724,7 @@
 	// exit), cobblestone paths, flower beds, a small fountain pond, and four
 	// vendor NPCs spread around the plaza, each selling a different category.
 	const MARKET_W = 50;
-	const MARKET_H = 22;
+	const MARKET_H = 28;
 	// North-edge column where the player walks in/out of the market. Lines up
 	// with camp's south-exit col (11) only conceptually — the actual transition
 	// snaps the player to whichever spawn point each scene uses, so they don't
@@ -2892,6 +2892,13 @@
 		// Small fountain pond bottom-center for atmosphere
 		fill(17, 13, 18, 16, TH2O);
 
+		// Extra bottom-area decorations in the new rows (19–25)
+		[[19,5,TBSH],[19,10,TBSH],[19,20,TBSH],[19,25,TBSH]].forEach(([r,c,t]) => set(r,c,t));
+		[[20,7,TFR],[20,9,TFY],[20,21,TFR],[20,23,TFY]].forEach(([r,c,t]) => set(r,c,t));
+		fill(22, 13, 23, 16, TH2O); // second small pond at the south end
+		[[21,12,TFY],[21,17,TFR],[24,12,TFR],[24,17,TFY]].forEach(([r,c,t]) => set(r,c,t));
+		[[23,4,TBSH],[23,25,TBSH]].forEach(([r,c,t]) => set(r,c,t));
+
 		// Signs in front of each stall — text comes from SIGN_MESSAGES_MARKET
 		[[9,7],[9,22],[16,7],[16,22]].forEach(([r,c]) => set(r,c,TSG));
 
@@ -2916,27 +2923,30 @@
 		// Sign south of entrance (on the grass, reachable from the main path)
 		set(10, 31, TSG);
 
-		// ── Big Café (cols 40–47, rows 3–18) ──────────────────────────────────
+		// ── Big Café (cols 40–47, rows 3–24) ──────────────────────────────────
 		// Floor — fill the whole interior first
-		fill(3, 40, 18, 47, TIF);
+		fill(3, 40, 24, 47, TIF);
 		// Outer walls (solid TIW), leaving row 11 col 40 open as the entrance
 		fill(3, 40, 3, 47, TIW);              // top wall
-		for (let r = 4; r <= 18; r++) { if (r !== 11) set(r, 40, TIW); } // left wall, gap at row 11
-		fill(4, 47, 18, 47, TIW);             // right wall
-		fill(18, 41, 18, 46, TIW);            // bottom wall
+		for (let r = 4; r <= 24; r++) { if (r !== 11) set(r, 40, TIW); } // left wall, gap at row 11
+		fill(4, 47, 24, 47, TIW);             // right wall
+		fill(24, 41, 24, 46, TIW);            // bottom wall
 		// Service counter (top of dining room, row 4)
 		fill(4, 41, 4, 46, TBKS);
-		// Kitchen / service floor row 5–7 stays TIF (already filled above)
-		// Seating rugs
+		// Seating rugs — three rows of tables
 		fill(8,  41, 9,  44, TRU);
 		fill(12, 41, 13, 44, TRU);
 		fill(15, 41, 16, 44, TRU);
+		fill(19, 41, 20, 44, TRU);
+		fill(22, 41, 23, 44, TRU);
 		// Potted plants between seating sections
 		set(10, 41, TFR); set(10, 44, TFY);
 		set(14, 41, TFY); set(14, 44, TFR);
 		set(17, 41, TFR); set(17, 44, TFY);
+		set(21, 41, TFY); set(21, 44, TFR);
 		// Windows: small flower accents on the right wall side
-		set(7,  46, TFY); set(10, 46, TFR); set(13, 46, TFY); set(16, 46, TFR);
+		set(7,  46, TFY); set(10, 46, TFR); set(13, 46, TFY);
+		set(16, 46, TFR); set(19, 46, TFY); set(22, 46, TFR);
 		// Sign just outside the café entrance on the south side of the path
 		set(12, 39, TSG);
 
@@ -5100,20 +5110,21 @@
 				this.map = buildMarketMap();
 				const W = MARKET_W * TILE, H = MARKET_H * TILE;
 
-				if (!this.textures.exists('marketBase')) {
-					this.baseTex = this.textures.createCanvas('marketBase', W, H);
-					if (!this.baseTex) throw new Error('createCanvas("marketBase") returned null');
-					const baseCtx = this.baseTex.getContext();
-					baseCtx.imageSmoothingEnabled = false;
-					for (let r = 0; r < MARKET_H; r++) {
-						for (let c = 0; c < MARKET_W; c++) {
-							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
-						}
-					}
-					this.baseTex.refresh();
-				} else {
-					this.baseTex = this.textures.get('marketBase');
+				// Always recreate — reusing a cached texture risks wrong dimensions
+				// if MARKET_W/H changed or the player re-enters in the same session.
+				if (this.textures.exists('marketBase')) {
+					this.textures.remove('marketBase');
 				}
+				this.baseTex = this.textures.createCanvas('marketBase', W, H);
+				if (!this.baseTex) throw new Error('createCanvas("marketBase") returned null');
+				const baseCtx = this.baseTex.getContext();
+				baseCtx.imageSmoothingEnabled = false;
+				for (let r = 0; r < MARKET_H; r++) {
+					for (let c = 0; c < MARKET_W; c++) {
+						drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+					}
+				}
+				this.baseTex.refresh();
 				this.add.image(0, 0, 'marketBase').setOrigin(0).setDepth(0);
 
 				// Palette-swap the trainer sheet (same pipeline as HouseScene)
