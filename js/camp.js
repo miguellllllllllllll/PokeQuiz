@@ -582,6 +582,7 @@
 				if (obj) {
 					if (pos) {
 						obj.setPosition(pos.c * 16 + 8, pos.r * 16 + 8);
+						obj.setAngle((pos.rot || 0) * 90);
 						obj.setVisible(true);
 					} else {
 						obj.setVisible(false);
@@ -593,11 +594,21 @@
 		function startPlace(key) {
 			placingKey = key;
 			if (!window.__gridMode) window.__gridMode = {};
+			// Preserve existing rotation when moving an already-placed item
+			const { placementsKey } = invKeysForScene();
+			const existingPos = (Inventory.load().cosmetics?.[placementsKey] || {})[key];
 			window.__gridMode.active = true;
 			window.__gridMode.key = key;
 			window.__gridMode.sceneKey = activeScene;
 			window.__gridMode.hoverR = -1;
 			window.__gridMode.hoverC = -1;
+			window.__gridMode.rot = existingPos?.rot || 0;
+			refresh();
+		}
+
+		function rotateWhilePlacing() {
+			if (!window.__gridMode) return;
+			window.__gridMode.rot = ((window.__gridMode.rot || 0) + 1) % 4;
 			refresh();
 		}
 
@@ -615,7 +626,7 @@
 			if (!Array.isArray(i.cosmetics[ownedKey])) i.cosmetics[ownedKey] = [];
 			if (!i.cosmetics[placementsKey]) i.cosmetics[placementsKey] = {};
 			if (!i.cosmetics[ownedKey].includes(placingKey)) i.cosmetics[ownedKey].push(placingKey);
-			i.cosmetics[placementsKey][placingKey] = { r, c };
+			i.cosmetics[placementsKey][placingKey] = { r, c, rot: window.__gridMode?.rot ?? 0 };
 			Inventory.save(i);
 			cancelPlace();
 			liveUpdate();
@@ -705,13 +716,34 @@
 					right.className = 'cre-item-right';
 
 					if (isPlacing) {
+						const rotBtn = document.createElement('button');
+						rotBtn.className = 'cre-btn cre-btn--rotate';
+						rotBtn.type = 'button';
+						const rotDeg = ((window.__gridMode?.rot || 0) * 90);
+						rotBtn.title = rotDeg + '°';
+						rotBtn.textContent = '↻ ' + rotDeg + '°';
+						rotBtn.addEventListener('click', rotateWhilePlacing);
 						const cancelBtn = document.createElement('button');
 						cancelBtn.className = 'cre-btn cre-btn--cancel';
 						cancelBtn.type = 'button';
 						cancelBtn.textContent = 'Cancel';
 						cancelBtn.addEventListener('click', cancelPlace);
+						right.appendChild(rotBtn);
 						right.appendChild(cancelBtn);
 					} else if (placed) {
+						const rotateBtn = document.createElement('button');
+						rotateBtn.className = 'cre-btn cre-btn--rotate';
+						rotateBtn.type = 'button';
+						const rotDeg = ((pos?.rot || 0) * 90);
+						rotateBtn.title = rotDeg + '°';
+						rotateBtn.textContent = '↻';
+						rotateBtn.addEventListener('click', () => {
+							const i = Inventory.load();
+							if (!i.cosmetics?.[placementsKey]?.[key]) return;
+							i.cosmetics[placementsKey][key].rot = ((i.cosmetics[placementsKey][key].rot || 0) + 1) % 4;
+							Inventory.save(i);
+							liveUpdate(); refresh();
+						});
 						const moveBtn = document.createElement('button');
 						moveBtn.className = 'cre-btn cre-btn--activate';
 						moveBtn.type = 'button';
@@ -729,6 +761,7 @@
 							Inventory.save(i);
 							liveUpdate(); refresh();
 						});
+						right.appendChild(rotateBtn);
 						right.appendChild(moveBtn);
 						right.appendChild(removeBtn);
 					} else if (owned) {
@@ -4269,6 +4302,7 @@
 						if (item && canPlace) {
 							ghost.setText(item.emoji);
 							ghost.setPosition(hc * TILE + TILE / 2, hr * TILE + TILE / 2);
+							ghost.setAngle((gm.rot || 0) * 90);
 							ghost.setVisible(true);
 						} else { ghost.setVisible(false); }
 					}
@@ -4701,6 +4735,7 @@
 						if (item && canPlace) {
 							ghost.setText(item.emoji);
 							ghost.setPosition(hc * TILE + TILE / 2, hr * TILE + TILE / 2);
+							ghost.setAngle((gm.rot || 0) * 90);
 							ghost.setVisible(true);
 						} else { ghost.setVisible(false); }
 					}
@@ -5070,7 +5105,7 @@
 
 				this.physics.world.setBounds(0, 0, W, H);
 				this.player.setCollideWorldBounds(true);
-				this.cameras.main.setBounds(-4000, -4000, 8000, 8000);
+				this.cameras.main.setBounds(0, 0, W, H);
 				// Use a soft grass-edge color so any gap around the world looks natural,
 				// matching the camp's outdoor feel.
 				this.cameras.main.setBackgroundColor('#3a5026');
@@ -5131,10 +5166,10 @@
 				}
 				const roomW = MARKET_W * TILE, roomH = MARKET_H * TILE;
 				let s = Math.min(vw / roomW, vh / roomH);
-				s = Math.max(2, Math.floor(s));
-				s = Math.min(s, 5);
+				s = Math.max(0.5, Math.min(s, 4));
 				const cam = this.cameras.main;
 				cam.setZoom(s);
+				cam.setBounds(0, 0, roomW, roomH);
 				cam.centerOn(roomW / 2, roomH / 2);
 			}
 

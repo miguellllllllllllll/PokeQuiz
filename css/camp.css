@@ -1527,3 +1527,16 @@ body.camp-body {
 	transition: background 0.12s, color 0.12s;
 }
 .cre-btn--cancel:hover { background: rgba(255,80,80,0.12); color: #ffaaaa; border-color: rgba(255,80,80,0.35); }
+.cre-btn--rotate {
+	background: rgba(255,255,255,0.05);
+	color: rgba(200,220,255,0.9);
+	border: 1px solid rgba(120,160,255,0.25);
+	font-family: 'Press Start 2P', monospace;
+	font-size: 7px;
+	padding: 6px 8px;
+	border-radius: 7px;
+	cursor: pointer;
+	letter-spacing: 0.3px;
+	transition: background 0.12s, color 0.12s;
+}
+.cre-btn--rotate:hover { background: rgba(100,140,255,0.15); color: #aaccff; border-color: rgba(120,160,255,0.45); }
