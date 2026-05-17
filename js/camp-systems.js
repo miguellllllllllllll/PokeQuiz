@@ -2361,7 +2361,10 @@
 				inner.appendChild(body);
 				panel.appendChild(inner);
 				inner.addEventListener('pointerdown', e => e.stopPropagation());
-				document.getElementById('pcBoxClose').addEventListener('click', () => { panel.hidden = true; });
+				document.getElementById('pcBoxClose').addEventListener('click', () => {
+					panel.hidden = true;
+					window.__CAMP_STATE?._sceneKeyboard?.enableGlobalCapture();
+				});
 	
 				// Party button delegation
 				partyGrid.addEventListener('click', e => {
@@ -3700,14 +3703,32 @@
 				const root = $('campPartner');
 				if (root) root.hidden = true;
 				openFlag = false;
+				// Also close the partner picker if it is still open — e.g. if the user
+				// presses ESC on the outer panel while the picker backdrop is still shown.
+				const picker = document.getElementById('partnerPickerModal');
+				if (picker) picker.remove();
 				// If the nickname input (or any other input) is focused inside the panel,
 				// hiding the panel won't fire focusout automatically in all browsers.
 				// Explicit blur ensures _sceneKeyboard.enableGlobalCapture() is called.
 				if (document.activeElement && root && root.contains(document.activeElement)) {
 					document.activeElement.blur();
 				}
+				// Always restore Phaser keyboard capture when closing the panel.
+				// The focusin/focusout bridge in camp.js only fires for INPUT/TEXTAREA,
+				// so clicking the × button (a <button>) never triggers enableGlobalCapture.
+				// Calling it unconditionally here ensures movement is never frozen.
+				window.__CAMP_STATE?._sceneKeyboard?.enableGlobalCapture();
 			}
-			function isOpen() { return openFlag; }
+			// isOpen() checks the actual DOM state rather than just the flag.
+			// This means if campPartner is hidden for any reason the game will
+			// never be incorrectly frozen — DOM truth beats flag state.
+			function isOpen() {
+				const root = $('campPartner');
+				if (root && !root.hidden) return true;
+				// Keep flag in sync if DOM says closed but flag is stale.
+				if (openFlag) openFlag = false;
+				return false;
+			}
 			function feed(sceneRef) {
 				const inv = Inventory.load();
 				if (inv.eeveeForm && inv.eeveeForm !== 'eevee') {
@@ -3748,13 +3769,8 @@
 			function openPartnerPicker() {
 				const existing = document.getElementById('partnerPickerModal');
 				if (existing) { existing.remove(); return; }
-	
-				// All 151 Gen-1 Pokémon are available as walking partners.
-				// Caught ones are highlighted; uncaught ones are still selectable (dimmed).
-				const caught = [];
-				for (let _d = 1; _d <= 151; _d++) { caught.push(_d); }
-	
-				// Outer backdrop (fixed overlay) + inner pk-modal box — same pattern as Pokédex/PCBox
+
+				// Outer backdrop (fixed overlay) + inner pk-modal box
 				const backdrop = document.createElement('div');
 				backdrop.id = 'partnerPickerModal';
 				backdrop.className = 'pk-backdrop';
@@ -3773,74 +3789,84 @@
 				// Click outside inner box closes
 				backdrop.addEventListener('pointerdown', e => { if (e.target === backdrop) backdrop.remove(); });
 				document.body.appendChild(backdrop);
-	
-				const grid = document.getElementById('partnerPickerGrid');
-				const inv = Inventory.load();
-				const current = inv.companionForm;
-				// Build per-instance list from the caught array (may contain duplicates).
-				// Each entry: { dexId, companionKey, instanceLabel }
-				// companionKey = "dexId:slotIndex" (slot = index within same-species instances).
-				const speciesCount = {};
-				const instances = [];
-				Pokedex.getCaught().forEach((dexId, arrayIdx) => {
-					speciesCount[dexId] = (speciesCount[dexId] || 0) + 1;
-					instances.push({ dexId, arrayIdx });
-				});
-				// Assign per-species slot numbers so "Magikarp #1", "Magikarp #2" etc.
-				const speciesSeen = {};
-				instances.forEach(inst => {
-					speciesSeen[inst.dexId] = (speciesSeen[inst.dexId] || 0);
-					inst.slot = speciesSeen[inst.dexId]++;
-					inst.companionKey = inst.dexId + ':' + inst.slot;
-					inst.multipleOwned = speciesCount[inst.dexId] > 1;
-				});
-	
-				// Render owned instances first, then dimmed uncaught Pokémon.
-				const PICK_H = 44;
-				function makeCell(dexId, companionKey, label, isActive, dimmed) {
-					const form = FOLLOWER_FORMS[dexId];
-					if (!form) return null;
-					const cell = document.createElement('button');
-					cell.type = 'button';
-					cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '') + (dimmed ? ' is-unseen' : '');
-					const bScale = PICK_H / form.frameH;
-					const bW = Math.round(form.frameW * form.cols * bScale);
-					const bH = Math.round(form.frameH * 8 * bScale);
-					const fW = Math.round(form.frameW * bScale);
-					cell.innerHTML =
-						'<div class="partner-pick-sprite" style="' +
-							'background-image:url(' + form.url + ');' +
-							'background-size:' + bW + 'px ' + bH + 'px;' +
-							'width:' + fW + 'px;height:' + PICK_H + 'px' +
-						'"></div>' +
-						'<div class="partner-pick-name">' + label + '</div>';
-					cell.addEventListener('click', () => {
-						window.__campScene?._switchFollower(companionKey);
-						backdrop.remove();
-						refresh();
-					});
-					return cell;
-				}
-	
-				// Owned instances (full colour, possibly numbered).
-				instances.forEach(({ dexId, companionKey, slot, multipleOwned }) => {
-					const form = FOLLOWER_FORMS[dexId];
-					if (!form) return;
-					const label = form.displayName + (multipleOwned ? ' #' + (slot + 1) : '');
-					const isActive = current === companionKey ||
-						(typeof current === 'number' && current === dexId && slot === 0);
-					const cell = makeCell(dexId, companionKey, label, isActive, false);
-					if (cell) grid.appendChild(cell);
-				});
-	
-				// Uncaught Pokémon — dimmed, no slot number.
-				for (let _d = 1; _d <= 151; _d++) {
-					if (Pokedex.isCaught(_d)) continue; // already shown above as owned instances
-					const cell = makeCell(_d, _d, FOLLOWER_FORMS[_d]?.displayName || ('#' + _d), false, true);
-					if (cell) grid.appendChild(cell);
-				}
-	
+
+				// Wire close button FIRST — before the grid loop — so it always works even if the loop errors.
 				document.getElementById('partnerPickerClose').addEventListener('click', () => backdrop.remove());
+
+				try {
+					const grid = document.getElementById('partnerPickerGrid');
+					const inv = Inventory.load();
+					const current = inv.companionForm;
+
+					// Build per-instance list from caught Pokémon.
+					const speciesCount = {};
+					const instances = [];
+					const caughtList = (Pokedex && Pokedex.getCaught) ? Pokedex.getCaught() : [];
+					(Array.isArray(caughtList) ? caughtList : []).forEach((dexId) => {
+						const id = Number(dexId);
+						if (!id) return;
+						speciesCount[id] = (speciesCount[id] || 0) + 1;
+						instances.push({ dexId: id });
+					});
+					const speciesSeen = {};
+					instances.forEach(inst => {
+						speciesSeen[inst.dexId] = (speciesSeen[inst.dexId] || 0);
+						inst.slot = speciesSeen[inst.dexId]++;
+						inst.companionKey = inst.dexId + ':' + inst.slot;
+						inst.multipleOwned = speciesCount[inst.dexId] > 1;
+					});
+
+					const PICK_H = 44;
+					// PokeAPI sprites as reliable fallback (always available, no CORS issues)
+					const SPRITE_CDN = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+
+					function makeCell(dexId, companionKey, label, isActive, dimmed) {
+						const form = FOLLOWER_FORMS ? FOLLOWER_FORMS[dexId] : null;
+						const cell = document.createElement('button');
+						cell.type = 'button';
+						cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '') + (dimmed ? ' is-unseen' : '');
+						let spriteHTML;
+						if (form && form.url && form.frameH) {
+							const bScale = PICK_H / form.frameH;
+							const bW = Math.round(form.frameW * form.cols * bScale);
+							const bH = Math.round(form.frameH * 8 * bScale);
+							const fW = Math.round(form.frameW * bScale);
+							spriteHTML = '<div class="partner-pick-sprite" style="background-image:url(' + form.url + ');background-size:' + bW + 'px ' + bH + 'px;width:' + fW + 'px;height:' + PICK_H + 'px"></div>';
+						} else {
+							spriteHTML = '<img src="' + SPRITE_CDN + dexId + '.png" style="width:' + PICK_H + 'px;height:' + PICK_H + 'px;image-rendering:pixelated" alt="">';
+						}
+						cell.innerHTML = spriteHTML + '<div class="partner-pick-name">' + (label || '#' + dexId) + '</div>';
+						cell.addEventListener('click', () => {
+							window.__campScene?._switchFollower(companionKey);
+							backdrop.remove();
+							refresh();
+						});
+						return cell;
+					}
+
+					// Owned instances first (full colour)
+					instances.forEach(({ dexId, companionKey, slot, multipleOwned }) => {
+						const form = FOLLOWER_FORMS ? FOLLOWER_FORMS[dexId] : null;
+						const baseName = (form && form.displayName) || (PMD_NAMES && PMD_NAMES[dexId]) || ('#' + dexId);
+						const label = baseName + (multipleOwned ? ' #' + (slot + 1) : '');
+						const isActive = current === companionKey ||
+							(typeof current === 'number' && current === dexId && slot === 0);
+						grid.appendChild(makeCell(dexId, companionKey, label, isActive, false));
+					});
+
+					// All 151 Gen-1 Pokémon selectable (dimmed if not yet caught)
+					const caughtSet = new Set((Array.isArray(caughtList) ? caughtList : []).map(Number).filter(Boolean));
+					for (let _d = 1; _d <= 151; _d++) {
+						if (caughtSet.has(_d)) continue; // already in owned section
+						const form = FOLLOWER_FORMS ? FOLLOWER_FORMS[_d] : null;
+						const label = (form && form.displayName) || (PMD_NAMES && PMD_NAMES[_d]) || ('#' + _d);
+						grid.appendChild(makeCell(_d, _d, label, false, true));
+					}
+				} catch (err) {
+					const g = document.getElementById('partnerPickerGrid');
+					if (g) g.innerHTML = '<div style="grid-column:1/-1;font-size:8px;color:var(--pk-muted);padding:16px 0;text-align:center">Could not load list — try again.</div>';
+					console.error('[PartnerPicker]', err);
+				}
 			}
 	
 			function wire(scene) {

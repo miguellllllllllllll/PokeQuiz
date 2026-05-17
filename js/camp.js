@@ -68,6 +68,23 @@
 			window.__CAMP_STATE?._sceneKeyboard?.enableGlobalCapture();
 	});
 
+	// ── Canvas click restores keyboard capture ────────────────────────────────────
+	// When any overlay panel is closed by clicking its × button (a <button>, not an
+	// <input>), no focusout fires on an INPUT/TEXTAREA, so enableGlobalCapture() is
+	// never called and Phaser key interception stays disabled — freezing movement.
+	// Listening for a click/pointerdown anywhere on the game canvas guarantees
+	// capture is always restored the moment the player interacts with the world,
+	// regardless of which panel was open or how it was dismissed.
+	function restoreCaptureOnCanvasClick() {
+		const wrap = document.getElementById('campWrap');
+		if (!wrap) { setTimeout(restoreCaptureOnCanvasClick, 100); return; }
+		wrap.addEventListener('pointerdown', () => {
+			window.__CAMP_STATE?._sceneKeyboard?.enableGlobalCapture();
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restoreCaptureOnCanvasClick);
+	else restoreCaptureOnCanvasClick();
+
 	// ── Debug HUD toggle ──────────────────────────────────────────────────────────
 	// Debug object lives in camp-systems.js; backtick/F8 toggle it from here.
 	document.addEventListener('keydown', (e) => {
