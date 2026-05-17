@@ -75,12 +75,12 @@ body.camp-body {
 /* ── Controls hint — top-right floating pill ── */
 .camp-controls-hint {
 	position: absolute;
-	top: 10px;
-	right: 12px;
+	bottom: 14px;
+	right: 14px;
 	display: flex;
 	gap: 4px;
 	align-items: center;
-	padding: 5px 8px;
+	padding: 5px 10px;
 	background: rgba(10, 14, 28, 0.9);
 	border: 1px solid rgba(255,255,255,0.1);
 	border-top: 1px solid rgba(255,255,255,0.18);
@@ -336,7 +336,7 @@ body.camp-body {
 .camp-minimap {
 	position: absolute;
 	right: 14px;
-	bottom: 14px;
+	top: 14px;
 	width: 144px;
 	height: 108px;
 	background: rgba(10, 16, 28, 0.85);
@@ -348,30 +348,35 @@ body.camp-body {
 	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 @media (max-width: 700px) {
-	.camp-minimap { width: 88px; height: 66px; right: 6px; bottom: 160px; }
+	.camp-minimap { width: 88px; height: 66px; right: 6px; top: 6px; }
 }
 /* ── Inventory HUD — corner readout for seeds + berries ──────────────── */
 .camp-inventory {
 	position: absolute;
-	right: 12px;
-	top: 48px; /* below controls hint on desktop */
-	padding: 5px 10px;
-	background: rgba(10, 14, 28, 0.9);
-	border: 1px solid rgba(255,255,255,0.1);
-	border-top: 1px solid rgba(255,255,255,0.18);
-	border-radius: 5px;
+	bottom: 14px;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	align-items: center;
+	gap: 0;
+	padding: 6px 18px;
+	background: rgba(10, 14, 28, 0.92);
+	border: 1.5px solid rgba(246,200,76,0.22);
+	border-top: 1.5px solid rgba(246,200,76,0.35);
+	border-radius: 8px;
 	color: #e0e4f0;
 	font-family: 'Press Start 2P', monospace;
 	font-size: 9px;
 	letter-spacing: 0.5px;
 	z-index: 8;
 	pointer-events: none;
-	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+	box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0 1px rgba(246,200,76,0.06);
+	white-space: nowrap;
 }
 
 /* Bootstrap Icons sizing helpers inside game UI */
 .bi { vertical-align: -0.125em; line-height: 1; }
-.camp-inventory .bi  { font-size: 11px; }
+.camp-inventory .bi  { font-size: 13px; }
 .camp-btn-bar  .bi   { font-size: 16px; }
 .pk-modal-title .bi,
 .pk-drawer-title .bi { font-size: 14px; vertical-align: -0.2em; }
@@ -384,14 +389,14 @@ body.camp-body {
 .gift-large          { font-size: 40px; display: block; margin: 8px auto; }
 
 /* HUD separator */
-.hud-sep { display: inline-block; width: 1px; height: 10px; background: rgba(255,255,255,0.2); margin: 0 8px; vertical-align: middle; }
+.hud-sep { display: inline-block; width: 1px; height: 14px; background: rgba(246,200,76,0.2); margin: 0 12px; vertical-align: middle; }
 
-/* Trainer level badge */
+/* Trainer level badge — upper left */
 .camp-level-badge {
 	position: absolute;
-	left: 12px;
-	bottom: 160px;
-	padding: 4px 9px;
+	left: 14px;
+	top: 14px;
+	padding: 4px 10px;
 	background: linear-gradient(135deg, #1a2440, #0e1826);
 	border: 1.5px solid var(--pk-gold);
 	border-radius: 20px;
@@ -404,11 +409,7 @@ body.camp-body {
 	letter-spacing: 0.5px;
 }
 @media (max-width: 700px) {
-	.camp-level-badge { bottom: 170px; font-size: 7px; padding: 3px 7px; }
-}
-/* On mobile the controls hint is hidden so we can reclaim the top-right slot */
-@media (max-width: 600px) {
-	.camp-inventory { top: 10px; }
+	.camp-level-badge { font-size: 7px; padding: 3px 7px; }
 }
 
 /* ── Scene-transition fade — black overlay during page reload ─────────── */
@@ -1196,7 +1197,7 @@ body.camp-body {
 	.cb-wheel-rim { width: 220px; height: 220px; }
 	.cb-rhythm-bar { height: 44px; }
 	.camp-dialog { font-size: 11px; padding: 14px 16px 20px; }
-	.camp-inventory { font-size: 8px; padding: 4px 8px; right: 8px; }
+	.camp-inventory { font-size: 8px; padding: 4px 10px; }
 	.camp-prompt { font-size: 8px; padding: 3px 7px; }
 	.camp-minimap { display: none; }
 }
@@ -1749,11 +1750,11 @@ body.camp-body {
 
 .camp-btn-bar {
   position: absolute;
-  right: 12px;
-  top: 48px;
+  left: 14px;
+  bottom: 14px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  gap: 8px;
   z-index: 7;
 }
 
@@ -1761,13 +1762,14 @@ body.camp-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: rgba(10,14,28,0.92);
-  border: 1px solid rgba(246,200,76,0.35);
+  border: 1.5px solid rgba(246,200,76,0.4);
+  border-bottom: 2.5px solid rgba(246,200,76,0.2);
   border-radius: var(--pk-radius-sm);
   color: var(--pk-gold);
-  font-size: 15px;
+  font-size: 16px;
   cursor: pointer;
   text-decoration: none;
   box-shadow: 0 2px 8px rgba(0,0,0,0.5);
@@ -1879,10 +1881,12 @@ body.camp-body {
 #fishingPanel .pk-modal { padding: 0; }
 #fishCast, #fishClose { font-family: var(--pk-font) !important; }
 
-/* ── Mobile: hide btn-bar icons that clash with joystick ───────────────── */
+/* ── Mobile: shrink btn-bar and shift inventory up to clear joystick ───── */
 @media (max-width: 700px) {
-  .camp-btn-bar { top: 8px; right: 8px; flex-direction: row; }
+  .camp-btn-bar { left: 8px; bottom: 8px; gap: 6px; }
   .camp-quick-btn { width: 30px; height: 30px; font-size: 14px; }
+  .camp-inventory { bottom: 130px; font-size: 8px; padding: 5px 12px; }
+  .camp-controls-hint { display: none; }
 }
 
 /* ── Pokédex grid cell ──────────────────────────────────────────────────── */
