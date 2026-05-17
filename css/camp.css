@@ -369,6 +369,23 @@ body.camp-body {
 	box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
+/* Bootstrap Icons sizing helpers inside game UI */
+.bi { vertical-align: -0.125em; line-height: 1; }
+.camp-inventory .bi  { font-size: 11px; }
+.camp-btn-bar  .bi   { font-size: 16px; }
+.pk-modal-title .bi,
+.pk-drawer-title .bi { font-size: 14px; vertical-align: -0.2em; }
+.pk-btn .bi          { font-size: 12px; vertical-align: -0.15em; }
+.pk-close .bi        { font-size: 12px; }
+.pk-quest-label .bi,
+.pk-achieve-name .bi { font-size: 11px; vertical-align: -0.15em; }
+.pk-quest-prog .bi   { font-size: 10px; vertical-align: -0.1em; }
+.achieve-ico         { font-size: 13px; }
+.gift-large          { font-size: 40px; display: block; margin: 8px auto; }
+
+/* HUD separator */
+.hud-sep { display: inline-block; width: 1px; height: 10px; background: rgba(255,255,255,0.2); margin: 0 8px; vertical-align: middle; }
+
 /* Trainer level badge */
 .camp-level-badge {
 	position: absolute;

@@ -1,6 +1,71 @@
 (function () {
 	'use strict';
 
+	// ── Icon helper ───────────────────────────────────────────────────────────────
+	// Returns an <i> HTML string for a Bootstrap Icon. Use in innerHTML only.
+	function ico(cls, extra) {
+		return '<i class="bi bi-' + cls + (extra ? ' ' + extra : '') + '" aria-hidden="true"></i>';
+	}
+	// Icon map — game concepts → BI class names
+	const ICO = {
+		seed:     'seedling',
+		berry:    'flower1',
+		token:    'coin',
+		heart:    'heart-fill',
+		egg:      'egg-fill',
+		star:     'star-fill',
+		starOff:  'star',
+		fish:     'droplet-fill',
+		fire:     'fire',
+		book:     'book-fill',
+		bookOpen: 'book-open-fill',
+		pc:       'pc-display-horizontal',
+		trade:    'arrow-repeat',
+		contest:  'patch-check-fill',
+		curry:    'cup-hot-fill',
+		play:     'suit-heart-fill',
+		compost:  'recycle',
+		quest:    'clipboard-check-fill',
+		achieve:  'award-fill',
+		trainer:  'person-vcard-fill',
+		postcard: 'envelope-fill',
+		write:    'pencil-fill',
+		readMail: 'envelope-open-fill',
+		gift:     'gift-fill',
+		radar:    'broadcast-pin',
+		scythe:   'scissors',
+		music:    'music-note-beamed',
+		cart:     'cart3-fill',
+		game:     'controller',
+		heal:     'plus-circle-fill',
+		bolt:     'lightning-fill',
+		water:    'water',
+		gem:      'gem',
+		snow:     'snow',
+		moon:     'moon-stars-fill',
+		sun:      'sun-fill',
+		tree:     'tree-fill',
+		sparkle:  'stars',
+		hammer:   'hammer',
+		map:      'map-fill',
+		close:    'x-lg',
+		back:     'arrow-left',
+		next:     'arrow-right-short',
+		check:    'check2-circle',
+		trash:    'trash3-fill',
+		send:     'send-fill',
+		info:     'info-circle-fill',
+		level:    'bar-chart-fill',
+		ribbon:   'patch-check-fill',
+		house:    'house-fill',
+		mail:     'mailbox2-fill',
+		camp:     'tree',
+		npc:      'person-fill',
+		fossil:   'database-fill',
+	};
+	// Shorthand: ico(ICO.seed) → '<i class="bi bi-seedling" …>'
+	// Usage: inner.innerHTML = ico(ICO.book) + ' POKÉDEX';
+
 	const TILE = 16;
 	const MAP_W = 40;
 	const MAP_H = 30;
@@ -98,10 +163,10 @@
 		}
 		function isCaught(id) { return loadData().caught.includes(id); }
 		function checkMilestones(n) {
-			if (n === 10) { showToast('📖 Pokédex milestone: 10 caught! +20🪙'); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+20; Inventory.save(inv); }
-			if (n === 30) { showToast('📖 Pokédex milestone: 30 caught! +50🪙'); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+50; Inventory.save(inv); }
-			if (n === 60) { showToast('📖 Pokédex milestone: 60 caught! +100🪙'); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+100; Inventory.save(inv); }
-			if (n === 100) { showToast('🏆 100 Pokémon caught! Master Trainer!'); Achievements.unlock('dex100'); }
+			if (n === 10) { showToast(ico(ICO.book) + ' Pokédex milestone: 10 caught! +20 ' + ico(ICO.token)); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+20; Inventory.save(inv); }
+			if (n === 30) { showToast(ico(ICO.book) + ' Pokédex milestone: 30 caught! +50 ' + ico(ICO.token)); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+50; Inventory.save(inv); }
+			if (n === 60) { showToast(ico(ICO.book) + ' Pokédex milestone: 60 caught! +100 ' + ico(ICO.token)); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+100; Inventory.save(inv); }
+			if (n === 100) { showToast(ico(ICO.achieve) + ' 100 Pokémon caught! Master Trainer!'); Achievements.unlock('dex100'); }
 		}
 		function open() {
 			let panel = document.getElementById('dexPanel');
@@ -117,9 +182,9 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title">📖 POKÉDEX</span>' +
+				'<span class="pk-modal-title">' + ico(ICO.book) + ' POKÉDEX</span>' +
 				'<span id="dexCounter" style="font-size:9px;color:var(--pk-muted)"></span>' +
-				'<button id="dexClose" class="pk-close" type="button">✕</button>' +
+				'<button id="dexClose" class="pk-close" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -190,8 +255,8 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title">💻 PC BOX</span>' +
-				'<button id="pcBoxClose" class="pk-close" type="button">✕</button>' +
+				'<span class="pk-modal-title">' + ico(ICO.pc) + ' PC BOX</span>' +
+				'<button id="pcBoxClose" class="pk-close" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -205,7 +270,7 @@
 					const formName = FORMS[slot.form] || slot.form;
 					const name = document.createElement('div');
 					name.className = 'pk-box-slot-name';
-					name.textContent = (i === activeIdx ? '★ ' : '') + (slot.nickname || formName);
+					name.innerHTML = (i === activeIdx ? ico(ICO.star) + ' ' : '') + (slot.nickname || formName);
 					const sub = document.createElement('div');
 					sub.className = 'pk-box-slot-sub';
 					sub.textContent = 'Friendship: ' + (slot.friendship||0);
@@ -234,7 +299,7 @@
 			wt.type = 'button';
 			wt.className = 'pk-btn pk-btn-blue pk-btn-full pk-btn-sm';
 			wt.style.marginTop = '4px';
-			wt.textContent = '🔄 Wonder Trade';
+			wt.innerHTML = ico(ICO.trade) + ' Wonder Trade';
 			wt.addEventListener('click', () => WonderTrade.open());
 			body.appendChild(grid);
 			body.appendChild(wt);
@@ -305,8 +370,8 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title" style="color:#88aaff">🔄 WONDER TRADE</span>' +
-				'<button id="wtClose" class="pk-close" style="color:#88aaff" type="button">✕</button>' +
+				'<span class="pk-modal-title" style="color:#88aaff">' + ico(ICO.trade) + ' WONDER TRADE</span>' +
+				'<button id="wtClose" class="pk-close" style="color:#88aaff" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -353,7 +418,7 @@
 					inv2.pcBox.push({ form: received.form, nickname: received.name, friendship: received.friendship, since: Date.now() });
 					Inventory.save(inv2);
 					panel.hidden = true;
-					showToast('🔄 Traded ' + (traded.nickname||traded.form) + ' for ' + received.name + '!');
+					showToast(ico(ICO.trade) + ' Traded ' + (traded.nickname||traded.form) + ' for ' + received.name + '!');
 					Achievements.unlock('wonderTrade');
 				});
 			});
@@ -392,23 +457,23 @@
 			const added = PCBox.addToBox({ form: picked.form, nickname: picked.name, friendship: 0, since: Date.now() });
 			Inventory.save(inv);
 			if (added) {
-				showToast('🥚 Your egg hatched into ' + picked.name + '! Added to PC Box.');
+				showToast(ico(ICO.egg) + ' Your egg hatched into ' + picked.name + '! Added to PC Box.');
 				Achievements.unlock('hatchEgg');
 			} else {
 				inv = Inventory.load();
 				inv.tokens = (inv.tokens || 0) + 30;
 				Inventory.save(inv);
-				showToast('🥚 Egg hatched! PC Box full — got +30🪙 instead.');
+				showToast(ico(ICO.egg) + ' Egg hatched! PC Box full — got +30 ' + ico(ICO.token) + ' instead.');
 			}
 		}
 		function buyEgg() {
 			const inv = Inventory.load();
 			if (inv.egg) { showToast('You already have an egg!'); return; }
-			if ((inv.tokens||0) < 40) { showToast('Need 40🪙 to buy an egg.'); return; }
+			if ((inv.tokens||0) < 40) { showToast('Need 40 ' + ico(ICO.token) + ' to buy an egg.'); return; }
 			inv.tokens -= 40;
 			inv.egg = { steps: 0, target: HATCH_STEPS };
 			Inventory.save(inv);
-			showToast('🥚 Egg acquired! Walk around camp to hatch it (' + HATCH_STEPS + ' steps).');
+			showToast(ico(ICO.egg) + ' Egg acquired! Walk around camp to hatch it (' + HATCH_STEPS + ' steps).');
 		}
 		function status() {
 			const inv = Inventory.load();
@@ -421,11 +486,11 @@
 	// ── Contests ──────────────────────────────────────────────────────────────────
 	const Contests = (() => {
 		const CATEGORIES = [
-			{ id:'cool',      label:'🔥 Cool',      minigame:'rhythm',  desc:'Show off your style!' },
-			{ id:'beautiful', label:'🌊 Beautiful',  minigame:'card',    desc:'Dazzle the judges.' },
-			{ id:'cute',      label:'✨ Cute',       minigame:'rps',     desc:'Win hearts with charm.' },
-			{ id:'clever',    label:'🔮 Clever',     minigame:'sketch',  desc:'Outsmart the competition.' },
-			{ id:'tough',     label:'💪 Tough',     minigame:'card',    desc:'Prove your strength.' },
+			{ id:'cool',      label:ico(ICO.fire)+' Cool',      minigame:'rhythm',  desc:'Show off your style!' },
+			{ id:'beautiful', label:ico(ICO.water)+' Beautiful',  minigame:'card',    desc:'Dazzle the judges.' },
+			{ id:'cute',      label:ico(ICO.sparkle)+' Cute',       minigame:'rps',     desc:'Win hearts with charm.' },
+			{ id:'clever',    label:ico(ICO.gem)+' Clever',     minigame:'sketch',  desc:'Outsmart the competition.' },
+			{ id:'tough',     label:ico(ICO.bolt)+' Tough',     minigame:'card',    desc:'Prove your strength.' },
 		];
 		function open() {
 			let panel = document.getElementById('contestPanel');
@@ -444,8 +509,8 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title" style="color:#f6a0e8">🎀 CONTEST HALL</span>' +
-				'<button id="contestClose" class="pk-close" style="color:#f6a0e8" type="button">✕</button>' +
+				'<span class="pk-modal-title" style="color:#f6a0e8">' + ico(ICO.contest) + ' CONTEST HALL</span>' +
+				'<button id="contestClose" class="pk-close" style="color:#f6a0e8" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -462,7 +527,7 @@
 				const info = document.createElement('div');
 				const nameEl = document.createElement('div');
 				nameEl.className = 'pk-contest-name';
-				nameEl.textContent = cat.label;
+				nameEl.innerHTML = cat.label;
 				const descEl = document.createElement('div');
 				descEl.className = 'pk-contest-desc';
 				descEl.textContent = cat.desc;
@@ -472,7 +537,7 @@
 				if (won) {
 					const ribbon = document.createElement('span');
 					ribbon.style.cssText = 'font-size:18px';
-					ribbon.textContent = '🎀';
+					ribbon.innerHTML = ico(ICO.ribbon);
 					row.appendChild(ribbon);
 				} else {
 					const entBtn = document.createElement('button');
@@ -502,7 +567,7 @@
 							if (!inv2.ribbons) inv2.ribbons = {};
 							inv2.ribbons[cat.id] = true;
 							Inventory.save(inv2);
-							showToast('🎀 Won the ' + cat.label + ' Contest! Ribbon earned!');
+							showToast(ico(ICO.ribbon) + ' Won the ' + cat.label + ' Contest! Ribbon earned!');
 							Achievements.unlock('contestWin');
 							if (Object.keys(inv2.ribbons).length >= 5) Achievements.unlock('contestMaster');
 						} else {
@@ -518,11 +583,11 @@
 	// ── Curry Cooking ─────────────────────────────────────────────────────────────
 	const CurryCooking = (() => {
 		const RECIPES = [
-			{ label: '🍛 Plain Curry',    ingredients: { pecha: 1 }, desc: '+5 friendship',         effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+5); } },
-			{ label: '🍛 Oran Curry',     ingredients: { oran: 1 },  desc: '+15 friendship',        effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+15); } },
-			{ label: '🍛 Sitrus Curry',   ingredients: { sitrus: 1 }, desc: '+30 friendship + heal', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+30); inv.partnerHp = 100; } },
-			{ label: '🍛 Mixed Berry Curry', ingredients: { pecha:1, oran:1 }, desc: '+20 friendship + 10 min rhythm boost', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+20); if(!inv.boosts) inv.boosts={}; inv.boosts.rhythmBoost = Date.now()+10*60*1000; } },
-			{ label: '🍛 Spicy Curry',    ingredients: { pecha:2 },  desc: '+10 friendship + fast-grow 15min', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+10); if(!inv.boosts) inv.boosts={}; inv.boosts.fastGrow = Date.now()+15*60*1000; } },
+			{ label: ico(ICO.curry) + ' Plain Curry',    ingredients: { pecha: 1 }, desc: '+5 friendship',         effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+5); } },
+			{ label: ico(ICO.curry) + ' Oran Curry',     ingredients: { oran: 1 },  desc: '+15 friendship',        effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+15); } },
+			{ label: ico(ICO.curry) + ' Sitrus Curry',   ingredients: { sitrus: 1 }, desc: '+30 friendship + heal', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+30); inv.partnerHp = 100; } },
+			{ label: ico(ICO.curry) + ' Mixed Berry Curry', ingredients: { pecha:1, oran:1 }, desc: '+20 friendship + 10 min rhythm boost', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+20); if(!inv.boosts) inv.boosts={}; inv.boosts.rhythmBoost = Date.now()+10*60*1000; } },
+			{ label: ico(ICO.curry) + ' Spicy Curry',    ingredients: { pecha:2 },  desc: '+10 friendship + fast-grow 15min', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+10); if(!inv.boosts) inv.boosts={}; inv.boosts.fastGrow = Date.now()+15*60*1000; } },
 		];
 		function canMake(recipe) {
 			const inv = Inventory.load();
@@ -549,14 +614,14 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title" style="color:#ff9820">🍛 CURRY COOKING</span>' +
-				'<button id="curryClose" class="pk-close" style="color:#ff9820" type="button">✕</button>' +
+				'<span class="pk-modal-title" style="color:#ff9820">' + ico(ICO.curry) + ' CURRY COOKING</span>' +
+				'<button id="curryClose" class="pk-close" style="color:#ff9820" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
 			const berryLine = document.createElement('div');
 			berryLine.style.cssText = 'font-size:8px;color:#ffc080;margin-bottom:14px;padding:8px 10px;background:rgba(255,136,0,0.08);border-radius:8px;border:1px solid rgba(255,136,0,0.2)';
-			berryLine.textContent = 'Berries: 🦩' + (bt.pecha||0) + '  \uD83FAB' + (bt.oran||0) + '  🍋' + (bt.sitrus||0);
+			berryLine.innerHTML = 'Berries: ' + ico(ICO.berry,'berry-pecha') + (bt.pecha||0) + ' &nbsp;' + ico(ICO.berry,'berry-oran') + (bt.oran||0) + ' &nbsp;' + ico(ICO.berry,'berry-sitrus') + (bt.sitrus||0);
 			body.appendChild(berryLine);
 			const list = document.createElement('div');
 			list.style.cssText = 'display:flex;flex-direction:column;gap:8px';
@@ -599,7 +664,7 @@
 					}
 					recipe.effect(inv2);
 					Inventory.save(inv2);
-					showToast('🍛 ' + recipe.label + ' cooked! ' + recipe.desc);
+					showToast(ico(ICO.curry) + ' ' + recipe.label + ' cooked! ' + recipe.desc);
 					Achievements.unlock('chef');
 					TrainerLevel.addXP('cook');
 					panel.hidden = true;
@@ -631,7 +696,7 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.style.textAlign = 'center';
-			inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">💚 POKÉMON PLAY</span></div>';
+			inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.play) + ' POKÉMON PLAY</span></div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
 			body.innerHTML = '<div id="amieSprite" style="font-size:64px;cursor:pointer;user-select:none;margin:8px 0 4px;display:inline-block;transition:transform 0.1s">🐾</div>' +
@@ -658,7 +723,7 @@
 					const bonus = Math.min(sessionBonus, 5);
 					inv2.friendship = Math.min(100, (inv2.friendship||0) + bonus);
 					Inventory.save(inv2);
-					msg.textContent = '🌟 +' + bonus + ' friendship! Session complete!';
+					msg.innerHTML = ico(ICO.star) + ' +' + bonus + ' friendship! Session complete!';
 					showToast('+' + bonus + ' friendship from playing!');
 				}
 			});
@@ -680,7 +745,7 @@
 	// the callback passed to Battle.start(). Wins award Friendship Berries.
 	const Battle = (() => {
 		const TYPES = ['fire', 'water', 'grass'];
-		const TYPE_EMOJI = { fire: '🔥', water: '💧', grass: '🌿', electric: '⚡', psychic: '🔮', fairy: '✨', normal: '⭐' };
+		const TYPE_ICO = { fire: ICO.fire, water: ICO.water, grass: ICO.tree, electric: ICO.bolt, psychic: ICO.gem, fairy: ICO.sparkle, normal: ICO.star };
 		// Effectiveness multiplier: TYPES[attacker] vs TYPES[defender].
 		// Standard fire→grass, grass→water, water→fire.
 		const EFFECTIVENESS = {
@@ -813,7 +878,7 @@
 		function startCard() {
 			show('card');
 			const foeType = TYPES[Math.floor(Math.random() * TYPES.length)];
-			$('cbCardFoe').textContent = 'A wild ' + (TYPE_EMOJI[foeType] || '') + ' ' + foeType.toUpperCase() + ' Pokémon appears!';
+			$('cbCardFoe').innerHTML = 'A wild ' + (TYPE_ICO[foeType] ? ico(TYPE_ICO[foeType]) + ' ' : '') + foeType.toUpperCase() + ' Pokémon appears!';
 			// Build a hand of three random typed cards (no duplicates).
 			const hand = [...TYPES].sort(() => Math.random() - 0.5);
 			const handEl = $('cbCardHand');
@@ -829,13 +894,13 @@
 				btn.type = 'button';
 				btn.dataset.effect = effClass;
 				btn.dataset.cardType = t; // store type for safe lookup on reveal
-				btn.innerHTML = (TYPE_EMOJI[t] || '') + ' ' + t.toUpperCase() + '<span class="cb-card-tag">(?)</span>';
+				btn.innerHTML = (TYPE_ICO[t] ? ico(TYPE_ICO[t]) + ' ' : '') + t.toUpperCase() + '<span class="cb-card-tag">(?)</span>';
 				btn.addEventListener('click', () => {
 					const won = eff >= 1;
 					res.hidden = false;
 					res.textContent = won
-						? '✅ ' + tag + '! You won the battle.'
-						: '❌ ' + tag + '. The wild Pokémon got away.';
+						? ico(ICO.check) + ' ' + tag + '! You won the battle.'
+						: ico('x-circle-fill') + ' ' + tag + '. The wild Pokémon got away.';
 					handEl.querySelectorAll('button').forEach(b => {
 						b.disabled = true;
 						const bType = b.dataset.cardType;
@@ -862,11 +927,11 @@
 				const player = e.currentTarget.dataset.type;
 				const ai = TYPES[Math.floor(Math.random() * TYPES.length)];
 				btns.forEach(b => { b.disabled = true; });
-				foe.textContent = 'Foe picked ' + (TYPE_EMOJI[ai] || '') + ' ' + ai.toUpperCase() + '. You picked ' + (TYPE_EMOJI[player] || '') + ' ' + player.toUpperCase() + '.';
+				foe.innerHTML = 'Foe picked ' + (TYPE_ICO[ai] ? ico(TYPE_ICO[ai]) + ' ' : '') + ai.toUpperCase() + '. You picked ' + (TYPE_ICO[player] ? ico(TYPE_ICO[player]) + ' ' : '') + player.toUpperCase() + '.';
 				const eff = EFFECTIVENESS[player][ai];
 				const won = eff >= 1;
 				res.hidden = false;
-				res.textContent = eff > 1 ? '✅ Super effective! You won.' : eff < 1 ? '❌ Not very effective. You lost.' : '🤝 Standoff — you held your ground.';
+				res.innerHTML = eff > 1 ? ico(ICO.check) + ' Super effective! You won.' : eff < 1 ? ico('x-circle-fill') + ' Not very effective. You lost.' : ico('dash-circle-fill') + ' Standoff — you held your ground.';
 				btns.forEach(b => b.removeEventListener('click', handler));
 				setTimeout(() => end(won, 1), 1500);
 			};
@@ -915,7 +980,7 @@
 				if (raf) cancelAnimationFrame(raf);
 				document.removeEventListener('keydown', onKey);
 				res.hidden = false;
-				res.textContent = won ? '✅ Rhythm mastered!' : '❌ Out of sync.';
+				res.innerHTML = won ? ico(ICO.check) + ' Rhythm mastered!' : ico('x-circle-fill') + ' Out of sync.';
 				if (won) { DailyQuests.increment('rhythm'); Achievements.increment('rhythm100'); TrainerLevel.addXP('rhythm'); }
 				setTimeout(() => end(won, won ? hits : 0), 1300);
 			};
@@ -983,7 +1048,7 @@
 					[...btns.querySelectorAll('button')].forEach(x => { x.disabled = true; });
 					const won = p.id === correct.id;
 					res.hidden = false;
-					res.textContent = won ? '✅ It was ' + correct.name + '!' : '❌ It was actually ' + correct.name + '.';
+					res.innerHTML = won ? ico(ICO.check) + ' It was ' + correct.name + '!' : ico('x-circle-fill') + ' It was actually ' + correct.name + '.';
 					setTimeout(() => end(won, 1), 1600);
 				}, { once: true });
 				btns.appendChild(b);
@@ -996,7 +1061,7 @@
 			if (won) { Stats.increment('totalCatches'); Sound.win(); } else Sound.lose();
 			$('cbEndTitle').textContent = won ? 'You Won!' : 'You Lost!';
 			let bodyMsg = won
-				? '+1 Friendship Berry 🍓 added to your bag.'
+				? '+1 Friendship Berry ' + ico(ICO.berry) + ' added to your bag.'
 				: 'The wild Pokémon fled with the prize. Try again!';
 			if (won) {
 				const inv = Inventory.load();
@@ -1016,12 +1081,12 @@
 				if (rawBonus > 1 && window.__rhythmMult) tokenBonus = Math.round(tokenBonus * window.__rhythmMult);
 				if (tokenBonus > 0) {
 					inv.tokens = (inv.tokens || 0) + tokenBonus;
-					bodyMsg += ' +' + tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' 🪙';
+					bodyMsg += ' +' + tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' ' + ico(ICO.token);
 				}
 				Inventory.save(inv);
 				if ((inv.tokens || 0) >= 500) Achievements.unlock('shopkeeper');
 				DailyQuests.increment('minigame');
-				showToast && showToast('+' + (tokenBonus > 0 ? tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' 🪙' : '1 Berry 🍓'));
+				showToast && showToast('+' + (tokenBonus > 0 ? tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' ' + ico(ICO.token) : '1 Berry ' + ico(ICO.berry)));
 			}
 			// Radar encounter doubles berry/token reward
 			if (window.__radarEncounter && won) {
@@ -1040,7 +1105,7 @@
 				catchBtn.type = 'button';
 				catchBtn.style.cssText = 'margin-top:8px;font-size:9px';
 				const alreadyCaught = Pokedex.isCaught(_currentEncounter.id);
-				catchBtn.textContent = alreadyCaught ? '✅ Already Caught' : '🎳 Throw Ball (5🪙)';
+				catchBtn.innerHTML = alreadyCaught ? ico(ICO.check) + ' Already Caught' : ico(ICO.bolt) + ' Throw Ball (5 ' + ico(ICO.token) + ')';
 				catchBtn.disabled = alreadyCaught;
 				catchBtn.addEventListener('click', () => {
 					if (alreadyCaught) return;
@@ -1049,10 +1114,10 @@
 					inv.tokens -= 5;
 					Inventory.save(inv);
 					Pokedex.markCaught(_currentEncounter.id);
-					catchBtn.textContent = '🎉 Caught ' + _currentEncounter.name + '!';
+					catchBtn.innerHTML = ico(ICO.check) + ' Caught ' + _currentEncounter.name + '!';
 					catchBtn.disabled = true;
 					Achievements.unlock('firstCatch');
-					showToast('🎳 ' + _currentEncounter.name + ' caught and added to Pokédex!');
+					showToast(ico(ICO.check) + ' ' + _currentEncounter.name + ' caught and added to Pokédex!');
 				}, { once: true });
 				const endBody = $('cbEndBody');
 				if (endBody && endBody.parentElement) {
@@ -1167,7 +1232,7 @@
 					upgradeBtn.textContent = 'Plot Max';
 					upgradeBtn.disabled = true;
 				} else {
-					upgradeBtn.textContent = 'Upgrade → Lv' + (lvl + 2) + ' · ' + cost + '🪙';
+					upgradeBtn.innerHTML = 'Upgrade → Lv' + (lvl + 2) + ' · ' + cost + ' ' + ico(ICO.token);
 					upgradeBtn.disabled = (inv.tokens || 0) < cost;
 				}
 			}
@@ -1179,21 +1244,21 @@
 				const active = (cosm.wallpaper || 'default') === key;
 				b.disabled = active || tokens < COSM_PRICE.wallpaper;
 				b.classList.toggle('cm-cosm-owned', active);
-				b.textContent = active ? '✓ Active' : b.dataset.label;
+				b.innerHTML = active ? ico(ICO.check) + ' Active' : b.dataset.label;
 			});
 			document.querySelectorAll('[data-buy-accent]').forEach(b => {
 				const key = b.dataset.buyAccent;
 				const active = (cosm.accent || 'default') === key;
 				b.disabled = active || tokens < COSM_PRICE.accent;
 				b.classList.toggle('cm-cosm-owned', active);
-				b.textContent = active ? '✓ Active' : b.dataset.label;
+				b.innerHTML = active ? ico(ICO.check) + ' Active' : b.dataset.label;
 			});
 			document.querySelectorAll('[data-buy-scale]').forEach(b => {
 				const key = b.dataset.buyScale;
 				const active = (cosm.partnerScale || 'normal') === key;
 				b.disabled = active || (key !== 'normal' && tokens < COSM_PRICE.scale);
 				b.classList.toggle('cm-cosm-owned', active);
-				b.textContent = active ? '✓ Active' : b.dataset.label;
+				b.innerHTML = active ? ico(ICO.check) + ' Active' : b.dataset.label;
 			});
 			document.querySelectorAll('[data-buy-decor]').forEach(b => {
 				const key = b.dataset.buyDecor;
@@ -1201,8 +1266,8 @@
 				b.disabled = owned || tokens < COSM_PRICE[key];
 				b.classList.toggle('cm-cosm-owned', owned);
 				b.textContent = owned
-					? '✓ ' + b.dataset.label + ' (placed)'
-					: b.dataset.label + ' · ' + (b.dataset.price || COSM_PRICE[key]) + '💰';
+					? ico(ICO.check) + ' ' + b.dataset.label + ' (placed)'
+					: b.dataset.label + ' · ' + (b.dataset.price || COSM_PRICE[key]) + ' ' + ico(ICO.token);
 			});
 		}
 		function setStatus(msg) {
@@ -1331,7 +1396,7 @@
 			$('cmBuyRadar') && $('cmBuyRadar').addEventListener('click', () => {
 				const inv = Inventory.load();
 				if (inv.pokeRadar) { setStatus('Already owned!'); return; }
-				if ((inv.tokens||0) < 80) { setStatus('Need 80🪙'); return; }
+				if ((inv.tokens||0) < 80) { setStatus('Need 80 ' + ico(ICO.token)); return; }
 				inv.tokens -= 80;
 				inv.pokeRadar = true;
 				Inventory.save(inv);
@@ -1341,7 +1406,7 @@
 			$('cmBuyRockSmash') && $('cmBuyRockSmash').addEventListener('click', () => {
 				const inv = Inventory.load();
 				if (inv.hasRockSmash) { setStatus('Already have Rock Smash!'); return; }
-				if ((inv.tokens||0) < 60) { setStatus('Need 60🪙'); return; }
+				if ((inv.tokens||0) < 60) { setStatus('Need 60 ' + ico(ICO.token)); return; }
 				inv.tokens -= 60;
 				inv.hasRockSmash = true;
 				Inventory.save(inv);
@@ -1531,7 +1596,7 @@
 			if (tokEl) tokEl.textContent = tokens;
 
 			const sceneLbl = $('creSceneLabel');
-			if (sceneLbl) sceneLbl.textContent = activeScene === 'house' ? '🏠 Ground Floor' : '🛏 Bedroom';
+			if (sceneLbl) sceneLbl.innerHTML = activeScene === 'house' ? ico(ICO.house) + ' Ground Floor' : ico(ICO.house) + ' Bedroom';
 
 			const placedCount = Object.keys(placements).filter(k => items[k]).length;
 			const ownedCount  = roomItems.filter(k => items[k]).length;
@@ -1544,7 +1609,7 @@
 					const item = items[placingKey];
 					banner.hidden = false;
 					const lbl = banner.querySelector('.cre-placing-label');
-					if (lbl) lbl.textContent = 'Click a tile to place ' + (item?.emoji || '') + ' ' + (item?.label?.replace(/^\S+\s/, '') || '');
+					if (lbl) lbl.innerHTML = 'Click a tile to place ' + (item?.icoKey ? ico(ICO[item.icoKey]||item.icoKey)+' ' : '') + (item?.label || '');
 				} else {
 					banner.hidden = true;
 				}
@@ -1555,7 +1620,7 @@
 			Object.entries(items).forEach(([key, item]) => {
 				(item.cat === 'decor' ? cats.decor : cats.furniture).push([key, item]);
 			});
-			const catLabels = { furniture: '🪑 Furniture', decor: '🌸 Decor' };
+			const catLabels = { furniture: ico(ICO.game) + ' Furniture', decor: ico(ICO.sparkle) + ' Decor' };
 
 			Object.entries(cats).forEach(([cat, entries]) => {
 				if (!entries.length) return;
@@ -1758,24 +1823,24 @@
 			const extraEl = $('cpInfoExtra');
 			if (extraEl) {
 				const days = Math.floor((Date.now() - inv.partnerSince) / 86400000);
-				const infoLines = ['🕑 ' + days + ' day' + (days !== 1 ? 's' : '') + ' together'];
-				if (inv.friendship >= FRIENDSHIP_MAX && inv.eeveeForm === 'eevee' && inv.stone) infoLines.push('⚡ Ready to evolve! Feed a berry.');
+				const infoLines = [ico('clock-history') + ' ' + days + ' day' + (days !== 1 ? 's' : '') + ' together'];
+				if (inv.friendship >= FRIENDSHIP_MAX && inv.eeveeForm === 'eevee' && inv.stone) infoLines.push(ico(ICO.bolt) + ' Ready to evolve! Feed a berry.');
 				if (inv.boosts) {
 					const _now = Date.now();
-					if (inv.boosts.rhythmBoost > _now) infoLines.push('☕ Rhythm boost: ' + Math.ceil((inv.boosts.rhythmBoost - _now) / 60000) + 'min left');
-					if (inv.boosts.fastGrow > _now) infoLines.push('🍵 Fast-grow: ' + Math.ceil((inv.boosts.fastGrow - _now) / 60000) + 'min left');
+					if (inv.boosts.rhythmBoost > _now) infoLines.push(ico(ICO.music) + ' Rhythm boost: ' + Math.ceil((inv.boosts.rhythmBoost - _now) / 60000) + 'min left');
+					if (inv.boosts.fastGrow > _now) infoLines.push(ico(ICO.seed) + ' Fast-grow: ' + Math.ceil((inv.boosts.fastGrow - _now) / 60000) + 'min left');
 				}
 				// Show partner passive ability
 				if (typeof getPartnerPassive === 'function') {
 					const pp = getPartnerPassive();
 					const passiveLabels = [];
-					if (pp.fishingBonus) passiveLabels.push('🎣 Wider fishing zone');
-					if (pp.rhythmTokenBonus > 0) passiveLabels.push('🎵 +' + pp.rhythmTokenBonus + ' rhythm token');
-					if (pp.rhythmSpeedPenalty < 1) passiveLabels.push('⚡ Slower rhythm cursor');
-					if (pp.growSpeedBonus > 0) passiveLabels.push('🌱 Faster berry growth');
-					if (pp.questRewardBonus > 0) passiveLabels.push('📋 +' + pp.questRewardBonus + ' quest tokens');
-					if (pp.dailyCooldownMult < 1) passiveLabels.push('🌙 Shorter daily cooldown');
-					if (passiveLabels.length > 0) infoLines.push('✨ ' + passiveLabels.join(', '));
+					if (pp.fishingBonus) passiveLabels.push(ico(ICO.fish) + ' Wider fishing zone');
+					if (pp.rhythmTokenBonus > 0) passiveLabels.push(ico(ICO.music) + ' +' + pp.rhythmTokenBonus + ' rhythm token');
+					if (pp.rhythmSpeedPenalty < 1) passiveLabels.push(ico(ICO.bolt) + ' Slower rhythm cursor');
+					if (pp.growSpeedBonus > 0) passiveLabels.push(ico(ICO.seed) + ' Faster berry growth');
+					if (pp.questRewardBonus > 0) passiveLabels.push(ico(ICO.quest) + ' +' + pp.questRewardBonus + ' quest tokens');
+					if (pp.dailyCooldownMult < 1) passiveLabels.push(ico(ICO.moon) + ' Shorter daily cooldown');
+					if (passiveLabels.length > 0) infoLines.push(ico(ICO.sparkle) + ' ' + passiveLabels.join(', '));
 				}
 				extraEl.textContent = infoLines.join('  ·  ');
 			}
@@ -1911,9 +1976,9 @@
 	const SEED_PRICE = 5;
 	const BERRY_PRICE = 10;
 	const BERRY_TYPES = {
-		pecha:  { label: 'Pecha Berry',  emoji: '🩷', growMs: 30000,  friendship: 20, sellPrice: 10, color: '#ffaacc' },
-		oran:   { label: 'Oran Berry',   emoji: '🫐', growMs: 90000,  friendship: 35, sellPrice: 18, color: '#6688ff' },
-		sitrus: { label: 'Sitrus Berry', emoji: '🍋', growMs: 180000, friendship: 50, sellPrice: 30, color: '#ffdd44' },
+		pecha:  { label: 'Pecha Berry',  icoKey: 'berry', growMs: 30000,  friendship: 20, sellPrice: 10, color: '#ffaacc' },
+		oran:   { label: 'Oran Berry',   icoKey: 'berry', growMs: 90000,  friendship: 35, sellPrice: 18, color: '#6688ff' },
+		sitrus: { label: 'Sitrus Berry', icoKey: 'berry', growMs: 180000, friendship: 50, sellPrice: 30, color: '#ffdd44' },
 	};
 	const SCYTHE_PRICE = 75;
 	const SCYTHE_RADIUS = 3; // Manhattan radius around the player for a single swing
@@ -1961,48 +2026,48 @@
 	const COSM_PRICE = { wallpaper: 15, accent: 20, scale: 10, flowers: 25, lantern: 30 };
 	const ROOM_ITEMS = {
 		// Furniture
-		bed:          { label: 'Bed',           price: 50, emoji: '🛏️', r: 4, c: 5,  cat: 'furniture' },
-		desk:         { label: 'Study Desk',    price: 30, emoji: '🖥️', r: 3, c: 8,  cat: 'furniture' },
-		dresser:      { label: 'Dresser',       price: 35, emoji: '🗄️', r: 3, c: 11, cat: 'furniture' },
-		wardrobe:     { label: 'Wardrobe',      price: 45, emoji: '🚪', r: 6, c: 13, cat: 'furniture' },
-		lamp:         { label: 'Cozy Lamp',     price: 20, emoji: '🪔', r: 3, c: 9,  cat: 'furniture' },
-		radio:        { label: 'Music Player',  price: 25, emoji: '📻', r: 3, c: 2,  cat: 'furniture' },
-		mirror:       { label: 'Mirror',        price: 30, emoji: '🪞', r: 6, c: 2,  cat: 'furniture' },
-		gaming:       { label: 'Game Console',  price: 35, emoji: '🎮', r: 3, c: 6,  cat: 'furniture' },
-		curtain:      { label: 'Red Curtain',   price: 20, emoji: '🪟', r: 2, c: 10, cat: 'furniture' },
-		curtain_green:{ label: 'Green Curtain', price: 20, emoji: '🪟', r: 2, c: 12, cat: 'furniture' },
-		stool:        { label: 'Round Stool',   price: 20, emoji: '🪑', r: 5, c: 7,  cat: 'furniture' },
-		nightstand:   { label: 'Nightstand',    price: 25, emoji: '🗄️', r: 4, c: 9,  cat: 'furniture' },
-		armchair:     { label: 'Armchair',      price: 40, emoji: '💺', r: 7, c: 3,  cat: 'furniture' },
+		bed:          { label: 'Bed',           price: 50, icoKey: 'house',   r: 4, c: 5,  cat: 'furniture' },
+		desk:         { label: 'Study Desk',    price: 30, icoKey: 'pc',      r: 3, c: 8,  cat: 'furniture' },
+		dresser:      { label: 'Dresser',       price: 35, icoKey: 'house',   r: 3, c: 11, cat: 'furniture' },
+		wardrobe:     { label: 'Wardrobe',      price: 45, icoKey: 'house', r: 6, c: 13, cat: 'furniture' },
+		lamp:         { label: 'Cozy Lamp',     price: 20, icoKey: 'sun', r: 3, c: 9,  cat: 'furniture' },
+		radio:        { label: 'Music Player',  price: 25, icoKey: 'music', r: 3, c: 2,  cat: 'furniture' },
+		mirror:       { label: 'Mirror',        price: 30, icoKey: 'sparkle', r: 6, c: 2,  cat: 'furniture' },
+		gaming:       { label: 'Game Console',  price: 35, icoKey: 'game',    r: 3, c: 6,  cat: 'furniture' },
+		curtain:      { label: 'Red Curtain',   price: 20, icoKey: 'house', r: 2, c: 10, cat: 'furniture' },
+		curtain_green:{ label: 'Green Curtain', price: 20, icoKey: 'house', r: 2, c: 12, cat: 'furniture' },
+		stool:        { label: 'Round Stool',   price: 20, icoKey: 'house',   r: 5, c: 7,  cat: 'furniture' },
+		nightstand:   { label: 'Nightstand',    price: 25, icoKey: 'house', r: 4, c: 9,  cat: 'furniture' },
+		armchair:     { label: 'Armchair',      price: 40, icoKey: 'house', r: 7, c: 3,  cat: 'furniture' },
 		// Decor
-		plant:        { label: 'Indoor Plant',  price: 20, emoji: '🪴', r: 6, c: 9,  cat: 'decor' },
-		flowerplant:  { label: 'Flower Plant',  price: 25, emoji: '🌸', r: 7, c: 11, cat: 'decor' },
-		poster:       { label: 'Wall Art',      price: 15, emoji: '🖼️', r: 2, c: 6,  cat: 'decor' },
-		trophy:       { label: 'Trophy',        price: 40, emoji: '🏆', r: 2, c: 2,  cat: 'decor' },
-		book:         { label: 'Story Books',   price: 15, emoji: '📖', r: 2, c: 4,  cat: 'decor' },
-		bear:         { label: 'Stuffed Bear',  price: 15, emoji: '🧸', r: 6, c: 7,  cat: 'decor' },
-		stars:        { label: 'Star Mobile',   price: 25, emoji: '⭐', r: 5, c: 4,  cat: 'decor' },
-		barrel:       { label: 'Barrel',        price: 20, emoji: '🪣', r: 8, c: 12, cat: 'decor' },
+		plant:        { label: 'Indoor Plant',  price: 20, icoKey: 'tree', r: 6, c: 9,  cat: 'decor' },
+		flowerplant:  { label: 'Flower Plant',  price: 25, icoKey: 'seed',    r: 7, c: 11, cat: 'decor' },
+		poster:       { label: 'Wall Art',      price: 15, icoKey: 'sparkle', r: 2, c: 6,  cat: 'decor' },
+		trophy:       { label: 'Trophy',        price: 40, icoKey: 'achieve', r: 2, c: 2,  cat: 'decor' },
+		book:         { label: 'Story Books',   price: 15, icoKey: 'book',    r: 2, c: 4,  cat: 'decor' },
+		bear:         { label: 'Stuffed Bear',  price: 15, icoKey: 'heart', r: 6, c: 7,  cat: 'decor' },
+		stars:        { label: 'Star Mobile',   price: 25, icoKey: 'star',    r: 5, c: 4,  cat: 'decor' },
+		barrel:       { label: 'Barrel',        price: 20, icoKey: 'house', r: 8, c: 12, cat: 'decor' },
 	};
 
 	const HOUSE_ITEMS = {
 		// Furniture
-		tv:         { label: 'Television',    price: 40, emoji: '📺', r: 2, c: 5,  cat: 'furniture' },
-		couch:      { label: 'Red Couch',     price: 35, emoji: '🛋️', r: 5, c: 4,  cat: 'furniture' },
-		armchair:   { label: 'Armchair',      price: 40, emoji: '💺', r: 5, c: 8,  cat: 'furniture' },
-		bookcase:   { label: 'Bookcase',      price: 30, emoji: '📚', r: 2, c: 9,  cat: 'furniture' },
-		clock:      { label: 'Wall Clock',    price: 25, emoji: '🕰️', r: 2, c: 7,  cat: 'furniture' },
-		floorlamp:  { label: 'Floor Lamp',    price: 20, emoji: '🕯️', r: 5, c: 13, cat: 'furniture' },
-		sidetable:  { label: 'Side Table',    price: 25, emoji: '🪵', r: 4, c: 11, cat: 'furniture' },
+		tv:         { label: 'Television',    price: 40, icoKey: 'pc', r: 2, c: 5,  cat: 'furniture' },
+		couch:      { label: 'Red Couch',     price: 35, icoKey: 'house', r: 5, c: 4,  cat: 'furniture' },
+		armchair:   { label: 'Armchair',      price: 40, icoKey: 'house', r: 5, c: 8,  cat: 'furniture' },
+		bookcase:   { label: 'Bookcase',      price: 30, icoKey: 'book', r: 2, c: 9,  cat: 'furniture' },
+		clock:      { label: 'Wall Clock',    price: 25, icoKey: 'info', r: 2, c: 7,  cat: 'furniture' },
+		floorlamp:  { label: 'Floor Lamp',    price: 20, icoKey: 'sun', r: 5, c: 13, cat: 'furniture' },
+		sidetable:  { label: 'Side Table',    price: 25, icoKey: 'house', r: 4, c: 11, cat: 'furniture' },
 		// Decor
-		plant:      { label: 'Floor Plant',   price: 20, emoji: '🌿', r: 2, c: 2,  cat: 'decor' },
-		flowerplant:{ label: 'Flower Plant',  price: 25, emoji: '🌸', r: 8, c: 8,  cat: 'decor' },
-		kettle:     { label: 'Tea Kettle',    price: 15, emoji: '🫖', r: 9, c: 4,  cat: 'decor' },
-		vase:       { label: 'Flower Vase',   price: 20, emoji: '💐', r: 9, c: 11, cat: 'decor' },
-		frame:      { label: 'Photo Frame',   price: 15, emoji: '🖼️', r: 2, c: 11, cat: 'decor' },
-		plush:      { label: 'Plush Cat',     price: 25, emoji: '🐱', r: 7, c: 12, cat: 'decor' },
-		barrel:     { label: 'Barrel',        price: 20, emoji: '🪣', r: 9, c: 7,  cat: 'decor' },
-		chest:      { label: 'Treasure Chest',price: 30, emoji: '📦', r: 9, c: 13, cat: 'decor' },
+		plant:      { label: 'Floor Plant',   price: 20, icoKey: 'tree',    r: 2, c: 2,  cat: 'decor' },
+		flowerplant:{ label: 'Flower Plant',  price: 25, icoKey: 'seed',    r: 8, c: 8,  cat: 'decor' },
+		kettle:     { label: 'Tea Kettle',    price: 15, icoKey: 'curry', r: 9, c: 4,  cat: 'decor' },
+		vase:       { label: 'Flower Vase',   price: 20, icoKey: 'seed', r: 9, c: 11, cat: 'decor' },
+		frame:      { label: 'Photo Frame',   price: 15, icoKey: 'sparkle', r: 2, c: 11, cat: 'decor' },
+		plush:      { label: 'Plush Cat',     price: 25, icoKey: 'heart', r: 7, c: 12, cat: 'decor' },
+		barrel:     { label: 'Barrel',        price: 20, icoKey: 'house',   r: 9, c: 7,  cat: 'decor' },
+		chest:      { label: 'Treasure Chest',price: 30, icoKey: 'gift', r: 9, c: 13, cat: 'decor' },
 	};
 
 	// ── Furniture pixel-art sprites ──────────────────────────────────────────────
@@ -2518,7 +2583,7 @@
 			const src = get(key);
 			if (!src) {
 				const span = document.createElement('span');
-				span.textContent = (ROOM_ITEMS[key] || HOUSE_ITEMS[key] || {}).emoji || '';
+				span.innerHTML = (() => { const _it = ROOM_ITEMS[key] || HOUSE_ITEMS[key] || {}; return _it.icoKey ? ico(ICO[_it.icoKey]||_it.icoKey) : ''; })();
 				span.style.fontSize = (sizePx || 22) + 'px';
 				return span;
 			}
@@ -2618,7 +2683,7 @@
 							if (msg) {
 								parsed.lastLogin = Date.now();
 								localStorage.setItem(INVENTORY_KEY, JSON.stringify(parsed));
-								setTimeout(() => { if (typeof showToast !== 'undefined') showToast('🌿 Your Pokémon explored! ' + msg); }, 2000);
+								setTimeout(() => { if (typeof showToast !== 'undefined') showToast(ico(ICO.camp) + ' Your Pokémon explored! ' + msg); }, 2000);
 							}
 						}
 					}
@@ -3546,13 +3611,13 @@
 			}
 			// Sync music button label.
 			const musicBtn = document.getElementById('campPauseMusic');
-			if (musicBtn) musicBtn.textContent = '🎵 Music: ' + (Music.isEnabled() ? 'On' : 'Off');
+			if (musicBtn) musicBtn.innerHTML = ico(ICO.music) + ' Music: ' + (Music.isEnabled() ? 'On' : 'Off');
 		};
 
 		resumeBtn.addEventListener('click', close);
 		_pauseToggleFn = () => { panel.hidden ? open() : close(); };
 
-		// 💾 Save button — writes the current timestamp to localStorage.
+		// Save button — writes the current timestamp to localStorage.
 		const saveBtn = document.getElementById('campPauseSave');
 		if (saveBtn) {
 			saveBtn.addEventListener('click', () => {
@@ -3563,11 +3628,11 @@
 			});
 		}
 
-		// 🎵 Music toggle.
+		// Music toggle.
 		const musicBtn = document.getElementById('campPauseMusic');
 		if (musicBtn) {
 			// Sync initial label with saved preference (HTML default is "On").
-			musicBtn.textContent = '🎵 Music: ' + (Music.isEnabled() ? 'On' : 'Off');
+			musicBtn.innerHTML = ico(ICO.music) + ' Music: ' + (Music.isEnabled() ? 'On' : 'Off');
 			musicBtn.addEventListener('click', () => {
 				const next = !Music.isEnabled();
 				Music.setEnabled(next);
@@ -3577,7 +3642,7 @@
 					const sceneKey = _pausedKeys[0];
 					if (sceneKey && ['camp', 'house', 'upstairs'].includes(sceneKey)) Music.start(sceneKey);
 				}
-				musicBtn.textContent = '🎵 Music: ' + (next ? 'On' : 'Off');
+				musicBtn.innerHTML = ico(ICO.music) + ' Music: ' + (next ? 'On' : 'Off');
 			});
 		}
 
@@ -3836,16 +3901,16 @@
 	function getSeasonalItems() {
 		const month = new Date().getMonth(); // 0-11
 		if (month >= 2 && month <= 4) return [ // Spring: Mar-May
-			{ label: '🌸 Sakura Bundle', cost: 12, action: 'cafeBuy', gives: 'berry', amount: 4 },
+			{ label: ico(ICO.sparkle) + ' Sakura Bundle', cost: 12, action: 'cafeBuy', gives: 'berry', amount: 4 },
 		];
 		if (month >= 5 && month <= 7) return [ // Summer: Jun-Aug
-			{ label: '🌻 Summer Seed Pack', cost: 8, action: 'cafeBuy', gives: 'seed', amount: 3 },
+			{ label: ico(ICO.sun) + ' Summer Seed Pack', cost: 8, action: 'cafeBuy', gives: 'seed', amount: 3 },
 		];
 		if (month >= 8 && month <= 10) return [ // Autumn: Sep-Nov
-			{ label: '🍂 Harvest Basket', cost: 10, action: 'cafeBuy', gives: 'berry', amount: 6 },
+			{ label: ico(ICO.tree) + ' Harvest Basket', cost: 10, action: 'cafeBuy', gives: 'berry', amount: 6 },
 		];
 		return [ // Winter: Dec-Feb
-			{ label: '❄️ Warm Brew', cost: 6, action: 'cafeBuy', gives: 'berry', amount: 2 },
+			{ label: ico(ICO.snow) + ' Warm Brew', cost: 6, action: 'cafeBuy', gives: 'berry', amount: 2 },
 		];
 	}
 
@@ -3854,58 +3919,58 @@
 		general: {
 			title: "Pikachu's Mart",
 			items: [
-				{ label: '🌱 Berry Seed',         cost: 5,  action: 'buySeed' },
-				{ label: '🍓 Sell 1 Berry',       sells: 10, action: 'sellBerry' },
-				{ label: '🍓 Sell All Berries',   sells: 10, action: 'sellAllBerries' },
+				{ label: ico(ICO.seed) + ' Berry Seed',         cost: 5,  action: 'buySeed' },
+				{ label: ico(ICO.berry) + ' Sell 1 Berry',       sells: 10, action: 'sellBerry' },
+				{ label: ico(ICO.berry) + ' Sell All Berries',   sells: 10, action: 'sellAllBerries' },
 			],
 		},
 		berries: {
 			title: 'Berry Stand',
 			items: [
-				{ label: '🍓 Sell 1 Berry',     sells: 10, action: 'sellBerry' },
-				{ label: '🍓 Sell All Berries', sells: 10, action: 'sellAllBerries' },
-				{ label: '🌱 Berry Seed',       cost: 5,  action: 'buySeed' },
+				{ label: ico(ICO.berry) + ' Sell 1 Berry',     sells: 10, action: 'sellBerry' },
+				{ label: ico(ICO.berry) + ' Sell All Berries', sells: 10, action: 'sellAllBerries' },
+				{ label: ico(ICO.seed) + ' Berry Seed',       cost: 5,  action: 'buySeed' },
 			],
 		},
 		cosmetics: {
 			title: 'Vaporeon Boutique',
 			items: [
-				{ label: '🌸 Sakura Wallpaper',  cost: 15, action: 'buyWallpaper', key: 'sakura'  },
-				{ label: '🌊 Ocean Wallpaper',   cost: 15, action: 'buyWallpaper', key: 'ocean'   },
-				{ label: '🌲 Forest Wallpaper',  cost: 15, action: 'buyWallpaper', key: 'forest'  },
-				{ label: '⭐ Dusk Wallpaper',    cost: 15, action: 'buyWallpaper', key: 'dusk'    },
-				{ label: '🔴 Red Accent',        cost: 20, action: 'buyAccent',    key: 'red'    },
-				{ label: '🔵 Blue Accent',       cost: 20, action: 'buyAccent',    key: 'blue'   },
-				{ label: '🟢 Green Accent',      cost: 20, action: 'buyAccent',    key: 'green'  },
+				{ label: ico(ICO.sparkle) + ' Sakura Wallpaper',  cost: 15, action: 'buyWallpaper', key: 'sakura'  },
+				{ label: ico(ICO.water) + ' Ocean Wallpaper',   cost: 15, action: 'buyWallpaper', key: 'ocean'   },
+				{ label: ico(ICO.tree) + ' Forest Wallpaper',  cost: 15, action: 'buyWallpaper', key: 'forest'  },
+				{ label: ico(ICO.star) + ' Dusk Wallpaper',    cost: 15, action: 'buyWallpaper', key: 'dusk'    },
+				{ label: ico('circle-fill') + ' Red Accent',        cost: 20, action: 'buyAccent',    key: 'red'    },
+				{ label: ico('circle-fill') + ' Blue Accent',       cost: 20, action: 'buyAccent',    key: 'blue'   },
+				{ label: ico('circle-fill') + ' Green Accent',      cost: 20, action: 'buyAccent',    key: 'green'  },
 			],
 		},
 		stones: {
 			title: 'Umbreon Stone Vendor',
 			items: [
-				{ label: '🔥 Fire Stone',    cost: 50, action: 'buyStone', key: 'fire'    },
-				{ label: '⚡ Thunder Stone', cost: 50, action: 'buyStone', key: 'thunder' },
-				{ label: '🌿 Leaf Stone',    cost: 50, action: 'buyStone', key: 'leaf'    },
-				{ label: '🧊 Ice Stone',     cost: 50, action: 'buyStone', key: 'ice'     },
-				{ label: '💎 Shiny Stone',   cost: 50, action: 'buyStone', key: 'shiny'   },
+				{ label: ico(ICO.fire) + ' Fire Stone',    cost: 50, action: 'buyStone', key: 'fire'    },
+				{ label: ico(ICO.bolt) + ' Thunder Stone', cost: 50, action: 'buyStone', key: 'thunder' },
+				{ label: ico(ICO.tree) + ' Leaf Stone',    cost: 50, action: 'buyStone', key: 'leaf'    },
+				{ label: ico(ICO.snow) + ' Ice Stone',     cost: 50, action: 'buyStone', key: 'ice'     },
+				{ label: ico(ICO.gem) + ' Shiny Stone',   cost: 50, action: 'buyStone', key: 'shiny'   },
 			],
 		},
 		pokecenter: {
 			title: "Pokémon Center",
 			items: [
-				{ label: '💊 Heal Partner Pokémon', cost: 0, action: 'healPokemon' },
-				{ label: '🍓 Complimentary Berry',  cost: 0, action: 'freeBerry'   },
+				{ label: ico(ICO.heal) + ' Heal Partner Pokémon', cost: 0, action: 'healPokemon' },
+				{ label: ico(ICO.berry) + ' Complimentary Berry',  cost: 0, action: 'freeBerry'   },
 			],
 		},
 		cafe: {
 			title: "Jolteon's Café",
 			items: [
-				{ label: '☕ Espresso Shot',    cost: 8,  action: 'cafeBuy', gives: 'seed',     amount: 1 },
-				{ label: '🧋 Bubble Tea',       cost: 10, action: 'cafeBuy', gives: 'berry',    amount: 3 },
-				{ label: '🍰 Berry Cake',       cost: 15, action: 'cafeBuy', gives: 'berry',    amount: 5 },
-				{ label: '🍵 Herbal Tea',       cost: 18, action: 'cafeBuy', gives: 'seed',     amount: 2 },
-				{ label: '🥐 Croissant',        cost: 5,  action: 'cafeBuy', gives: 'berry',    amount: 2 },
-				{ label: '🍫 Choco Bar',        cost: 12, action: 'cafeBuy', gives: 'tokens',   amount: 8 },
-				{ label: '🥚 Pokémon Egg',      cost: 40, action: 'buyEgg' },
+				{ label: ico(ICO.curry) + ' Espresso Shot',    cost: 8,  action: 'cafeBuy', gives: 'seed',     amount: 1 },
+				{ label: ico(ICO.berry) + ' Bubble Tea',       cost: 10, action: 'cafeBuy', gives: 'berry',    amount: 3 },
+				{ label: ico(ICO.berry) + ' Berry Cake',       cost: 15, action: 'cafeBuy', gives: 'berry',    amount: 5 },
+				{ label: ico(ICO.seed) + ' Herbal Tea',       cost: 18, action: 'cafeBuy', gives: 'seed',     amount: 2 },
+				{ label: ico(ICO.berry) + ' Croissant',        cost: 5,  action: 'cafeBuy', gives: 'berry',    amount: 2 },
+				{ label: ico(ICO.token) + ' Choco Bar',        cost: 12, action: 'cafeBuy', gives: 'tokens',   amount: 8 },
+				{ label: ico(ICO.egg) + ' Pokémon Egg',      cost: 40, action: 'buyEgg' },
 			],
 		},
 	};
@@ -4046,7 +4111,7 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.style.textAlign = 'center';
-			inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎣 FISHING</span></div>' +
+			inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.fish) + ' FISHING</span></div>' +
 				'<div class="pk-modal-body">' +
 				'<div id="fishStatus" style="font-size:9px;color:var(--pk-muted);margin-bottom:16px;min-height:18px">Walk up to the water and cast your line…</div>' +
 				'<div id="fishBar" style="position:relative;height:28px;background:rgba(10,30,60,0.8);border-radius:8px;margin:0 auto 14px;width:220px;overflow:hidden;border:1px solid rgba(74,158,204,0.3)">' +
@@ -4055,7 +4120,7 @@
 				'</div>' +
 				'<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">' +
 					'<button id="fishCast" class="pk-btn pk-btn-blue pk-btn-sm" type="button">Cast</button>' +
-					'<button id="fishLogBtn" class="pk-btn pk-btn-ghost pk-btn-xs" type="button">📖 Log</button>' +
+					'<button id="fishLogBtn" class="pk-btn pk-btn-ghost pk-btn-xs" type="button">' + ico(ICO.book) + ' Log</button>' +
 				'</div>' +
 				'<div id="fishLog" style="display:none;margin-top:12px;text-align:left;font-size:7px;color:var(--pk-muted);max-height:100px;overflow-y:auto;padding:4px 8px;background:rgba(0,0,0,0.2);border-radius:6px"></div>' +
 				'<button id="fishClose" class="pk-btn pk-btn-ghost pk-btn-xs" style="display:block;margin:12px auto 0" type="button">Leave</button>' +
@@ -4075,7 +4140,7 @@
 					const fishLog = Inventory.load().fishLog || [];
 					if (fishLog.length === 0) { logEl.textContent = 'No catches yet!'; }
 					else {
-						logEl.innerHTML = fishLog.map(f => '<div style="padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.08)">' + f.emoji + ' ' + f.name + ' <span style="color:#8888aa;font-size:6px">(' + new Date(f.ts).toLocaleDateString() + ')</span></div>').join('');
+						logEl.innerHTML = fishLog.map(f => '<div style="padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.08)">' + ico(ICO[f.icoKey]||ICO.fish) + ' ' + f.name + ' <span style="color:#8888aa;font-size:6px">(' + new Date(f.ts).toLocaleDateString() + ')</span></div>').join('');
 					}
 				} else {
 					logEl.style.display = 'none';
@@ -4122,18 +4187,18 @@
 				if (hasBait) { inv.fishingBait -= 1; }
 				const roll = Math.random() + (hasBait ? 0.15 : 0);
 				let caught = null;
-				if (roll < 0.45) caught = { name: 'Magikarp', rarity: 'common',   reward: 'berry',  amount: 1, emoji: '🐟' };
-				else if (roll < 0.70) caught = { name: 'Goldeen', rarity: 'common',   reward: 'berry',  amount: 2, emoji: '🐠' };
-				else if (roll < 0.87) caught = { name: 'Psyduck',  rarity: 'uncommon', reward: 'seed',   amount: 1, emoji: '🦆' };
-				else if (roll < 0.96) caught = { name: 'Lapras',   rarity: 'rare',     reward: 'tokens', amount: 8, emoji: '🦕' };
-				else                   caught = { name: 'Shiny Gyarados', rarity: 'shiny', reward: 'tokens', amount: 25, emoji: '✨' };
+				if (roll < 0.45) caught = { name: 'Magikarp', rarity: 'common',   reward: 'berry',  amount: 1, icoKey: 'fish' };
+				else if (roll < 0.70) caught = { name: 'Goldeen', rarity: 'common',   reward: 'berry',  amount: 2, icoKey: 'fish' };
+				else if (roll < 0.87) caught = { name: 'Psyduck',  rarity: 'uncommon', reward: 'seed',   amount: 1, icoKey: 'fish' };
+				else if (roll < 0.96) caught = { name: 'Lapras',   rarity: 'rare',     reward: 'tokens', amount: 8, icoKey: 'gem' };
+				else                   caught = { name: 'Shiny Gyarados', rarity: 'shiny', reward: 'tokens', amount: 25, icoKey: 'gem' };
 
 				if (caught.reward === 'berry')  inv.friendshipBerries = (inv.friendshipBerries || 0) + caught.amount;
 				if (caught.reward === 'seed')   inv.seeds = (inv.seeds || 0) + caught.amount;
 				if (caught.reward === 'tokens') inv.tokens = (inv.tokens || 0) + caught.amount;
 
 				if (!inv.fishLog) inv.fishLog = [];
-				inv.fishLog.unshift({ name: caught.name, emoji: caught.emoji, rarity: caught.rarity, ts: Date.now() });
+				inv.fishLog.unshift({ name: caught.name, icoKey: caught.icoKey, rarity: caught.rarity, ts: Date.now() });
 				if (inv.fishLog.length > 10) inv.fishLog.length = 10;
 
 				Inventory.save(inv);
@@ -4142,11 +4207,11 @@
 				Achievements.unlock('firstCatch');
 				if (caught.rarity === 'rare' || caught.rarity === 'shiny') Achievements.unlock('rareFish');
 
-				const rewardStr = caught.reward === 'tokens' ? caught.amount + '🪙' : caught.amount + (caught.reward === 'berry' ? '🍓' : '🌱');
-				if (status) status.textContent = caught.emoji + ' Caught ' + caught.name + '! +' + rewardStr + (hasBait ? ' (bait bonus!)' : '');
-				showToast(caught.emoji + ' ' + caught.name + ' caught!');
+				const rewardStr = caught.reward === 'tokens' ? caught.amount + ' ' + ico(ICO.token) : caught.amount + ' ' + ico(caught.reward === 'berry' ? ICO.berry : ICO.seed);
+				if (status) status.innerHTML = ico(ICO[caught.icoKey]||ICO.fish) + ' Caught ' + caught.name + '! +' + rewardStr + (hasBait ? ' (bait bonus!)' : '');
+				showToast(ico(ICO[caught.icoKey]||ICO.fish) + ' ' + caught.name + ' caught!');
 			} else {
-				if (status) status.textContent = '❌ The fish got away! Try again.';
+				if (status) status.innerHTML = ico('x-circle-fill') + ' The fish got away! Try again.';
 			}
 		}
 		function start() {
@@ -4173,38 +4238,38 @@
 		const toast = document.createElement('div');
 		toast.id = 'campToast';
 		toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;padding:10px 18px;font-family:"Press Start 2P",monospace;font-size:9px;color:#f6c84c;z-index:200;pointer-events:none;opacity:1;transition:opacity 0.5s ease;text-align:center;max-width:90vw;word-break:break-word';
-		toast.textContent = msg;
+		toast.innerHTML = msg;
 		document.body.appendChild(toast);
 		setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 2800);
 	}
 
 	const Achievements = (() => {
 		const DEFS = [
-			{ id: 'firstCatch',   label: '🎣 First Catch',      desc: 'Catch your first fish'              },
-			{ id: 'rareFish',     label: '🦕 Rare Find',        desc: 'Catch a Lapras or Shiny Gyarados'   },
-			{ id: 'firstEvol',    label: '✨ Evolution!',        desc: 'Evolve your partner Pokémon'        },
-			{ id: 'fullFriend',   label: '💖 Best Friends',     desc: 'Max out friendship'                 },
-			{ id: 'rhythm100',    label: '🎵 Rhythm Master',    desc: 'Win 10 rhythm battles'              },
-			{ id: 'berryFarmer',  label: '🌾 Berry Farmer',     desc: 'Harvest 20 berries total'           },
-			{ id: 'questStreak',  label: '📋 Quest Complete',   desc: 'Complete all daily quests in a day' },
-			{ id: 'shopkeeper',   label: '💰 Wealthy Trainer',  desc: 'Earn 500 tokens total'              },
-			{ id: 'decorator',    label: '🛋️ Interior Design',  desc: 'Place 5 furniture pieces'           },
-			{ id: 'nightOwl',     label: '🌙 Night Owl',        desc: 'Play camp after 10 PM'              },
-			{ id: 'dex100',       label: '📖 Pokémon Master',   desc: 'Catch 100 different Pokémon'        },
-			{ id: 'hatchEgg',     label: '🥚 Hatcher',          desc: 'Hatch a Pokémon egg'                },
-			{ id: 'contestWin',   label: '🎀 Contestant',       desc: 'Win your first Pokémon Contest'     },
-			{ id: 'contestMaster',label: '🎀 Contest Master',   desc: 'Win all 5 Contest categories'       },
-			{ id: 'chef',         label: '🍛 Camp Chef',        desc: 'Cook your first curry'              },
-			{ id: 'explorer',     label: '🗺️ Explorer',         desc: 'Reveal the entire camp map'         },
-			{ id: 'mysteryGift',  label: '🎁 Gift Receiver',    desc: 'Claim a Mystery Gift'               },
-			{ id: 'wonderTrade',  label: '🔄 Wonder Trade',     desc: 'Complete a Wonder Trade'            },
-			{ id: 'trainer10',    label: '⭐ Rising Trainer',   desc: 'Reach Trainer Level 10'             },
-			{ id: 'trainer30',    label: '⭐ Ace Trainer',      desc: 'Reach Trainer Level 30'             },
-			{ id: 'fiveStarCamp', label: '🌟 Five-Star Camp',  desc: 'Earn a 5-star camp rating'          },
-			{ id: 'storytime',    label: '📖 Storyteller',     desc: 'Read a campfire story'              },
-			{ id: 'postcard',     label: '✉️ Pen Pal',          desc: 'Send your first postcard'           },
-			{ id: 'composted',    label: '🌿 Composter',       desc: 'Make your first compost'            },
-			{ id: 'camperMet',    label: '👋 Good Company',    desc: 'Meet a visiting trainer'            },
+			{ id: 'firstCatch',   label: 'First Catch',      icoKey: 'fish',      desc: 'Catch your first fish'              },
+			{ id: 'rareFish',     label: 'Rare Find',        icoKey: 'gem',        desc: 'Catch a Lapras or Shiny Gyarados'   },
+			{ id: 'firstEvol',    label: 'Evolution!',       icoKey: 'sparkle',        desc: 'Evolve your partner Pokémon'        },
+			{ id: 'fullFriend',   label: 'Best Friends',     icoKey: 'heart',     desc: 'Max out friendship'                 },
+			{ id: 'rhythm100',    label: 'Rhythm Master',    icoKey: 'music',    desc: 'Win 10 rhythm battles'              },
+			{ id: 'berryFarmer',  label: 'Berry Farmer',     icoKey: 'seed',     desc: 'Harvest 20 berries total'           },
+			{ id: 'questStreak',  label: 'Quest Complete',   icoKey: 'quest',   desc: 'Complete all daily quests in a day' },
+			{ id: 'shopkeeper',   label: 'Wealthy Trainer',  icoKey: 'token',  desc: 'Earn 500 tokens total'              },
+			{ id: 'decorator',    label: 'Interior Design',  icoKey: 'house',  desc: 'Place 5 furniture pieces'           },
+			{ id: 'nightOwl',     label: 'Night Owl',        icoKey: 'moon',        desc: 'Play camp after 10 PM'              },
+			{ id: 'dex100',       label: 'Pokémon Master',   icoKey: 'book',   desc: 'Catch 100 different Pokémon'        },
+			{ id: 'hatchEgg',     label: 'Hatcher',          icoKey: 'egg',          desc: 'Hatch a Pokémon egg'                },
+			{ id: 'contestWin',   label: 'Contestant',       icoKey: 'contest',       desc: 'Win your first Pokémon Contest'     },
+			{ id: 'contestMaster',label: 'Contest Master',   icoKey: 'ribbon',   desc: 'Win all 5 Contest categories'       },
+			{ id: 'chef',         label: 'Camp Chef',        icoKey: 'curry',        desc: 'Cook your first curry'              },
+			{ id: 'explorer',     label: 'Explorer',         icoKey: 'map',         desc: 'Reveal the entire camp map'         },
+			{ id: 'mysteryGift',  label: 'Gift Receiver',    icoKey: 'gift',    desc: 'Claim a Mystery Gift'               },
+			{ id: 'wonderTrade',  label: 'Wonder Trade',     icoKey: 'trade',     desc: 'Complete a Wonder Trade'            },
+			{ id: 'trainer10',    label: 'Rising Trainer',   icoKey: 'level',   desc: 'Reach Trainer Level 10'             },
+			{ id: 'trainer30',    label: 'Ace Trainer',      icoKey: 'level',      desc: 'Reach Trainer Level 30'             },
+			{ id: 'fiveStarCamp', label: 'Five-Star Camp',   icoKey: 'star',  desc: 'Earn a 5-star camp rating'          },
+			{ id: 'storytime',    label: 'Storyteller',      icoKey: 'bookOpen',     desc: 'Read a campfire story'              },
+			{ id: 'postcard',     label: 'Pen Pal',          icoKey: 'postcard',          desc: 'Send your first postcard'           },
+			{ id: 'composted',    label: 'Composter',        icoKey: 'compost',       desc: 'Make your first compost'            },
+			{ id: 'camperMet',    label: 'Good Company',     icoKey: 'npc',    desc: 'Meet a visiting trainer'            },
 		];
 		function load() {
 			const raw = localStorage.getItem('pokequiz_achievements');
@@ -4216,7 +4281,7 @@
 			if (data[id]) return;
 			data[id] = Date.now();
 			save(data);
-			showToast('🏅 Achievement: ' + (DEFS.find(d => d.id === id)?.label || id));
+			showToast(ico(ICO.achieve) + ' Achievement: ' + (DEFS.find(d => d.id === id)?.label || id));
 		}
 		function increment(id) {
 			const data = load();
@@ -4258,7 +4323,7 @@
 			}
 			save(d);
 			if (leveled) {
-				showToast('⭐ Level Up! Trainer Level ' + d.level + '!');
+				showToast(ico(ICO.star) + ' Level Up! Trainer Level ' + d.level + '!');
 				if (d.level >= 10) Achievements.unlock('trainer10');
 				if (d.level >= 30) Achievements.unlock('trainer30');
 			}
@@ -4396,7 +4461,7 @@
 				inner.className = 'pk-modal pk-modal-sm';
 				inner.style.textAlign = 'center';
 				inner.innerHTML = '<div class="pk-modal-head">' +
-					'<span class="pk-modal-title" style="color:#f0c860">📖 ' + story.title.toUpperCase() + '</span>' +
+					'<span class="pk-modal-title" style="color:#f0c860">' + ico(ICO.bookOpen) + ' ' + story.title.toUpperCase() + '</span>' +
 					'</div>';
 				const body = document.createElement('div');
 				body.className = 'pk-modal-body';
@@ -4404,7 +4469,7 @@
 
 				const fire = document.createElement('div');
 				fire.style.cssText = 'font-size:28px';
-				fire.textContent = '🔥';
+				fire.innerHTML = ico(ICO.fire, 'campfire-ico');
 
 				const text = document.createElement('div');
 				text.style.cssText = 'font-size:8px;color:var(--pk-text);line-height:1.9;min-height:56px;text-align:center;padding:0 8px;max-width:300px';
@@ -4426,13 +4491,13 @@
 				} else {
 					const done = document.createElement('button');
 					done.className = 'pk-btn pk-btn-green pk-btn-sm';
-					done.textContent = '✔ The End';
+					done.innerHTML = ico(ICO.check) + ' The End';
 					done.addEventListener('click', () => {
 						panel.hidden = true;
 						const inv = Inventory.load();
 						inv.tokens = (inv.tokens||0) + 5;
 						Inventory.save(inv);
-						showToast('📖 Story complete! +5🪙');
+						showToast(ico(ICO.bookOpen) + ' Story complete! +5 ' + ico(ICO.token));
 						Achievements.unlock('storytime');
 						TrainerLevel.addXP('quest');
 					});
@@ -4497,8 +4562,8 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title">✉️ POSTCARDS</span>' +
-				'<button id="postcardClose" class="pk-close" type="button">✕</button>' +
+				'<span class="pk-modal-title">' + ico(ICO.postcard) + ' POSTCARDS</span>' +
+				'<button id="postcardClose" class="pk-close" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -4518,7 +4583,7 @@
 					info.style.flex = '1';
 					const date = document.createElement('div');
 					date.style.cssText = 'font-size:7px;color:var(--pk-gold)';
-					date.textContent = '✉️ ' + new Date(card.ts).toLocaleDateString();
+					date.innerHTML = ico(ICO.mail) + ' ' + new Date(card.ts).toLocaleDateString();
 					const preview = document.createElement('div');
 					preview.style.cssText = 'font-size:7px;color:var(--pk-muted);margin-top:2px';
 					preview.textContent = card.text.length > 40 ? card.text.slice(0,40)+'…' : card.text;
@@ -4526,7 +4591,7 @@
 					info.appendChild(preview);
 					const del = document.createElement('button');
 					del.className = 'pk-btn pk-btn-red pk-btn-xs';
-					del.textContent = '🗑';
+					del.innerHTML = ico(ICO.trash);
 					del.addEventListener('click', e => {
 						e.stopPropagation();
 						const c2 = load(); c2.splice(i,1); save(c2);
@@ -4548,7 +4613,7 @@
 			if (cards.length < MAX_CARDS) {
 				const writeBtn = document.createElement('button');
 				writeBtn.className = 'pk-btn pk-btn-gold pk-btn-full pk-btn-sm';
-				writeBtn.textContent = '✏️ Write New Postcard';
+				writeBtn.innerHTML = ico(ICO.write) + ' Write New Postcard';
 				writeBtn.addEventListener('click', () => renderWrite(panel));
 				body.appendChild(writeBtn);
 			}
@@ -4566,8 +4631,8 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title">✏️ WRITE</span>' +
-				'<button id="postcardBack" class="pk-close" type="button">←</button>' +
+				'<span class="pk-modal-title">' + ico(ICO.write) + ' WRITE</span>' +
+				'<button id="postcardBack" class="pk-close" type="button">' + ico(ICO.back) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -4575,7 +4640,7 @@
 
 			const hint = document.createElement('div');
 			hint.style.cssText = 'font-size:7px;color:var(--pk-gold);padding:8px;background:rgba(246,200,76,0.06);border-radius:6px';
-			hint.textContent = '💭 ' + prompt;
+			hint.innerHTML = ico(ICO.info) + ' ' + prompt;
 
 			const ta = document.createElement('textarea');
 			ta.style.cssText = 'width:100%;min-height:90px;background:rgba(255,255,255,0.05);border:1px solid var(--pk-border);border-radius:6px;color:var(--pk-text);font-family:inherit;font-size:8px;padding:8px;resize:none;box-sizing:border-box;line-height:1.7';
@@ -4589,7 +4654,7 @@
 
 			const saveBtn = document.createElement('button');
 			saveBtn.className = 'pk-btn pk-btn-gold pk-btn-full pk-btn-sm';
-			saveBtn.textContent = '📮 Send Postcard';
+			saveBtn.innerHTML = ico(ICO.send) + ' Send Postcard';
 			saveBtn.addEventListener('click', () => {
 				const text = ta.value.trim();
 				if (!text) { showToast('Write something first!'); return; }
@@ -4599,7 +4664,7 @@
 				save(c2);
 				TrainerLevel.addXP('postcard');
 				Achievements.unlock('postcard');
-				showToast('✉️ Postcard saved!');
+				showToast(ico(ICO.postcard) + ' Postcard saved!');
 				renderList(panel);
 			});
 
@@ -4619,8 +4684,8 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title">📬 POSTCARD</span>' +
-				'<button id="postcardBack3" class="pk-close" type="button">←</button>' +
+				'<span class="pk-modal-title">' + ico(ICO.readMail) + ' POSTCARD</span>' +
+				'<button id="postcardBack3" class="pk-close" type="button">' + ico(ICO.back) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -4628,7 +4693,7 @@
 
 			const date = document.createElement('div');
 			date.style.cssText = 'font-size:7px;color:var(--pk-muted)';
-			date.textContent = '📅 ' + new Date(card.ts).toLocaleDateString();
+			date.innerHTML = ico('calendar3') + ' ' + new Date(card.ts).toLocaleDateString();
 
 			if (card.prompt) {
 				const pr = document.createElement('div');
@@ -4668,7 +4733,7 @@
 			Inventory.save(inv);
 			TrainerLevel.addXP('compost');
 			Achievements.unlock('composted');
-			showToast('🌿 Compost made! Next planting grows 50% faster.');
+			showToast(ico(ICO.compost) + ' Compost made! Next planting grows 50% faster.');
 		}
 
 		function applyOnPlant(inv) {
@@ -4678,7 +4743,7 @@
 				if (!inv.boosts) inv.boosts = {};
 				// fast-grow for 30 minutes
 				inv.boosts.fastGrow = Math.max(inv.boosts.fastGrow || 0, Date.now() + 30 * 60 * 1000);
-				showToast('🌿 Compost applied! Faster growth for 30 min.');
+				showToast(ico(ICO.compost) + ' Compost applied! Faster growth for 30 min.');
 			}
 		}
 
@@ -4703,8 +4768,8 @@
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title" style="color:#7ec860">🌿 COMPOSTING</span>' +
-				'<button id="compostClose" class="pk-close" style="color:#7ec860" type="button">✕</button>' +
+				'<span class="pk-modal-title" style="color:#7ec860">' + ico(ICO.compost) + ' COMPOSTING</span>' +
+				'<button id="compostClose" class="pk-close" style="color:#7ec860" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
@@ -4712,7 +4777,7 @@
 
 			const info = document.createElement('div');
 			info.style.cssText = 'font-size:8px;color:var(--pk-text);padding:10px;background:rgba(126,200,96,0.08);border:1px solid rgba(126,200,96,0.25);border-radius:8px';
-			info.innerHTML = '🍓 Berries: <strong>' + berries + '</strong>&nbsp;&nbsp;|&nbsp;&nbsp;🌿 Compost charges: <strong>' + charges + '</strong>';
+			info.innerHTML = ico(ICO.berry) + ' Berries: <strong>' + berries + '</strong><span class="hud-sep"></span>' + ico(ICO.compost) + ' Compost charges: <strong>' + charges + '</strong>';
 
 			const desc = document.createElement('div');
 			desc.style.cssText = 'font-size:7px;color:var(--pk-muted);line-height:1.7';
@@ -4721,7 +4786,7 @@
 			const btn = document.createElement('button');
 			btn.className = 'pk-btn pk-btn-green pk-btn-full pk-btn-sm';
 			btn.disabled = !canMake();
-			btn.textContent = canMake() ? '🌿 Make Compost (' + COST + '🍓 → 1 charge)' : 'Not enough berries (' + berries + '/' + COST + ')';
+			btn.innerHTML = canMake() ? ico(ICO.compost) + ' Make Compost (' + COST + ' ' + ico(ICO.berry) + ' → 1 charge)' : 'Not enough berries (' + berries + '/' + COST + ')';
 			btn.addEventListener('click', () => {
 				make();
 				render(panel);
@@ -4742,17 +4807,17 @@
 	// ── NPC Campers ───────────────────────────────────────────────────────────────
 	const NpcCampers = (() => {
 		const CAMPERS = [
-			{ name:'Red',   emoji:'🧢', gift:{ tokens:10 }, giftLabel:'+10🪙',
+			{ name:'Red',   icoKey:'trainer', gift:{ tokens:10 }, giftLabel:'+10 ' + ico(ICO.token),
 			  dialog:["...", "...", "...", "Take this. You'll need it.", "..."] },
-			{ name:'Leaf',  emoji:'🌿', gift:{ seeds:2 }, giftLabel:'+2🌱',
+			{ name:'Leaf',  icoKey:'seed',    gift:{ seeds:2 }, giftLabel:'+2 ' + ico(ICO.seed),
 			  dialog:["Hey! Your camp looks cosy.", "Your Pokémon looks really happy!", "I found these on my travels — take them!"] },
-			{ name:'Blue',  emoji:'😤', gift:{ tokens:15 }, giftLabel:'+15🪙',
+			{ name:'Blue',  icoKey:'trainer', gift:{ tokens:15 }, giftLabel:'+15 ' + ico(ICO.token),
 			  dialog:["Oh, it's you. Your camp's... passable.", "Not as good as mine, obviously.", "Fine, take this. Don't read into it."] },
-			{ name:'May',   emoji:'💛', gift:{ berries:3 }, giftLabel:'+3🍓',
+			{ name:'May',   icoKey:'npc',     gift:{ berries:3 }, giftLabel:'+3 ' + ico(ICO.berry),
 			  dialog:["Hi there! Exploring camps is so fun!", "Your partner Pokémon is adorable!", "I baked extra this morning — have some!"] },
-			{ name:'Lucas', emoji:'📔', gift:{ tokens:8 }, giftLabel:'+8🪙',
+			{ name:'Lucas', icoKey:'trainer', gift:{ tokens:8 }, giftLabel:'+8 ' + ico(ICO.token),
 			  dialog:["I've been sketching Pokémon all morning.", "Your camp has really nice spots.", "Here — found this near the lake!"] },
-			{ name:'Dawn',  emoji:'🌸', gift:{ berries:2, seeds:1 }, giftLabel:'+2🍓+1🌱',
+			{ name:'Dawn',  icoKey:'npc',     gift:{ berries:2, seeds:1 }, giftLabel:'+2 ' + ico(ICO.berry) + '+1 ' + ico(ICO.seed),
 			  dialog:["Hi! I love how your camp is set up.", "Contests are so fun — have you tried them?", "Take these — I had extras!"] },
 		];
 
@@ -4772,10 +4837,10 @@
 		function openDialog(camperName) {
 			const camper = CAMPERS.find(c => c.name === camperName) || getTodayCamper();
 			if (hasClaimedToday()) {
-				Dialog.open(camper.emoji + ' ' + camper.name + ': "Come back tomorrow — I\'ll have something new!"');
+				Dialog.open(camper.name + ': "Come back tomorrow — I\'ll have something new!"');
 				return;
 			}
-			const lines = [...camper.dialog, camper.emoji + ' ' + camper.name + ' gives you something! (' + camper.giftLabel + ')'];
+			const lines = [...camper.dialog, camper.name + ' gives you something! (' + camper.giftLabel + ')'];
 			Dialog.open(lines.join('\n'));
 			// Give gift
 			localStorage.setItem(todayKey(), '1');
@@ -4786,7 +4851,7 @@
 			Inventory.save(inv);
 			TrainerLevel.addXP('camper');
 			Achievements.unlock('camperMet');
-			showToast(camper.emoji + ' ' + camper.name + ' visited! ' + camper.giftLabel);
+			showToast(ico(ICO.npc) + ' ' + camper.name + ' visited! ' + camper.giftLabel);
 		}
 
 		return { getTodayCamper, isVisitHour, hasClaimedToday, openDialog };
@@ -4794,12 +4859,12 @@
 
 	const DailyQuests = (() => {
 		const QUESTS = [
-			{ id: 'feed',     label: '🍓 Feed partner 3×',      goal: 3,  reward: 10 },
-			{ id: 'harvest',  label: '🌾 Harvest a berry',       goal: 1,  reward: 8  },
-			{ id: 'market',   label: '🛒 Visit the marketplace', goal: 1,  reward: 12 },
-			{ id: 'rhythm',   label: '🎵 Win a rhythm battle',   goal: 1,  reward: 15 },
-			{ id: 'fish',     label: '🎣 Catch a fish',          goal: 1,  reward: 10 },
-			{ id: 'minigame', label: '🎮 Win any wild battle',   goal: 1,  reward: 8  },
+			{ id: 'feed',     label: 'Feed partner 3×',      goal: 3,  reward: 10, icoKey: 'berry'  },
+			{ id: 'harvest',  label: 'Harvest a berry',       goal: 1,  reward: 8,  icoKey: 'seed'   },
+			{ id: 'market',   label: 'Visit the marketplace', goal: 1,  reward: 12, icoKey: 'cart'   },
+			{ id: 'rhythm',   label: 'Win a rhythm battle',   goal: 1,  reward: 15, icoKey: 'music'  },
+			{ id: 'fish',     label: 'Catch a fish',          goal: 1,  reward: 10, icoKey: 'fish'   },
+			{ id: 'minigame', label: 'Win any wild battle',   goal: 1,  reward: 8,  icoKey: 'game'   },
 		];
 		function todayKey() { return new Date().toISOString().slice(0, 10); }
 		function load() {
@@ -4830,8 +4895,8 @@
 			inv.dailyQuests.claimed = true;
 			Inventory.save(inv);
 			const bonusEl = document.getElementById('questBonus');
-			if (bonusEl) bonusEl.textContent = '🎉 All done! +' + totalReward + ' tokens claimed!';
-			showToast('🎉 Daily quests done! +' + totalReward + ' tokens!');
+			if (bonusEl) bonusEl.innerHTML = ico(ICO.check) + ' All done! +' + totalReward + ' tokens claimed!';
+			showToast(ico(ICO.check) + ' Daily quests done! +' + totalReward + ' tokens!');
 			TrainerLevel.addXP('quest');
 			Achievements.unlock('questStreak');
 		}
@@ -4851,16 +4916,16 @@
 				row.className = 'pk-quest-row' + (done ? ' is-done' : '');
 				const lbl = document.createElement('div');
 				lbl.className = 'pk-quest-label' + (done ? ' is-done' : '');
-				lbl.textContent = (done ? '✅ ' : '') + q.label;
+				lbl.innerHTML = (done ? ico(ICO.check) + ' ' : (q.icoKey ? ico(ICO[q.icoKey] || q.icoKey) + ' ' : '')) + q.label;
 				const prog_el = document.createElement('div');
 				prog_el.className = 'pk-quest-prog';
-				prog_el.textContent = prog + ' / ' + q.goal + '  ·  +' + q.reward + '🪙';
+				prog_el.innerHTML = prog + ' / ' + q.goal + ' &nbsp;· +' + q.reward + ' ' + ico(ICO.token);
 				row.appendChild(lbl);
 				row.appendChild(prog_el);
 				list.appendChild(row);
 			});
 			const bonusEl = document.getElementById('questBonus');
-			if (bonusEl && dq.claimed) bonusEl.textContent = '🎉 All done! Rewards claimed.';
+			if (bonusEl && dq.claimed) bonusEl.innerHTML = ico(ICO.check) + ' All done! Rewards claimed.';
 		}
 		function open() {
 			const panel = document.getElementById('questPanel');
@@ -4967,7 +5032,7 @@
 					const justEvolved = localStorage.getItem('campJustEvolved');
 					if (justEvolved) {
 						localStorage.removeItem('campJustEvolved');
-						setTimeout(() => Dialog.open('🌟 ' + justEvolved.toUpperCase() + ' has joined your team!'), 1500);
+						setTimeout(() => Dialog.open(justEvolved.toUpperCase() + ' has joined your team!'), 1500);
 					}
 				} catch (e) {
 					console.error('[CampScene] create failed:', e);
@@ -5310,7 +5375,7 @@
 								.setDepth(1.8).setOrigin(0.5);
 							seasonLayer.add(t);
 						});
-						showToast('🌸 Cherry blossoms are in bloom!');
+						showToast(ico(ICO.sparkle) + ' Cherry blossoms are in bloom!');
 					} else if (month >= 5 && month <= 7) {
 						// Summer — sunflowers near the garden
 						[[18,20],[20,21],[18,22]].forEach(([r,c]) => {
@@ -5557,7 +5622,7 @@
 					DailyQuests.increment('harvest');
 					TrainerLevel.addXP('harvest');
 					Achievements.increment('berryFarmer');
-					Dialog.open('You harvested a ' + berryDef.emoji + ' ' + berryDef.label + '! (+' + berryDef.friendship + ' friendship)' + replantMsg);
+					Dialog.open('You harvested a ' + berryDef.label + '! (+' + berryDef.friendship + ' friendship)' + replantMsg);
 					return true;
 				}
 				if (target.kind === 'growing') {
@@ -5599,7 +5664,7 @@
 				Sound.harvest();
 				Stats.increment('totalHarvests', ripe.length);
 				const extra = replanted > 0 ? ' (' + replanted + ' replanted)' : '';
-				Dialog.open('🌾 Scythe sweep! Harvested ' + ripe.length + ' berries' + extra + '.');
+				Dialog.open('Scythe sweep! Harvested ' + ripe.length + ' berries' + extra + '.');
 				return true;
 			}
 
@@ -5609,14 +5674,18 @@
 				const inv = Inventory.load();
 				const form = inv.eeveeForm || 'eevee';
 				const heart = form === 'eevee' && (inv.friendship || 0) < FRIENDSHIP_MAX
-					? '   ❤️ ' + (inv.friendship || 0) + '/' + FRIENDSHIP_MAX
+					? '<span class="hud-sep"></span>' + ico(ICO.heart) + ' ' + (inv.friendship || 0) + '/' + FRIENDSHIP_MAX
 					: '';
 				const scythe = inv.hasScythe
-					? '   ' + (inv.scytheEquipped ? '🌾 equipped' : '🌾 (Q)')
+					? '<span class="hud-sep"></span>' + ico(ICO.scythe) + (inv.scytheEquipped ? ' on' : ' (Q)')
 					: '';
 				const egg = EggSystem.status();
-				const eggStr = egg ? '   🥚 ' + egg.steps + '/' + EggSystem.HATCH_STEPS : '';
-				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0) + heart + scythe + eggStr;
+				const eggStr = egg ? '<span class="hud-sep"></span>' + ico(ICO.egg) + ' ' + egg.steps + '/' + EggSystem.HATCH_STEPS : '';
+				el.innerHTML =
+					ico(ICO.seed) + ' ' + (inv.seeds || 0) +
+					'<span class="hud-sep"></span>' + ico(ICO.berry) + ' ' + (inv.friendshipBerries || 0) +
+					'<span class="hud-sep"></span>' + ico(ICO.token) + ' ' + (inv.tokens || 0) +
+					heart + scythe + eggStr;
 			}
 
 			_handleFeed() {
@@ -5686,7 +5755,7 @@
 				setTimeout(() => { flash.style.opacity = '0.6'; }, 500);
 				setTimeout(() => { flash.style.opacity = '0'; }, 700);
 				setTimeout(() => { if (flash.parentNode) document.body.removeChild(flash); }, 1800);
-				Dialog.open('✨ ' + newForm.charAt(0).toUpperCase() + newForm.slice(1) + ' is glowing! Press E to finish.');
+				Dialog.open(newForm.charAt(0).toUpperCase() + newForm.slice(1) + ' is glowing! Press E to finish.');
 				localStorage.setItem('campJustEvolved', newForm);
 				const fade = document.getElementById('campFade');
 				if (fade) fade.classList.remove('is-hidden');
@@ -5707,8 +5776,8 @@
 				const inner = document.createElement('div');
 				inner.className = 'pk-modal pk-modal-sm';
 				inner.style.textAlign = 'center';
-				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🔥 CAMPFIRE</span>' +
-					'<button id="campfireChoiceClose" class="pk-close" type="button">✕</button></div>';
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.fire) + ' CAMPFIRE</span>' +
+					'<button id="campfireChoiceClose" class="pk-close" type="button">' + ico(ICO.close) + '</button></div>';
 				const body = document.createElement('div');
 				body.className = 'pk-modal-body';
 				body.style.cssText = 'display:flex;flex-direction:column;gap:10px';
@@ -5716,17 +5785,17 @@
 				const cookBtn = document.createElement('button');
 				cookBtn.className = 'pk-btn pk-btn-sm pk-btn-full';
 				cookBtn.style.cssText = 'background:linear-gradient(180deg,#ff9820,#cc6600);color:#fff';
-				cookBtn.textContent = '🍛 Cook Curry';
+				cookBtn.innerHTML = ico(ICO.curry) + ' Cook Curry';
 				cookBtn.addEventListener('click', () => { panel.hidden = true; CurryCooking.open(); });
 
 				const compostBtn = document.createElement('button');
 				compostBtn.className = 'pk-btn pk-btn-green pk-btn-full pk-btn-sm';
-				compostBtn.textContent = '🌿 Composting';
+				compostBtn.innerHTML = ico(ICO.compost) + ' Composting';
 				compostBtn.addEventListener('click', () => { panel.hidden = true; BerryCompost.openPanel(); });
 
 				const storyBtn = document.createElement('button');
 				storyBtn.className = 'pk-btn pk-btn-gold pk-btn-full pk-btn-sm';
-				storyBtn.textContent = '📖 Hear a Story';
+				storyBtn.innerHTML = ico(ICO.bookOpen) + ' Hear a Story';
 				storyBtn.addEventListener('click', () => { panel.hidden = true; CampfireStories.open(); });
 
 				const closeBtn2 = document.createElement('button');
@@ -5985,7 +6054,7 @@
 				if (k.bonus && Phaser.Input.Keyboard.JustDown(k.bonus) && !dialogOpen) {
 					if (Daily.ready()) {
 						Daily.claim();
-						Dialog.open('Daily bonus claimed! +20 💰 Tokens, +1 🌱 Seed.');
+						Dialog.open('Daily bonus claimed! +20 Tokens, +1 Seed.');
 					} else {
 						Dialog.open('Daily bonus already claimed. Next one available in ' + Daily.hoursLeft() + 'h.');
 					}
@@ -5994,7 +6063,7 @@
 					const invR = Inventory.load();
 					if (invR.pokeRadar) {
 						this._radarActive = !this._radarActive;
-						showToast(this._radarActive ? '📡 Poké Radar ON — watch the grass!' : '📡 Poké Radar OFF');
+						showToast(this._radarActive ? ico(ICO.radar) + ' Poké Radar ON — watch the grass!' : ico(ICO.radar) + ' Poké Radar OFF');
 					} else {
 						this.isRaining = !this.isRaining;
 					}
@@ -6061,26 +6130,26 @@
 							const rollDrop = Math.random();
 							const invB2 = Inventory.load();
 							invB2.tokens = (invB2.tokens||0) + 5;
-							let dropMsg = '💥 Smashed! +5🪙';
+							let dropMsg = 'Smashed! +5 ' + ico(ICO.token);
 							if (rollDrop < 0.08) {
 								// Rare: Fossil (Pokédex unlock for a fossil Pokémon)
 								const fossils = [138,139,140,141,142]; // Omanyte, Omastar, Kabuto, Kabutops, Aerodactyl
 								const fid = fossils[Math.floor(Math.random()*fossils.length)];
 								Pokedex.markSeen(fid);
 								invB2.tokens = (invB2.tokens||0) + 30;
-								dropMsg = '🦴 Fossil found! A ' + [,'','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','Omanyte','Omastar','Kabuto','Kabutops','Aerodactyl'][fid] + ' fossil! +30🪙';
+								dropMsg = ico(ICO.fossil) + ' Fossil found! A ' + [,'','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','Omanyte','Omastar','Kabuto','Kabutops','Aerodactyl'][fid] + ' fossil! +30 ' + ico(ICO.token);
 							} else if (rollDrop < 0.25) {
 								// Uncommon: Shards
 								invB2.tokens = (invB2.tokens||0) + 20;
-								dropMsg = '💎 Shard found! +20🪙';
+								dropMsg = ico(ICO.gem) + ' Shard found! +20 ' + ico(ICO.token);
 							} else if (rollDrop < 0.45) {
 								// Common: Berry
 								invB2.friendshipBerries = (invB2.friendshipBerries||0) + 1;
-								dropMsg = '🍓 Berry hidden inside! +1🍓';
+								dropMsg = ico(ICO.berry) + ' Berry hidden inside! +1 ' + ico(ICO.berry);
 							}
 							Inventory.save(invB2);
 							showToast(dropMsg);
-							Dialog.open('💥 ' + dropMsg + ' The path is clear.');
+							Dialog.open(dropMsg + ' The path is clear.');
 							TrainerLevel.addXP('harvest');
 						}
 					}
@@ -6099,7 +6168,7 @@
 					else if (target && target.message === '__camprating__') {
 						const stars = CampRating.calculate();
 						const mult = CampRating.getAwayMultiplier();
-						Dialog.open('🌟 Camp Rating: ' + '★'.repeat(stars) + '☆'.repeat(5-stars) + '\nAway reward bonus: +' + Math.round((mult-1)*100) + '%\nMore furniture, berries & Pokémon = higher stars!');
+						Dialog.open('Camp Rating: ' + '★'.repeat(stars) + '☆'.repeat(5-stars) + '\nAway reward bonus: +' + Math.round((mult-1)*100) + '%\nMore furniture, berries & Pokémon = higher stars!');
 					}
 					else if (target && target.message) Dialog.open(target.message);
 					else if (target && target.kind === 'door' && !this.didTransition && this.armedForDoor) {
@@ -6149,7 +6218,7 @@
 							inv.tokens = (inv.tokens||0) + 25;
 							inv.friendshipBerries = (inv.friendshipBerries||0) + 3;
 							Inventory.save(inv);
-							showToast('🌊 Hidden Cove discovered! +25🪙 +3🍓');
+							showToast(ico(ICO.water) + ' Hidden Cove discovered! +25 ' + ico(ICO.token) + ' +3 ' + ico(ICO.berry));
 							Achievements.unlock('explorer');
 							DailyQuests.increment('fish');
 						}
@@ -6534,7 +6603,7 @@
 					}
 					const obj = this.textures.exists(texKey)
 						? this.add.image(x, y, texKey).setOrigin(0.5).setDepth(2).setVisible(!!pos)
-						: this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
+						: this.add.text(x, y, item.label ? item.label.slice(0,3) : '?', { fontSize: '8px', resolution: 2 })
 							.setOrigin(0.5).setDepth(2).setVisible(!!pos);
 					this._roomItemObjs[key] = obj;
 				});
@@ -6715,7 +6784,7 @@
 					if (ghost && gm.key) {
 						const item = HOUSE_ITEMS[gm.key];
 						if (item && canPlace) {
-							ghost.setText(item.emoji);
+							ghost.setText(item.label ? item.label.slice(0,3) : '?');
 							ghost.setPosition(hc * TILE + TILE / 2, hr * TILE + TILE / 2);
 							ghost.setAngle((gm.rot || 0) * 90);
 							ghost.setVisible(true);
@@ -6977,7 +7046,7 @@
 					}
 					const obj = this.textures.exists(texKey)
 						? this.add.image(x, y, texKey).setOrigin(0.5).setDepth(2).setVisible(!!pos)
-						: this.add.text(x, y, item.emoji, { fontSize: '14px', resolution: 2 })
+						: this.add.text(x, y, item.label ? item.label.slice(0,3) : '?', { fontSize: '8px', resolution: 2 })
 							.setOrigin(0.5).setDepth(2).setVisible(!!pos);
 					this._roomItemObjs[key] = obj;
 				});
@@ -7148,7 +7217,7 @@
 					if (ghost && gm.key) {
 						const item = ROOM_ITEMS[gm.key];
 						if (item && canPlace) {
-							ghost.setText(item.emoji);
+							ghost.setText(item.label ? item.label.slice(0,3) : '?');
 							ghost.setPosition(hc * TILE + TILE / 2, hr * TILE + TILE / 2);
 							ghost.setAngle((gm.rot || 0) * 90);
 							ghost.setVisible(true);
@@ -7311,7 +7380,7 @@
 			if (!cfg) return;
 			const inv = Inventory.load();
 			titleEl.textContent = cfg.title;
-			balanceEl.textContent = '💰 ' + (inv.tokens || 0);
+			balanceEl.innerHTML = ico(ICO.token) + ' ' + (inv.tokens || 0);
 			itemsEl.innerHTML = '';
 			const displayItems = currentVendor.shopKind === 'cafe'
 				? cfg.items.concat(getSeasonalItems())
@@ -7321,8 +7390,8 @@
 				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0';
 				const lbl = document.createElement('span');
 				lbl.style.cssText = 'font-size:10px;line-height:1.5;flex:1 1 auto';
-				const priceStr = it.cost != null ? ' — ' + it.cost + '💰'
-				             : it.sells != null ? ' — +' + it.sells + '💰'
+				const priceStr = it.cost != null ? ' — ' + it.cost + ' ' + ico(ICO.token)
+				             : it.sells != null ? ' — +' + it.sells + ' ' + ico(ICO.token)
 				             : '';
 				lbl.textContent = it.label + priceStr;
 				const b = document.createElement('button');
@@ -7381,12 +7450,12 @@
 					// Special: Espresso Shot = rhythm boost (double tokens from rhythm for 10 min)
 					if (it.label && it.label.includes('Espresso')) {
 						inv.boosts.rhythmBoost = Date.now() + 10 * 60 * 1000;
-						setStatus('☕ Rhythm token boost active for 10 min!');
+						setStatus(ico(ICO.music) + ' Rhythm token boost active for 10 min!');
 					}
 					// Special: Herbal Tea = fast grow (berries ripen faster for 30 min)
 					if (it.label && it.label.includes('Herbal')) {
 						inv.boosts.fastGrow = Date.now() + 30 * 60 * 1000;
-						setStatus('🍵 Fast-grow active! Berries ripen faster for 30 min.');
+						setStatus(ico(ICO.seed) + ' Fast-grow active! Berries ripen faster for 30 min.');
 					}
 					break;
 				}
@@ -7864,13 +7933,13 @@
 	// ── Mystery Gift ─────────────────────────────────────────────────────────────
 	const MysteryGift = (() => {
 		const GIFTS = {
-			'01-01': { label: 'New Year Gift',      gives: 'tokens', amount: 50,  msg: '🎊 Happy New Year! +50🪙' },
-			'02-14': { label: 'Valentine Gift',     gives: 'berry',  amount: 10,  msg: '💝 Happy Valentine\'s Day! +10🍓' },
+			'01-01': { label: 'New Year Gift',      gives: 'tokens', amount: 50,  msg: 'Happy New Year! +50 ' + ico(ICO.token) },
+			'02-14': { label: 'Valentine Gift',     gives: 'berry',  amount: 10,  msg: 'Happy Valentine\'s Day! +10 ' + ico(ICO.berry) },
 			'04-01': { label: 'April Fools Gift',   gives: 'seed',   amount: 5,   msg: '🃏 April Fools! Here\'s 5 seeds...' },
-			'10-31': { label: 'Halloween Gift',     gives: 'tokens', amount: 30,  msg: '🎃 Trick or Treat! +30🪙' },
-			'12-25': { label: 'Christmas Gift',     gives: 'tokens', amount: 100, msg: '🎄 Merry Christmas! +100🪙' },
-			'12-31': { label: 'New Year\'s Eve Gift',gives: 'seed',  amount: 10,  msg: '🎆 New Year\'s Eve! +10 seeds' },
-			'02-27': { label: 'Pokémon Day Gift',   gives: 'egg',               msg: '🎂 Happy Pokémon Day! Mystery Egg!' },
+			'10-31': { label: 'Halloween Gift',     gives: 'tokens', amount: 30,  msg: 'Trick or Treat! +30 ' + ico(ICO.token) },
+			'12-25': { label: 'Christmas Gift',     gives: 'tokens', amount: 100, msg: 'Merry Christmas! +100 ' + ico(ICO.token) },
+			'12-31': { label: 'New Year\'s Eve Gift',gives: 'seed',  amount: 10,  msg: 'New Year\'s Eve! +10 seeds' },
+			'02-27': { label: 'Pokémon Day Gift',   gives: 'egg',               msg: 'Happy Pokémon Day! Mystery Egg!' },
 		};
 		function todayKey() {
 			const d = new Date();
@@ -7915,16 +7984,16 @@
 			inner.className = 'pk-modal pk-modal-sm';
 			inner.style.textAlign = 'center';
 			if (!gift) {
-				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎁 MYSTERY GIFT</span><button id="mgClose" class="pk-close" type="button">✕</button></div>' +
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.gift) + ' MYSTERY GIFT</span><button id="mgClose" class="pk-close" type="button">' + ico(ICO.close) + '</button></div>' +
 					'<div class="pk-modal-body"><div style="font-size:9px;color:var(--pk-muted);margin-bottom:16px">No special gift today.<br><br>Check back on holidays!</div>' +
 					'<button id="mgClose2" class="pk-btn pk-btn-dark pk-btn-sm" type="button">Close</button></div>';
 			} else if (gift.claimed) {
-				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎁 ' + gift.label.toUpperCase() + '</span><button id="mgClose" class="pk-close" type="button">✕</button></div>' +
-					'<div class="pk-modal-body"><div style="font-size:9px;color:var(--pk-green);margin-bottom:16px">✅ Already claimed today!</div>' +
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.gift) + ' ' + gift.label.toUpperCase() + '</span><button id="mgClose" class="pk-close" type="button">' + ico(ICO.close) + '</button></div>' +
+					'<div class="pk-modal-body"><div style="font-size:9px;color:var(--pk-green);margin-bottom:16px">' + ico(ICO.check) + ' Already claimed today!</div>' +
 					'<button id="mgClose2" class="pk-btn pk-btn-dark pk-btn-sm" type="button">Close</button></div>';
 			} else {
-				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎁 ' + gift.label.toUpperCase() + '</span><button id="mgClose" class="pk-close" type="button">✕</button></div>' +
-					'<div class="pk-modal-body" style="padding-top:8px"><div style="font-size:48px;margin:8px 0 12px">🎁</div>' +
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.gift) + ' ' + gift.label.toUpperCase() + '</span><button id="mgClose" class="pk-close" type="button">' + ico(ICO.close) + '</button></div>' +
+					'<div class="pk-modal-body" style="padding-top:8px"><div style="font-size:48px;margin:8px 0 12px">' + ico(ICO.gift, 'gift-large') + '</div>' +
 					'<div style="font-size:9px;color:var(--pk-text);margin-bottom:20px">A special gift awaits!</div>' +
 					'<button id="mgClaim" class="pk-btn pk-btn-gold pk-btn-full" type="button">Open Gift!</button>' +
 					'<button id="mgClose2" class="pk-btn pk-btn-ghost pk-btn-sm pk-btn-full" style="margin-top:8px" type="button">Later</button></div>';
@@ -7938,7 +8007,7 @@
 		function autoCheck() {
 			const gift = check();
 			if (gift && !gift.claimed) {
-				setTimeout(() => showToast('🎁 A Mystery Gift is available today! Check the Pause menu.'), 3000);
+				setTimeout(() => showToast(ico(ICO.gift) + ' A Mystery Gift is available today! Check the Pause menu.'), 3000);
 			}
 		}
 		return { open, autoCheck, check };
@@ -7995,7 +8064,8 @@
 					row.className = 'pk-achieve-row' + (got ? ' is-unlocked' : '');
 					const name = document.createElement('div');
 					name.className = 'pk-achieve-name' + (got ? ' is-unlocked' : '');
-					name.textContent = d.label;
+					const icoHtml = d.icoKey ? ico(ICO[d.icoKey] || d.icoKey, 'achieve-ico') + ' ' : '';
+					name.innerHTML = icoHtml + d.label;
 					const desc = document.createElement('div');
 					desc.className = 'pk-achieve-desc';
 					desc.textContent = d.desc;
@@ -8004,7 +8074,7 @@
 					if (got) {
 						const dt = document.createElement('div');
 						dt.className = 'pk-achieve-date';
-						dt.textContent = '✅ ' + new Date(unlocked[d.id]).toLocaleDateString();
+						dt.innerHTML = ico(ICO.check) + ' ' + new Date(unlocked[d.id]).toLocaleDateString();
 						row.appendChild(dt);
 					}
 					list.appendChild(row);
