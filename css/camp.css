@@ -2048,30 +2048,49 @@ body.camp-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px 4px;
+  gap: 5px;
+  padding: 8px 4px 6px;
   background: rgba(255,255,255,0.04);
-  border: 1.5px solid rgba(255,255,255,0.1);
-  border-radius: 6px;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   font-family: var(--pk-font);
+  position: relative;
 }
-.partner-pick-cell:hover { background: rgba(246,200,76,0.1); border-color: rgba(246,200,76,0.4); }
-.partner-pick-cell.is-active { border-color: var(--pk-gold); background: rgba(246,200,76,0.12); }
+.partner-pick-cell:hover {
+  background: rgba(246,200,76,0.08);
+  border-color: rgba(246,200,76,0.35);
+}
+.partner-pick-cell.is-active {
+  border-color: var(--pk-gold);
+  background: rgba(246,200,76,0.10);
+  box-shadow: 0 0 0 1px rgba(246,200,76,0.25), inset 0 1px 0 rgba(246,200,76,0.15);
+}
+/* Checkmark badge on active cell */
+.partner-pick-cell.is-active::after {
+  content: '✓';
+  position: absolute;
+  top: 3px; right: 4px;
+  font-size: 7px;
+  color: var(--pk-gold);
+  font-family: var(--pk-font);
+  line-height: 1;
+}
 .partner-pick-sprite {
-  width: 40px;
-  height: 40px;
-  background-size: 240px 320px; /* full sheet size */
   background-position: 0 0;    /* frame 0: south idle */
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
   flex-shrink: 0;
+  /* background-size and dimensions set per-cell by JS based on actual frame dims */
 }
 .partner-pick-name {
   font-size: 6px;
   color: var(--pk-muted);
   text-align: center;
   line-height: 1.3;
-  word-break: break-word;
-  max-width: 52px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

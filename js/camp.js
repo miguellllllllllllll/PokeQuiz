@@ -1939,13 +1939,13 @@
 			backdrop.style.zIndex = '200';
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal';
-			inner.style.cssText = 'max-width:360px;width:min(360px,94vw)';
+			inner.style.cssText = 'max-width:420px;width:min(420px,94vw)';
 			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title">' + ico(ICO.npc) + ' Choose Partner</span>' +
+				'<span class="pk-modal-title">' + ico(ICO.npc) + ' Choose Walking Partner</span>' +
 				'<button class="pk-close" id="partnerPickerClose" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>' +
 				'<div class="pk-modal-body" style="padding-top:8px">' +
-				'<div id="partnerPickerGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:320px;overflow-y:auto;padding:4px 2px"></div>' +
+				'<div id="partnerPickerGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-height:340px;overflow-y:auto;padding:4px 2px"></div>' +
 				'</div>';
 			backdrop.appendChild(inner);
 			// Click outside inner box closes
@@ -1956,6 +1956,8 @@
 			const inv = Inventory.load();
 			const current = inv.companionForm;
 
+			// Target display height for picker sprites (px).
+			const PICK_H = 44;
 			caught.forEach(dexId => {
 				const form = FOLLOWER_FORMS[dexId];
 				if (!form) return;
@@ -1963,8 +1965,17 @@
 				const cell = document.createElement('button');
 				cell.type = 'button';
 				cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '');
-				// Show first frame (40×40 top-left of sprite sheet) via CSS clip
-				cell.innerHTML = '<div class="partner-pick-sprite" style="background-image:url(' + form.url + ')"></div>' +
+				// Background-size derived from known (or default) frame dims so frame 0 fills the cell.
+				const bScale = PICK_H / form.frameH;
+				const bW = Math.round(form.frameW * form.cols * bScale);
+				const bH = Math.round(form.frameH * 8 * bScale);
+				const fW = Math.round(form.frameW * bScale);
+				cell.innerHTML =
+					'<div class="partner-pick-sprite" style="' +
+						'background-image:url(' + form.url + ');' +
+						'background-size:' + bW + 'px ' + bH + 'px;' +
+						'width:' + fW + 'px;height:' + PICK_H + 'px' +
+					'"></div>' +
 					'<div class="partner-pick-name">' + form.displayName + '</div>';
 				cell.addEventListener('click', () => {
 					window.__campScene?._switchFollower(dexId);
@@ -2092,17 +2103,34 @@
 		'Kabuto','Kabutops','Aerodactyl','Snorlax','Articuno','Zapdos',
 		'Moltres','Dratini','Dragonair','Dragonite','Mewtwo','Mew'
 	];
-	// Per-dex scale overrides (larger Pokémon get smaller scale so they fit visually)
-	const PMD_SCALE = {
-		6:0.68,9:0.68,31:0.65,34:0.65,59:0.65,62:0.65,65:0.65,68:0.65,
-		71:0.65,73:0.65,76:0.65,89:0.65,91:0.65,94:0.70,103:0.65,149:0.65,
-		143:0.60,150:0.65,131:0.65,130:0.65
-	};
+	// Official Pokédex heights in metres (index = dex number; 0 unused).
+	// _ensureFollowerSprite uses these to size walkers proportionally vs the trainer.
+	const POKEMON_HEIGHTS = [
+		0,                                                                         // 0 – unused
+		0.7,1.0,2.0,0.6,1.1,1.7,0.5,1.0,1.6,0.3, // 1-10  Bulbasaur … Caterpie
+		0.7,1.1,0.3,0.6,1.0,0.3,1.1,1.5,0.3,0.7, // 11-20 Metapod  … Raticate
+		0.3,1.2,2.0,3.5,0.4,0.8,0.6,1.0,0.4,0.8, // 21-30 Spearow  … Nidorina
+		1.3,0.5,0.9,1.4,0.6,1.3,0.6,1.1,0.5,1.0, // 31-40 Nidoqueen… Wigglytuff
+		0.8,1.6,0.5,0.8,1.2,0.3,1.0,1.0,1.5,0.2, // 41-50 Zubat    … Diglett
+		0.7,0.4,1.0,0.8,1.7,0.5,1.0,0.7,1.9,0.6, // 51-60 Dugtrio  … Poliwag
+		1.0,1.3,0.9,1.3,1.5,0.8,1.5,1.6,0.7,1.0, // 61-70 Poliwhirl… Weepinbell
+		1.7,0.9,1.6,0.4,1.0,1.4,1.0,1.7,1.2,1.6, // 71-80 Victreebel…Slowbro
+		0.3,1.0,0.8,1.4,1.8,1.1,1.7,0.9,1.2,0.3, // 81-90 Magnemite … Shellder
+		1.5,1.3,1.6,1.5,8.8,1.0,1.6,0.4,1.3,0.5, // 91-100 Cloyster … Voltorb
+		1.2,0.4,2.0,0.4,1.0,1.5,1.4,1.2,0.6,1.2, // 101-110 Electrode… Weezing
+		1.0,1.9,1.1,1.0,2.2,0.4,1.2,0.6,1.3,0.8, // 111-120 Rhyhorn  … Staryu
+		1.1,1.3,1.5,1.4,1.1,1.3,1.5,1.4,0.9,6.5, // 121-130 Starmie  … Gyarados
+		2.5,0.3,0.3,1.0,0.8,0.9,0.8,0.4,1.0,0.5, // 131-140 Lapras   … Kabuto
+		1.3,1.8,2.1,1.7,1.6,2.0,1.8,4.0,2.2,2.0, // 141-150 Kabutops … Mewtwo
+		0.4,                                        // 151 Mew
+	];
 	for (let _i = 1; _i <= 151; _i++) {
 		FOLLOWER_FORMS[_i] = {
 			sheet: 'pmd-' + _i,
 			url: PMD_CDN + String(_i).padStart(4,'0') + '/Walk-Anim.png',
-			cols: 6, originY: 0.75, scale: PMD_SCALE[_i] || 0.72,
+			cols: 6, originY: 0.75,
+			// 0.72 is a safe fallback; _ensureFollowerSprite recomputes from real height.
+			scale: 0.72,
 			frameW: 40, frameH: 40, displayName: PMD_NAMES[_i], dex: _i
 		};
 	}
@@ -5805,6 +5833,13 @@
 							}
 							// Patch the shared form object so _switchFollower reads correct dims.
 							form.frameW = frameW; form.frameH = frameH; form.cols = cols;
+							// Compute proportional scale from Pokédex height vs trainer.
+							// Trainer = 38px frame × 0.75 scale = 28.5 world-px tall.
+							// sqrt(h/1.7) gives: Pikachu(0.4m)→49% trainer, Charizard(1.7m)→100%, Snorlax(2.1m)→111%.
+							if (form.dex && POKEMON_HEIGHTS[form.dex]) {
+								const targetVis = 28.5 * Math.sqrt(POKEMON_HEIGHTS[form.dex] / 1.7);
+								form.scale = Math.min(1.1, Math.max(0.28, targetVis / frameH));
+							}
 							this.textures.addSpriteSheet(form.sheet, img, { frameWidth: frameW, frameHeight: frameH });
 						}
 						onReady();
