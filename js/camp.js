@@ -6441,16 +6441,36 @@
 					if (cachedH > 0 && expectedH > 0 && cachedH === expectedH) {
 						// Patch form dims from the cached texture so _switchFollower is consistent.
 						const cachedW = f0 ? (f0.realWidth || f0.width || f0.cutWidth || cachedH) : cachedH;
-						form.frameH = cachedH;
-						form.frameW = cachedW;
-						form.cols   = src ? Math.round(src.width / cachedW) : (form.cols || 4);
-						// (Re)compute scale — may be missing if this is the first switch this session.
-						if (form.dex && POKEMON_HEIGHTS[form.dex]) {
-							const targetVis = 35 * Math.sqrt(POKEMON_HEIGHTS[form.dex] / 1.7);
-							form.scale = Math.min(1.1, Math.max(0.40, targetVis / cachedH));
+						// Also verify frameW using the same smallest-frameW algorithm so a stale
+						// texture loaded with the old "preferred col count" detector is invalidated.
+						let expectedW = cachedW;
+						if (src && src.width) {
+							const _sw = [24, 28, 32, 36, 40, 48, 56, 64];
+							for (const w of _sw) {
+								if (src.width % w === 0) {
+									const c = src.width / w;
+									if (c >= 3 && c <= 10) { expectedW = w; break; }
+								}
+							}
+							if (PMD_FRAME_OVERRIDES[form.dex]) expectedW = PMD_FRAME_OVERRIDES[form.dex].frameW;
 						}
-						onReady();
-						return;
+						if (cachedW !== expectedW) {
+							// frameW mismatch — stale texture from old detector; fall through to re-fetch.
+							console.warn('[Camp] Stale frameW for', form.sheet,
+								'— expected', expectedW, 'got', cachedW, '; reloading.');
+							this.textures.remove(form.sheet);
+						} else {
+							form.frameH = cachedH;
+							form.frameW = cachedW;
+							form.cols   = src ? Math.round(src.width / cachedW) : (form.cols || 4);
+							// (Re)compute scale — may be missing if this is the first switch this session.
+							if (form.dex && POKEMON_HEIGHTS[form.dex]) {
+								const targetVis = 35 * Math.sqrt(POKEMON_HEIGHTS[form.dex] / 1.7);
+								form.scale = Math.min(1.1, Math.max(0.40, targetVis / cachedH));
+							}
+							onReady();
+							return;
+						}
 					}
 
 					// Dims don't match (stale texture from a previous buggy load) — destroy and re-fetch.
@@ -6478,28 +6498,24 @@
 							// Auto-detect frame dimensions from actual image dimensions.
 							// PMD Walk-Anim always has exactly 8 rows (8 directions).
 							let frameH = Math.round(img.naturalHeight / 8);
-							// Prefer col counts [4, 6, 3] — most PMD sheets use 4 walk frames.
-							// Try standard widths; pick smallest that gives a preferred col count first,
-							// then fall back to anything in 3–8.
+							// Pick the SMALLEST standard frameW that divides the sheet width
+							// evenly and gives a column count in [3..10].  Smallest frameW =
+							// most frames per direction = correct for PMD SpriteCollab, which
+							// uses 4, 6, or 8 walk frames depending on the species.
+							// (Old "preferred col count" approach wrongly detected frameW=48/cols=4
+							// for sheets that are 192 px wide with 8 frames of 24 px each.)
 							const stdW = [24, 28, 32, 36, 40, 48, 56, 64];
-							const preferred = [4, 6, 3, 5, 7, 8];
-							let frameW = frameH, cols = 4;
-							// First pass: preferred col counts
-							outer: for (const pc of preferred) {
-								for (const w of stdW) {
-									if (img.naturalWidth % w === 0 && img.naturalWidth / w === pc) {
-										frameW = w; cols = pc; break outer;
-									}
+							let frameW = 0, cols = 0;
+							for (const w of stdW) {
+								if (img.naturalWidth % w === 0) {
+									const c = img.naturalWidth / w;
+									if (c >= 3 && c <= 10) { frameW = w; cols = c; break; }
 								}
 							}
-							// Second pass fallback: any 3–8 col count
-							if (frameW === frameH) {
-								for (const w of stdW) {
-									if (img.naturalWidth % w === 0) {
-										const c = img.naturalWidth / w;
-										if (c >= 3 && c <= 8) { frameW = w; cols = c; break; }
-									}
-								}
+							// Fallback: use frameH as frame width if nothing matched.
+							if (!frameW) {
+								frameW = frameH;
+								cols = Math.max(3, Math.round(img.naturalWidth / frameW));
 							}
 							// Explicit override for sheets the detector can't resolve.
 							if (PMD_FRAME_OVERRIDES[form.dex]) {
