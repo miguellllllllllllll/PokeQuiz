@@ -1853,7 +1853,7 @@
 					if (pp.dailyCooldownMult < 1) passiveLabels.push(ico(ICO.moon) + ' Shorter daily cooldown');
 					if (passiveLabels.length > 0) infoLines.push(ico(ICO.sparkle) + ' ' + passiveLabels.join(', '));
 				}
-				extraEl.textContent = infoLines.join('  ·  ');
+				extraEl.innerHTML = infoLines.join('  ·  ');
 			}
 		}
 		function setStatus(msg, kind) {
@@ -1931,10 +1931,10 @@
 			const existing = document.getElementById('partnerPickerModal');
 			if (existing) { existing.remove(); return; }
 
-			// Build list of caught dex IDs using the exported isCaught check
+			// All 151 Gen-1 Pokémon are available as walking partners.
+			// Caught ones are highlighted; uncaught ones are still selectable (dimmed).
 			const caught = [];
-			for (let _d = 1; _d <= 151; _d++) { if (Pokedex.isCaught(_d)) caught.push(_d); }
-			if (!caught.length) { showToast('No Pokémon caught yet! Fish or battle to catch some.'); return; }
+			for (let _d = 1; _d <= 151; _d++) { caught.push(_d); }
 
 			// Outer backdrop (fixed overlay) + inner pk-modal box — same pattern as Pokédex/PCBox
 			const backdrop = document.createElement('div');
@@ -1966,9 +1966,10 @@
 				const form = FOLLOWER_FORMS[dexId];
 				if (!form) return;
 				const isActive = current == dexId;
+				const isCaughtPokemon = Pokedex.isCaught(dexId);
 				const cell = document.createElement('button');
 				cell.type = 'button';
-				cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '');
+				cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '') + (isCaughtPokemon ? '' : ' is-unseen');
 				// Background-size derived from known (or default) frame dims so frame 0 fills the cell.
 				const bScale = PICK_H / form.frameH;
 				const bW = Math.round(form.frameW * form.cols * bScale);

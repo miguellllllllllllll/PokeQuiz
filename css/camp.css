@@ -2110,6 +2110,15 @@ body.camp-body {
   font-family: var(--pk-font);
   line-height: 1;
 }
+/* Uncaught Pokémon — still selectable, but visually dimmed */
+.partner-pick-cell.is-unseen {
+  opacity: 0.45;
+  filter: grayscale(60%);
+}
+.partner-pick-cell.is-unseen:hover {
+  opacity: 0.75;
+  filter: grayscale(20%);
+}
 .partner-pick-sprite {
   background-position: 0 0;    /* frame 0: south idle */
   image-rendering: pixelated;
