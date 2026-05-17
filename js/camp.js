@@ -2209,7 +2209,7 @@
 	const NICKNAME_KEY  = 'pokequiz_partner_nickname';
 	const SHINY_KEY     = 'pokequiz_partner_shiny';
 	const SAVE_KEY      = 'pokequiz_last_save';
-	const PLANTS_KEY = 'pokequiz_camp_plants';
+	const PLANTS_KEY = (window.CAMP_DATA || {}).PLANTS_KEY;
 	const GROW_MS = 30 * 1000; // 30 seconds — tunable; deliberately short for Phase 1
 	function getEffectiveGrowMs() {
 		const inv = Inventory.load();
@@ -2370,19 +2370,7 @@
 		}
 		return { load, save };
 	})();
-	const Plants = (() => {
-		function load() {
-			try {
-				const raw = localStorage.getItem(PLANTS_KEY);
-				if (raw) return JSON.parse(raw);
-			} catch {}
-			return [];
-		}
-		function save(plants) {
-			try { localStorage.setItem(PLANTS_KEY, JSON.stringify(plants)); } catch {}
-		}
-		return { load, save };
-	})();
+	const Plants = (window.CAMP_SYSTEMS || {}).Plants;
 
 	// Camp NPCs. Stationary for Phase 1 — each renders frame 0 of its walk sheet
 	// (south-facing idle) and uses Manhattan-1 adjacency for the E-key dialog.
@@ -2397,16 +2385,8 @@
 	const Music = (window.CAMP_SYSTEMS || {}).Music;
 
 	// ── Stats tracking ───────────────────────────────────────────────────────────
-	const STATS_KEY = 'pokequiz_camp_stats';
-	const Stats = (() => {
-		const DEFAULT = { totalCatches: 0, totalHarvests: 0, totalDaysPlayed: 0, loginStreak: 0, totalTokensEarned: 0 };
-		function load() {
-			try { const r = localStorage.getItem(STATS_KEY); return r ? Object.assign({}, DEFAULT, JSON.parse(r)) : Object.assign({}, DEFAULT); } catch { return Object.assign({}, DEFAULT); }
-		}
-		function save(s) { try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch {} }
-		function increment(field, by) { const s = load(); s[field] = (s[field] || 0) + (by || 1); save(s); }
-		return { load, increment };
-	})();
+	const STATS_KEY = (window.CAMP_DATA || {}).STATS_KEY;
+	const Stats = (window.CAMP_SYSTEMS || {}).Stats;
 
 	// ── Daily login bonus ────────────────────────────────────────────────────────
 	const Daily = (() => {
@@ -3568,52 +3548,7 @@
 	const Achievements = (window.CAMP_SYSTEMS || {}).Achievements;
 
 	// ── Trainer Level ─────────────────────────────────────────────────────────────
-	const TrainerLevel = (() => {
-		// XP needed to advance FROM each level (level 1 → needs XP_TABLE[1] to reach 2)
-		const XP_TABLE = [0];
-		for (let i = 1; i <= 50; i++) XP_TABLE[i] = Math.floor(18 * i * i * 0.85);
-
-		const XP_SOURCES = { fish:15, harvest:10, rhythm:25, quest:20, cook:15, evolve:50,
-			amie:8, contest:30, compost:12, postcard:18, camper:10, battle:10, egg:40 };
-
-		function load() {
-			try { return JSON.parse(localStorage.getItem('pokequiz_trainer_level') || '{"level":1,"xp":0,"totalXp":0}'); }
-			catch { return { level:1, xp:0, totalXp:0 }; }
-		}
-		function save(d) { localStorage.setItem('pokequiz_trainer_level', JSON.stringify(d)); }
-
-		function addXP(source) {
-			const amount = XP_SOURCES[source] || 5;
-			const d = load();
-			d.xp = (d.xp || 0) + amount;
-			d.totalXp = (d.totalXp || 0) + amount;
-			let leveled = false;
-			while (d.level < 50 && d.xp >= XP_TABLE[d.level]) {
-				d.xp -= XP_TABLE[d.level];
-				d.level++;
-				leveled = true;
-			}
-			save(d);
-			if (leveled) {
-				showToast(ico(ICO.star) + ' Level Up! Trainer Level ' + d.level + '!');
-				if (d.level >= 10) Achievements.unlock('trainer10');
-				if (d.level >= 30) Achievements.unlock('trainer30');
-			}
-			updateHUD();
-		}
-
-		function updateHUD() {
-			const el = document.getElementById('trainerLevelBadge');
-			if (!el) return;
-			const d = load();
-			el.textContent = 'Lv.' + d.level;
-			const next = d.level < 50 ? XP_TABLE[d.level] : '---';
-			el.title = 'XP: ' + d.xp + ' / ' + next + '  |  Total: ' + d.totalXp;
-		}
-
-		function getLevel() { return load().level; }
-		return { addXP, updateHUD, getLevel };
-	})();
+	const TrainerLevel = (window.CAMP_SYSTEMS || {}).TrainerLevel;
 
 	// ── Camp Rating ───────────────────────────────────────────────────────────────
 	const CampRating = (() => {
@@ -4221,18 +4156,7 @@
 		return { open, close, increment, refresh };
 	})();
 
-	const WeatherSystem = {
-		check(scene) {
-			const now = Date.now();
-			const seed = Math.floor(now / (4 * 3600 * 1000));
-			const rng = ((seed * 1664525 + 1013904223) >>> 0) / 0xFFFFFFFF;
-			const shouldRain = rng < 0.3;
-			if (shouldRain && scene && scene.rainContainer && !scene._autoRainOn) {
-				scene._autoRainOn = true;
-				scene.isRaining = true;
-			}
-		},
-	};
+	const WeatherSystem = (window.CAMP_SYSTEMS || {}).WeatherSystem;
 
 	function getFurnitureBonuses() {
 		const inv = Inventory.load();
@@ -4265,30 +4189,7 @@
 
 
 	// ── Partner Mood System ───────────────────────────────────────────────────────
-	const PartnerMood = (() => {
-		function get(inv) {
-			const today = new Date().toISOString().slice(0,10);
-			if (inv.lastShinyToday === today || inv.lastPerfectQuizDate === today) return 'excited';
-			const now = Date.now();
-			const fedRecently = inv.lastBerryFed && (now - inv.lastBerryFed) < 2 * 3600000;
-			const quizToday = inv.lastQuizPlayed === today;
-			const bonusToday = (() => { try { return localStorage.getItem('pokequiz_camp_daily') === today; } catch(e) { return false; } })();
-			if (fedRecently || quizToday || bonusToday) return 'happy';
-			const noVisit24h = !inv.lastLogin || (now - inv.lastLogin) > 24 * 3600000;
-			if (noVisit24h) return 'tired';
-			return 'neutral';
-		}
-		function emoji(mood) {
-			if (mood === 'excited') return '🤩';
-			if (mood === 'happy') return '😊';
-			if (mood === 'tired') return '😴';
-			return '😐';
-		}
-		function tokenMultiplier(mood) {
-			return (mood === 'happy' || mood === 'excited') ? 1.1 : 1.0;
-		}
-		return { get, emoji, tokenMultiplier };
-	})();
+	const PartnerMood = (window.CAMP_SYSTEMS || {}).PartnerMood;
 
 	// ── Shiny Pokemon Encounters ──────────────────────────────────────────────────
 	const SHINY_POOL = (window.CAMP_DATA || {}).SHINY_POOL;

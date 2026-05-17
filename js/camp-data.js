@@ -817,3 +817,8 @@ window.CAMP_DATA.SIGN_MESSAGES_MARKET = {
 		'10,31': "Pokémon Center — free healing and a complimentary berry!",
 		'12,39': "Jolteon's Café — energizing beverages and treats!",
 	};
+
+// ── PLANTS_KEY ────────────────────────────────────────────────────────
+window.CAMP_DATA.PLANTS_KEY = 'pokequiz_camp_plants';
+// ── STATS_KEY ────────────────────────────────────────────────────────
+window.CAMP_DATA.STATS_KEY = 'pokequiz_camp_stats';
