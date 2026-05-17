@@ -1464,11 +1464,14 @@
 		wardrobe:     { s:2, x:64,  y:48, w:16, h:16 },
 		chest:        { s:2, x:0,   y:32, w:16, h:16 },
 		// ── Sheet 1 (multi-tile sprites scaled to 16×16) ─────────────────────────
-		curtain:      { s:1, x:96,  y:80,  w:32, h:48 },
-		curtain_green:{ s:1, x:96,  y:128, w:32, h:48 },
-		curtain_blue: { s:1, x:96,  y:176, w:32, h:48 },
-		lamp:         { s:1, x:208, y:160, w:16, h:16 },
-		floorlamp:    { s:1, x:208, y:160, w:16, h:16 },
+		// Curtains: cols 8-9, each set is 3 rows tall (verified via pixel scan)
+		curtain:      { s:1, x:128, y:80,  w:32, h:48 },
+		curtain_green:{ s:1, x:128, y:128, w:32, h:48 },
+		curtain_blue: { s:1, x:128, y:176, w:32, h:48 },
+		// Candle at col 15, row 10 (verified)
+		lamp:         { s:1, x:240, y:160, w:16, h:16 },
+		floorlamp:    { s:1, x:240, y:160, w:16, h:16 },
+		// Vase/pot at col 13, row 14
 		vase:         { s:1, x:208, y:224, w:16, h:16 },
 	};
 
