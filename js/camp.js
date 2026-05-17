@@ -122,10 +122,14 @@
 			startMinigame(next);
 		}
 
+		function showRhythmDifficulty() {
+			show('rhythm-diff');
+		}
+
 		function startMinigame(key) {
 			if (key === 'card')    startCard();
 			else if (key === 'rps')    startRps();
-			else if (key === 'rhythm') startRhythm();
+			else if (key === 'rhythm') showRhythmDifficulty();
 			else if (key === 'sketch') startSketch();
 		}
 
@@ -194,7 +198,21 @@
 		}
 
 		// ── Rhythm strike ─────────────────────────────────────────────────────────
-		function startRhythm() {
+		function startRhythm(difficulty) {
+			const diff = difficulty || 'normal';
+			const CONFIGS = {
+				easy:   { speed: 1.4, zoneW: 28, zoneL: 36, hitsNeeded: 3, missesAllowed: 3, mult: 1 },
+				normal: { speed: 2.2, zoneW: 20, zoneL: 40, hitsNeeded: 3, missesAllowed: 3, mult: 2 },
+				hard:   { speed: 3.4, zoneW: 10, zoneL: 45, hitsNeeded: 5, missesAllowed: 2, mult: 4 },
+			};
+			const cfg = CONFIGS[diff] || CONFIGS.normal;
+			window.__rhythmMult = cfg.mult;
+			const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { rhythmSpeedPenalty: 1 };
+			const SPEED = cfg.speed * pp.rhythmSpeedPenalty;
+			const HITS_NEEDED = cfg.hitsNeeded;
+			const MISSES_ALLOWED = cfg.missesAllowed;
+			const zoneEl = document.querySelector('.cb-rhythm-zone');
+			if (zoneEl) { zoneEl.style.width = cfg.zoneW + '%'; zoneEl.style.left = cfg.zoneL + '%'; }
 			show('rhythm');
 			const cursor = $('cbRhythmCursor');
 			const score = $('cbRhythmScore');
@@ -204,32 +222,34 @@
 			let dir = 1;
 			let hits = 0;
 			let misses = 0;
-			const SPEED = 2.2;
-			const target = (pct) => Math.max(0, Math.min(100, pct));
+			const targetFn = (pct) => Math.max(0, Math.min(100, pct));
 			let raf = null;
 			const tick = () => {
 				pos += dir * SPEED;
 				if (pos >= 100) { pos = 100; dir = -1; }
 				if (pos <= 0)   { pos = 0;   dir =  1; }
-				cursor.style.left = target(pos) + '%';
+				cursor.style.left = targetFn(pos) + '%';
 				raf = requestAnimationFrame(tick);
 			};
 			tick();
-			score.textContent = 'Hits: 0 / 3 · Misses: 0 / 3';
+			score.textContent = 'Hits: 0 / ' + HITS_NEEDED + ' · Misses: 0 / ' + MISSES_ALLOWED;
+			const zoneLeft = cfg.zoneL;
+			const zoneRight = cfg.zoneL + cfg.zoneW;
 			const finish = (won) => {
 				if (raf) cancelAnimationFrame(raf);
 				document.removeEventListener('keydown', onKey);
 				res.hidden = false;
 				res.textContent = won ? '✅ Rhythm mastered!' : '❌ Out of sync.';
+				if (won) { DailyQuests.increment('rhythm'); Achievements.increment('rhythm100'); }
 				setTimeout(() => end(won, won ? hits : 0), 1300);
 			};
 			const onKey = (e) => {
 				if (e.key !== ' ' && e.key !== 'Spacebar') return;
 				e.preventDefault();
-				if (pos >= 45 && pos <= 55) hits++; else misses++;
-				score.textContent = 'Hits: ' + hits + ' / 3 · Misses: ' + misses + ' / 3';
-				if (hits >= 3) finish(true);
-				else if (misses >= 3) finish(false);
+				if (pos >= zoneLeft && pos <= zoneRight) hits++; else misses++;
+				score.textContent = 'Hits: ' + hits + ' / ' + HITS_NEEDED + ' · Misses: ' + misses + ' / ' + MISSES_ALLOWED;
+				if (hits >= HITS_NEEDED) finish(true);
+				else if (misses >= MISSES_ALLOWED) finish(false);
 			};
 			// Tap or click anywhere on the bar to register a hit. iOS Safari can
 			// drop pointerdown if the gesture is interpreted as a scroll attempt,
@@ -312,11 +332,19 @@
 				// Furniture desk bonus
 				const fb = getFurnitureBonuses ? getFurnitureBonuses() : null;
 				if (fb && rawBonus > 1) tokenBonus += fb.rhythmTokenBonus; // desk gives +1 on rhythm
+				// Partner passive: Flareon gives +1 token on rhythm
+				const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { rhythmTokenBonus: 0 };
+				if (rawBonus > 1) tokenBonus += pp.rhythmTokenBonus;
+				// Rhythm difficulty multiplier
+				if (rawBonus > 1 && window.__rhythmMult) tokenBonus = Math.round(tokenBonus * window.__rhythmMult);
 				if (tokenBonus > 0) {
 					inv.tokens = (inv.tokens || 0) + tokenBonus;
 					bodyMsg += ' +' + tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' 🪙';
 				}
 				Inventory.save(inv);
+				if ((inv.tokens || 0) >= 500) Achievements.unlock('shopkeeper');
+				DailyQuests.increment('minigame');
+				showToast && showToast('+' + (tokenBonus > 0 ? tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' 🪙' : '1 Berry 🍓'));
 			}
 			$('cbEndBody').textContent = bodyMsg;
 			const btn = $('cbEndBtn');
@@ -338,6 +366,12 @@
 				sb.dataset.wired = '1';
 				sb.addEventListener('click', nextFromWheel);
 			}
+			document.querySelectorAll('[data-diff]').forEach(btn => {
+				if (!btn.dataset.diffWired) {
+					btn.dataset.diffWired = '1';
+					btn.addEventListener('click', () => startRhythm(btn.dataset.diff));
+				}
+			});
 		}
 		// Wire as soon as DOM is ready (in case start() hasn't been called yet).
 		if (document.readyState === 'loading') {
@@ -366,12 +400,24 @@
 			if (tokensEl) tokensEl.textContent = inv.tokens || 0;
 			if (berryEl) berryEl.textContent = inv.friendshipBerries || 0;
 			if (seedEl) seedEl.textContent = inv.seeds || 0;
+			const baitCountEl = $('cmBaitCount');
+			if (baitCountEl) baitCountEl.textContent = inv.fishingBait || 0;
+			const premiumSeedCountEl = $('cmPremiumSeedCount');
+			if (premiumSeedCountEl) premiumSeedCountEl.textContent = inv.premiumSeeds || 0;
+			const oranSeedCountEl = $('cmOranSeedCount');
+			if (oranSeedCountEl) oranSeedCountEl.textContent = inv.oranSeeds || 0;
 			const sellOne = $('cmSellOne');
 			const sellAll = $('cmSellAll');
 			const buySeed = $('cmBuySeed');
 			if (sellOne) sellOne.disabled = (inv.friendshipBerries || 0) <= 0;
 			if (sellAll) sellAll.disabled = (inv.friendshipBerries || 0) <= 0;
 			if (buySeed) buySeed.disabled = (inv.tokens || 0) < SEED_PRICE;
+			const buyBait = $('cmBuyBait');
+			if (buyBait) buyBait.disabled = (inv.tokens || 0) < 12;
+			const buyPremiumSeed = $('cmBuyPremiumSeed');
+			if (buyPremiumSeed) buyPremiumSeed.disabled = (inv.tokens || 0) < 18;
+			const buyOranSeed = $('cmBuyOranSeed');
+			if (buyOranSeed) buyOranSeed.disabled = (inv.tokens || 0) < 20;
 			const buyScythe = $('cmBuyScythe');
 			if (buyScythe) {
 				buyScythe.disabled = !!inv.hasScythe || (inv.tokens || 0) < SCYTHE_PRICE;
@@ -492,6 +538,33 @@
 				inv.seeds = (inv.seeds || 0) + 1;
 				Inventory.save(inv);
 				setStatus('Bought 1 Seed for ' + SEED_PRICE + ' Tokens.');
+				refresh();
+			});
+			$('cmBuyBait') && $('cmBuyBait').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if ((inv.tokens || 0) < 12) return;
+				inv.tokens -= 12;
+				inv.fishingBait = (inv.fishingBait || 0) + 3;
+				Inventory.save(inv);
+				setStatus('Bought 3 Fishing Bait! Bigger catch zone when fishing.');
+				refresh();
+			});
+			$('cmBuyPremiumSeed') && $('cmBuyPremiumSeed').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if ((inv.tokens || 0) < 18) return;
+				inv.tokens -= 18;
+				inv.premiumSeeds = (inv.premiumSeeds || 0) + 1;
+				Inventory.save(inv);
+				setStatus('Bought 1 Premium Seed! Grows 3× faster and gives double berries.');
+				refresh();
+			});
+			$('cmBuyOranSeed') && $('cmBuyOranSeed').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if ((inv.tokens || 0) < 20) return;
+				inv.tokens -= 20;
+				inv.oranSeeds = (inv.oranSeeds || 0) + 1;
+				Inventory.save(inv);
+				setStatus('Bought 1 Oran Seed! Plants a berry that gives extra friendship.');
 				refresh();
 			});
 			$('cmBuyScythe') && $('cmBuyScythe').addEventListener('click', () => {
@@ -685,6 +758,9 @@
 			cancelPlace();
 			liveUpdate();
 			refresh();
+			// Achievement: place 5+ furniture pieces
+			const allPlacements = Object.assign({}, i.cosmetics.roomPlacements || {}, i.cosmetics.housePlacements || {});
+			if (Object.keys(allPlacements).length >= 5) Achievements.unlock('decorator');
 		}
 
 		function refresh() {
@@ -936,6 +1012,18 @@
 					if (inv.boosts.rhythmBoost > _now) infoLines.push('☕ Rhythm boost: ' + Math.ceil((inv.boosts.rhythmBoost - _now) / 60000) + 'min left');
 					if (inv.boosts.fastGrow > _now) infoLines.push('🍵 Fast-grow: ' + Math.ceil((inv.boosts.fastGrow - _now) / 60000) + 'min left');
 				}
+				// Show partner passive ability
+				if (typeof getPartnerPassive === 'function') {
+					const pp = getPartnerPassive();
+					const passiveLabels = [];
+					if (pp.fishingBonus) passiveLabels.push('🎣 Wider fishing zone');
+					if (pp.rhythmTokenBonus > 0) passiveLabels.push('🎵 +' + pp.rhythmTokenBonus + ' rhythm token');
+					if (pp.rhythmSpeedPenalty < 1) passiveLabels.push('⚡ Slower rhythm cursor');
+					if (pp.growSpeedBonus > 0) passiveLabels.push('🌱 Faster berry growth');
+					if (pp.questRewardBonus > 0) passiveLabels.push('📋 +' + pp.questRewardBonus + ' quest tokens');
+					if (pp.dailyCooldownMult < 1) passiveLabels.push('🌙 Shorter daily cooldown');
+					if (passiveLabels.length > 0) infoLines.push('✨ ' + passiveLabels.join(', '));
+				}
 				extraEl.textContent = infoLines.join('  ·  ');
 			}
 		}
@@ -989,6 +1077,7 @@
 			inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship || 0) + FRIENDSHIP_PER_BERRY);
 			Inventory.save(inv);
 			DailyQuests.increment('feed');
+			if (inv.friendship >= FRIENDSHIP_MAX) Achievements.unlock('fullFriend');
 			if (inv.friendship >= FRIENDSHIP_MAX && sceneRef && typeof sceneRef._triggerEvolution === 'function') {
 				close();
 				sceneRef._triggerEvolution();
@@ -1060,10 +1149,18 @@
 		// Furniture grow speed bonus: 20% faster
 		const fb = getFurnitureBonuses ? getFurnitureBonuses() : { growSpeedBonus: 0 };
 		if (fb.growSpeedBonus > 0) ms = Math.floor(ms * (1 - fb.growSpeedBonus));
+		// Partner passive: Leafeon gives +30% grow speed
+		const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { growSpeedBonus: 0 };
+		if (pp.growSpeedBonus > 0) ms = Math.floor(ms * (1 - pp.growSpeedBonus));
 		return Math.max(1000, ms);
 	}
 	const SEED_PRICE = 5;
 	const BERRY_PRICE = 10;
+	const BERRY_TYPES = {
+		pecha:  { label: 'Pecha Berry',  emoji: '🩷', growMs: 30000,  friendship: 20, sellPrice: 10, color: '#ffaacc' },
+		oran:   { label: 'Oran Berry',   emoji: '🫐', growMs: 90000,  friendship: 35, sellPrice: 18, color: '#6688ff' },
+		sitrus: { label: 'Sitrus Berry', emoji: '🍋', growMs: 180000, friendship: 50, sellPrice: 30, color: '#ffdd44' },
+	};
 	const SCYTHE_PRICE = 75;
 	const SCYTHE_RADIUS = 3; // Manhattan radius around the player for a single swing
 	const STONE_PRICE = 50;
@@ -1084,6 +1181,8 @@
 		flareon:  { sheet: 'flareon',  cols: 4, originY: 28/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Flareon' },
 		jolteon:  { sheet: 'jolteon',  cols: 4, originY: 29/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Jolteon' },
 		leafeon:  { sheet: 'leafeon',  cols: 4, originY: 32/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Leafeon' },
+		glaceon:  { sheet: 'glaceon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Glaceon' },
+		sylveon:  { sheet: 'sylveon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Sylveon' },
 	};
 	// ── Cosmetic lookup tables ────────────────────────────────────────────────────
 	const WALLPAPER_BG = {
@@ -1984,26 +2083,50 @@
 		return { ready, claim, hoursLeft };
 	})();
 
+	function getNpcDialog(npc) {
+		if (typeof npc.dialog === 'string') return npc.dialog;
+		if (Array.isArray(npc.dialog)) {
+			const day = Math.floor(Date.now() / 86400000);
+			const hash = (npc.key || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+			return npc.dialog[(day + hash) % npc.dialog.length];
+		}
+		return '';
+	}
+
 	const NPCS = [
 		{
 			key: 'mart-keeper', species: 'pikachu', r: 14, c: 13,
 			label: 'Shop',
 			spriteScale: 0.55, frameHeight: 40,
 			kind: 'mart',
-			dialog: "Welcome to my shop! I buy berries and sell seeds — opening the mart now.",
+			dialog: [
+				"Welcome to my shop! I buy berries and sell seeds — opening the mart now.",
+				"Pika! Business is slow today. Come sell those berries!",
+				"The freshest seeds in camp — straight from the Pokémon Express!",
+				"Pikachu estimates berry prices are UP today. Sell now!",
+			],
 		},
 		{
 			key: 'farmer', species: 'bulbasaur', r: 19, c: 19,
 			label: 'Talk',
 			spriteScale: 0.6, frameHeight: 40,
-			dialog: "These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
+			dialog: [
+				"These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
+				"Bulba! Rain makes the berries grow faster — or so they say.",
+				"I heard Oran Berries give extra friendship. Worth the wait!",
+				"Saur! My record is 20 berries in one harvest. Can you beat it?",
+			],
 		},
 		{
 			key: 'quest-board', species: 'pikachu', r: 8, c: 28,
 			label: 'Quests',
 			kind: 'quests',
 			spriteScale: 0.55, frameHeight: 40,
-			dialog: "Daily quest board! Check your tasks for today.",
+			dialog: [
+				"Daily quest board! Check your tasks for today.",
+				"New quests reset at midnight. Have you done yours?",
+				"Complete all quests for bonus tokens!",
+			],
 		},
 	];
 
@@ -2765,6 +2888,21 @@
 		tint.style.background = color;
 	}
 
+	function updateDayNightTint() {
+		const tint = document.getElementById('campTint');
+		if (!tint) return;
+		const h = new Date().getHours() + new Date().getMinutes() / 60;
+		let opacity = 0;
+		if (h >= 20 || h < 5)        opacity = 0.45;
+		else if (h >= 18 && h < 20)  opacity = 0.45 * ((h - 18) / 2);
+		else if (h >= 5  && h < 7)   opacity = 0.35 * (1 - (h - 5) / 2);
+		tint.style.opacity = opacity.toFixed(3);
+		tint.style.background = (opacity > 0.2) ? '#0a0820' : '#000';
+		const isNight = h >= 20 || h < 6;
+		window.__isNight = isNight;
+		if (isNight) Achievements.unlock('nightOwl');
+	}
+
 	// ── House interior map ───────────────────────────────────────────────────────
 	// 16 wide × 12 tall — wainscot walls, wood floor, rug accent, exit door at south,
 	// stairs tucked into the north-east corner.
@@ -2833,13 +2971,21 @@
 			key: 'm-pikachu', species: 'pikachu', r: 7, c: 7,
 			label: 'Shop', shopKind: 'general',
 			spriteScale: 0.55, frameHeight: 40,
-			dialog: "Pika! Seeds and berries at the trainer's mart.",
+			dialog: [
+				"Pika! Seeds and berries at the trainer's mart.",
+				"Pikachu says: berry prices looking good today!",
+				"Come see what's in stock!",
+			],
 		},
 		{
 			key: 'm-bulbasaur', species: 'bulbasaur', r: 7, c: 22,
 			label: 'Shop', shopKind: 'berries',
 			spriteScale: 0.6, frameHeight: 40,
-			dialog: "Bulba! Fresh-picked berries straight from my patch.",
+			dialog: [
+				"Bulba! Fresh-picked berries straight from my patch.",
+				"The soil looks extra fertile today — good planting weather!",
+				"Try an Oran Seed for a bigger friendship boost!",
+			],
 		},
 		{
 			key: 'm-vaporeon', species: 'vaporeon', r: 14, c: 7,
@@ -2919,6 +3065,8 @@
 				{ label: '🔥 Fire Stone',    cost: 50, action: 'buyStone', key: 'fire'    },
 				{ label: '⚡ Thunder Stone', cost: 50, action: 'buyStone', key: 'thunder' },
 				{ label: '🌿 Leaf Stone',    cost: 50, action: 'buyStone', key: 'leaf'    },
+				{ label: '🧊 Ice Stone',     cost: 50, action: 'buyStone', key: 'ice'     },
+				{ label: '💎 Shiny Stone',   cost: 50, action: 'buyStone', key: 'shiny'   },
 			],
 		},
 		pokecenter: {
@@ -3082,12 +3230,28 @@
 					'<div id="fishCursor" style="position:absolute;top:0;height:100%;width:6px;background:#f6c84c;border-radius:3px;left:0%"></div>' +
 				'</div>' +
 				'<button id="fishCast" type="button" style="font-family:inherit;font-size:9px;padding:10px 22px;background:linear-gradient(180deg,#4a9e4a,#2a7a2a);color:#fff;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px">Cast</button>' +
-				'<button id="fishClose" type="button" style="display:block;margin:8px auto 0;font-family:inherit;font-size:8px;background:none;border:none;color:#a8c8e8;cursor:pointer">Leave</button>' +
+				'<button id="fishLogBtn" type="button" style="font-family:inherit;font-size:8px;padding:6px 14px;background:none;border:1px solid #4a7a9a;color:#a8c8e8;border-radius:6px;cursor:pointer;margin-top:4px">📖 Log</button>' +
+			'<div id="fishLog" style="display:none;margin-top:8px;text-align:left;font-size:7px;color:#a8c8e8;max-height:120px;overflow-y:auto"></div>' +
+			'<button id="fishClose" type="button" style="display:block;margin:8px auto 0;font-family:inherit;font-size:8px;background:none;border:none;color:#a8c8e8;cursor:pointer">Leave</button>' +
 			'</div>';
 			document.body.appendChild(p);
 			document.getElementById('fishClose').addEventListener('click', close);
 			document.getElementById('fishCast').addEventListener('click', () => {
 				if (phase === 'running') reel(); else cast();
+			});
+			document.getElementById('fishLogBtn').addEventListener('click', () => {
+				const logEl = document.getElementById('fishLog');
+				if (!logEl) return;
+				if (logEl.style.display === 'none') {
+					logEl.style.display = 'block';
+					const fishLog = Inventory.load().fishLog || [];
+					if (fishLog.length === 0) { logEl.textContent = 'No catches yet!'; }
+					else {
+						logEl.innerHTML = fishLog.map(f => '<div style="padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.08)">' + f.emoji + ' ' + f.name + ' <span style="color:#8888aa;font-size:6px">(' + new Date(f.ts).toLocaleDateString() + ')</span></div>').join('');
+					}
+				} else {
+					logEl.style.display = 'none';
+				}
 			});
 		}
 		let raf = null, pos = 0, dir = 1, phase = 'idle';
@@ -3097,6 +3261,14 @@
 			const cursor = document.getElementById('fishCursor');
 			const castBtn = document.getElementById('fishCast');
 			const status = document.getElementById('fishStatus');
+			const hasBait = (Inventory.load().fishingBait || 0) > 0;
+			const ppCast = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { fishingBonus: false };
+			const zone = document.getElementById('fishZone');
+			if (zone) {
+				if (ppCast.fishingBonus) { zone.style.width = '50%'; zone.style.left = '25%'; }
+				else if (hasBait) { zone.style.width = '42%'; zone.style.left = '29%'; }
+				else { zone.style.width = '30%'; zone.style.left = '35%'; }
+			}
 			if (castBtn) castBtn.textContent = 'Reel!';
 			if (status) status.textContent = 'Tap Reel when in the green zone!';
 			const SPEED = 1.8;
@@ -3118,13 +3290,32 @@
 			if (castBtn) castBtn.textContent = 'Cast';
 			if (hit) {
 				const inv = Inventory.load();
-				const roll = Math.random();
-				let reward = '';
-				if (roll < 0.5) { inv.friendshipBerries = (inv.friendshipBerries || 0) + 1; reward = '1 Friendship Berry 🍓'; }
-				else if (roll < 0.8) { inv.friendshipBerries = (inv.friendshipBerries || 0) + 2; reward = '2 Friendship Berries 🍓🍓'; }
-				else { inv.seeds = (inv.seeds || 0) + 1; reward = '1 Seed 🌱'; }
+				const hasBait = (inv.fishingBait || 0) > 0;
+				if (hasBait) { inv.fishingBait -= 1; }
+				const roll = Math.random() + (hasBait ? 0.15 : 0);
+				let caught = null;
+				if (roll < 0.45) caught = { name: 'Magikarp', rarity: 'common',   reward: 'berry',  amount: 1, emoji: '🐟' };
+				else if (roll < 0.70) caught = { name: 'Goldeen', rarity: 'common',   reward: 'berry',  amount: 2, emoji: '🐠' };
+				else if (roll < 0.87) caught = { name: 'Psyduck',  rarity: 'uncommon', reward: 'seed',   amount: 1, emoji: '🦆' };
+				else if (roll < 0.96) caught = { name: 'Lapras',   rarity: 'rare',     reward: 'tokens', amount: 8, emoji: '🦕' };
+				else                   caught = { name: 'Shiny Gyarados', rarity: 'shiny', reward: 'tokens', amount: 25, emoji: '✨' };
+
+				if (caught.reward === 'berry')  inv.friendshipBerries = (inv.friendshipBerries || 0) + caught.amount;
+				if (caught.reward === 'seed')   inv.seeds = (inv.seeds || 0) + caught.amount;
+				if (caught.reward === 'tokens') inv.tokens = (inv.tokens || 0) + caught.amount;
+
+				if (!inv.fishLog) inv.fishLog = [];
+				inv.fishLog.unshift({ name: caught.name, emoji: caught.emoji, rarity: caught.rarity, ts: Date.now() });
+				if (inv.fishLog.length > 10) inv.fishLog.length = 10;
+
 				Inventory.save(inv);
-				if (status) status.textContent = '🎉 Got ' + reward + '! Cast again?';
+				DailyQuests.increment('fish');
+				Achievements.unlock('firstCatch');
+				if (caught.rarity === 'rare' || caught.rarity === 'shiny') Achievements.unlock('rareFish');
+
+				const rewardStr = caught.reward === 'tokens' ? caught.amount + '🪙' : caught.amount + (caught.reward === 'berry' ? '🍓' : '🌱');
+				if (status) status.textContent = caught.emoji + ' Caught ' + caught.name + '! +' + rewardStr + (hasBait ? ' (bait bonus!)' : '');
+				showToast(caught.emoji + ' ' + caught.name + ' caught!');
 			} else {
 				if (status) status.textContent = '❌ The fish got away! Try again.';
 			}
@@ -3147,11 +3338,62 @@
 		return { start, close, isOpen: getIsOpen };
 	})();
 
+	function showToast(msg) {
+		const existing = document.getElementById('campToast');
+		if (existing) existing.remove();
+		const toast = document.createElement('div');
+		toast.id = 'campToast';
+		toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;padding:10px 18px;font-family:"Press Start 2P",monospace;font-size:9px;color:#f6c84c;z-index:200;pointer-events:none;opacity:1;transition:opacity 0.5s ease;text-align:center;max-width:90vw;word-break:break-word';
+		toast.textContent = msg;
+		document.body.appendChild(toast);
+		setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 2800);
+	}
+
+	const Achievements = (() => {
+		const DEFS = [
+			{ id: 'firstCatch',   label: '🎣 First Catch',      desc: 'Catch your first fish'              },
+			{ id: 'rareFish',     label: '🦕 Rare Find',        desc: 'Catch a Lapras or Shiny Gyarados'   },
+			{ id: 'firstEvol',    label: '✨ Evolution!',        desc: 'Evolve your partner Pokémon'        },
+			{ id: 'fullFriend',   label: '💖 Best Friends',     desc: 'Max out friendship'                 },
+			{ id: 'rhythm100',    label: '🎵 Rhythm Master',    desc: 'Win 10 rhythm battles'              },
+			{ id: 'berryFarmer',  label: '🌾 Berry Farmer',     desc: 'Harvest 20 berries total'           },
+			{ id: 'questStreak',  label: '📋 Quest Complete',   desc: 'Complete all daily quests in a day' },
+			{ id: 'shopkeeper',   label: '💰 Wealthy Trainer',  desc: 'Earn 500 tokens total'              },
+			{ id: 'decorator',    label: '🛋️ Interior Design',  desc: 'Place 5 furniture pieces'           },
+			{ id: 'nightOwl',     label: '🌙 Night Owl',        desc: 'Play camp after 10 PM'              },
+		];
+		function load() {
+			const raw = localStorage.getItem('pokequiz_achievements');
+			return raw ? JSON.parse(raw) : {};
+		}
+		function save(data) { localStorage.setItem('pokequiz_achievements', JSON.stringify(data)); }
+		function unlock(id) {
+			const data = load();
+			if (data[id]) return;
+			data[id] = Date.now();
+			save(data);
+			showToast('🏅 Achievement: ' + (DEFS.find(d => d.id === id)?.label || id));
+		}
+		function increment(id) {
+			const data = load();
+			const key = '__count_' + id;
+			data[key] = (data[key] || 0) + 1;
+			if (id === 'rhythm100' && data[key] >= 10) unlock('rhythm100');
+			if (id === 'berryFarmer' && data[key] >= 20) unlock('berryFarmer');
+			save(data);
+		}
+		function getAll() { return { defs: DEFS, unlocked: load() }; }
+		return { unlock, increment, getAll };
+	})();
+
 	const DailyQuests = (() => {
 		const QUESTS = [
-			{ id: 'feed',    label: '🍓 Feed partner 3×',      goal: 3,  reward: 10 },
-			{ id: 'harvest', label: '🌾 Harvest a berry',        goal: 1,  reward: 8  },
-			{ id: 'market',  label: '🛒 Visit the marketplace',  goal: 1,  reward: 12 },
+			{ id: 'feed',     label: '🍓 Feed partner 3×',      goal: 3,  reward: 10 },
+			{ id: 'harvest',  label: '🌾 Harvest a berry',       goal: 1,  reward: 8  },
+			{ id: 'market',   label: '🛒 Visit the marketplace', goal: 1,  reward: 12 },
+			{ id: 'rhythm',   label: '🎵 Win a rhythm battle',   goal: 1,  reward: 15 },
+			{ id: 'fish',     label: '🎣 Catch a fish',          goal: 1,  reward: 10 },
+			{ id: 'minigame', label: '🎮 Win any wild battle',   goal: 1,  reward: 8  },
 		];
 		function todayKey() { return new Date().toISOString().slice(0, 10); }
 		function load() {
@@ -3176,12 +3418,15 @@
 		}
 		function claimBonus() {
 			const inv = Inventory.load();
-			const totalReward = QUESTS.reduce((s, q) => s + q.reward, 0);
+			const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { questRewardBonus: 0 };
+			const totalReward = QUESTS.reduce((s, q) => s + q.reward, 0) + (pp.questRewardBonus || 0) * QUESTS.length;
 			inv.tokens = (inv.tokens || 0) + totalReward;
 			inv.dailyQuests.claimed = true;
 			Inventory.save(inv);
 			const bonusEl = document.getElementById('questBonus');
 			if (bonusEl) bonusEl.textContent = '🎉 All done! +' + totalReward + ' tokens claimed!';
+			showToast('🎉 Daily quests done! +' + totalReward + ' tokens!');
+			Achievements.unlock('questStreak');
 		}
 		function refresh() {
 			const panel = document.getElementById('questPanel');
@@ -3245,6 +3490,18 @@
 		};
 	}
 
+	function getPartnerPassive() {
+		const form = (Inventory.load().eeveeForm) || 'eevee';
+		return {
+			fishingBonus:       form === 'vaporeon',
+			rhythmTokenBonus:   form === 'flareon' ? 1 : 0,
+			rhythmSpeedPenalty: form === 'jolteon' ? 0.85 : 1.0,
+			growSpeedBonus:     form === 'leafeon' ? 0.3 : 0,
+			questRewardBonus:   form === 'espeon' ? 3 : 0,
+			dailyCooldownMult:  form === 'umbreon' ? 0.85 : 1.0,
+		};
+	}
+
 	// ── Phaser Scenes ────────────────────────────────────────────────────────────
 	function makeSceneClass() {
 		return class CampScene extends Phaser.Scene {
@@ -3269,6 +3526,8 @@
 				this.load.spritesheet('flareon',  'Pictures/sprites/flareon.png',  { frameWidth: 32, frameHeight: 40 });
 				this.load.spritesheet('jolteon',  'Pictures/sprites/jolteon.png',  { frameWidth: 32, frameHeight: 40 });
 				this.load.spritesheet('leafeon',  'Pictures/sprites/leafeon.png',  { frameWidth: 32, frameHeight: 48 });
+				this.load.spritesheet('glaceon',  'Pictures/sprites/glaceon.png',  { frameWidth: 32, frameHeight: 48 });
+				this.load.spritesheet('sylveon',  'Pictures/sprites/sylveon.png',  { frameWidth: 32, frameHeight: 48 });
 				// NPC sprite sheets (PMD walk; row 0 frame 0 used as the static idle).
 				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
 				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
@@ -3635,7 +3894,7 @@
 						return { kind: 'feed', r, c, label: 'Feed' };
 					}
 					const npc = this.npcByTile && this.npcByTile[r + ',' + c];
-					if (npc) return { kind: 'npc', r, c, message: npc.dialog, label: npc.label, npcKind: npc.kind };
+					if (npc) return { kind: 'npc', r, c, message: getNpcDialog(npc), label: npc.label, npcKind: npc.kind };
 					if (!this.map[r] || this.map[r][c] === undefined) continue;
 					const t = this.map[r][c];
 					if (t === TSG) {
@@ -3739,25 +3998,59 @@
 			_handlePlantAction(target) {
 				const inv = Inventory.load();
 				if (target.kind === 'plant') {
+					if ((inv.premiumSeeds || 0) > 0) {
+						inv.premiumSeeds -= 1;
+						Inventory.save(inv);
+						this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now(), type: 'sitrus', premium: true });
+						Plants.save(this.plants);
+						this._refreshPlantSprites();
+						Sound.plant();
+						Dialog.open('You planted a Premium Sitrus Seed! It grows faster and gives more friendship.');
+						return true;
+					}
+					if ((inv.oranSeeds || 0) > 0) {
+						inv.oranSeeds -= 1;
+						Inventory.save(inv);
+						this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now(), type: 'oran' });
+						Plants.save(this.plants);
+						this._refreshPlantSprites();
+						Sound.plant();
+						Dialog.open('You planted an Oran Seed!');
+						return true;
+					}
 					if (inv.seeds <= 0) {
 						Dialog.open('You have no seeds! Talk to the farmer or check the soil later.');
 						return true;
 					}
 					inv.seeds -= 1;
 					Inventory.save(inv);
-					this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now() });
+					this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now(), type: 'pecha' });
 					Plants.save(this.plants);
 					this._refreshPlantSprites();
 					Sound.plant();
 					return true;
 				}
 				if (target.kind === 'harvest') {
+					const harvestPlant = this._findPlantAt(target.r, target.c);
+					const berryType = (harvestPlant && harvestPlant.type) ? harvestPlant.type : 'pecha';
+					const berryDef = BERRY_TYPES[berryType] || BERRY_TYPES.pecha;
 					this.plants = this.plants.filter(p => !(p.r === target.r && p.c === target.c));
 					inv.friendshipBerries = (inv.friendshipBerries || 0) + 1;
+					// Track by berry type
+					if (!inv.berryTypes) inv.berryTypes = {};
+					inv.berryTypes[berryType] = (inv.berryTypes[berryType] || 0) + 1;
 					let replantMsg = '';
-					if ((inv.seeds || 0) > 0) {
+					if ((inv.premiumSeeds || 0) > 0) {
+						inv.premiumSeeds -= 1;
+						this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now(), type: 'sitrus', premium: true });
+						replantMsg = ' A Premium Sitrus Seed was replanted.';
+					} else if ((inv.oranSeeds || 0) > 0) {
+						inv.oranSeeds -= 1;
+						this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now(), type: 'oran' });
+						replantMsg = ' An Oran Seed was replanted.';
+					} else if ((inv.seeds || 0) > 0) {
 						inv.seeds -= 1;
-						this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now() });
+						this.plants.push({ r: target.r, c: target.c, plantedAt: Date.now(), type: 'pecha' });
 						replantMsg = ' A fresh seed was replanted automatically.';
 					}
 					Plants.save(this.plants);
@@ -3766,7 +4059,8 @@
 					Sound.harvest();
 					Stats.increment('totalHarvests');
 					DailyQuests.increment('harvest');
-					Dialog.open('You harvested a Friendship Berry!' + replantMsg);
+					Achievements.increment('berryFarmer');
+					Dialog.open('You harvested a ' + berryDef.emoji + ' ' + berryDef.label + '! (+' + berryDef.friendship + ' friendship)' + replantMsg);
 					return true;
 				}
 				if (target.kind === 'growing') {
@@ -3854,6 +4148,8 @@
 				if (inv.stone === 'fire')    return 'flareon';
 				if (inv.stone === 'thunder') return 'jolteon';
 				if (inv.stone === 'leaf')    return 'leafeon';
+				if (inv.stone === 'ice')     return 'glaceon';
+				if (inv.stone === 'shiny')   return 'sylveon';
 				// No stone? Standing on tall grass also picks Leafeon, since the tile
 				// itself acts as the 'mossy rock' equivalent.
 				const ptc = Math.floor(this.player.x / TILE);
@@ -3879,6 +4175,7 @@
 				inv.friendship = FRIENDSHIP_MAX;
 				inv.stone = null;  // stones are consumed on use
 				Inventory.save(inv);
+				Achievements.unlock('firstEvol');
 				Sound.evolve();
 				// Flash overlay for dramatic effect
 				const flash = document.createElement('div');
@@ -5424,7 +5721,14 @@
 
 			create() {
 				console.log('[MarketScene] create()');
-				if (!sessionStorage.getItem('marketVisited')) { sessionStorage.setItem('marketVisited', '1'); DailyQuests.increment('market'); }
+				if (!sessionStorage.getItem('marketVisited')) {
+					sessionStorage.setItem('marketVisited', '1');
+					DailyQuests.increment('market');
+					const _mInv = Inventory.load();
+					if (_mInv.eeveeForm === 'vaporeon') {
+						setTimeout(() => Dialog.open('Your Vaporeon splashes excitedly — it loves the water fountains here!'), 800);
+					}
+				}
 				try {
 					this._buildMarket();
 					requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -5840,4 +6144,42 @@
 
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
 	else start();
+
+	// ── Day/night tint — update on load and every 60 seconds ─────────────────────
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => { updateDayNightTint(); setInterval(updateDayNightTint, 60000); });
+	} else {
+		updateDayNightTint();
+		setInterval(updateDayNightTint, 60000);
+	}
+
+	// ── Achievements panel wiring ─────────────────────────────────────────────────
+	function wireAchievementsPanel() {
+		document.getElementById('campAchieveBtn')?.addEventListener('click', () => {
+			const panel = document.getElementById('achievePanel');
+			if (!panel) return;
+			panel.hidden = !panel.hidden;
+			if (!panel.hidden) {
+				const { defs, unlocked } = Achievements.getAll();
+				const list = document.getElementById('achieveList');
+				if (!list) return;
+				list.innerHTML = '';
+				defs.forEach(d => {
+					const got = !!unlocked[d.id];
+					const row = document.createElement('div');
+					row.style.cssText = 'padding:8px;border-radius:8px;border:1px solid ' + (got ? 'rgba(246,200,76,0.5)' : 'rgba(255,255,255,0.08)') + ';opacity:' + (got ? '1' : '0.4');
+					row.innerHTML = '<div style="font-size:9px;color:' + (got ? '#f6c84c' : '#e8eaf0') + '">' + d.label + '</div>' +
+						'<div style="font-size:7px;color:#a8c8e8;margin-top:4px">' + d.desc + '</div>' +
+						(got ? '<div style="font-size:6px;color:#88ee88;margin-top:2px">✅ Unlocked ' + new Date(unlocked[d.id]).toLocaleDateString() + '</div>' : '');
+					list.appendChild(row);
+				});
+			}
+		});
+		document.getElementById('achieveClose')?.addEventListener('click', () => {
+			const panel = document.getElementById('achievePanel');
+			if (panel) panel.hidden = true;
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireAchievementsPanel);
+	else wireAchievementsPanel();
 })();

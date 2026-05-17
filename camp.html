@@ -159,6 +159,18 @@
 			<span class="camp-tc-icon">🪪</span>
 		</a>
 
+		<!-- Achievements button -->
+		<button class="camp-achieve-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements">🏅</button>
+
+		<!-- Achievements panel -->
+		<div id="achievePanel" hidden style="position:fixed;top:0;right:0;bottom:0;width:min(340px,100%);background:linear-gradient(180deg,#1a2440,#0e1826);border-left:2px solid #f6c84c;z-index:50;overflow-y:auto;font-family:'Press Start 2P',monospace;color:#e8eaf0;padding:14px 16px;box-sizing:border-box">
+			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+				<span style="color:#f6c84c;font-size:11px">🏅 ACHIEVEMENTS</span>
+				<button id="achieveClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button>
+			</div>
+			<div id="achieveList" style="display:flex;flex-direction:column;gap:8px"></div>
+		</div>
+
 		<!-- Partner Pokémon panel — feeding + status -->
 		<div class="camp-partner" id="campPartner" hidden>
 			<div class="cp-panel">
@@ -240,6 +252,31 @@
 						<span class="cm-row-cost">50 💰</span>
 						<button class="cb-btn cm-action" data-buy-stone="leaf" type="button">Buy</button>
 					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">🧊 Ice Stone <span class="cm-row-count cm-stone-status" data-stone="ice"></span></div>
+						<span class="cm-row-cost">50 💰</span>
+						<button class="cb-btn cm-action" data-buy-stone="ice" type="button">Buy</button>
+					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">💎 Shiny Stone <span class="cm-row-count cm-stone-status" data-stone="shiny"></span></div>
+						<span class="cm-row-cost">50 💰</span>
+						<button class="cb-btn cm-action" data-buy-stone="shiny" type="button">Buy</button>
+					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">🪱 Fishing Bait <span class="cm-row-count">(×<span id="cmBaitCount">0</span> owned)</span></div>
+						<span class="cm-row-cost">12 💰</span>
+						<button class="cb-btn cm-action" id="cmBuyBait" type="button">Buy ×3</button>
+					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">⭐ Premium Seed <span class="cm-row-count">(×<span id="cmPremiumSeedCount">0</span> owned)</span></div>
+						<span class="cm-row-cost">18 💰</span>
+						<button class="cb-btn cm-action" id="cmBuyPremiumSeed" type="button">Buy</button>
+					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">🫐 Oran Seed <span class="cm-row-count">(×<span id="cmOranSeedCount">0</span> owned)</span></div>
+						<span class="cm-row-cost">20 💰</span>
+						<button class="cb-btn cm-action" id="cmBuyOranSeed" type="button">Buy</button>
+					</div>
 				</div>
 
 				<div class="cm-section">
@@ -305,6 +342,17 @@
 				</div>
 				<button class="cb-btn cb-spin-btn" id="cbSpinBtn" type="button">Spin!</button>
 				<div class="cb-wheel-result" id="cbWheelResult" hidden></div>
+			</div>
+
+			<!-- Rhythm difficulty selector -->
+			<div class="cb-screen cb-rhythm-diff" data-screen="rhythm-diff" hidden>
+				<h2 class="cb-title">Rhythm Strike</h2>
+				<p class="cb-rhythm-hint" style="font-size:8px;margin-bottom:16px">Choose difficulty:</p>
+				<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+					<button class="cb-btn" data-diff="easy"   type="button" style="width:180px">🟢 Easy   · ×1 token</button>
+					<button class="cb-btn" data-diff="normal" type="button" style="width:180px">🟡 Normal · ×2 tokens</button>
+					<button class="cb-btn" data-diff="hard"   type="button" style="width:180px">🔴 Hard   · ×4 tokens</button>
+				</div>
 			</div>
 
 			<!-- Card-battle minigame -->
