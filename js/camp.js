@@ -63,6 +63,27 @@
 		npc:      'person-fill',
 		fossil:   'database-fill',
 	};
+
+	// ── Companion key helpers ─────────────────────────────────────────────────────
+	// Companion keys can be:
+	//   • eeveelution string  "eevee" | "vaporeon" | …
+	//   • legacy numeric      4  (old saves — Charmander, no slot)
+	//   • slotted string      "4:0"  "129:2"  (dexId:indexInCaughtArray)
+	//
+	// dexFromKey(key) → number | string
+	//   Returns the numeric dex ID for PMD forms, or the raw string for eeveelutions.
+	function dexFromKey(key) {
+		if (key == null) return null;
+		if (typeof key === 'number') return key;
+		const m = String(key).match(/^(\d+)(?::\d+)?$/);
+		return m ? parseInt(m[1]) : key; // eeveelution strings pass through unchanged
+	}
+	// animPrefixFromKey(key) → string used as the animation/anim-key prefix.
+	// All instances of the same species share one set of Phaser animations.
+	function animPrefixFromKey(key) {
+		const d = dexFromKey(key);
+		return String(d); // "4", "129", "eevee", etc.
+	}
 	// Shorthand: ico(ICO.seed) → '<i class="bi bi-seedling" …>'
 	// Usage: inner.innerHTML = ico(ICO.book) + ' POKÉDEX';
 
@@ -155,11 +176,11 @@
 		function markCaught(id) {
 			const d = loadData();
 			if (!d.seen.includes(id)) d.seen.push(id);
-			if (!d.caught.includes(id)) {
-				d.caught.push(id);
-				saveData(d);
-				checkMilestones(d.caught.length);
-			}
+			// Always push — duplicates allowed so you can own multiple of the same species.
+			d.caught.push(id);
+			saveData(d);
+			// Milestones are based on unique species count, not total instances.
+			checkMilestones(new Set(d.caught).size);
 		}
 		function isCaught(id) { return loadData().caught.includes(id); }
 		function checkMilestones(n) {
@@ -199,7 +220,9 @@
 			document.getElementById('dexClose').addEventListener('click', () => { panel.hidden = true; });
 			const data = loadData();
 			const counter = document.getElementById('dexCounter');
-			counter.textContent = data.caught.length + ' / 151';
+			const uniqueSpecies = new Set(data.caught).size;
+			const totalOwned   = data.caught.length;
+			counter.textContent = uniqueSpecies + ' / 151' + (totalOwned > uniqueSpecies ? '  (' + totalOwned + ' total)' : '');
 			DEX.forEach(p => {
 				const seen = data.seen.includes(p.id);
 				const caught = data.caught.includes(p.id);
@@ -218,7 +241,9 @@
 				grid.appendChild(cell);
 			});
 		}
-		return { markSeen, markCaught, isCaught, open };
+		// Returns the raw caught array (may contain duplicate dex IDs — one per owned instance).
+		function getCaught() { return loadData().caught; }
+		return { markSeen, markCaught, isCaught, getCaught, open };
 	})();
 
 	// ── PC Box ────────────────────────────────────────────────────────────────────
@@ -1795,9 +1820,11 @@
 		function $(id) { return document.getElementById(id); }
 		function refresh() {
 			const inv = Inventory.load();
-			// Active companion may be a dex ID (PMD partner) or an eeveelution string.
+			// Active companion may be a slotted key "129:2", legacy number 4,
+			// or an eeveelution string "eevee". dexFromKey extracts the numeric ID.
 			const companionKey = inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee');
-			const form = FOLLOWER_FORMS[companionKey] || FOLLOWER_FORMS[inv.eeveeForm || 'eevee'] || FOLLOWER_FORMS.eevee;
+			const formLookup = dexFromKey(companionKey);
+			const form = FOLLOWER_FORMS[formLookup] || FOLLOWER_FORMS[inv.eeveeForm || 'eevee'] || FOLLOWER_FORMS.eevee;
 			const portrait = $('cpPortrait');
 			if (portrait) {
 				// Render south-idle frame at 3× scale.
@@ -1816,10 +1843,11 @@
 			if (niEl) niEl.value = loadNickname();
 			$('cpName') && ($('cpName').textContent = form.displayName);
 			// Stage/form label — only meaningful for eeveelutions.
-			const isEeveelution = typeof companionKey === 'string';
+			const isEeveelution = typeof formLookup === 'string'; // eeveelutions have string keys
+			const dexNum = typeof formLookup === 'number' ? formLookup : null;
 			$('cpForm') && ($('cpForm').textContent = isEeveelution
 				? (inv.eeveeForm === 'eevee' ? 'Stage 1 — can evolve' : 'Stage 2 — terminal evolution')
-				: 'Walking partner · #' + String(companionKey).padStart(3, '0'));
+				: 'Walking partner · #' + String(dexNum).padStart(3, '0'));
 			const fpct = Math.min(100, Math.round(((inv.friendship || 0) / FRIENDSHIP_MAX) * 100));
 			const bar = $('cpFriendshipBar');
 			if (bar) bar.style.width = fpct + '%';
@@ -1959,18 +1987,32 @@
 			const grid = document.getElementById('partnerPickerGrid');
 			const inv = Inventory.load();
 			const current = inv.companionForm;
+			// Build per-instance list from the caught array (may contain duplicates).
+			// Each entry: { dexId, companionKey, instanceLabel }
+			// companionKey = "dexId:slotIndex" (slot = index within same-species instances).
+			const speciesCount = {};
+			const instances = [];
+			Pokedex.getCaught().forEach((dexId, arrayIdx) => {
+				speciesCount[dexId] = (speciesCount[dexId] || 0) + 1;
+				instances.push({ dexId, arrayIdx });
+			});
+			// Assign per-species slot numbers so "Magikarp #1", "Magikarp #2" etc.
+			const speciesSeen = {};
+			instances.forEach(inst => {
+				speciesSeen[inst.dexId] = (speciesSeen[inst.dexId] || 0);
+				inst.slot = speciesSeen[inst.dexId]++;
+				inst.companionKey = inst.dexId + ':' + inst.slot;
+				inst.multipleOwned = speciesCount[inst.dexId] > 1;
+			});
 
-			// Target display height for picker sprites (px).
+			// Render owned instances first, then dimmed uncaught Pokémon.
 			const PICK_H = 44;
-			caught.forEach(dexId => {
+			function makeCell(dexId, companionKey, label, isActive, dimmed) {
 				const form = FOLLOWER_FORMS[dexId];
-				if (!form) return;
-				const isActive = current == dexId;
-				const isCaughtPokemon = Pokedex.isCaught(dexId);
+				if (!form) return null;
 				const cell = document.createElement('button');
 				cell.type = 'button';
-				cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '') + (isCaughtPokemon ? '' : ' is-unseen');
-				// Background-size derived from known (or default) frame dims so frame 0 fills the cell.
+				cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '') + (dimmed ? ' is-unseen' : '');
 				const bScale = PICK_H / form.frameH;
 				const bW = Math.round(form.frameW * form.cols * bScale);
 				const bH = Math.round(form.frameH * 8 * bScale);
@@ -1981,16 +2023,32 @@
 						'background-size:' + bW + 'px ' + bH + 'px;' +
 						'width:' + fW + 'px;height:' + PICK_H + 'px' +
 					'"></div>' +
-					'<div class="partner-pick-name">' + form.displayName + '</div>';
+					'<div class="partner-pick-name">' + label + '</div>';
 				cell.addEventListener('click', () => {
-					window.__campScene?._switchFollower(dexId);
+					window.__campScene?._switchFollower(companionKey);
 					backdrop.remove();
-					// Re-render the Partner panel for the new companion
-					// (updates portrait, name, and clears the stale nickname).
 					refresh();
 				});
-				grid.appendChild(cell);
+				return cell;
+			}
+
+			// Owned instances (full colour, possibly numbered).
+			instances.forEach(({ dexId, companionKey, slot, multipleOwned }) => {
+				const form = FOLLOWER_FORMS[dexId];
+				if (!form) return;
+				const label = form.displayName + (multipleOwned ? ' #' + (slot + 1) : '');
+				const isActive = current === companionKey ||
+					(typeof current === 'number' && current === dexId && slot === 0);
+				const cell = makeCell(dexId, companionKey, label, isActive, false);
+				if (cell) grid.appendChild(cell);
 			});
+
+			// Uncaught Pokémon — dimmed, no slot number.
+			for (let _d = 1; _d <= 151; _d++) {
+				if (Pokedex.isCaught(_d)) continue; // already shown above as owned instances
+				const cell = makeCell(_d, _d, FOLLOWER_FORMS[_d]?.displayName || ('#' + _d), false, true);
+				if (cell) grid.appendChild(cell);
+			}
 
 			document.getElementById('partnerPickerClose').addEventListener('click', () => backdrop.remove());
 		}
@@ -5962,18 +6020,22 @@
 				// Prevent stacking concurrent loads (e.g. rapid picker taps).
 				if (this._followerLoading) return;
 				this._followerLoading = true;
-				const form = FOLLOWER_FORMS[formKey] || FOLLOWER_FORMS.eevee;
+				// formKey may be a slotted string like "129:2" — extract the dex ID for form lookup.
+				const dexId = dexFromKey(formKey);
+				const form = FOLLOWER_FORMS[dexId] || FOLLOWER_FORMS.eevee;
 				this._ensureFollowerSprite(form, () => {
 					this._followerLoading = false;
 					// Read cols AFTER _ensureFollowerSprite may have patched form.cols
 					// (previously cols was captured before the async load — caused wrong frame slicing).
 					const cols = form.cols || 4;
 					const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
+					// Animation keys are shared across all instances of the same species.
+					const animPrefix = animPrefixFromKey(formKey);
 					const animDefs = [
-						[formKey + '-walk-south', rowFrames(0), 0],
-						[formKey + '-walk-west',  rowFrames(6), 6 * cols],
-						[formKey + '-walk-north', rowFrames(4), 4 * cols],
-						[formKey + '-walk-east',  rowFrames(2), 2 * cols],
+						[animPrefix + '-walk-south', rowFrames(0), 0],
+						[animPrefix + '-walk-west',  rowFrames(6), 6 * cols],
+						[animPrefix + '-walk-north', rowFrames(4), 4 * cols],
+						[animPrefix + '-walk-east',  rowFrames(2), 2 * cols],
 					];
 					// Always destroy and recreate anims — they may have been built with
 					// wrong cols if the texture was previously stale (e.g. 6 cols → 4 cols).
