@@ -421,3 +421,277 @@ window.CAMP_DATA.FURNITURE_DESIGNS = {
 		"................",
 	]},
 };
+
+// ── ICO ────────────────────────────────────────────────────────
+window.CAMP_DATA.ICO = {
+		seed:     'seedling',
+		berry:    'flower1',
+		token:    'coin',
+		heart:    'heart-fill',
+		egg:      'egg-fill',
+		star:     'star-fill',
+		starOff:  'star',
+		fish:     'droplet-fill',
+		fire:     'fire',
+		book:     'book-fill',
+		bookOpen: 'book-open-fill',
+		pc:       'pc-display-horizontal',
+		trade:    'arrow-repeat',
+		contest:  'patch-check-fill',
+		curry:    'cup-hot-fill',
+		play:     'suit-heart-fill',
+		compost:  'recycle',
+		quest:    'clipboard-check-fill',
+		achieve:  'award-fill',
+		trainer:  'person-vcard-fill',
+		postcard: 'envelope-fill',
+		write:    'pencil-fill',
+		readMail: 'envelope-open-fill',
+		gift:     'gift-fill',
+		radar:    'broadcast-pin',
+		scythe:   'scissors',
+		music:    'music-note-beamed',
+		cart:     'cart3-fill',
+		game:     'controller',
+		heal:     'plus-circle-fill',
+		bolt:     'lightning-fill',
+		water:    'water',
+		gem:      'gem',
+		snow:     'snow',
+		moon:     'moon-stars-fill',
+		sun:      'sun-fill',
+		tree:     'tree-fill',
+		sparkle:  'stars',
+		hammer:   'hammer',
+		map:      'map-fill',
+		close:    'x-lg',
+		back:     'arrow-left',
+		next:     'arrow-right-short',
+		check:    'check2-circle',
+		trash:    'trash3-fill',
+		send:     'send-fill',
+		info:     'info-circle-fill',
+		level:    'bar-chart-fill',
+		ribbon:   'patch-check-fill',
+		house:    'house-fill',
+		mail:     'mailbox2-fill',
+		camp:     'tree',
+		npc:      'person-fill',
+		fossil:   'database-fill',
+	};
+
+
+// ── SIGN_MESSAGES ────────────────────────────────────────────────────────
+window.CAMP_DATA.SIGN_MESSAGES = {
+		'12,10': "Welcome to Trainer Camp! Walk up to the house and press E at the door to head inside.",
+		'19,12': "Crops grow here — talk to the farmer at the garden gate and plant a seed on any soil tile.",
+		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
+		'10,30': "A peaceful lake — press E near the water to fish!",
+		'17,9':  '__mailbox__',
+		'25,11': '__camprating__',
+	};
+
+
+// ── FOLLOWER_FORMS ────────────────────────────────────────────────────────
+window.CAMP_DATA.FOLLOWER_FORMS = {
+		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.80, frameW: 40, frameH: 48, displayName: 'Eevee' },
+		vaporeon: { sheet: 'vaporeon', cols: 4, originY: 32/48, scale: 0.58, frameW: 32, frameH: 48, displayName: 'Vaporeon' },
+		espeon:   { sheet: 'espeon',   cols: 4, originY: 31/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Espeon' },
+		umbreon:  { sheet: 'umbreon',  cols: 4, originY: 28/40, scale: 0.60, frameW: 32, frameH: 40, displayName: 'Umbreon' },
+		flareon:  { sheet: 'flareon',  cols: 4, originY: 28/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Flareon' },
+		jolteon:  { sheet: 'jolteon',  cols: 4, originY: 29/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Jolteon' },
+		leafeon:  { sheet: 'leafeon',  cols: 4, originY: 32/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Leafeon' },
+		glaceon:  { sheet: 'glaceon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Glaceon' },
+		sylveon:  { sheet: 'sylveon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Sylveon' },
+	};
+
+
+// ── PMD_NAMES ────────────────────────────────────────────────────────
+window.CAMP_DATA.PMD_NAMES = [null,
+		'Bulbasaur','Ivysaur','Venusaur','Charmander','Charmeleon','Charizard',
+		'Squirtle','Wartortle','Blastoise','Caterpie','Metapod','Butterfree',
+		'Weedle','Kakuna','Beedrill','Pidgey','Pidgeotto','Pidgeot',
+		'Rattata','Raticate','Spearow','Fearow','Ekans','Arbok',
+		'Pikachu','Raichu','Sandshrew','Sandslash','Nidoran F','Nidorina',
+		'Nidoqueen','Nidoran M','Nidorino','Nidoking','Clefairy','Clefable',
+		'Vulpix','Ninetales','Jigglypuff','Wigglytuff','Zubat','Golbat',
+		'Oddish','Gloom','Vileplume','Paras','Parasect','Venonat','Venomoth',
+		'Diglett','Dugtrio','Meowth','Persian','Psyduck','Golduck',
+		'Mankey','Primeape','Growlithe','Arcanine','Poliwag','Poliwhirl',
+		'Poliwrath','Abra','Kadabra','Alakazam','Machop','Machoke','Machamp',
+		'Bellsprout','Weepinbell','Victreebel','Tentacool','Tentacruel',
+		'Geodude','Graveler','Golem','Ponyta','Rapidash','Slowpoke','Slowbro',
+		'Magnemite','Magneton',"Farfetch'd",'Doduo','Dodrio','Seel','Dewgong',
+		'Grimer','Muk','Shellder','Cloyster','Gastly','Haunter','Gengar',
+		'Onix','Drowzee','Hypno','Krabby','Kingler','Voltorb','Electrode',
+		'Exeggcute','Exeggutor','Cubone','Marowak','Hitmonlee','Hitmonchan',
+		'Lickitung','Koffing','Weezing','Rhyhorn','Rhydon','Chansey',
+		'Tangela','Kangaskhan','Horsea','Seadra','Goldeen','Seaking',
+		'Staryu','Starmie','Mr. Mime','Scyther','Jynx','Electabuzz','Magmar',
+		'Pinsir','Tauros','Magikarp','Gyarados','Lapras','Ditto',
+		'Eevee','Vaporeon','Jolteon','Flareon','Porygon','Omanyte','Omastar',
+		'Kabuto','Kabutops','Aerodactyl','Snorlax','Articuno','Zapdos',
+		'Moltres','Dratini','Dragonair','Dragonite','Mewtwo','Mew'
+	];
+
+
+// ── POKEMON_HEIGHTS ────────────────────────────────────────────────────────
+window.CAMP_DATA.POKEMON_HEIGHTS = [
+		0,                                                                         // 0 – unused
+		0.7,1.0,2.0,0.6,1.1,1.7,0.5,1.0,1.6,0.3, // 1-10  Bulbasaur … Caterpie
+		0.7,1.1,0.3,0.6,1.0,0.3,1.1,1.5,0.3,0.7, // 11-20 Metapod  … Raticate
+		0.3,1.2,2.0,3.5,0.4,0.8,0.6,1.0,0.4,0.8, // 21-30 Spearow  … Nidorina
+		1.3,0.5,0.9,1.4,0.6,1.3,0.6,1.1,0.5,1.0, // 31-40 Nidoqueen… Wigglytuff
+		0.8,1.6,0.5,0.8,1.2,0.3,1.0,1.0,1.5,0.2, // 41-50 Zubat    … Diglett
+		0.7,0.4,1.0,0.8,1.7,0.5,1.0,0.7,1.9,0.6, // 51-60 Dugtrio  … Poliwag
+		1.0,1.3,0.9,1.3,1.5,0.8,1.5,1.6,0.7,1.0, // 61-70 Poliwhirl… Weepinbell
+		1.7,0.9,1.6,0.4,1.0,1.4,1.0,1.7,1.2,1.6, // 71-80 Victreebel…Slowbro
+		0.3,1.0,0.8,1.4,1.8,1.1,1.7,0.9,1.2,0.3, // 81-90 Magnemite … Shellder
+		1.5,1.3,1.6,1.5,8.8,1.0,1.6,0.4,1.3,0.5, // 91-100 Cloyster … Voltorb
+		1.2,0.4,2.0,0.4,1.0,1.5,1.4,1.2,0.6,1.2, // 101-110 Electrode… Weezing
+		1.0,1.9,1.1,1.0,2.2,0.4,1.2,0.6,1.3,0.8, // 111-120 Rhyhorn  … Staryu
+		1.1,1.3,1.5,1.4,1.1,1.3,1.5,1.4,0.9,6.5, // 121-130 Starmie  … Gyarados
+		2.5,0.3,0.3,1.0,0.8,0.9,0.8,0.4,1.0,0.5, // 131-140 Lapras   … Kabuto
+		1.3,1.8,2.1,1.7,1.6,2.0,1.8,4.0,2.2,2.0, // 141-150 Kabutops … Mewtwo
+		0.4,                                        // 151 Mew
+	];
+
+
+// ── PMD_FRAME_OVERRIDES ────────────────────────────────────────────────────────
+window.CAMP_DATA.PMD_FRAME_OVERRIDES = {
+		129: { frameW: 56, frameH: 40, cols: 4 }, // Magikarp — 224×320
+		10:  { frameW: 24, frameH: 32, cols: 4 }, // Caterpie — 96×256
+		13:  { frameW: 24, frameH: 40, cols: 4 }, // Weedle   — 96×320
+		50:  { frameW: 24, frameH: 40, cols: 5 }, // Diglett  — 120×320
+		19:  { frameW: 56, frameH: 40, cols: 6 }, // Rattata  — 336×320
+	};
+
+
+// ── WALLPAPER_BG ────────────────────────────────────────────────────────
+window.CAMP_DATA.WALLPAPER_BG = {
+		default: { house: '#1a0e08', upstairs: '#140a18' },
+		sakura:  { house: '#2e0e16', upstairs: '#280c14' },
+		ocean:   { house: '#081428', upstairs: '#060e1e' },
+		forest:  { house: '#081e08', upstairs: '#061806' },
+		dusk:    { house: '#180828', upstairs: '#140620' },
+	};
+
+
+// ── ACCENT_HEX ────────────────────────────────────────────────────────
+window.CAMP_DATA.ACCENT_HEX = {
+		default: '#f6c84c',
+		red:     '#e84040',
+		blue:    '#4488ff',
+		green:   '#40c870',
+	};
+
+
+// ── DECOR_POS ────────────────────────────────────────────────────────
+window.CAMP_DATA.DECOR_POS = {
+		flowers: { x: 14 * 16 + 8, y: 10 * 16 + 8 },
+		lantern: { x:  9 * 16 + 8, y: 13 * 16 + 8 },
+	};
+
+
+// ── ROOM_ITEMS ────────────────────────────────────────────────────────
+window.CAMP_DATA.ROOM_ITEMS = {
+		// Furniture
+		bed:          { label: 'Bed',           price: 50, icoKey: 'house',   r: 4, c: 5,  cat: 'furniture' },
+		desk:         { label: 'Study Desk',    price: 30, icoKey: 'pc',      r: 3, c: 8,  cat: 'furniture' },
+		dresser:      { label: 'Dresser',       price: 35, icoKey: 'house',   r: 3, c: 11, cat: 'furniture' },
+		wardrobe:     { label: 'Wardrobe',      price: 45, icoKey: 'house', r: 6, c: 13, cat: 'furniture' },
+		lamp:         { label: 'Cozy Lamp',     price: 20, icoKey: 'sun', r: 3, c: 9,  cat: 'furniture' },
+		radio:        { label: 'Music Player',  price: 25, icoKey: 'music', r: 3, c: 2,  cat: 'furniture' },
+		mirror:       { label: 'Mirror',        price: 30, icoKey: 'sparkle', r: 6, c: 2,  cat: 'furniture' },
+		gaming:       { label: 'Game Console',  price: 35, icoKey: 'game',    r: 3, c: 6,  cat: 'furniture' },
+		curtain:      { label: 'Red Curtain',   price: 20, icoKey: 'house', r: 2, c: 10, cat: 'furniture' },
+		curtain_green:{ label: 'Green Curtain', price: 20, icoKey: 'house', r: 2, c: 12, cat: 'furniture' },
+		stool:        { label: 'Round Stool',   price: 20, icoKey: 'house',   r: 5, c: 7,  cat: 'furniture' },
+		nightstand:   { label: 'Nightstand',    price: 25, icoKey: 'house', r: 4, c: 9,  cat: 'furniture' },
+		armchair:     { label: 'Armchair',      price: 40, icoKey: 'house', r: 7, c: 3,  cat: 'furniture' },
+		// Decor
+		plant:        { label: 'Indoor Plant',  price: 20, icoKey: 'tree', r: 6, c: 9,  cat: 'decor' },
+		flowerplant:  { label: 'Flower Plant',  price: 25, icoKey: 'seed',    r: 7, c: 11, cat: 'decor' },
+		poster:       { label: 'Wall Art',      price: 15, icoKey: 'sparkle', r: 2, c: 6,  cat: 'decor' },
+		trophy:       { label: 'Trophy',        price: 40, icoKey: 'achieve', r: 2, c: 2,  cat: 'decor' },
+		book:         { label: 'Story Books',   price: 15, icoKey: 'book',    r: 2, c: 4,  cat: 'decor' },
+		bear:         { label: 'Stuffed Bear',  price: 15, icoKey: 'heart', r: 6, c: 7,  cat: 'decor' },
+		stars:        { label: 'Star Mobile',   price: 25, icoKey: 'star',    r: 5, c: 4,  cat: 'decor' },
+		barrel:       { label: 'Barrel',        price: 20, icoKey: 'house', r: 8, c: 12, cat: 'decor' },
+	};
+
+
+// ── HOUSE_ITEMS ────────────────────────────────────────────────────────
+window.CAMP_DATA.HOUSE_ITEMS = {
+		// Furniture
+		tv:         { label: 'Television',    price: 40, icoKey: 'pc', r: 2, c: 5,  cat: 'furniture' },
+		couch:      { label: 'Red Couch',     price: 35, icoKey: 'house', r: 5, c: 4,  cat: 'furniture' },
+		armchair:   { label: 'Armchair',      price: 40, icoKey: 'house', r: 5, c: 8,  cat: 'furniture' },
+		bookcase:   { label: 'Bookcase',      price: 30, icoKey: 'book', r: 2, c: 9,  cat: 'furniture' },
+		clock:      { label: 'Wall Clock',    price: 25, icoKey: 'info', r: 2, c: 7,  cat: 'furniture' },
+		floorlamp:  { label: 'Floor Lamp',    price: 20, icoKey: 'sun', r: 5, c: 13, cat: 'furniture' },
+		sidetable:  { label: 'Side Table',    price: 25, icoKey: 'house', r: 4, c: 11, cat: 'furniture' },
+		// Decor
+		plant:      { label: 'Floor Plant',   price: 20, icoKey: 'tree',    r: 2, c: 2,  cat: 'decor' },
+		flowerplant:{ label: 'Flower Plant',  price: 25, icoKey: 'seed',    r: 8, c: 8,  cat: 'decor' },
+		kettle:     { label: 'Tea Kettle',    price: 15, icoKey: 'curry', r: 9, c: 4,  cat: 'decor' },
+		vase:       { label: 'Flower Vase',   price: 20, icoKey: 'seed', r: 9, c: 11, cat: 'decor' },
+		frame:      { label: 'Photo Frame',   price: 15, icoKey: 'sparkle', r: 2, c: 11, cat: 'decor' },
+		plush:      { label: 'Plush Cat',     price: 25, icoKey: 'heart', r: 7, c: 12, cat: 'decor' },
+		barrel:     { label: 'Barrel',        price: 20, icoKey: 'house',   r: 9, c: 7,  cat: 'decor' },
+		chest:      { label: 'Treasure Chest',price: 30, icoKey: 'gift', r: 9, c: 13, cat: 'decor' },
+		pond:       { label: 'Mini Pond',     price: 60, icoKey: 'fish',   r: 7, c: 3,  cat: 'decor' },
+	};
+
+
+// ── NPCS ────────────────────────────────────────────────────────
+window.CAMP_DATA.NPCS = [
+		{
+			key: 'mart-keeper', species: 'youngster', r: 14, c: 13,
+			label: 'Shop',
+			spriteScale: 0.89, frameHeight: 32,
+			kind: 'mart',
+			dialog: [
+				"Welcome to my shop! I buy berries and sell seeds — opening the mart now.",
+				"Hey! Business is slow today. Come sell those berries!",
+				"The freshest seeds in camp — straight from the Pokémon Express!",
+				"Berry prices are UP today. Sell now!",
+			],
+		},
+		{
+			key: 'farmer', species: 'camper', r: 19, c: 19,
+			label: 'Talk',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: [
+				"These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
+				"Rain makes the berries grow faster — or so they say.",
+				"I heard Oran Berries give extra friendship. Worth the wait!",
+				"My record is 20 berries in one harvest. Can you beat it?",
+			],
+		},
+		{
+			key: 'quest-board', species: 'cooltrainer-m', r: 8, c: 28,
+			label: 'Quests',
+			kind: 'quests',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: [
+				"Daily quest board! Check your tasks for today.",
+				"New quests reset at midnight. Have you done yours?",
+				"Complete all quests for bonus tokens!",
+			],
+		},
+		{
+			key: 'visiting-camper', species: 'picnicker', r: 16, c: 8,
+			label: 'Talk',
+			kind: 'camper',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: ["..."],  // overridden by NpcCampers.openDialog
+		},
+		{
+			key: 'move-tutor', species: 'camper', r: 18, c: 6,
+			label: 'Tutor',
+			kind: 'tutor',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: ["I can teach your partner special skills! Come talk to me."],
+		},
+	];
