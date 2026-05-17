@@ -1795,20 +1795,27 @@
 		function $(id) { return document.getElementById(id); }
 		function refresh() {
 			const inv = Inventory.load();
-			const form = FOLLOWER_FORMS[inv.eeveeForm || 'eevee'] || FOLLOWER_FORMS.eevee;
+			// Active companion may be a dex ID (PMD partner) or an eeveelution string.
+			const companionKey = inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee');
+			const form = FOLLOWER_FORMS[companionKey] || FOLLOWER_FORMS[inv.eeveeForm || 'eevee'] || FOLLOWER_FORMS.eevee;
 			const portrait = $('cpPortrait');
 			if (portrait) {
-				// Render south-idle frame at 3× scale by scaling both the element and
-				// the background-size directly (avoids CSS transform layout hacks).
+				// Render south-idle frame at 3× scale.
+				// For PMD/CDN sprites use form.url; for local eeveelutions use local path.
 				const PS = 3;
-				portrait.style.backgroundImage = "url('Pictures/sprites/" + form.sheet + ".png')";
+				const imgUrl = form.url ? form.url : ('Pictures/sprites/' + form.sheet + '.png');
+				portrait.style.backgroundImage = "url('" + imgUrl + "')";
 				portrait.style.backgroundPosition = '0 0';
 				portrait.style.backgroundSize = (form.frameW * form.cols * PS) + 'px ' + (form.frameH * 8 * PS) + 'px';
 				portrait.style.width  = (form.frameW  * PS) + 'px';
 				portrait.style.height = (form.frameH * PS) + 'px';
 			}
 			$('cpName') && ($('cpName').textContent = form.displayName);
-			$('cpForm') && ($('cpForm').textContent = inv.eeveeForm === 'eevee' ? 'Stage 1 — can evolve' : 'Stage 2 — terminal evolution');
+			// Stage/form label — only meaningful for eeveelutions.
+			const isEeveelution = typeof companionKey === 'string';
+			$('cpForm') && ($('cpForm').textContent = isEeveelution
+				? (inv.eeveeForm === 'eevee' ? 'Stage 1 — can evolve' : 'Stage 2 — terminal evolution')
+				: 'Walking partner · #' + String(companionKey).padStart(3, '0'));
 			const fpct = Math.min(100, Math.round(((inv.friendship || 0) / FRIENDSHIP_MAX) * 100));
 			const bar = $('cpFriendshipBar');
 			if (bar) bar.style.width = fpct + '%';
@@ -5776,37 +5783,57 @@
 			_ensureFollowerSprite(form, onReady) {
 				if (this.textures.exists(form.sheet)) { onReady(); return; }
 				if (!form.url) { onReady(); return; }
-				// Load via native Image so the browser fetches it off the render loop —
-				// avoids the mid-scene this.load.start() stutter.
+				// Fetch off the render loop via native Image — no this.load.start() stutter.
 				const img = new window.Image();
 				img.crossOrigin = 'anonymous';
 				img.onload = () => {
-					if (!this.textures.exists(form.sheet)) {
-						this.textures.addSpriteSheet(form.sheet, img, {
-							frameWidth: form.frameW,
-							frameHeight: form.frameH,
-						});
-					}
-					onReady();
+					// Schedule the texture work at the start of the next Phaser game step
+					// so it never lands mid-frame and causes a visible hitch.
+					this.game.events.once('step', () => {
+						if (!this.textures.exists(form.sheet)) {
+							// Auto-detect frame dimensions from actual image dimensions.
+							// PMD Walk-Anim always has exactly 8 rows (8 directions).
+							const frameH = Math.round(img.naturalHeight / 8);
+							// Try standard frame widths; pick the smallest that yields cols 3–8.
+							const stdW = [24, 28, 32, 36, 40, 48, 56, 64];
+							let frameW = frameH, cols = 4;
+							for (const w of stdW) {
+								if (img.naturalWidth % w === 0) {
+									const c = img.naturalWidth / w;
+									if (c >= 3 && c <= 8) { frameW = w; cols = c; break; }
+								}
+							}
+							// Patch the shared form object so _switchFollower reads correct dims.
+							form.frameW = frameW; form.frameH = frameH; form.cols = cols;
+							this.textures.addSpriteSheet(form.sheet, img, { frameWidth: frameW, frameHeight: frameH });
+						}
+						onReady();
+					});
 				};
 				img.onerror = () => {
 					console.warn('[Camp] Failed to load PMD sprite:', form.url);
-					onReady(); // fall back gracefully (keeps current follower)
+					onReady(); // fall back gracefully — keeps current follower
 				};
 				img.src = form.url;
 			}
 
 			_switchFollower(formKey) {
+				// Prevent stacking concurrent loads (e.g. rapid picker taps).
+				if (this._followerLoading) return;
+				this._followerLoading = true;
 				const form = FOLLOWER_FORMS[formKey] || FOLLOWER_FORMS.eevee;
-				const cols = form.cols;
-				const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
-				const animDefs = [
-					[formKey + '-walk-south', rowFrames(0), 0],
-					[formKey + '-walk-west',  rowFrames(6), 6 * cols],
-					[formKey + '-walk-north', rowFrames(4), 4 * cols],
-					[formKey + '-walk-east',  rowFrames(2), 2 * cols],
-				];
 				this._ensureFollowerSprite(form, () => {
+					this._followerLoading = false;
+					// Read cols AFTER _ensureFollowerSprite may have patched form.cols
+					// (previously cols was captured before the async load — caused wrong frame slicing).
+					const cols = form.cols;
+					const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
+					const animDefs = [
+						[formKey + '-walk-south', rowFrames(0), 0],
+						[formKey + '-walk-west',  rowFrames(6), 6 * cols],
+						[formKey + '-walk-north', rowFrames(4), 4 * cols],
+						[formKey + '-walk-east',  rowFrames(2), 2 * cols],
+					];
 					for (const [key, frames] of animDefs) {
 						if (!this.anims.exists(key)) {
 							this.anims.create({ key, frameRate: 10, repeat: -1,
@@ -5822,7 +5849,14 @@
 						this.follower.setOrigin(0.5, form.originY);
 						this.follower.setScale(form.scale * (this._followerScaleMult || 1));
 					}
-					// Persist companion choice
+					// Reapply shiny tint (setTexture clears tint).
+					if (this._applyFollowerShiny) this._applyFollowerShiny();
+					// Clear nickname for the new partner (single global key — reset on switch).
+					try { localStorage.setItem(NICKNAME_KEY, ''); } catch {}
+					const ni = document.getElementById('cpNickname');
+					if (ni) ni.value = '';
+					if (this._updateFollowerLabel) this._updateFollowerLabel();
+					// Persist companion choice.
 					const inv = Inventory.load();
 					inv.companionForm = formKey;
 					Inventory.save(inv);
