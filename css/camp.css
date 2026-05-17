@@ -2389,3 +2389,114 @@ body.camp-body {
 .camp-mood-badge[data-mood="happy"]   { border-color: #4ade80; color: #bbf7d0; }
 .camp-mood-badge[data-mood="tired"]   { border-color: #94a3b8; color: #cbd5e1; }
 .camp-mood-badge[hidden] { display: none; }
+
+/* ── Photo Mode ─────────────────────────────────────────────────────────────── */
+.photo-mode-hide { /* hidden during snapshot via JS display:none */ }
+
+/* ── Shiny Timer HUD ─────────────────────────────────────────────────────────── */
+#shinyTimer {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 10, 0, 0.88);
+  border: 2px solid #FFD700;
+  border-radius: 20px;
+  color: #FFD700;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 18px;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  animation: shinyPulse 1.5s ease-in-out infinite;
+}
+#shinyTimer[hidden] { display: none; }
+.shiny-timer-ico { font-size: 16px; }
+.shiny-timer-sep { color: #fff; font-weight: 400; font-size: 11px; }
+.shiny-timer-count { font-size: 18px; color: #FFD700; }
+@keyframes shinyPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.4); }
+  50%       { box-shadow: 0 0 22px rgba(255,215,0,0.9); }
+}
+
+/* ── Shiny Catch Modal ───────────────────────────────────────────────────────── */
+#shinyCatchModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#shinyCatchModal[hidden] { display: none; }
+.shiny-catch-inner {
+  background: #1a1028;
+  border: 3px solid #FFD700;
+  border-radius: 16px;
+  padding: 28px 32px;
+  max-width: 420px;
+  width: 90vw;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
+}
+.shiny-catch-head {
+  font-size: 20px;
+  font-weight: 900;
+  color: #FFD700;
+  margin-bottom: 4px;
+}
+.shiny-catch-sub {
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 12px;
+}
+.shiny-catch-timer-wrap {
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.shiny-catch-timer-bar {
+  height: 100%;
+  background: #FFD700;
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+.shiny-catch-question {
+  font-size: 15px;
+  color: #eee;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+.shiny-catch-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.shiny-catch-opt {
+  background: #2a1e40;
+  border: 2px solid #4a3a6a;
+  border-radius: 10px;
+  color: #eee;
+  font-size: 13px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.shiny-catch-opt:hover {
+  background: #3d2c5e;
+  border-color: #FFD700;
+  color: #FFD700;
+}
+
+/* ── HUD shiny counter ───────────────────────────────────────────────────────── */
+.hud-ico--shiny {
+  color: #FFD700;
+  font-size: 14px;
+}
