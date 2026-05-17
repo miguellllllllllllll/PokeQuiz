@@ -367,6 +367,7 @@
 				{ id: 'postcard',     label: 'Pen Pal',          icoKey: 'postcard',          desc: 'Send your first postcard'           },
 				{ id: 'composted',    label: 'Composter',        icoKey: 'compost',       desc: 'Make your first compost'            },
 				{ id: 'camperMet',    label: 'Good Company',     icoKey: 'npc',    desc: 'Meet a visiting trainer'            },
+				{ id: 'secretFound',  label: 'Secret Seeker',    icoKey: 'sparkle', desc: 'Find the hidden treasure spot'      },
 			];
 			function load() {
 				const raw = localStorage.getItem('pokequiz_achievements');
@@ -840,6 +841,33 @@
 			},
 		};
 	window.CAMP_SYSTEMS.WeatherSystem = WeatherSystem;
+
+	// ── PokemonOfDay ───────────────────────────────────────────────────────────
+		const PokemonOfDay = (() => {
+			function get() {
+				const seed = Math.floor(Date.now() / 86400000); // changes daily
+				return (seed % 151) + 1; // dex ID 1-151
+			}
+			function getName(id) {
+				return (PMD_NAMES || {})[id] || ('Pokémon #' + id);
+			}
+			function checkBonus(scene) {
+				const inv = Inventory.load();
+				const todayId = get();
+				const partnerId = inv.companionId || inv.companion;
+				if (!partnerId || Number(partnerId) !== todayId) return;
+				const key = 'pokequiz_potd_' + new Date().toISOString().slice(0,10);
+				try {
+					if (localStorage.getItem(key)) return;
+					localStorage.setItem(key, '1');
+					inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship||0) + 10);
+					Inventory.save(inv);
+					showToast('⭐ Your partner is today\'s featured Pokémon! +10 friendship!');
+				} catch {}
+			}
+			return { get, getName, checkBonus };
+		})();
+	window.CAMP_SYSTEMS.PokemonOfDay = PokemonOfDay;
 
 	// ── AccessibilitySettings ─────────────────────────────────────────────────
 		const AccessibilitySettings = (() => {
@@ -3483,6 +3511,13 @@
 						bodyMsg += ' +' + tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' ' + ico(ICO.token);
 					}
 					Inventory.save(inv);
+					// Submit rhythm score to leaderboard
+					try {
+						const rhythmName = window.PokeUtil?.getPlayerName?.() || 'Trainer';
+						const rhythmPid  = window.PokeUtil?.getPlayerId?.() || '';
+						const rhythmScore = Math.max(1, rawBonus || 1);
+						window.PokeUtil?.submitScore?.({ game: 'rhythm', name: rhythmName, score: rhythmScore, playerId: rhythmPid });
+					} catch {}
 					if ((inv.tokens || 0) >= 500) Achievements.unlock('shopkeeper');
 					DailyQuests.increment('minigame');
 					showToast && showToast('+' + (tokenBonus > 0 ? tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' ' + ico(ICO.token) : '1 Berry ' + ico(ICO.berry)));
@@ -4335,6 +4370,124 @@
 			return { getTodayCamper, isVisitHour, hasClaimedToday, openDialog };
 		})();
 	window.CAMP_SYSTEMS.NpcCampers = NpcCampers;
+
+	// ── BerryTrader ───────────────────────────────────────────────────────────
+		const BerryTrader = (() => {
+			const TRADES = [
+				{ give: { pecha: 5 }, receive: { oran: 3 }, msg: 'Trade 5 Pecha Berries for 3 Oran Berries' },
+				{ give: { oran: 3 },  receive: { sitrus: 1 }, msg: 'Trade 3 Oran Berries for 1 Sitrus Berry' },
+				{ give: { sitrus: 2 }, receive: { tokens: 20 }, msg: 'Trade 2 Sitrus Berries for 20 tokens' },
+				{ give: { pecha: 10 }, receive: { friendshipBerries: 3 }, msg: 'Trade 10 Pecha for 3 Friendship Berries' },
+			];
+			function getTodayTrade() {
+				const seed = Math.floor(Date.now() / 86400000);
+				return TRADES[seed % TRADES.length];
+			}
+			function canAfford(inv, give) {
+				return Object.entries(give).every(([k, v]) => (inv[k] || 0) >= v);
+			}
+			function doTrade() {
+				const trade = getTodayTrade();
+				const inv = Inventory.load();
+				if (!canAfford(inv, trade.give)) { showToast('Not enough berries!'); return false; }
+				Object.entries(trade.give).forEach(([k, v]) => { inv[k] = (inv[k]||0) - v; });
+				Object.entries(trade.receive).forEach(([k, v]) => { inv[k] = (inv[k]||0) + v; });
+				Inventory.save(inv);
+				showToast('Trade complete!');
+				return true;
+			}
+			function openTradeDialog(trade) {
+				const give = Object.entries(trade.give).map(([k,v]) => v + ' ' + k).join(', ');
+				const recv = Object.entries(trade.receive).map(([k,v]) => v + ' ' + k).join(', ');
+				Dialog.open('Berry Merchant: "I\'ll trade you ' + recv + ' for your ' + give + '. Deal?"', [
+					{ label: 'Accept', cb: () => doTrade() },
+					{ label: 'No thanks', cb: () => {} },
+				]);
+			}
+			function interact() { openTradeDialog(getTodayTrade()); }
+			return { interact, getTodayTrade };
+		})();
+	window.CAMP_SYSTEMS.BerryTrader = BerryTrader;
+
+	// ── Guestbook ─────────────────────────────────────────────────────────────
+		const Guestbook = (() => {
+			const KEY = 'pokequiz_guestbook';
+			const MAX = 20;
+			function load() { try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch { return []; } }
+			function save(entries) { try { localStorage.setItem(KEY, JSON.stringify(entries)); } catch {} }
+			function addEntry(name, message) {
+				const entries = load();
+				entries.unshift({ name: name.slice(0,20), msg: message.slice(0,100), ts: Date.now() });
+				if (entries.length > MAX) entries.length = MAX;
+				save(entries);
+			}
+			function open() {
+				let panel = document.getElementById('guestbookPanel');
+				if (!panel) {
+					panel = document.createElement('div');
+					panel.id = 'guestbookPanel';
+					document.body.appendChild(panel);
+					panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+				}
+				panel.hidden = false;
+				render(panel);
+			}
+			function render(panel) {
+				const entries = load();
+				const name = (window.PokeUtil?.getPlayerName?.() || localStorage.getItem('pokequiz_trainer_name') || 'Trainer');
+				panel.className = 'pk-backdrop';
+				panel.innerHTML = '';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal';
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">📖 GUESTBOOK</span>' +
+					'<button id="gbClose" class="pk-close" type="button">✕</button></div>';
+				const body = document.createElement('div');
+				body.className = 'pk-modal-body';
+				body.style.cssText = 'display:flex;flex-direction:column;gap:10px';
+				// Write entry
+				const writeRow = document.createElement('div');
+				writeRow.style.cssText = 'display:flex;gap:6px';
+				const input = document.createElement('input');
+				input.type = 'text';
+				input.maxLength = 100;
+				input.placeholder = 'Leave a message…';
+				input.style.cssText = 'flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--pk-border);border-radius:6px;color:var(--pk-text);font-family:inherit;font-size:8px;padding:6px 8px';
+				const submitBtn = document.createElement('button');
+				submitBtn.className = 'pk-btn pk-btn-gold pk-btn-sm';
+				submitBtn.textContent = 'Sign';
+				submitBtn.addEventListener('click', () => {
+					const msg = input.value.trim();
+					if (!msg) return;
+					addEntry(name, msg);
+					input.value = '';
+					render(panel);
+				});
+				writeRow.appendChild(input);
+				writeRow.appendChild(submitBtn);
+				body.appendChild(writeRow);
+				// Entries
+				if (entries.length === 0) {
+					const empty = document.createElement('div');
+					empty.style.cssText = 'font-size:8px;color:var(--pk-muted);text-align:center;padding:16px';
+					empty.textContent = 'No messages yet. Be the first!';
+					body.appendChild(empty);
+				} else {
+					entries.forEach(e => {
+						const row = document.createElement('div');
+						row.style.cssText = 'padding:8px 10px;border:1px solid var(--pk-border);border-radius:6px;background:rgba(255,255,255,0.03)';
+						row.innerHTML = '<div style="font-size:7px;color:var(--pk-gold)">' + e.name + ' · ' + new Date(e.ts).toLocaleDateString() + '</div>' +
+							'<div style="font-size:8px;color:var(--pk-text);margin-top:3px">' + e.msg.replace(/</g,'&lt;') + '</div>';
+						body.appendChild(row);
+					});
+				}
+				inner.appendChild(body);
+				panel.appendChild(inner);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				document.getElementById('gbClose')?.addEventListener('click', () => { panel.hidden = true; });
+			}
+			return { open, addEntry, load };
+		})();
+	window.CAMP_SYSTEMS.Guestbook = Guestbook;
 
 	// ── ShinyEncounters ────────────────────────────────────────────────────────
 		const ShinyEncounters = (() => {
@@ -6464,7 +6617,16 @@
 						}).setDepth(3).setOrigin(0.5);
 						TrainerLevel.updateHUD();
 					}
-	
+
+					// ── Pokémon of the Day sign near gate ─────────────────────────────
+					{
+						const potdId = PokemonOfDay.get();
+						const potdName = PokemonOfDay.getName(potdId);
+						this.add.text(11*TILE, (MAP_H-4)*TILE, '⭐ ' + potdName, { fontSize:'7px', color:'#f6c84c', backgroundColor:'rgba(0,0,0,0.6)', padding:{x:4,y:2} })
+							.setDepth(3).setOrigin(0.5, 1);
+						PokemonOfDay.checkBonus(this);
+					}
+
 					// ── Surfing current state ─────────────────────────────────────────
 					this._surfDriftTick = 0;
 					this._surfDiscoveredIsland = false;
@@ -6528,6 +6690,10 @@
 						// Radar shimmer on tall grass
 						if (t === TTG && this._radarShimmer && this._radarShimmer.has(r+','+c)) {
 							return { kind: 'radar', r, c, label: 'Investigate' };
+						}
+						// Secret area trigger — hidden spot behind house at col 6, row 7
+						if (r === 7 && c === 6) {
+							return { kind: 'secret', r, c, label: 'Investigate' };
 						}
 						// Soil tile — plant if free + have seeds, harvest if ripe, status otherwise.
 						if (t === TSO || t === TCR) {
@@ -7451,6 +7617,12 @@
 						else if (target && target.kind === 'npc' && target.npcKind === 'tutor') {
 							MoveTutor.open();
 						}
+						else if (target && target.kind === 'npc' && target.npcKind === 'berrytrader') {
+							BerryTrader.interact();
+						}
+						else if (target && target.kind === 'npc' && target.npcKind === 'guestbook') {
+							Guestbook.open();
+						}
 						else if (target && target.kind === 'fire') {
 							// Campfire: offer Cook vs Story choice
 							this._showCampfireMenu();
@@ -7495,6 +7667,23 @@
 								Music.start('camp');
 								if (won) { DailyQuests.increment('minigame'); TrainerLevel.addXP('battle'); }
 							});
+						}
+						else if (target && target.kind === 'secret') {
+							const secretKey = 'pokequiz_secret_' + new Date().toISOString().slice(0,10);
+							const alreadyFound = !!localStorage.getItem(secretKey);
+							if (alreadyFound) {
+								Dialog.open('✨ You already found the secret spot today. Come back tomorrow for another treasure!');
+							} else {
+								localStorage.setItem(secretKey, '1');
+								const invS = Inventory.load();
+								invS.tokens = (invS.tokens||0) + 30;
+								invS.friendshipBerries = (invS.friendshipBerries||0) + 1;
+								Inventory.save(invS);
+								showToast('🎁 Secret found! +30 tokens & +1 Friendship Berry!');
+								Dialog.open('🎁 You found a hidden treasure chest!\nYou got: +30 tokens & 1 Friendship Berry!\nThis secret refreshes daily — check back tomorrow!');
+								TrainerLevel.addXP('harvest');
+								Achievements.unlock('secretFound');
+							}
 						}
 						else if (target && target.message === '__mailbox__') {
 							PostcardSystem.open();

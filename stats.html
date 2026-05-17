@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Your Stats &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Your personal PokeQuiz stats — best scores, camp life, and achievements.">
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#ee1515">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<style>
+		/* ── page layout ───────────────────────────────────────────── */
+		.stats-page { padding: 32px 0 64px; }
+		.stats-header {
+			text-align: center;
+			margin-bottom: 32px;
+		}
+		.stats-header h1 {
+			font-size: clamp(1.6rem, 4vw, 2.4rem);
+			font-weight: 800;
+			margin: 0 0 6px;
+		}
+		.stats-header p {
+			color: var(--muted);
+			margin: 0;
+		}
+		/* ── stat cards grid ───────────────────────────────────────── */
+		.stats-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+			gap: 20px;
+		}
+		.stat-card {
+			background: var(--surface);
+			border-radius: var(--radius);
+			box-shadow: var(--shadow-sm);
+			padding: 20px 22px;
+			border: 1.5px solid var(--border);
+		}
+		.stat-card-title {
+			font-size: 11px;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: .08em;
+			color: var(--muted);
+			margin-bottom: 14px;
+			display: flex;
+			align-items: center;
+			gap: 7px;
+		}
+		.stat-card-title .sc-icon { font-size: 16px; }
+		/* ── per-mode rows ─────────────────────────────────────────── */
+		.stat-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 5px 0;
+			border-bottom: 1px solid var(--border);
+			font-size: 13px;
+		}
+		.stat-row:last-child { border-bottom: none; }
+		.stat-row-label { color: var(--muted); }
+		.stat-row-val {
+			font-weight: 700;
+			color: var(--ink);
+		}
+		.stat-row-val.has-score { color: var(--poke-red, #ee1515); }
+		.stat-row-val.no-score { color: var(--muted); font-weight: 400; font-size: 12px; }
+		/* ── camp life card ────────────────────────────────────────── */
+		.camp-stats-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 12px;
+		}
+		.camp-stat-chip {
+			background: var(--surface-2, #fff5f5);
+			border-radius: 10px;
+			padding: 10px 12px;
+			text-align: center;
+		}
+		.camp-stat-chip .csn { font-size: 20px; font-weight: 800; color: var(--poke-red, #ee1515); }
+		.camp-stat-chip .csl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+		/* ── achievements card ─────────────────────────────────────── */
+		.ach-count {
+			font-size: 2rem;
+			font-weight: 800;
+			color: var(--poke-red, #ee1515);
+			line-height: 1;
+		}
+		.ach-total { font-size: 13px; color: var(--muted); margin-top: 4px; }
+		/* ── actions ───────────────────────────────────────────────── */
+		.stats-actions {
+			display: flex;
+			gap: 12px;
+			justify-content: center;
+			margin-top: 32px;
+			flex-wrap: wrap;
+		}
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="quizzes.html">Quizzes</a>
+			<a href="puzzle.html">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container stats-page">
+		<div class="stats-header">
+			<h1>&#128202; Your Stats</h1>
+			<p>Personal bests &amp; camp life across all PokeQuiz games</p>
+		</div>
+
+		<div class="stats-grid" id="statsGrid">
+			<!-- Populated by JS -->
+		</div>
+
+		<div class="stats-actions">
+			<a href="play.html" class="btn">Play a Game &rarr;</a>
+			<a href="ranking.html" class="btn btn-secondary">Global Leaderboard</a>
+			<a href="camp.html" class="btn btn-ghost">Open Camp &#127957;&#65039;</a>
+		</div>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script>
+	(function () {
+		'use strict';
+
+		function ls(key) {
+			try { return localStorage.getItem(key); } catch { return null; }
+		}
+
+		function fmtMs(ms) {
+			// Convert ms to human-readable seconds with 1 decimal
+			if (ms == null || ms === '' || isNaN(Number(ms))) return null;
+			return (Number(ms) / 1000).toFixed(1) + 's';
+		}
+
+		function num(val) {
+			const n = Number(val);
+			return (val != null && val !== '' && Number.isFinite(n)) ? n : null;
+		}
+
+		function escHtml(s) {
+			return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+				({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+		}
+
+		function makeCard(icon, title, rows) {
+			const rowsHtml = rows.map(([label, val]) => {
+				const hasVal = val != null;
+				return `<div class="stat-row">
+					<span class="stat-row-label">${escHtml(label)}</span>
+					<span class="stat-row-val ${hasVal ? 'has-score' : 'no-score'}">${hasVal ? escHtml(String(val)) : '&mdash;'}</span>
+				</div>`;
+			}).join('');
+			return `<div class="stat-card">
+				<div class="stat-card-title"><span class="sc-icon">${icon}</span>${escHtml(title)}</div>
+				${rowsHtml}
+			</div>`;
+		}
+
+		function buildStats() {
+			const grid = document.getElementById('statsGrid');
+			const cards = [];
+
+			// ── Silhouette (pokequiz_puzzle_best_*) ─────────────────────────────
+			cards.push(makeCard('👤', "Who's That Pokémon?", [
+				['Casual',   num(ls('pokequiz_puzzle_best_casual'))],
+				['Standard', num(ls('pokequiz_puzzle_best_standard'))],
+				['Hardcore', num(ls('pokequiz_puzzle_best_hardcore'))],
+			]));
+
+			// ── Cry Quiz ─────────────────────────────────────────────────────────
+			cards.push(makeCard('🔊', 'Cry Quiz', [
+				['Casual',   num(ls('pokequiz_cry_best_casual'))],
+				['Standard', num(ls('pokequiz_cry_best_standard'))],
+				['Hardcore', num(ls('pokequiz_cry_best_hardcore'))],
+			]));
+
+			// ── Zoomed-In ────────────────────────────────────────────────────────
+			cards.push(makeCard('🔎', 'Zoomed-In', [
+				['Casual',   num(ls('pokequiz_zoom_best_casual'))],
+				['Standard', num(ls('pokequiz_zoom_best_standard'))],
+				['Hardcore', num(ls('pokequiz_zoom_best_hardcore'))],
+			]));
+
+			// ── Pokédex Entry ─────────────────────────────────────────────────────
+			cards.push(makeCard('📖', 'Pokédex Entry', [
+				['Casual',   num(ls('pokequiz_dex_best_casual'))],
+				['Standard', num(ls('pokequiz_dex_best_standard'))],
+				['Hardcore', num(ls('pokequiz_dex_best_hardcore'))],
+			]));
+
+			// ── Type Chart ───────────────────────────────────────────────────────
+			cards.push(makeCard('🧪', 'Type Chart', [
+				['Mono-type', num(ls('pokequiz_type_best_mono'))],
+				['Dual-type', num(ls('pokequiz_type_best_dual'))],
+				['Random',    num(ls('pokequiz_type_best_random'))],
+			]));
+
+			// ── Stat Spread ──────────────────────────────────────────────────────
+			cards.push(makeCard('📊', 'Stat Spread', [
+				['Easy',   num(ls('pokequiz_stats_best_easy'))],
+				['Medium', num(ls('pokequiz_stats_best_medium'))],
+				['Hard',   num(ls('pokequiz_stats_best_hard'))],
+			]));
+
+			// ── Memory Match (ms → seconds, lower is better) ─────────────────────
+			const memEasy = ls('pokequiz_memory_best_easy');
+			const memMed  = ls('pokequiz_memory_best_medium');
+			const memHard = ls('pokequiz_memory_best_hard');
+			cards.push(makeCard('🎴', 'Memory Match (best time)', [
+				['Easy (6 pairs)',   memEasy != null ? fmtMs(memEasy) : null],
+				['Medium (8 pairs)', memMed  != null ? fmtMs(memMed)  : null],
+				['Hard (12 pairs)',  memHard != null ? fmtMs(memHard) : null],
+			]));
+
+			// ── Higher or Lower ──────────────────────────────────────────────────
+			cards.push(makeCard('⚖️', 'Higher or Lower', [
+				['Best streak', num(ls('pokequiz_hl_best'))],
+			]));
+
+			// ── Gen Sprint ───────────────────────────────────────────────────────
+			cards.push(makeCard('⏱️', 'Gen Sprint', [
+				['30 seconds',  num(ls('pokequiz_sprint_best_30'))],
+				['60 seconds',  num(ls('pokequiz_sprint_best_60'))],
+				['2 minutes',   num(ls('pokequiz_sprint_best_120'))],
+			]));
+
+			// ── Camp Life ────────────────────────────────────────────────────────
+			let campStats = null;
+			try { campStats = JSON.parse(ls('pokequiz_camp_stats') || 'null'); } catch {}
+			const campCard = (() => {
+				const cs = campStats || {};
+				const chips = [
+					{ n: cs.totalCatches      ?? 0, l: 'Pokémon Caught' },
+					{ n: cs.totalHarvests     ?? 0, l: 'Berries Harvested' },
+					{ n: cs.totalDaysPlayed   ?? 0, l: 'Days Played' },
+					{ n: cs.loginStreak       ?? 0, l: 'Login Streak' },
+					{ n: cs.totalTokensEarned ?? 0, l: 'Tokens Earned' },
+				];
+				const chipsHtml = chips.map(c =>
+					`<div class="camp-stat-chip"><div class="csn">${escHtml(String(c.n))}</div><div class="csl">${escHtml(c.l)}</div></div>`
+				).join('');
+				return `<div class="stat-card">
+					<div class="stat-card-title"><span class="sc-icon">🏕️</span>Camp Life</div>
+					<div class="camp-stats-grid">${chipsHtml}</div>
+				</div>`;
+			})();
+			cards.push(campCard);
+
+			// ── Achievements ─────────────────────────────────────────────────────
+			let achObj = null;
+			try { achObj = JSON.parse(ls('pokequiz_achievements') || 'null'); } catch {}
+			const achCount = achObj ? Object.keys(achObj).filter(k => achObj[k]).length : 0;
+			const achTotal = achObj ? Object.keys(achObj).length : '?';
+			const achCard = `<div class="stat-card">
+				<div class="stat-card-title"><span class="sc-icon">🏆</span>Achievements</div>
+				<div class="ach-count">${achCount}</div>
+				<div class="ach-total">of ${achTotal} unlocked</div>
+			</div>`;
+			cards.push(achCard);
+
+			grid.innerHTML = cards.join('');
+		}
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', buildStats);
+		} else {
+			buildStats();
+		}
+	})();
+	</script>
+</body>
+</html>

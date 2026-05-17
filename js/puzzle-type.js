@@ -1,4 +1,17 @@
 (function () {
+	function updateComboDisplay(s) {
+		let el = document.getElementById('comboDisplay');
+		if (!el) {
+			el = document.createElement('div');
+			el.id = 'comboDisplay';
+			el.style.cssText = 'position:fixed;top:80px;right:16px;font-size:11px;font-weight:bold;color:#f6c84c;text-shadow:0 0 8px rgba(246,200,76,0.8);transition:all 0.2s;z-index:999;pointer-events:none;font-family:inherit';
+			document.body.appendChild(el);
+		}
+		if (s >= 5) { el.textContent = '🔥 ×2 COMBO'; el.style.color = '#ff6030'; }
+		else if (s >= 3) { el.textContent = '🔥 ×1.5 COMBO'; el.style.color = '#f6c84c'; }
+		else { el.textContent = ''; }
+	}
+
 	const SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 	const DATA_URL = 'js/pokemon-data.json';
 	const TYPES_URL = 'js/pokemon-types.json';
@@ -171,6 +184,8 @@
 				if (streak > best) { best = streak; setBest(modeCfg.bestKey, best); }
 				streakNum.textContent = streak; bestNum.textContent = best;
 				setFeedback(`Correct! <strong>${current.name}</strong> is ${current.types.join('/')}. Streak: ${streak}`, 'correct');
+				// Update combo indicator
+				if (typeof updateComboDisplay === 'function') updateComboDisplay(streak);
 				if (streak > 0 && streak % 5 === 0) {
 					const card = document.querySelector('.puzzle-card');
 					if (card) { const b = document.createElement('div'); b.className = 'streak-milestone'; b.textContent = `${streak} Streak!`; card.appendChild(b); setTimeout(() => b.remove(), 1400); }
@@ -190,6 +205,7 @@
 			const correct = setEq(selected, current.types);
 			if (correct) reveal(true);
 			else {
+				if (typeof updateComboDisplay === 'function') updateComboDisplay(0);
 				const out = loseHeart();
 				if (out) {
 					ended = true; reveal(false);

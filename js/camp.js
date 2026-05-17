@@ -258,4 +258,14 @@
 		document.addEventListener('DOMContentLoaded', () => PostcardSystem?.receiveFromURL());
 	else PostcardSystem?.receiveFromURL();
 
+	// ── Guestbook button ──────────────────────────────────────────────────────
+	function wireGuestbookBtn() {
+		const Guestbook = (window.CAMP_SYSTEMS || {}).Guestbook;
+		document.getElementById('campGuestbookBtn')?.addEventListener('click', () => {
+			if (Guestbook) Guestbook.open();
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireGuestbookBtn);
+	else wireGuestbookBtn();
+
 })();

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Evolution Chain &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Fast-fire evolution chain mini-game — name a Pok&eacute;mon in the same evolution chain!">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Evolution Chain — PokeQuiz">
+	<meta property="og:description" content="Fast-fire evolution chain mini-game — name a Pok&eacute;mon in the same evolution chain!">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/puzzle-evo">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Evolution Chain — PokeQuiz">
+	<meta name="twitter:description" content="Fast-fire evolution chain mini-game — name a Pok&eacute;mon in the same evolution chain!">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle-evo.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row"><span class="pp-row-label">Name</span><span class="pp-name-view">&mdash;</span></div>
+				<div class="pp-row"><span class="pp-row-label">Best Score</span><span class="pp-score-view">&mdash;</span></div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<div class="pz-wrap">
+
+			<!-- ── Mode Select ── -->
+			<div id="modeSelect">
+				<a class="pz-back" href="puzzle.html">&larr; Puzzle Hub</a>
+
+				<div class="pz-head">
+					<div class="pz-eyebrow">
+						<span class="pz-eyebrow-dot"></span>
+						<span>Evolution Chain</span>
+					</div>
+					<h1 class="pz-title">Who Evolves With?</h1>
+					<p class="pz-lede">A Pok&eacute;mon is shown &mdash; pick another member of its evolution family from 4 choices. How long can you streak?</p>
+				</div>
+
+				<div class="pz-mode-grid">
+					<button class="pz-mode-card" data-mode="normal" type="button">
+						<span class="pz-mode-icon">&#9889;</span>
+						<span class="pz-mode-name">Normal</span>
+						<p class="pz-mode-desc">Pick a Pok&eacute;mon in the same evolution chain. Unlimited hearts.</p>
+						<span class="pz-mode-best">Best: <strong id="bestNormal">0</strong></span>
+					</button>
+					<button class="pz-mode-card" data-mode="hard" type="button">
+						<span class="pz-mode-icon">&#9888;</span>
+						<span class="pz-mode-name">Hard</span>
+						<p class="pz-mode-desc">One wrong answer ends your run. No mercy.</p>
+						<span class="pz-mode-best">Best: <strong id="bestHard">0</strong></span>
+					</button>
+				</div>
+
+				<div class="pz-tip">
+					<span class="pz-tip-icon">!</span>
+					<span>All evolution lines are from Generation I (Kanto). Branching evolutions (Eevee!) count any branch-mate as correct.</span>
+				</div>
+			</div>
+
+			<!-- ── Game View ── -->
+			<div id="gameView" hidden>
+				<a class="pz-back" href="puzzle.html">&larr; Puzzle Hub</a>
+
+				<div class="pz-stats" id="statsRow">
+					<div class="pz-stat">
+						<span class="pz-stat-num" id="streakNum">0</span>
+						<span class="pz-stat-label">Streak</span>
+					</div>
+					<div class="pz-stat">
+						<span class="pz-stat-num" id="bestNum">0</span>
+						<span class="pz-stat-label">Best</span>
+					</div>
+				</div>
+
+				<!-- Chain display -->
+				<div class="evo-chain-display" id="chainDisplay" aria-label="Evolution chain"></div>
+
+				<!-- Prompt -->
+				<p class="evo-prompt" id="evoPrompt"></p>
+
+				<!-- Answer buttons -->
+				<div class="pz-answers evo-grid" id="answersGrid" role="group" aria-label="Answer choices"></div>
+
+				<!-- Feedback -->
+				<div class="pz-feedback" id="feedback" aria-live="polite"></div>
+
+				<!-- Controls -->
+				<div class="pz-controls">
+					<button id="nextBtn" class="btn" type="button" hidden>Next &rarr;</button>
+					<button id="quitBtn" class="btn btn-ghost" type="button">End Run</button>
+				</div>
+			</div>
+
+			<!-- ── Game Over ── -->
+			<div id="gameOver" hidden>
+				<div class="pz-result">
+					<span class="pz-result-emoji" id="resultEmoji">&#127942;</span>
+					<h1 class="pz-result-title" id="resultTitle">Run Over</h1>
+					<div class="pz-result-score" id="resultScore">0</div>
+					<p class="pz-result-subtitle" id="resultMsg"></p>
+					<div class="pz-result-stats">
+						<div class="pz-result-stat">
+							<span class="pz-rs-num" id="finalStreak">0</span>
+							<span class="pz-rs-label">Final Streak</span>
+						</div>
+						<div class="pz-result-stat">
+							<span class="pz-rs-num" id="finalBest">0</span>
+							<span class="pz-rs-label">Mode Best</span>
+						</div>
+					</div>
+					<div class="pz-result-actions">
+						<button class="btn" id="retryBtn" type="button">Try Again</button>
+						<button class="btn btn-secondary" id="changeModeBtn" type="button">Change Mode</button>
+						<a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle-evo.js" defer></script>
+</body>
+</html>

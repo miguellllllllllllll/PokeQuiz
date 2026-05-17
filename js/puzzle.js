@@ -1,4 +1,17 @@
 (function () {
+	function updateComboDisplay(s) {
+		let el = document.getElementById('comboDisplay');
+		if (!el) {
+			el = document.createElement('div');
+			el.id = 'comboDisplay';
+			el.style.cssText = 'position:fixed;top:80px;right:16px;font-size:11px;font-weight:bold;color:#f6c84c;text-shadow:0 0 8px rgba(246,200,76,0.8);transition:all 0.2s;z-index:999;pointer-events:none;font-family:inherit';
+			document.body.appendChild(el);
+		}
+		if (s >= 5) { el.textContent = '🔥 ×2 COMBO'; el.style.color = '#ff6030'; }
+		else if (s >= 3) { el.textContent = '🔥 ×1.5 COMBO'; el.style.color = '#f6c84c'; }
+		else { el.textContent = ''; }
+	}
+
 	const SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 	const CRY_BASE = 'https://play.pokemonshowdown.com/audio/cries/';
 	const DATA_URL = 'js/pokemon-data.json';
@@ -294,6 +307,8 @@
 				streakNum.textContent = streak;
 				bestNum.textContent = best;
 				setFeedback(`Correct! Streak: ${streak}`, 'correct');
+				// Update combo indicator
+				if (typeof updateComboDisplay === 'function') updateComboDisplay(streak);
 				if (streak > 0 && streak % 5 === 0) {
 					triggerStreakMilestone(streak);
 				}
@@ -326,6 +341,7 @@
 		}
 
 		function handleWrongGuess() {
+			if (typeof updateComboDisplay === 'function') updateComboDisplay(0);
 			const out = loseHeart();
 			if (out) {
 				ended = true;
@@ -392,6 +408,7 @@
 		skipBtn.addEventListener('click', () => {
 			streak = 0;
 			streakNum.textContent = streak;
+			if (typeof updateComboDisplay === 'function') updateComboDisplay(0);
 			setFeedback(`Skipped — it was <strong>${escapeHtml(current.name)}</strong>.`, 'skipped');
 			reveal(false);
 		});

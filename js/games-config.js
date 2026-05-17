@@ -120,5 +120,20 @@
 			label: 'Counter Team', scoreLabel: 'Score', timeBased: false,
 			modes: null,
 		},
+		daily: {
+			label: 'Daily Challenge', scoreLabel: 'Score', defaultTotal: 10, timeBased: false,
+			modes: null,
+		},
+		rhythm: {
+			label: 'Rhythm', scoreLabel: 'Score', timeBased: false,
+			modes: null,
+		},
+		evo: {
+			label: 'Evolution Chain', scoreLabel: 'Streak', timeBased: false,
+			modes: [
+				{ key: 'normal', label: 'Normal' },
+				{ key: 'hard',   label: 'Hard' },
+			],
+		},
 	};
 })();

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Daily Challenge &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Everyone gets the same 10 questions today. Complete the PokeQuiz Daily Challenge!">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="PokeQuiz Daily Challenge">
+	<meta property="og:description" content="Everyone gets the same 10 questions today. Complete the PokeQuiz Daily Challenge!">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/daily">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="PokeQuiz Daily Challenge">
+	<meta name="twitter:description" content="Everyone gets the same 10 questions today. Complete the PokeQuiz Daily Challenge!">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#ee1515">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/quiz.css">
+	<style>
+		.daily-meta {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			margin-bottom: 18px;
+		}
+		.daily-date-pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			background: var(--surface-2, #f3f4f6);
+			border-radius: 999px;
+			padding: 6px 14px;
+			font-size: 12px;
+			font-weight: 600;
+			color: var(--text-2, #555);
+			width: fit-content;
+		}
+		.daily-done-wrap {
+			text-align: center;
+			padding: 24px 0;
+		}
+		.daily-done-icon {
+			font-size: 48px;
+			margin-bottom: 12px;
+		}
+		.daily-done-title {
+			font-size: 1.4rem;
+			font-weight: 800;
+			margin-bottom: 8px;
+		}
+		.daily-done-msg {
+			color: var(--text-2, #555);
+			margin-bottom: 20px;
+			line-height: 1.6;
+		}
+		.daily-actions {
+			display: flex;
+			gap: 10px;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+		.daily-error {
+			color: var(--danger, #ef4444);
+			text-align: center;
+			padding: 24px;
+		}
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="quizzes.html">Quizzes</a>
+			<a href="puzzle.html">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card quiz-card">
+			<div class="quiz-bg" aria-hidden="true">
+				<img class="quiz-pokeball" src="Pictures/pokeball.png" alt="">
+			</div>
+
+			<div class="quiz-meta">
+				<div class="quiz-title-pill" id="quizTitlePill">
+					<span class="quiz-title-name">Daily Challenge</span>
+					<span class="quiz-title-diff">10 Questions</span>
+				</div>
+			</div>
+
+			<div id="dailyRoot">
+				<p style="text-align:center;padding:32px">Loading today's questions&hellip;</p>
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script src="js/quizzes.js"></script>
+	<script src="js/daily-challenge.js" defer></script>
+</body>
+</html>

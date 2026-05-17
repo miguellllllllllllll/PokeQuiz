@@ -539,6 +539,146 @@
 		}
 	}
 
+	// ── Share / receive logic ─────────────────────────────────────────────────
+
+	/**
+	 * Encode a payload object to base64url (URL-safe, no padding).
+	 */
+	function toBase64Url(obj) {
+		const json = JSON.stringify(obj);
+		// btoa works on binary strings; encode as UTF-8 first
+		const bytes = new TextEncoder().encode(json);
+		let binary = '';
+		bytes.forEach(b => { binary += String.fromCharCode(b); });
+		return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+	}
+
+	/**
+	 * Decode a base64url string back to an object, or null on error.
+	 */
+	function fromBase64Url(str) {
+		try {
+			const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+			const binary = atob(b64);
+			const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+			return JSON.parse(new TextDecoder().decode(bytes));
+		} catch (_) {
+			return null;
+		}
+	}
+
+	/**
+	 * Build the share payload from current localStorage state.
+	 */
+	function buildSharePayload() {
+		const inventory = safeJSON(KEYS.inventory, {});
+		const stats     = safeJSON(KEYS.stats, {});
+		const name      = localStorage.getItem(KEYS.name) || 'Trainer';
+
+		// Gym badges — compute via PokeBadges if available
+		let badges = {};
+		let badgeCount = 0;
+		if (window.PokeBadges) {
+			const earned = PokeBadges.computeAndSave();
+			badges = earned;
+			badgeCount = PokeBadges.countEarned(earned);
+		}
+
+		return {
+			name,
+			badges,
+			badgeCount,
+			partner : inventory.eeveeForm || 'Eevee',
+			streak  : stats.loginStreak  ?? 0,
+		};
+	}
+
+	/**
+	 * Render a read-only "shared" banner and suppress the share button.
+	 */
+	function renderSharedView(payload) {
+		// Banner above the hero
+		const banner = document.createElement('div');
+		banner.className = 'tc-share-banner';
+		banner.innerHTML = '&#128203; Viewing <strong>' +
+			(payload.name || 'Trainer').replace(/[&<>"']/g, c =>
+				({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) +
+			'</strong>’s Trainer Card';
+		const main = document.querySelector('main.container');
+		if (main) main.insertBefore(banner, main.firstChild);
+
+		// Hide the share button if it exists
+		const shareBtn = document.getElementById('tcShareBtn');
+		if (shareBtn) shareBtn.hidden = true;
+
+		// Override trainer name displayed
+		setText('tcTrainerName', payload.name || 'Trainer');
+
+		// Badge strip: render from payload
+		if (window.PokeBadges && payload.badges) {
+			const iconsEl = document.getElementById('tcGymBadgeIcons');
+			if (iconsEl) {
+				const earnedBadges = PokeBadges.meta.filter(b => payload.badges[b.id]);
+				if (earnedBadges.length > 0) {
+					iconsEl.innerHTML = earnedBadges.map(b =>
+						'<span class="tc-gym-badge-icon" title="' + b.name + '">' + b.emoji + '</span>'
+					).join('');
+				} else {
+					iconsEl.innerHTML = '<span class="tc-gym-empty">None yet</span>';
+				}
+			}
+		}
+
+		// Partner
+		if (payload.partner) {
+			setPartnerSprite(payload.partner);
+			setText('tcPartnerFormName', payload.partner);
+			setText('tcCurrentForm', payload.partner);
+		}
+
+		// Streak badge
+		setText('tcBadgeStreakVal', payload.streak ?? 0);
+		setText('tcStreak', payload.streak ?? 0);
+
+		// Badge count tile (if we can show it)
+		if (payload.badgeCount !== undefined) {
+			setText('tcBadgeDaysVal', payload.badgeCount);
+		}
+	}
+
+	/**
+	 * Copy the share URL to the clipboard and show a brief toast.
+	 */
+	function handleShare() {
+		// PokeBadges might not be ready yet — it's deferred. We read directly.
+		const payload = buildSharePayload();
+		const encoded = toBase64Url(payload);
+		const url = window.location.origin + window.location.pathname + '?tc=' + encoded;
+
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(url).then(() => {
+				showShareToast('Link copied to clipboard!');
+			}).catch(() => {
+				prompt('Copy this link to share your Trainer Card:', url);
+			});
+		} else {
+			prompt('Copy this link to share your Trainer Card:', url);
+		}
+	}
+
+	function showShareToast(msg) {
+		let toast = document.getElementById('tcShareToast');
+		if (!toast) {
+			toast = document.createElement('div');
+			toast.id = 'tcShareToast';
+			toast.className = 'tc-share-toast';
+			document.body.appendChild(toast);
+		}
+		toast.textContent = msg;
+		toast.classList.add('is-visible');
+		setTimeout(() => toast.classList.remove('is-visible'), 2800);
+	}
+
 	// ── Run on DOM ready ──────────────────────────────────────────────────────
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', runAll);
@@ -547,13 +687,34 @@
 	}
 
 	function runAll() {
-		populate();
-		// Give badges.js a tick to register (both loaded with defer)
-		requestAnimationFrame(() => {
-			populateGymBadges();
-			populateAchievements();
-			populatePokedex();
-		});
+		// Check for ?tc= share param first
+		const tcParam = new URLSearchParams(window.location.search).get('tc');
+		const sharedPayload = tcParam ? fromBase64Url(tcParam) : null;
+
+		if (!sharedPayload) {
+			// Normal view: populate from localStorage, wire share button
+			populate();
+			requestAnimationFrame(() => {
+				populateGymBadges();
+				populateAchievements();
+				populatePokedex();
+
+				// Wire share button
+				const shareBtn = document.getElementById('tcShareBtn');
+				if (shareBtn) {
+					shareBtn.addEventListener('click', handleShare);
+				}
+			});
+		} else {
+			// Read-only shared view: only populate what the payload has
+			populate();
+			requestAnimationFrame(() => {
+				populateGymBadges();
+				populateAchievements();
+				populatePokedex();
+				renderSharedView(sharedPayload);
+			});
+		}
 	}
 
 })();

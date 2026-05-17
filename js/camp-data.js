@@ -694,6 +694,20 @@ window.CAMP_DATA.NPCS = [
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: ["I can teach your partner special skills! Come talk to me."],
 		},
+		{
+			key: 'berry-trader', species: 'youngster', r: 20, c: 6,
+			label: 'Trade',
+			kind: 'berrytrader',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: ["I love trading berries! Got some to spare?"],
+		},
+		{
+			key: 'guestbook-keeper', species: 'picnicker', r: 22, c: 8,
+			label: 'Guestbook',
+			kind: 'guestbook',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: ["Sign the camp guestbook and leave your mark!"],
+		},
 	];
 
 // ── BERRY_TYPES ────────────────────────────────────────────────────────

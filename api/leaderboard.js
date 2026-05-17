@@ -41,6 +41,9 @@ const GAMES = {
 	moveset:    { key: 'pokequiz:leaderboard:moveset',        maxTotal: 500, modes: ['casual','standard','hardcore'] },
 	spotlight:  { key: 'pokequiz:leaderboard:spotlight',      maxTotal: 500 },
 	team:       { key: 'pokequiz:leaderboard:team',           maxTotal: 500 },
+	daily:      { key: 'pokequiz:leaderboard:daily',          maxTotal: 10, defaultTotal: 10 },
+	rhythm:     { key: 'pokequiz:leaderboard:rhythm',         maxTotal: 10 },
+	evo:        { key: 'pokequiz:leaderboard:evo',            maxTotal: 500, modes: ['normal','hard'] },
 };
 
 // Minimum physically-possible completion times per memory board size (ms).

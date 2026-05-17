@@ -1,4 +1,17 @@
 (function () {
+	function updateComboDisplay(s) {
+		let el = document.getElementById('comboDisplay');
+		if (!el) {
+			el = document.createElement('div');
+			el.id = 'comboDisplay';
+			el.style.cssText = 'position:fixed;top:80px;right:16px;font-size:11px;font-weight:bold;color:#f6c84c;text-shadow:0 0 8px rgba(246,200,76,0.8);transition:all 0.2s;z-index:999;pointer-events:none;font-family:inherit';
+			document.body.appendChild(el);
+		}
+		if (s >= 5) { el.textContent = '🔥 ×2 COMBO'; el.style.color = '#ff6030'; }
+		else if (s >= 3) { el.textContent = '🔥 ×1.5 COMBO'; el.style.color = '#f6c84c'; }
+		else { el.textContent = ''; }
+	}
+
 	const SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 	const DATA_URL = 'js/pokemon-data.json';
 	const STATS_URL = 'js/pokemon-stats.json';
@@ -163,7 +176,10 @@
 				if (streak > best) { best = streak; setBest(modeCfg.bestKey, best); }
 				streakNum.textContent = streak; bestNum.textContent = best;
 				setFeedback(`Correct! That spread belongs to <strong>${escapeHtml(current.name)}</strong>. Streak: ${streak}`, 'correct');
+				// Update combo indicator
+				if (typeof updateComboDisplay === 'function') updateComboDisplay(streak);
 			} else {
+				if (typeof updateComboDisplay === 'function') updateComboDisplay(0);
 				setFeedback(`Wrong &mdash; it was <strong>${escapeHtml(current.name)}</strong>.`, 'wrong');
 			}
 			setTimeout(() => nextBtn.focus(), 200);
