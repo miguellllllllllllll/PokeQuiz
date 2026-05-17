@@ -831,3 +831,24 @@ window.CAMP_DATA.FRIENDSHIP_MAX = 100;
 window.CAMP_DATA.DAILY_BONUS_KEY = 'pokequiz_camp_daily';
 // ── DAILY_BONUS_MS ────────────────────────────────────────────────────────
 window.CAMP_DATA.DAILY_BONUS_MS = 22 * 60 * 60 * 1000; // 22 hours so timezone shifts can't lock you out
+
+// ── TILE ────────────────────────────────────────────────────────
+window.CAMP_DATA.TILE = 16;
+// ── MAP_W ────────────────────────────────────────────────────────
+window.CAMP_DATA.MAP_W = 40;
+// ── MAP_H ────────────────────────────────────────────────────────
+window.CAMP_DATA.MAP_H = 30;
+// ── GROW_MS ────────────────────────────────────────────────────────
+window.CAMP_DATA.GROW_MS = 30 * 1000;
+// ── SEED_PRICE ────────────────────────────────────────────────────────
+window.CAMP_DATA.SEED_PRICE = 5;
+// ── BERRY_PRICE ────────────────────────────────────────────────────────
+window.CAMP_DATA.BERRY_PRICE = 10;
+// ── SCYTHE_PRICE ────────────────────────────────────────────────────────
+window.CAMP_DATA.SCYTHE_PRICE = 75;
+// ── SCYTHE_RADIUS ────────────────────────────────────────────────────────
+window.CAMP_DATA.SCYTHE_RADIUS = 3;
+// ── STONE_PRICE ────────────────────────────────────────────────────────
+window.CAMP_DATA.STONE_PRICE = 50;
+// ── FRIENDSHIP_PER_BERRY ────────────────────────────────────────────────────────
+window.CAMP_DATA.FRIENDSHIP_PER_BERRY = 20;
