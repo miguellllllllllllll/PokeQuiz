@@ -328,3 +328,43 @@
 	.leaderboard .col-date { display: none; }
 	.leaderboard thead th, .leaderboard tbody td { padding: 12px 10px; }
 }
+
+/* ─── Season toggle ───────────────────────────────────────── */
+.season-toggle-wrap {
+	position: relative;
+	z-index: 1;
+	margin-bottom: 14px;
+}
+
+.season-toggle {
+	display: inline-flex;
+	gap: 0;
+	background: var(--surface, #f5f5f5);
+	border: 1px solid var(--border, #e0e0e0);
+	border-radius: 999px;
+	padding: 3px;
+}
+
+.season-pill {
+	padding: 5px 16px;
+	border: none;
+	border-radius: 999px;
+	background: transparent;
+	color: var(--muted, #888);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+}
+
+.season-pill.is-active {
+	background: var(--poke-red, #ee1515);
+	color: #fff;
+}
+
+.season-banner {
+	margin: 8px 0 0;
+	font-size: 13px;
+	color: var(--muted, #888);
+	font-style: italic;
+}

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Egg Group &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Egg Group mini-game &mdash; pick the Pok&eacute;mon that shares an egg group with the given one!">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Egg Group &mdash; PokeQuiz">
+	<meta property="og:description" content="Egg Group mini-game &mdash; pick the Pok&eacute;mon that shares an egg group with the given one!">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/puzzle-egggroup">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Egg Group &mdash; PokeQuiz">
+	<meta name="twitter:description" content="Egg Group mini-game &mdash; pick the Pok&eacute;mon that shares an egg group with the given one!">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle-evo.css">
+	<style>
+		/* ── Egg group prompt area ─────────────────────────────────────────── */
+
+		.eg-prompt-block {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 8px;
+			padding: 20px 16px 16px;
+			background: linear-gradient(180deg, #f9f4f4 0%, #f0e8e8 100%);
+			border: 2px solid rgba(0,0,0,0.08);
+			border-radius: 18px;
+			margin-bottom: 22px;
+			text-align: center;
+		}
+
+		.eg-prompt-sprite {
+			width: 64px;
+			height: 64px;
+			object-fit: contain;
+			image-rendering: pixelated;
+		}
+
+		.eg-prompt-name {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 11px;
+			color: var(--poke-red);
+			text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+		}
+
+		.eg-prompt-groups {
+			font-size: 11px;
+			color: var(--muted);
+			font-weight: 600;
+			text-transform: capitalize;
+		}
+
+		.eg-question {
+			font-size: 15px;
+			font-weight: 700;
+			color: var(--poke-black);
+			text-align: center;
+			margin-bottom: 18px;
+			line-height: 1.5;
+		}
+
+		.eg-question strong { color: var(--poke-red); }
+
+		/* ── Answer buttons with sprite ────────────────────────────────────── */
+
+		.pz-answers.eg-grid {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		.pz-choice-wrap {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.pz-choice-sprite {
+			width: 40px;
+			height: 40px;
+			object-fit: contain;
+			image-rendering: pixelated;
+			flex-shrink: 0;
+		}
+
+		@media (max-width: 420px) {
+			.pz-answers.eg-grid { grid-template-columns: 1fr; }
+		}
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row"><span class="pp-row-label">Name</span><span class="pp-name-view">&mdash;</span></div>
+				<div class="pp-row"><span class="pp-row-label">Best Score</span><span class="pp-score-view">&mdash;</span></div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<div class="pz-wrap">
+
+			<!-- ── Mode Select ── -->
+			<div id="modeSelect">
+				<a class="pz-back" href="puzzle.html">&larr; Puzzle Hub</a>
+
+				<div class="pz-head">
+					<div class="pz-eyebrow">
+						<span class="pz-eyebrow-dot"></span>
+						<span>Egg Group</span>
+					</div>
+					<h1 class="pz-title">Who Can Breed With?</h1>
+					<p class="pz-lede">A Pok&eacute;mon is shown &mdash; pick another that shares an egg group from 4 choices. How long can you streak?</p>
+				</div>
+
+				<div class="pz-mode-grid">
+					<button class="pz-mode-card" data-mode="normal" type="button">
+						<span class="pz-mode-icon">&#9829;</span>
+						<span class="pz-mode-name">Normal</span>
+						<p class="pz-mode-desc">Pick any Pok&eacute;mon that shares at least one egg group. Unlimited tries.</p>
+						<span class="pz-mode-best">Best: <strong id="bestNormal">0</strong></span>
+					</button>
+					<button class="pz-mode-card" data-mode="hard" type="button">
+						<span class="pz-mode-icon">&#9888;</span>
+						<span class="pz-mode-name">Hard</span>
+						<p class="pz-mode-desc">Must share the <em>primary</em> egg group. One wrong ends your run.</p>
+						<span class="pz-mode-best">Best: <strong id="bestHard">0</strong></span>
+					</button>
+				</div>
+
+				<div class="pz-tip">
+					<span class="pz-tip-icon">!</span>
+					<span>All data is from Generation I (Kanto). Pok&eacute;mon in the Undiscovered egg group (legendaries) never appear as prompts.</span>
+				</div>
+			</div>
+
+			<!-- ── Game View ── -->
+			<div id="gameView" hidden>
+				<a class="pz-back" href="puzzle.html">&larr; Puzzle Hub</a>
+
+				<div class="pz-stats" id="statsRow">
+					<div class="pz-stat">
+						<span class="pz-stat-num" id="streakNum">0</span>
+						<span class="pz-stat-label">Streak</span>
+					</div>
+					<div class="pz-stat">
+						<span class="pz-stat-num" id="bestNum">0</span>
+						<span class="pz-stat-label">Best</span>
+					</div>
+				</div>
+
+				<!-- Prompt pokemon -->
+				<div class="eg-prompt-block" aria-label="Prompt Pokémon">
+					<img class="eg-prompt-sprite" id="promptImg" src="" alt="">
+					<span class="eg-prompt-name" id="promptName"></span>
+					<span class="eg-prompt-groups" id="promptGroups"></span>
+				</div>
+
+				<!-- Question -->
+				<p class="eg-question">Which Pok&eacute;mon shares an <strong>egg group</strong> with it?</p>
+
+				<!-- Answer buttons -->
+				<div class="pz-answers eg-grid" id="answersGrid" role="group" aria-label="Answer choices"></div>
+
+				<!-- Feedback -->
+				<div class="pz-feedback" id="feedback" aria-live="polite"></div>
+
+				<!-- Controls -->
+				<div class="pz-controls">
+					<button id="nextBtn" class="btn" type="button" hidden>Next &rarr;</button>
+					<button id="quitBtn" class="btn btn-ghost" type="button">End Run</button>
+				</div>
+			</div>
+
+			<!-- ── Game Over ── -->
+			<div id="gameOver" hidden>
+				<div class="pz-result">
+					<span class="pz-result-emoji" id="resultEmoji">&#127942;</span>
+					<h1 class="pz-result-title" id="resultTitle">Run Over</h1>
+					<div class="pz-result-score" id="resultScore">0</div>
+					<p class="pz-result-subtitle" id="resultMsg"></p>
+					<div class="pz-result-stats">
+						<div class="pz-result-stat">
+							<span class="pz-rs-num" id="finalStreak">0</span>
+							<span class="pz-rs-label">Final Streak</span>
+						</div>
+						<div class="pz-result-stat">
+							<span class="pz-rs-num" id="finalBest">0</span>
+							<span class="pz-rs-label">Mode Best</span>
+						</div>
+					</div>
+					<div class="pz-result-actions">
+						<button class="btn" id="retryBtn" type="button">Try Again</button>
+						<button class="btn btn-secondary" id="changeModeBtn" type="button">Change Mode</button>
+						<a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle-egggroup.js" defer></script>
+</body>
+</html>

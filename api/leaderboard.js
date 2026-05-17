@@ -44,6 +44,7 @@ const GAMES = {
 	daily:      { key: 'pokequiz:leaderboard:daily',          maxTotal: 10, defaultTotal: 10 },
 	rhythm:     { key: 'pokequiz:leaderboard:rhythm',         maxTotal: 10 },
 	evo:        { key: 'pokequiz:leaderboard:evo',            maxTotal: 500, modes: ['normal','hard'] },
+	egggroup:   { key: 'pokequiz:leaderboard:egggroup',       maxTotal: 500, modes: ['normal','hard'] },
 };
 
 // Minimum physically-possible completion times per memory board size (ms).
@@ -196,6 +197,15 @@ function envDiag() {
 	};
 }
 
+function currentYearMonth() {
+	const d = new Date();
+	return d.toISOString().slice(0, 7); // 'YYYY-MM'
+}
+
+function seasonalKey(gameKey, yearMonth) {
+	return `pokequiz:seasonal:${gameKey}:${yearMonth}`;
+}
+
 export default async function handler(req) {
 	if (req.method === 'GET') {
 		const url = new URL(req.url);
@@ -214,6 +224,19 @@ export default async function handler(req) {
 		}
 
 		const limit = url.searchParams.get('limit');
+
+		// Seasonal (monthly) board read.
+		if (url.searchParams.get('season') === '1') {
+			const month = url.searchParams.get('month') || currentYearMonth();
+			const sKey = seasonalKey(cfg.key, month);
+			try {
+				const entries = await readTop({ ...readCfg, key: sKey }, limit);
+				return json({ game: gameName, mode: modeParam || null, month, seasonal: true, entries });
+			} catch (err) {
+				return json({ error: 'read failed', detail: String(err?.message || err), env: envDiag() }, 500);
+			}
+		}
+
 		try {
 			const entries = await readTop(readCfg, limit);
 			return json({ game: gameName, mode: modeParam || null, entries });
@@ -312,6 +335,10 @@ export default async function handler(req) {
 			if (mode && cfg.modes && cfg.modes.includes(mode)) {
 				await writeToBoard(redis, cfg.key + ':' + mode, playerId, name, storedScore, member);
 			}
+
+			// Write to monthly seasonal board (same deduplication logic as all-time).
+			const ym = currentYearMonth();
+			await writeToBoard(redis, seasonalKey(cfg.key, ym), playerId, name, storedScore, member);
 
 			const entries = await readTop(cfg, MAX_RETURN);
 			return json({ ok: true, game: gameName, entries });

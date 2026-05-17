@@ -24,6 +24,7 @@
 	const Pokedex         = (window.CAMP_SYSTEMS || {}).Pokedex;
 	const PCBox           = (window.CAMP_SYSTEMS || {}).PCBox;
 	const MysteryGift     = (window.CAMP_SYSTEMS || {}).MysteryGift;
+	const SeasonalRewards = (window.CAMP_SYSTEMS || {}).SeasonalRewards;
 	const Achievements    = (window.CAMP_SYSTEMS || {}).Achievements;
 	const TrainerLevel    = (window.CAMP_SYSTEMS || {}).TrainerLevel;
 	const CampRating      = (window.CAMP_SYSTEMS || {}).CampRating;
@@ -145,6 +146,7 @@
 			MysteryGift.open();
 		});
 		MysteryGift.autoCheck();
+		SeasonalRewards.check();
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireDOMButtons);
 	else wireDOMButtons();

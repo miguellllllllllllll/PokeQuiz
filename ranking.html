@@ -80,6 +80,14 @@
 				</div>
 			</div>
 
+			<div class="season-toggle-wrap">
+				<div class="season-toggle" role="group" aria-label="Leaderboard period">
+					<button type="button" class="season-pill is-active" id="pillAllTime">All Time</button>
+					<button type="button" class="season-pill" id="pillSeason">This Season</button>
+				</div>
+				<p class="season-banner" id="seasonBanner" hidden>Top 3 at month-end earn a Mystery Gift code! 🎁</p>
+			</div>
+
 			<div class="lb-tabs" role="tablist">
 				<button type="button" class="lb-tab is-active" data-game="quiz" role="tab" aria-selected="true">
 					<span class="lb-tab-icon">🧠</span>
@@ -161,6 +169,10 @@
 					<span class="lb-tab-icon">🔀</span>
 					<span class="lb-tab-label">Evolution Chain</span>
 				</button>
+				<button type="button" class="lb-tab" data-game="egggroup" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🥚</span>
+					<span class="lb-tab-label">Egg Group</span>
+				</button>
 			</div>
 
 			<div id="modeTabs" class="lb-mode-tabs" hidden></div>
@@ -217,6 +229,34 @@
 
 			let activeGame = 'quiz';
 			let activeMode = '';   // '' = all modes
+			let seasonMode = false; // true = fetch monthly board
+
+			// Restore season toggle from sessionStorage
+			try {
+				if (sessionStorage.getItem('lb_season') === '1') seasonMode = true;
+			} catch {}
+
+			const pillAllTime = document.getElementById('pillAllTime');
+			const pillSeason = document.getElementById('pillSeason');
+			const seasonBanner = document.getElementById('seasonBanner');
+
+			function applySeasonToggleUI() {
+				pillAllTime.classList.toggle('is-active', !seasonMode);
+				pillSeason.classList.toggle('is-active', seasonMode);
+				seasonBanner.hidden = !seasonMode;
+			}
+
+			function setSeasonMode(val) {
+				seasonMode = val;
+				try { sessionStorage.setItem('lb_season', val ? '1' : '0'); } catch {}
+				applySeasonToggleUI();
+				loadAndRender(activeGame, activeMode);
+			}
+
+			pillAllTime.addEventListener('click', () => setSeasonMode(false));
+			pillSeason.addEventListener('click', () => setSeasonMode(true));
+
+			applySeasonToggleUI();
 
 			function fmtTime(ms) {
 				const totalSec = Math.floor(ms / 1000);
@@ -355,6 +395,7 @@
 			async function loadBoard(game, mode) {
 				let url = `/api/leaderboard?game=${encodeURIComponent(game)}&limit=50`;
 				if (mode) url += `&mode=${encodeURIComponent(mode)}`;
+				if (seasonMode) url += '&season=1';
 				const res = await fetch(url);
 				if (!res.ok) throw new Error('http ' + res.status);
 				const data = await res.json();

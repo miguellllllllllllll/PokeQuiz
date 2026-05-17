@@ -146,9 +146,11 @@
 
 ---
 
-## Known Gaps (not yet implemented)
+- **Seasonal tile palette swaps**: Base tile canvas tinted via Phaser `setTint()` — winter blue (Jan–Feb, Dec), spring pink (Mar–May), summer warm (Jun–Aug), autumn amber (Sep–Nov)
+- **Seasonal leaderboard**: Monthly Redis keys (`pokequiz:seasonal:{game}:{YYYY-MM}`); `?season=1` API param fetches monthly board; "All Time / This Season" pill toggle on ranking.html; top-3 at month-end earn token reward (claimed automatically on next camp visit via `SeasonalRewards.check()`)
+- **Trade board** (`trade.html` + `js/trade.js`): Compose an offer (tokens/seeds/berries), generate a shareable `?offer=<base64>` URL; recipient claims it (inventory debited/credited); anti-double-claim via localStorage; can't claim your own offer
+- **Egg Group mini-game** (`puzzle-egggroup.html` + `js/puzzle-egggroup.js`): Given a Pokémon, pick another that shares an egg group; Normal (any overlap) + Hard (primary group only) modes; streak + leaderboard tab (🥚)
 
-- True seasonal tile palette swaps (currently overlay tints + emoji decorations)
-- Seasonal leaderboard (monthly reset + top-3 reward)
-- Trade board (cosmetic peer trading)
-- Egg group mini-game (distinct from evolution chain)
+## Known Gaps
+
+None — all planned features have been built.

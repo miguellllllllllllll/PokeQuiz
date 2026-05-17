@@ -6261,7 +6261,16 @@
 					}
 					this.baseTex.refresh();
 	
-					this.add.image(0, 0, 'campBase').setOrigin(0).setDepth(0);
+					// Seasonal tile palette: tint the base layer so grass/ground shifts hue by season.
+					const _seasonTints = [
+						0xDDEEFF, 0xDDEEFF,             // Jan, Feb  → winter blue
+						0xFFEEF4, 0xFFEEF4, 0xFFEEF4,   // Mar-May   → spring pink
+						0xFFFBE0, 0xFFFBE0, 0xFFFBE0,   // Jun-Aug   → summer warm
+						0xFFE8B0, 0xFFD890, 0xFFC860,   // Sep-Nov   → autumn amber
+						0xCCE0FF,                        // Dec       → deep winter blue
+					];
+					const _baseTileImg = this.add.image(0, 0, 'campBase').setOrigin(0).setDepth(0);
+					_baseTileImg.setTint(_seasonTints[new Date().getMonth()]);
 					this.add.image(0, 0, 'campAnim').setOrigin(0).setDepth(1);
 	
 					// Chimney overlay
@@ -9294,5 +9303,39 @@
 			};
 		}
 	window.CAMP_SCENES.makeMarketSceneClass = makeMarketSceneClass;
+
+	// ── SeasonalRewards ────────────────────────────────────────────────────────
+	const SeasonalRewards = (() => {
+		async function check() {
+			try {
+				const lastMonth = (() => {
+					const d = new Date();
+					d.setMonth(d.getMonth() - 1);
+					return d.toISOString().slice(0, 7);
+				})();
+				const claimedKey = 'pokequiz_seasonal_reward_' + lastMonth;
+				if (localStorage.getItem(claimedKey)) return;
+				const name = window.PokeUtil?.getPlayerName?.();
+				if (!name) return;
+				// Fetch last month's top 3 for quiz (flagship game)
+				const res = await fetch('/api/leaderboard?game=quiz&season=1&month=' + lastMonth + '&limit=3');
+				if (!res.ok) return;
+				const data = await res.json();
+				const entries = data.entries || [];
+				const rank = entries.findIndex(e => e.name?.toLowerCase() === name.toLowerCase());
+				if (rank === -1) return;
+				// They were top 3! Give reward
+				localStorage.setItem(claimedKey, '1');
+				const inv = Inventory.load();
+				const bonus = [200, 150, 100][rank] || 50;
+				inv.tokens = (inv.tokens || 0) + bonus;
+				Inventory.save(inv);
+				const medals = ['🥇', '🥈', '🥉'];
+				showToast(medals[rank] + ' You finished #' + (rank+1) + ' last season! +' + bonus + ' tokens!');
+			} catch {}
+		}
+		return { check };
+	})();
+	window.CAMP_SYSTEMS.SeasonalRewards = SeasonalRewards;
 
 })();

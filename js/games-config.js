@@ -135,5 +135,12 @@
 				{ key: 'hard',   label: 'Hard' },
 			],
 		},
+		egggroup: {
+			label: 'Egg Group', scoreLabel: 'Streak', timeBased: false,
+			modes: [
+				{ key: 'normal', label: 'Normal' },
+				{ key: 'hard',   label: 'Hard' },
+			],
+		},
 	};
 })();
