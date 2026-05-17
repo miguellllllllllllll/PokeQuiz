@@ -120,6 +120,18 @@
 			</div>
 		</div>
 
+
+		<!-- Quest board panel -->
+		<div id="questPanel" hidden style="position:fixed;top:0;right:0;bottom:0;width:min(340px,100%);background:linear-gradient(180deg,#1a2440,#0e1826);border-left:2px solid #f6c84c;z-index:50;overflow-y:auto;font-family:'Press Start 2P',monospace;color:#e8eaf0;padding:14px 16px;box-sizing:border-box">
+			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+				<span style="color:#f6c84c;font-size:11px;letter-spacing:1px">📋 DAILY QUESTS</span>
+				<button id="questClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button>
+			</div>
+			<div id="questDate" style="font-size:7px;color:#a8c8e8;margin-bottom:12px"></div>
+			<div id="questList" style="display:flex;flex-direction:column;gap:10px"></div>
+			<div id="questBonus" style="margin-top:14px;font-size:8px;color:#f6c84c;min-height:18px"></div>
+		</div>
+
 		<!-- Interaction prompt — anchored to the player on-screen, shown when next to something interactable -->
 		<div class="camp-prompt" id="campPrompt" hidden aria-hidden="true">
 			<span class="camp-prompt-arrow">&#x25BC;</span>
@@ -174,6 +186,7 @@
 					<button class="cb-btn cp-btn-shiny" id="cpShiny" type="button">✨ Shiny</button>
 				</div>
 				<div class="cp-status" id="cpStatus"></div>
+				<div class="cp-status" id="cpInfoExtra" style="font-size:8px;color:#a8c8e8;margin-top:6px;min-height:14px"></div>
 				<div class="cp-hint">Press <b>P</b> anywhere in Camp to open this page · <b>Esc</b> to close</div>
 			</div>
 		</div>
@@ -207,6 +220,10 @@
 						<div class="cm-row-name">🌾 Scythe <span class="cm-row-count cm-scythe-status"></span></div>
 						<span class="cm-row-cost">75 💰</span>
 						<button class="cb-btn cm-action" id="cmBuyScythe" type="button">Buy</button>
+					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">📦 Berry Plot Upgrade <span class="cm-row-count" id="cmPlotLevel">(Lv 1)</span></div>
+						<button class="cb-btn cm-action" id="cmUpgradePlot" type="button">Upgrade Plot</button>
 					</div>
 					<div class="cm-row">
 						<div class="cm-row-name">🔥 Fire Stone <span class="cm-row-count cm-stone-status" data-stone="fire"></span></div>
