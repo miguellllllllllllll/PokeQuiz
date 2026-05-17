@@ -1810,6 +1810,10 @@
 				portrait.style.width  = (form.frameW  * PS) + 'px';
 				portrait.style.height = (form.frameH * PS) + 'px';
 			}
+			// Re-sync the nickname input from storage — keeps it correct after a
+			// partner switch (which clears NICKNAME_KEY) without needing a full open().
+			const niEl = $('cpNickname');
+			if (niEl) niEl.value = loadNickname();
 			$('cpName') && ($('cpName').textContent = form.displayName);
 			// Stage/form label — only meaningful for eeveelutions.
 			const isEeveelution = typeof companionKey === 'string';
@@ -1980,6 +1984,9 @@
 				cell.addEventListener('click', () => {
 					window.__campScene?._switchFollower(dexId);
 					backdrop.remove();
+					// Re-render the Partner panel for the new companion
+					// (updates portrait, name, and clears the stale nickname).
+					refresh();
 				});
 				grid.appendChild(cell);
 			});
@@ -2124,6 +2131,16 @@
 		1.3,1.8,2.1,1.7,1.6,2.0,1.8,4.0,2.2,2.0, // 141-150 Kabutops … Mewtwo
 		0.4,                                        // 151 Mew
 	];
+	// Explicit frame-dimension overrides for PMD sheets whose layout the
+	// auto-detector in _ensureFollowerSprite cannot resolve reliably.
+	// dex: { frameW, frameH, cols }. Verified against the real Walk-Anim.png dims.
+	const PMD_FRAME_OVERRIDES = {
+		129: { frameW: 56, frameH: 40, cols: 4 }, // Magikarp — 224×320
+		10:  { frameW: 24, frameH: 32, cols: 4 }, // Caterpie — 96×256
+		13:  { frameW: 24, frameH: 40, cols: 4 }, // Weedle   — 96×320
+		50:  { frameW: 24, frameH: 40, cols: 5 }, // Diglett  — 120×320
+		19:  { frameW: 56, frameH: 40, cols: 6 }, // Rattata  — 336×320
+	};
 	for (let _i = 1; _i <= 151; _i++) {
 		FOLLOWER_FORMS[_i] = {
 			sheet: 'pmd-' + _i,
@@ -3086,33 +3103,33 @@
 
 	const NPCS = [
 		{
-			key: 'mart-keeper', species: 'pikachu', r: 14, c: 13,
+			key: 'mart-keeper', species: 'youngster', r: 14, c: 13,
 			label: 'Shop',
-			spriteScale: 0.55, frameHeight: 40,
+			spriteScale: 1.5, frameHeight: 32,
 			kind: 'mart',
 			dialog: [
 				"Welcome to my shop! I buy berries and sell seeds — opening the mart now.",
-				"Pika! Business is slow today. Come sell those berries!",
+				"Hey! Business is slow today. Come sell those berries!",
 				"The freshest seeds in camp — straight from the Pokémon Express!",
-				"Pikachu estimates berry prices are UP today. Sell now!",
+				"Berry prices are UP today. Sell now!",
 			],
 		},
 		{
-			key: 'farmer', species: 'bulbasaur', r: 19, c: 19,
+			key: 'farmer', species: 'camper', r: 19, c: 19,
 			label: 'Talk',
-			spriteScale: 0.6, frameHeight: 40,
+			spriteScale: 1.5, frameHeight: 32,
 			dialog: [
 				"These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
-				"Bulba! Rain makes the berries grow faster — or so they say.",
+				"Rain makes the berries grow faster — or so they say.",
 				"I heard Oran Berries give extra friendship. Worth the wait!",
-				"Saur! My record is 20 berries in one harvest. Can you beat it?",
+				"My record is 20 berries in one harvest. Can you beat it?",
 			],
 		},
 		{
-			key: 'quest-board', species: 'pikachu', r: 8, c: 28,
+			key: 'quest-board', species: 'cooltrainer-m', r: 8, c: 28,
 			label: 'Quests',
 			kind: 'quests',
-			spriteScale: 0.55, frameHeight: 40,
+			spriteScale: 1.5, frameHeight: 32,
 			dialog: [
 				"Daily quest board! Check your tasks for today.",
 				"New quests reset at midnight. Have you done yours?",
@@ -3120,10 +3137,10 @@
 			],
 		},
 		{
-			key: 'visiting-camper', species: 'bulbasaur', r: 16, c: 8,
+			key: 'visiting-camper', species: 'picnicker', r: 16, c: 8,
 			label: 'Talk',
 			kind: 'camper',
-			spriteScale: 0.6, frameHeight: 40,
+			spriteScale: 1.5, frameHeight: 32,
 			dialog: ["..."],  // overridden by NpcCampers.openDialog
 		},
 	];
@@ -3978,53 +3995,53 @@
 	// selects which inventory list opens when the player presses E on them.
 	const MARKET_NPCS = [
 		{
-			key: 'm-pikachu', species: 'pikachu', r: 7, c: 7,
+			key: 'm-pikachu', species: 'youngster', r: 7, c: 7,
 			label: 'Shop', shopKind: 'general',
-			spriteScale: 0.55, frameHeight: 40,
+			spriteScale: 1.5, frameHeight: 32,
 			dialog: [
-				"Pika! Seeds and berries at the trainer's mart.",
-				"Pikachu says: berry prices looking good today!",
+				"Seeds and berries at the trainer's mart.",
+				"Berry prices looking good today!",
 				"Come see what's in stock!",
 			],
 		},
 		{
-			key: 'm-bulbasaur', species: 'bulbasaur', r: 7, c: 22,
+			key: 'm-bulbasaur', species: 'camper', r: 7, c: 22,
 			label: 'Shop', shopKind: 'berries',
-			spriteScale: 0.6, frameHeight: 40,
+			spriteScale: 1.5, frameHeight: 32,
 			dialog: [
-				"Bulba! Fresh-picked berries straight from my patch.",
+				"Fresh-picked berries straight from my patch.",
 				"The soil looks extra fertile today — good planting weather!",
 				"Try an Oran Seed for a bigger friendship boost!",
 			],
 		},
 		{
-			key: 'm-vaporeon', species: 'vaporeon', r: 14, c: 7,
+			key: 'm-vaporeon', species: 'lady', r: 14, c: 7,
 			label: 'Shop', shopKind: 'cosmetics',
-			spriteScale: 0.6, frameHeight: 48,
-			dialog: "Vapor~ Wallpapers and accents to spruce up your camp.",
+			spriteScale: 1.5, frameHeight: 32,
+			dialog: "Wallpapers and accents to spruce up your camp.",
 		},
 		{
-			key: 'm-umbreon', species: 'umbreon', r: 14, c: 22,
+			key: 'm-umbreon', species: 'gentleman', r: 14, c: 22,
 			label: 'Shop', shopKind: 'stones',
-			spriteScale: 0.6, frameHeight: 40,
-			dialog: "Umbre... Evolution stones, if you've got the tokens.",
+			spriteScale: 1.5, frameHeight: 32,
+			dialog: "Evolution stones, if you've got the tokens.",
 		},
 		{
-			key: 'm-espeon', species: 'espeon', r: 5, c: 34,
+			key: 'm-espeon', species: 'old-lady', r: 5, c: 34,
 			label: 'Heal', shopKind: 'pokecenter',
-			spriteScale: 0.6, frameHeight: 48,
-			dialog: "Espe~! Welcome to the Pokémon Center. We restore your Pokémon to full health — free of charge!",
+			spriteScale: 1.5, frameHeight: 32,
+			dialog: "Welcome to the Pokémon Center. We restore your Pokémon to full health — free of charge!",
 		},
 		{
-			key: 'm-jolteon', species: 'jolteon', r: 5, c: 43,
+			key: 'm-jolteon', species: 'scientist', r: 5, c: 43,
 			label: 'Café', shopKind: 'cafe',
-			spriteScale: 0.6, frameHeight: 40,
-			dialog: "Jolt! Welcome to my café — grab something energizing before your next quiz!",
+			spriteScale: 1.5, frameHeight: 32,
+			dialog: "Welcome to my café — grab something energizing before your next quiz!",
 		},
 		{
-			key: 'm-contest', species: 'espeon', r: 14, c: 18,
+			key: 'm-contest', species: 'cooltrainer-f', r: 14, c: 18,
 			label: 'Contest', shopKind: null, kind: 'contest',
-			spriteScale: 0.6, frameHeight: 48,
+			spriteScale: 1.5, frameHeight: 32,
 			dialog: ['Welcome to the Contest Hall! Show off your partner\'s talents!', 'Ribbons are forever — come compete!'],
 		},
 	];
@@ -4502,7 +4519,12 @@
 			const stars = calculate();
 			const el = document.getElementById('campRatingGate');
 			if (el) {
-				el.textContent = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+				let html = '';
+				for (let i = 1; i <= 5; i++) {
+					html += '<span class="star' + (i > stars ? ' empty' : '') + '">' +
+						(i <= stars ? '★' : '☆') + '</span>';
+				}
+				el.innerHTML = html;
 				el.title = stars + '-Star Camp';
 			}
 			if (stars === 5) Achievements.unlock('fiveStarCamp');
@@ -5144,9 +5166,11 @@
 				this.load.spritesheet('leafeon',  'Pictures/sprites/leafeon.png',  { frameWidth: 32, frameHeight: 48 });
 				this.load.spritesheet('glaceon',  'Pictures/sprites/glaceon.png',  { frameWidth: 32, frameHeight: 48 });
 				this.load.spritesheet('sylveon',  'Pictures/sprites/sylveon.png',  { frameWidth: 32, frameHeight: 48 });
-				// NPC sprite sheets (PMD walk; row 0 frame 0 used as the static idle).
-				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
-				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
+				// NPC trainer overworld sprites (FRLG 32×32 single-frame images).
+				this.load.image('npc-youngster',     'Pictures/sprites/trainer-youngster.png');
+				this.load.image('npc-camper',        'Pictures/sprites/trainer-camper.png');
+				this.load.image('npc-cooltrainer-m', 'Pictures/sprites/trainer-cooltrainer-m.png');
+				this.load.image('npc-picnicker',     'Pictures/sprites/trainer-picnicker.png');
 				// NOTE: Companion sprite is intentionally NOT preloaded here with Phaser's loader.
 				// The default FOLLOWER_FORMS dims (40×40) are wrong for most PMD sheets.
 				// _buildCamp() bootstraps with Eevee then calls _switchFollower(), which uses
@@ -5837,7 +5861,11 @@
 					const f0   = tex.frames && (tex.frames['0'] || tex.frames[0]);
 					const cachedH = f0 ? (f0.realHeight || f0.height || f0.cutHeight || 0) : 0;
 					const srcH    = src ? src.height : 0;
-					const expectedH = srcH > 0 ? Math.round(srcH / 8) : 0;
+					// Default assumes 8 rows; if this dex has an explicit override,
+					// trust its frameH so the stale check doesn't wrongly invalidate.
+					const expectedH = PMD_FRAME_OVERRIDES[form.dex]
+						? PMD_FRAME_OVERRIDES[form.dex].frameH
+						: (srcH > 0 ? Math.round(srcH / 8) : 0);
 
 					// If we can verify the dims and they look correct, reuse the texture.
 					if (cachedH > 0 && expectedH > 0 && cachedH === expectedH) {
@@ -5879,7 +5907,7 @@
 						if (!this.textures.exists(form.sheet)) {
 							// Auto-detect frame dimensions from actual image dimensions.
 							// PMD Walk-Anim always has exactly 8 rows (8 directions).
-							const frameH = Math.round(img.naturalHeight / 8);
+							let frameH = Math.round(img.naturalHeight / 8);
 							// Prefer col counts [4, 6, 3] — most PMD sheets use 4 walk frames.
 							// Try standard widths; pick smallest that gives a preferred col count first,
 							// then fall back to anything in 3–8.
@@ -5902,6 +5930,11 @@
 										if (c >= 3 && c <= 8) { frameW = w; cols = c; break; }
 									}
 								}
+							}
+							// Explicit override for sheets the detector can't resolve.
+							if (PMD_FRAME_OVERRIDES[form.dex]) {
+								const ov = PMD_FRAME_OVERRIDES[form.dex];
+								frameW = ov.frameW; frameH = ov.frameH; cols = ov.cols;
 							}
 							// Patch the shared form object so _switchFollower reads correct dims.
 							form.frameW = frameW; form.frameH = frameH; form.cols = cols;
@@ -7838,12 +7871,14 @@
 
 			preload() {
 				this.load.image('player-base', 'Pictures/sprites/calem.png');
-				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
-				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
-				this.load.spritesheet('npc-vaporeon',  'Pictures/sprites/vaporeon.png',  { frameWidth: 32, frameHeight: 48 });
-				this.load.spritesheet('npc-umbreon',   'Pictures/sprites/umbreon.png',   { frameWidth: 32, frameHeight: 40 });
-				this.load.spritesheet('npc-espeon',    'Pictures/sprites/espeon.png',    { frameWidth: 32, frameHeight: 48 });
-				this.load.spritesheet('npc-jolteon',   'Pictures/sprites/jolteon.png',   { frameWidth: 32, frameHeight: 40 });
+				// NPC trainer overworld sprites (FRLG 32×32 single-frame images).
+				this.load.image('npc-youngster',     'Pictures/sprites/trainer-youngster.png');
+				this.load.image('npc-camper',        'Pictures/sprites/trainer-camper.png');
+				this.load.image('npc-lady',          'Pictures/sprites/trainer-lady.png');
+				this.load.image('npc-gentleman',     'Pictures/sprites/trainer-gentleman.png');
+				this.load.image('npc-old-lady',      'Pictures/sprites/trainer-old-lady.png');
+				this.load.image('npc-scientist',     'Pictures/sprites/trainer-scientist.png');
+				this.load.image('npc-cooltrainer-f', 'Pictures/sprites/trainer-cooltrainer-f.png');
 			}
 
 			create() {

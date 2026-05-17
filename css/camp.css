@@ -482,6 +482,39 @@ body.camp-body {
 	.camp-level-badge { font-size: 7px; padding: 3px 7px; }
 }
 
+/* Camp star-rating badge — sits just below the trainer level badge */
+.camp-rating-badge {
+	position: absolute;
+	left: 14px;
+	top: 44px;
+	padding: 4px 10px;
+	background: linear-gradient(135deg, #1a2440, #0e1826);
+	border: 1.5px solid rgba(246,200,76,0.35);
+	border-radius: 20px;
+	z-index: 10;
+	pointer-events: none;
+	box-shadow: 0 0 6px rgba(246,200,76,0.18), 0 2px 6px rgba(0,0,0,0.5);
+	display: flex;
+	align-items: center;
+	gap: 1px;
+	min-width: 60px;
+}
+.camp-rating-badge .star {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	line-height: 1;
+	color: #f6c84c;
+	text-shadow: 0 0 4px rgba(246,200,76,0.5);
+}
+.camp-rating-badge .star.empty {
+	color: #3a3a52;
+	text-shadow: none;
+}
+@media (max-width: 700px) {
+	.camp-rating-badge { top: 38px; font-size: 9px; padding: 3px 7px; }
+	.camp-rating-badge .star { font-size: 9px; }
+}
+
 /* ── Scene-transition fade — black overlay during page reload ─────────── */
 .camp-fade {
 	position: fixed;
