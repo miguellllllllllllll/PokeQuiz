@@ -987,34 +987,48 @@
 	const COSM_PRICE = { wallpaper: 15, accent: 20, scale: 10, flowers: 25, lantern: 30 };
 	const ROOM_ITEMS = {
 		// Furniture
-		desk:    { label: '🖥️ Study Desk',   price: 30, emoji: '🖥️', r: 3, c: 8, cat: 'furniture' },
-		lamp:    { label: '🪔 Cozy Lamp',    price: 20, emoji: '🪔', r: 3, c: 9, cat: 'furniture' },
-		radio:   { label: '📻 Music Player', price: 25, emoji: '📻', r: 3, c: 2, cat: 'furniture' },
-		mirror:  { label: '🪞 Mirror',       price: 30, emoji: '🪞', r: 6, c: 2, cat: 'furniture' },
-		gaming:  { label: '🎮 Game Console', price: 35, emoji: '🎮', r: 3, c: 6, cat: 'furniture' },
-		curtain: { label: '🪟 Window',       price: 20, emoji: '🪟', r: 2, c: 10, cat: 'furniture' },
+		bed:          { label: 'Bed',           price: 50, emoji: '🛏️', r: 4, c: 5,  cat: 'furniture' },
+		desk:         { label: 'Study Desk',    price: 30, emoji: '🖥️', r: 3, c: 8,  cat: 'furniture' },
+		dresser:      { label: 'Dresser',       price: 35, emoji: '🗄️', r: 3, c: 11, cat: 'furniture' },
+		wardrobe:     { label: 'Wardrobe',      price: 45, emoji: '🚪', r: 6, c: 13, cat: 'furniture' },
+		lamp:         { label: 'Cozy Lamp',     price: 20, emoji: '🪔', r: 3, c: 9,  cat: 'furniture' },
+		radio:        { label: 'Music Player',  price: 25, emoji: '📻', r: 3, c: 2,  cat: 'furniture' },
+		mirror:       { label: 'Mirror',        price: 30, emoji: '🪞', r: 6, c: 2,  cat: 'furniture' },
+		gaming:       { label: 'Game Console',  price: 35, emoji: '🎮', r: 3, c: 6,  cat: 'furniture' },
+		curtain:      { label: 'Red Curtain',   price: 20, emoji: '🪟', r: 2, c: 10, cat: 'furniture' },
+		curtain_green:{ label: 'Green Curtain', price: 20, emoji: '🪟', r: 2, c: 12, cat: 'furniture' },
+		stool:        { label: 'Round Stool',   price: 20, emoji: '🪑', r: 5, c: 7,  cat: 'furniture' },
+		nightstand:   { label: 'Nightstand',    price: 25, emoji: '🗄️', r: 4, c: 9,  cat: 'furniture' },
+		armchair:     { label: 'Armchair',      price: 40, emoji: '💺', r: 7, c: 3,  cat: 'furniture' },
 		// Decor
-		plant:   { label: '🪴 Indoor Plant', price: 20, emoji: '🪴', r: 6, c: 9, cat: 'decor' },
-		poster:  { label: '🖼️ Wall Art',     price: 15, emoji: '🖼️', r: 2, c: 6, cat: 'decor' },
-		trophy:  { label: '🏆 Trophy',       price: 40, emoji: '🏆', r: 2, c: 2, cat: 'decor' },
-		book:    { label: '📖 Story Books',  price: 15, emoji: '📖', r: 2, c: 4, cat: 'decor' },
-		bear:    { label: '🧸 Stuffed Bear', price: 15, emoji: '🧸', r: 6, c: 7, cat: 'decor' },
-		stars:   { label: '⭐ Star Mobile',  price: 25, emoji: '⭐', r: 5, c: 4, cat: 'decor' },
+		plant:        { label: 'Indoor Plant',  price: 20, emoji: '🪴', r: 6, c: 9,  cat: 'decor' },
+		flowerplant:  { label: 'Flower Plant',  price: 25, emoji: '🌸', r: 7, c: 11, cat: 'decor' },
+		poster:       { label: 'Wall Art',      price: 15, emoji: '🖼️', r: 2, c: 6,  cat: 'decor' },
+		trophy:       { label: 'Trophy',        price: 40, emoji: '🏆', r: 2, c: 2,  cat: 'decor' },
+		book:         { label: 'Story Books',   price: 15, emoji: '📖', r: 2, c: 4,  cat: 'decor' },
+		bear:         { label: 'Stuffed Bear',  price: 15, emoji: '🧸', r: 6, c: 7,  cat: 'decor' },
+		stars:        { label: 'Star Mobile',   price: 25, emoji: '⭐', r: 5, c: 4,  cat: 'decor' },
+		barrel:       { label: 'Barrel',        price: 20, emoji: '🪣', r: 8, c: 12, cat: 'decor' },
 	};
 
 	const HOUSE_ITEMS = {
 		// Furniture
-		tv:       { label: '📺 Television',  price: 40, emoji: '📺', r: 2, c: 5,  cat: 'furniture' },
-		couch:    { label: '🛋️ Couch',       price: 35, emoji: '🛋️', r: 5, c: 4,  cat: 'furniture' },
-		bookcase: { label: '📚 Bookcase',    price: 30, emoji: '📚', r: 2, c: 9,  cat: 'furniture' },
-		clock:    { label: '🕰️ Wall Clock',  price: 25, emoji: '🕰️', r: 2, c: 7,  cat: 'furniture' },
-		floorlamp:{ label: '🕯️ Floor Lamp',  price: 20, emoji: '🕯️', r: 5, c: 13, cat: 'furniture' },
+		tv:         { label: 'Television',    price: 40, emoji: '📺', r: 2, c: 5,  cat: 'furniture' },
+		couch:      { label: 'Red Couch',     price: 35, emoji: '🛋️', r: 5, c: 4,  cat: 'furniture' },
+		armchair:   { label: 'Armchair',      price: 40, emoji: '💺', r: 5, c: 8,  cat: 'furniture' },
+		bookcase:   { label: 'Bookcase',      price: 30, emoji: '📚', r: 2, c: 9,  cat: 'furniture' },
+		clock:      { label: 'Wall Clock',    price: 25, emoji: '🕰️', r: 2, c: 7,  cat: 'furniture' },
+		floorlamp:  { label: 'Floor Lamp',    price: 20, emoji: '🕯️', r: 5, c: 13, cat: 'furniture' },
+		sidetable:  { label: 'Side Table',    price: 25, emoji: '🪵', r: 4, c: 11, cat: 'furniture' },
 		// Decor
-		plant:    { label: '🌿 Floor Plant', price: 20, emoji: '🌿', r: 2, c: 2,  cat: 'decor' },
-		kettle:   { label: '🫖 Tea Kettle',  price: 15, emoji: '🫖', r: 9, c: 4,  cat: 'decor' },
-		vase:     { label: '💐 Flower Vase', price: 20, emoji: '💐', r: 9, c: 11, cat: 'decor' },
-		frame:    { label: '🖼️ Photo Frame', price: 15, emoji: '🖼️', r: 2, c: 11, cat: 'decor' },
-		plush:    { label: '🐱 Plush Cat',   price: 25, emoji: '🐱', r: 7, c: 12, cat: 'decor' },
+		plant:      { label: 'Floor Plant',   price: 20, emoji: '🌿', r: 2, c: 2,  cat: 'decor' },
+		flowerplant:{ label: 'Flower Plant',  price: 25, emoji: '🌸', r: 8, c: 8,  cat: 'decor' },
+		kettle:     { label: 'Tea Kettle',    price: 15, emoji: '🫖', r: 9, c: 4,  cat: 'decor' },
+		vase:       { label: 'Flower Vase',   price: 20, emoji: '💐', r: 9, c: 11, cat: 'decor' },
+		frame:      { label: 'Photo Frame',   price: 15, emoji: '🖼️', r: 2, c: 11, cat: 'decor' },
+		plush:      { label: 'Plush Cat',     price: 25, emoji: '🐱', r: 7, c: 12, cat: 'decor' },
+		barrel:     { label: 'Barrel',        price: 20, emoji: '🪣', r: 9, c: 7,  cat: 'decor' },
+		chest:      { label: 'Treasure Chest',price: 30, emoji: '📦', r: 9, c: 13, cat: 'decor' },
 	};
 
 	// ── Furniture pixel-art sprites ──────────────────────────────────────────────
@@ -1424,17 +1438,81 @@
 		]},
 	};
 
+	// Sprite-sheet definitions for furniture.
+	// s:1 = Pictures/furniture_sheet.png  (tileset_16x16_interior.png, 256×256, CC-BY-SA 3.0)
+	// s:2 = Pictures/furniture_sheet2.png (furniture_0.png indoor RPG, 128×64, CC-BY 3.0)
+	// x,y,w,h are pixel coords in that sheet; all output canvases are 16×16.
+	const SPRITE_DEFS = {
+		// ── Sheet 2 (each sprite is already 16×16) ──────────────────────────────
+		bed:          { s:2, x:0,   y:0,  w:16, h:16 },
+		bookcase:     { s:2, x:48,  y:0,  w:16, h:16 },
+		dresser:      { s:2, x:64,  y:0,  w:16, h:16 },
+		stool:        { s:2, x:80,  y:0,  w:16, h:16 },
+		desk:         { s:2, x:96,  y:0,  w:16, h:16 },
+		sidetable:    { s:2, x:112, y:0,  w:16, h:16 },
+		tv:           { s:2, x:0,   y:16, w:16, h:16 },
+		nightstand:   { s:2, x:48,  y:16, w:16, h:16 },
+		plant:        { s:2, x:64,  y:16, w:16, h:16 },
+		floorplant:   { s:2, x:64,  y:16, w:16, h:16 },
+		flowerplant:  { s:2, x:80,  y:16, w:16, h:16 },
+		trophy:       { s:2, x:112, y:16, w:16, h:16 },
+		armchair:     { s:2, x:16,  y:32, w:16, h:16 },
+		couch:        { s:2, x:32,  y:32, w:16, h:16 },
+		barrel:       { s:2, x:64,  y:32, w:16, h:16 },
+		gaming:       { s:2, x:96,  y:32, w:16, h:16 },
+		kettle:       { s:2, x:0,   y:48, w:16, h:16 },
+		wardrobe:     { s:2, x:64,  y:48, w:16, h:16 },
+		chest:        { s:2, x:0,   y:32, w:16, h:16 },
+		// ── Sheet 1 (multi-tile sprites scaled to 16×16) ─────────────────────────
+		curtain:      { s:1, x:96,  y:80,  w:32, h:48 },
+		curtain_green:{ s:1, x:96,  y:128, w:32, h:48 },
+		curtain_blue: { s:1, x:96,  y:176, w:32, h:48 },
+		lamp:         { s:1, x:208, y:160, w:16, h:16 },
+		floorlamp:    { s:1, x:208, y:160, w:16, h:16 },
+		vase:         { s:1, x:208, y:224, w:16, h:16 },
+	};
+
 	const FurnitureSprites = (() => {
 		const cache = {};
+
+		// Eagerly load both sprite sheets so they're ready by the time the user
+		// enters their house. The images are tiny (<15 KB total).
+		const sheets = [null, null, null]; // 1-indexed
+		function loadSheets() {
+			[1, 2].forEach((n) => {
+				const img = new Image();
+				img.src = `Pictures/furniture_sheet${n === 1 ? '' : n}.png`;
+				sheets[n] = img;
+			});
+		}
+		loadSheets();
+
+		function drawFromSheet(ctx, def) {
+			const img = sheets[def.s];
+			if (!img || !img.complete || img.naturalWidth === 0) return false;
+			ctx.imageSmoothingEnabled = false;
+			ctx.drawImage(img, def.x, def.y, def.w, def.h, 0, 0, 16, 16);
+			return true;
+		}
+
 		function get(key) {
 			if (cache[key]) return cache[key];
-			const d = FURNITURE_DESIGNS[key === 'plant' && cache._wantHouse ? 'floorplant' : key]
-				|| FURNITURE_DESIGNS[key];
-			if (!d) return null;
 			const canvas = document.createElement('canvas');
 			canvas.width = 16; canvas.height = 16;
 			const ctx = canvas.getContext('2d');
 			ctx.imageSmoothingEnabled = false;
+
+			// Try sprite sheet first.
+			const def = SPRITE_DEFS[key];
+			if (def && drawFromSheet(ctx, def)) {
+				cache[key] = canvas;
+				return canvas;
+			}
+
+			// Fall back to canvas pixel-art design.
+			const designKey = key === 'plant' ? 'floorplant' : key;
+			const d = FURNITURE_DESIGNS[designKey] || FURNITURE_DESIGNS[key];
+			if (!d) return null;
 			for (let r = 0; r < d.rows.length; r++) {
 				const row = d.rows[r];
 				for (let c = 0; c < row.length; c++) {
@@ -1449,11 +1527,19 @@
 			cache[key] = canvas;
 			return canvas;
 		}
-		// Build a same-canvas <img>-style element scaled up via CSS for the editor menu.
+
+		// Invalidate cache on sheet load so subsequent get() calls use the real art.
+		[1, 2].forEach((n) => {
+			sheets[n] && (sheets[n].onload = () => {
+				Object.keys(cache).forEach((k) => {
+					if (SPRITE_DEFS[k]?.s === n) delete cache[k];
+				});
+			});
+		});
+
 		function makeIcon(key, sizePx) {
 			const src = get(key);
 			if (!src) {
-				// Fallback: emoji span so the layout never breaks.
 				const span = document.createElement('span');
 				span.textContent = (ROOM_ITEMS[key] || HOUSE_ITEMS[key] || {}).emoji || '';
 				span.style.fontSize = (sizePx || 22) + 'px';
@@ -1470,6 +1556,21 @@
 			img.style.display = 'block';
 			return img;
 		}
+
+		// Re-render icons after sheet loads (editor may already be open).
+		function refreshIcons() {
+			document.querySelectorAll('[data-furniture-key]').forEach((el) => {
+				const key = el.dataset.furnitureKey;
+				const fresh = get(key);
+				if (fresh && el.tagName === 'CANVAS') {
+					el.getContext('2d').drawImage(fresh, 0, 0);
+				}
+			});
+		}
+		[1, 2].forEach((n) => {
+			if (sheets[n]) sheets[n].addEventListener('load', refreshIcons);
+		});
+
 		return { get, makeIcon };
 	})();
 
@@ -3975,10 +4076,9 @@
 					// different art for the upstairs vs ground-floor scene.
 					const texKey = 'furniture-house-' + key;
 					if (!this.textures.exists(texKey)) {
-						// "plant" downstairs uses the floor-plant design; everything else
-						// resolves to a same-named design.
 						const designKey = (key === 'plant') ? 'floorplant' : key;
-						const canvas = FURNITURE_DESIGNS[designKey] ? FurnitureSprites.get(designKey) : null;
+						const canvas = (SPRITE_DEFS[designKey] || FURNITURE_DESIGNS[designKey])
+							? FurnitureSprites.get(designKey) : null;
 						if (canvas) this.textures.addCanvas(texKey, canvas);
 					}
 					const obj = this.textures.exists(texKey)
@@ -4419,7 +4519,8 @@
 					const y = (pos ? pos.r : item.r) * TILE + TILE / 2;
 					const texKey = 'furniture-up-' + key;
 					if (!this.textures.exists(texKey)) {
-						const canvas = FURNITURE_DESIGNS[key] ? FurnitureSprites.get(key) : null;
+						const canvas = (SPRITE_DEFS[key] || FURNITURE_DESIGNS[key])
+							? FurnitureSprites.get(key) : null;
 						if (canvas) this.textures.addCanvas(texKey, canvas);
 					}
 					const obj = this.textures.exists(texKey)
