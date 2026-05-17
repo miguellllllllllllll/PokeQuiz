@@ -815,17 +815,57 @@
 	// ── WeatherSystem ────────────────────────────────────────────────────────
 		const WeatherSystem = {
 			check(scene) {
-				const now = Date.now();
-				const seed = Math.floor(now / (4 * 3600 * 1000));
-				const rng = ((seed * 1664525 + 1013904223) >>> 0) / 0xFFFFFFFF;
-				const shouldRain = rng < 0.3;
-				if (shouldRain && scene && scene.rainContainer && !scene._autoRainOn) {
-					scene._autoRainOn = true;
-					scene.isRaining = true;
+				const now   = Date.now();
+				const seed  = Math.floor(now / (4 * 3600 * 1000));
+				const rng   = ((seed * 1664525 + 1013904223) >>> 0) / 0xFFFFFFFF;
+				const month = new Date().getMonth(); // 0-11
+				const isWinter = month === 11 || month === 0 || month === 1;
+				// 30 % precipitation, 10 % fog; snow replaces rain in winter months
+				let type = 'clear';
+				if      (rng < 0.30) type = isWinter ? 'snow' : 'rain';
+				else if (rng < 0.40) type = 'fog';
+				if (type !== 'clear' && scene && !scene._autoWeatherOn) {
+					scene._autoWeatherOn = true;
+					scene.isRaining = (type === 'rain');
+					scene.isSnowing = (type === 'snow');
+					scene.isFoggy   = (type === 'fog');
 				}
+			},
+			currentType(scene) {
+				if (!scene) return 'clear';
+				if (scene.isRaining) return 'rain';
+				if (scene.isSnowing) return 'snow';
+				if (scene.isFoggy)   return 'fog';
+				return 'clear';
 			},
 		};
 	window.CAMP_SYSTEMS.WeatherSystem = WeatherSystem;
+
+	// ── AccessibilitySettings ─────────────────────────────────────────────────
+		const AccessibilitySettings = (() => {
+			const KEY = 'pokequiz_a11y';
+			const DEFAULTS = { highContrast: false, reduceMotion: false };
+			function load() {
+				try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY) || '{}')); }
+				catch { return { ...DEFAULTS }; }
+			}
+			function save(cfg) { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch {} }
+			function apply(cfg) {
+				document.body.classList.toggle('pk-high-contrast', !!cfg.highContrast);
+				document.body.classList.toggle('pk-reduce-motion', !!cfg.reduceMotion);
+			}
+			function toggle(key) {
+				const cfg = load();
+				cfg[key] = !cfg[key];
+				save(cfg);
+				apply(cfg);
+				return cfg[key];
+			}
+			// Apply saved settings immediately on script load.
+			apply(load());
+			return { load, save, apply, toggle };
+		})();
+	window.CAMP_SYSTEMS.AccessibilitySettings = AccessibilitySettings;
 
 	// ── PartnerMood ────────────────────────────────────────────────────────
 		const PartnerMood = (() => {
@@ -1039,13 +1079,88 @@
 				text.style.cssText = 'font-size:9px;color:var(--pk-text);line-height:1.9;padding:12px;background:rgba(246,200,76,0.05);border:1px solid var(--pk-border);border-radius:8px';
 				text.textContent = card.text;
 				body.appendChild(text);
+
+				// Share button — encodes postcard into a URL for clipboard copy
+				const shareBtn = document.createElement('button');
+				shareBtn.className = 'pk-btn pk-btn-ghost pk-btn-sm pk-btn-full';
+				shareBtn.style.marginTop = '4px';
+				shareBtn.innerHTML = ico('share') + ' Share Link';
+				shareBtn.addEventListener('click', () => {
+					try {
+						const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ text: card.text, prompt: card.prompt || '', ts: card.ts }))));
+						const url = window.location.origin + window.location.pathname + '?postcard=' + payload;
+						if (navigator.clipboard?.writeText) {
+							navigator.clipboard.writeText(url).then(
+								() => showToast(ico(ICO.postcard) + ' Share link copied!'),
+								() => prompt('Copy this link:', url),
+							);
+						} else { prompt('Copy this link:', url); }
+					} catch { showToast('Could not create share link.'); }
+				});
+				body.appendChild(shareBtn);
+
 				inner.appendChild(body);
 				panel.appendChild(inner);
 				inner.addEventListener('pointerdown', e => e.stopPropagation());
 				document.getElementById('postcardBack3')?.addEventListener('click', () => renderList(panel));
 			}
-	
-			return { open };
+
+			// Detect ?postcard= param and show incoming postcard dialog
+			function receiveFromURL() {
+				try {
+					const params = new URLSearchParams(window.location.search);
+					const raw = params.get('postcard');
+					if (!raw) return;
+					history.replaceState(null, '', window.location.pathname + window.location.hash);
+					const card = JSON.parse(decodeURIComponent(escape(atob(raw))));
+					if (!card || typeof card.text !== 'string') return;
+					let panel = document.getElementById('postcardPanel');
+					if (!panel) {
+						panel = document.createElement('div');
+						panel.id = 'postcardPanel';
+						document.body.appendChild(panel);
+						panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+					}
+					panel.hidden = false;
+					panel.className = 'pk-backdrop';
+					panel.innerHTML = '';
+					const inner = document.createElement('div');
+					inner.className = 'pk-modal pk-modal-sm';
+					inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.mail) + ' INCOMING POSTCARD</span>' +
+						'<button id="pcRecvClose" class="pk-close" type="button">' + ico(ICO.close) + '</button></div>';
+					const body = document.createElement('div');
+					body.className = 'pk-modal-body';
+					body.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+					if (card.prompt) {
+						const pr = document.createElement('div');
+						pr.style.cssText = 'font-size:7px;color:var(--pk-gold);font-style:italic';
+						pr.textContent = '"' + card.prompt + '"';
+						body.appendChild(pr);
+					}
+					const txt = document.createElement('div');
+					txt.style.cssText = 'font-size:9px;color:var(--pk-text);line-height:1.9;padding:12px;background:rgba(246,200,76,0.05);border:1px solid var(--pk-border);border-radius:8px';
+					txt.textContent = card.text;
+					body.appendChild(txt);
+					const saveBtn = document.createElement('button');
+					saveBtn.className = 'pk-btn pk-btn-gold pk-btn-full pk-btn-sm';
+					saveBtn.innerHTML = ico(ICO.send) + ' Save to my Postcards';
+					saveBtn.addEventListener('click', () => {
+						const existing = load();
+						existing.unshift({ text: card.text, prompt: card.prompt || '', ts: card.ts || Date.now(), received: true });
+						if (existing.length > MAX_CARDS) existing.length = MAX_CARDS;
+						save(existing);
+						showToast(ico(ICO.postcard) + ' Postcard saved!');
+						panel.hidden = true;
+					});
+					body.appendChild(saveBtn);
+					inner.appendChild(body);
+					panel.appendChild(inner);
+					inner.addEventListener('pointerdown', e => e.stopPropagation());
+					document.getElementById('pcRecvClose')?.addEventListener('click', () => { panel.hidden = true; });
+				} catch {}
+			}
+
+			return { open, receiveFromURL };
 		})();
 	window.CAMP_SYSTEMS.PostcardSystem = PostcardSystem;
 
@@ -1174,9 +1289,6 @@
 			function ready() { return (Date.now() - lastClaim()) >= DAILY_BONUS_MS; }
 			function claim() {
 				const inv = Inventory.load();
-				inv.tokens = (inv.tokens || 0) + 20;
-				inv.seeds = (inv.seeds || 0) + 1;
-				Inventory.save(inv);
 				const prevClaim = lastClaim();
 				try { localStorage.setItem(DAILY_BONUS_KEY, String(Date.now())); } catch {}
 				// Update stats: streak continues if last claim was within 48h.
@@ -1184,8 +1296,22 @@
 				const hoursSince = prevClaim ? (Date.now() - prevClaim) / 3600000 : 999;
 				s.loginStreak = (prevClaim && hoursSince < 48) ? (s.loginStreak || 0) + 1 : 1;
 				s.totalDaysPlayed = (s.totalDaysPlayed || 0) + 1;
-				s.totalTokensEarned = (s.totalTokensEarned || 0) + 20;
 				Stats.save(s);
+				const streak = s.loginStreak;
+				// Base daily reward
+				let bonusTokens = 20, bonusSeeds = 1, bonusBerries = 0;
+				// Escalating streak milestones
+				if (streak === 3)  { bonusTokens += 15; showToast('🔥 3-day streak! +15 bonus ' + ico(ICO.token)); }
+				if (streak === 7)  { bonusTokens += 50; bonusSeeds += 3; showToast('🔥 7-day streak! +50 ' + ico(ICO.token) + ' +3 seeds!'); }
+				if (streak === 14) { bonusTokens += 100; bonusBerries += 3; showToast('🔥 14-day streak! +100 ' + ico(ICO.token) + ' +3 berries!'); }
+				if (streak === 30) { bonusTokens += 200; bonusBerries += 5; bonusSeeds += 5; showToast('🔥 30-day streak! Legendary bonus!'); }
+				if (streak > 30 && streak % 30 === 0) { bonusTokens += 200; showToast('🔥 ' + streak + '-day streak! Keep going!'); }
+				inv.tokens = (inv.tokens || 0) + bonusTokens;
+				inv.seeds  = (inv.seeds  || 0) + bonusSeeds;
+				if (bonusBerries) inv.friendshipBerries = (inv.friendshipBerries || 0) + bonusBerries;
+				s.totalTokensEarned = (s.totalTokensEarned || 0) + bonusTokens;
+				Stats.save(s);
+				Inventory.save(inv);
 			}
 			function hoursLeft() {
 				const ms = DAILY_BONUS_MS - (Date.now() - lastClaim());
@@ -2498,7 +2624,7 @@
 			];
 	
 			function getWeather() {
-				try { return window.__campScene?.isRaining ? 'rain' : 'clear'; } catch { return 'clear'; }
+				try { return WeatherSystem.currentType(window.__campScene); } catch { return 'clear'; }
 			}
 	
 			function getStoryForToday() {
@@ -4670,6 +4796,44 @@
 
 	// ── MysteryGift ────────────────────────────────────────────────────────
 		const MysteryGift = (() => {
+			// One-time redeemable codes (expires in YYYY-MM-DD format, inclusive)
+			const CODES = {
+				'POKECENTER25': { label: 'Poké Center Bonus',  gives: 'tokens', amount: 75,  expires: '2025-12-31', msg: 'Poké Center code! +75 ' },
+				'CAMPBONUS':    { label: 'Camp Welcome Bonus', gives: 'seeds',  amount: 10,  expires: '2027-12-31', msg: 'Welcome bonus! +10 seeds' },
+				'SHINYSTART':   { label: 'Shiny Starter',      gives: 'berry',  amount: 15,  expires: '2027-12-31', msg: 'Shiny Starter code! +15 berries' },
+				'POKEMONDAY26': { label: 'Pokémon Day 2026',   gives: 'tokens', amount: 151, expires: '2026-02-28', msg: '🎉 Pokémon Day 2026! +151 ' },
+			};
+			const CODES_KEY = 'pokequiz_redeemed_codes';
+			function getRedeemedCodes() {
+				try { return JSON.parse(localStorage.getItem(CODES_KEY) || '[]'); } catch { return []; }
+			}
+			function markCodeRedeemed(code) {
+				const list = getRedeemedCodes();
+				list.push(code.toUpperCase());
+				try { localStorage.setItem(CODES_KEY, JSON.stringify(list)); } catch {}
+			}
+			function redeemCode(raw) {
+				const code = (raw || '').trim().toUpperCase();
+				if (!code) return { ok: false, msg: 'Enter a code first.' };
+				const def = CODES[code];
+				if (!def) return { ok: false, msg: 'Unknown code.' };
+				if (def.expires && new Date().toISOString().slice(0,10) > def.expires)
+					return { ok: false, msg: 'This code has expired.' };
+				if (getRedeemedCodes().includes(code))
+					return { ok: false, msg: 'Already redeemed.' };
+				// Apply reward
+				const inv = Inventory.load();
+				if (def.gives === 'tokens') inv.tokens = (inv.tokens||0) + def.amount;
+				else if (def.gives === 'berry') inv.friendshipBerries = (inv.friendshipBerries||0) + def.amount;
+				else if (def.gives === 'seed') inv.seeds = (inv.seeds||0) + def.amount;
+				else if (def.gives === 'egg') EggSystem.buyEgg();
+				Inventory.save(inv);
+				markCodeRedeemed(code);
+				Achievements.unlock('mysteryGift');
+				const suffix = def.gives === 'tokens' ? ico(ICO.token) : def.gives === 'berry' ? ico(ICO.berry) : '';
+				showToast(ico(ICO.gift) + ' ' + def.msg + suffix);
+				return { ok: true, msg: def.label + ' redeemed!' };
+			}
 			const GIFTS = {
 				'01-01': { label: 'New Year Gift',      gives: 'tokens', amount: 50,  msg: 'Happy New Year! +50 ' + ico(ICO.token) },
 				'02-14': { label: 'Valentine Gift',     gives: 'berry',  amount: 10,  msg: 'Happy Valentine\'s Day! +10 ' + ico(ICO.berry) },
@@ -4736,6 +4900,33 @@
 						'<button id="mgClaim" class="pk-btn pk-btn-gold pk-btn-full" type="button">Open Gift!</button>' +
 						'<button id="mgClose2" class="pk-btn pk-btn-ghost pk-btn-sm pk-btn-full" style="margin-top:8px" type="button">Later</button></div>';
 				}
+				// Code redemption section
+				const codeSection = document.createElement('div');
+				codeSection.style.cssText = 'margin-top:14px;padding-top:14px;border-top:1px solid var(--pk-border)';
+				codeSection.innerHTML = '<div style="font-size:7px;color:var(--pk-muted);margin-bottom:8px">' + ico(ICO.gift) + ' Redeem a code</div>';
+				const codeRow = document.createElement('div');
+				codeRow.style.cssText = 'display:flex;gap:6px';
+				const codeInput = document.createElement('input');
+				codeInput.type = 'text';
+				codeInput.placeholder = 'Enter code…';
+				codeInput.style.cssText = 'flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--pk-border);border-radius:6px;color:var(--pk-text);font-family:inherit;font-size:8px;padding:6px 8px;text-transform:uppercase;letter-spacing:1px';
+				const codeBtn = document.createElement('button');
+				codeBtn.className = 'pk-btn pk-btn-gold pk-btn-sm';
+				codeBtn.textContent = 'Redeem';
+				const codeFeedback = document.createElement('div');
+				codeFeedback.style.cssText = 'font-size:7px;margin-top:6px;min-height:14px';
+				codeBtn.addEventListener('click', () => {
+					const result = redeemCode(codeInput.value);
+					codeFeedback.style.color = result.ok ? 'var(--pk-green)' : 'var(--pk-red, #f66)';
+					codeFeedback.textContent = result.msg;
+					if (result.ok) codeInput.value = '';
+				});
+				codeRow.appendChild(codeInput);
+				codeRow.appendChild(codeBtn);
+				codeSection.appendChild(codeRow);
+				codeSection.appendChild(codeFeedback);
+				inner.querySelector('.pk-modal-body')?.appendChild(codeSection);
+
 				panel.appendChild(inner);
 				inner.addEventListener('pointerdown', e => e.stopPropagation());
 				document.getElementById('mgClose')?.addEventListener('click', () => { panel.hidden = true; });
@@ -4748,7 +4939,7 @@
 					setTimeout(() => showToast(ico(ICO.gift) + ' A Mystery Gift is available today! Check the Pause menu.'), 3000);
 				}
 			}
-			return { open, autoCheck, check };
+			return { open, autoCheck, check, redeemCode };
 		})();
 	window.CAMP_SYSTEMS.MysteryGift = MysteryGift;
 
@@ -5335,6 +5526,36 @@
 				e.preventDefault();
 				__S._pauseToggleFn?.();
 			});
+
+			// ── Swipe gestures on the game canvas to open HUD panels ─────────────
+			// Swipe left  → Pokédex   Swipe right → Partner
+			// Swipe up    → Achievements   Swipe down  → PC Box
+			const wrap = document.getElementById('campWrap');
+			if (wrap) {
+				let _tx = 0, _ty = 0;
+				wrap.addEventListener('touchstart', (e) => {
+					const t = e.touches[0];
+					_tx = t.clientX; _ty = t.clientY;
+				}, { passive: true });
+				wrap.addEventListener('touchend', (e) => {
+					const t = e.changedTouches[0];
+					const dx = t.clientX - _tx;
+					const dy = t.clientY - _ty;
+					const adx = Math.abs(dx), ady = Math.abs(dy);
+					if (Math.max(adx, ady) < 40) return; // too short
+					// Only fire if no modal/dialog is open
+					if (Dialog.isOpen() || Partner.isOpen() || Pokedex.isOpen?.()) return;
+					if (adx > ady) {
+						// Horizontal swipe
+						if (dx < 0) Pokedex.open();        // left → Pokédex
+						else        Partner.open();         // right → Partner
+					} else {
+						// Vertical swipe
+						if (dy < 0) Achievements.open?.(); // up → Achievements
+						else        PCBox.open();           // down → PC Box
+					}
+				}, { passive: true });
+			}
 		}
 	window.CAMP_SYSTEMS.setupTouchPad = setupTouchPad;
 
@@ -5405,6 +5626,120 @@
 				});
 			}
 	
+			// Gym Badges panel
+			const badgesBtn = document.getElementById('campPauseBadges');
+			if (badgesBtn) {
+				badgesBtn.addEventListener('click', () => {
+					close();
+					const earned = window.PokeBadges ? window.PokeBadges.computeAndSave() : {};
+					const meta   = window.PokeBadges ? window.PokeBadges.meta : [];
+					let bdPanel = document.getElementById('gymBadgePanel');
+					if (!bdPanel) {
+						bdPanel = document.createElement('div');
+						bdPanel.id = 'gymBadgePanel';
+						document.body.appendChild(bdPanel);
+						bdPanel.addEventListener('pointerdown', e => { if(e.target===bdPanel) bdPanel.hidden=true; });
+					}
+					bdPanel.hidden = false;
+					bdPanel.className = 'pk-backdrop';
+					bdPanel.innerHTML = '';
+					const inner = document.createElement('div');
+					inner.className = 'pk-modal pk-modal-sm';
+					const count = meta.filter(b => earned[b.id]).length;
+					inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.badge || 'award-fill') + ' GYM BADGES</span>' +
+						'<button id="bdClose" class="pk-close" type="button">' + ico(ICO.close) + '</button></div>';
+					const body = document.createElement('div');
+					body.className = 'pk-modal-body';
+					const sub = document.createElement('div');
+					sub.style.cssText = 'font-size:7px;color:var(--pk-muted);margin-bottom:14px';
+					sub.textContent = count + ' / ' + meta.length + ' badges earned';
+					body.appendChild(sub);
+					const grid = document.createElement('div');
+					grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px';
+					meta.forEach(b => {
+						const cell = document.createElement('div');
+						cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:8px;border:1px solid var(--pk-border);background:' + (earned[b.id] ? 'rgba(246,200,76,0.08)' : 'rgba(255,255,255,0.02)');
+						const em = document.createElement('div');
+						em.style.cssText = 'font-size:22px;' + (earned[b.id] ? '' : 'filter:grayscale(1) opacity(0.35)');
+						em.textContent = b.emoji;
+						const nm = document.createElement('div');
+						nm.style.cssText = 'font-size:6px;color:' + (earned[b.id] ? 'var(--pk-gold)' : 'var(--pk-muted)') + ';text-align:center;line-height:1.4';
+						nm.textContent = b.name.replace(' Badge','');
+						cell.appendChild(em);
+						cell.appendChild(nm);
+						grid.appendChild(cell);
+					});
+					body.appendChild(grid);
+					if (!window.PokeBadges) {
+						const warn = document.createElement('div');
+						warn.style.cssText = 'font-size:7px;color:var(--pk-muted);margin-top:10px';
+						warn.textContent = 'Play quiz games to earn badges!';
+						body.appendChild(warn);
+					}
+					inner.appendChild(body);
+					bdPanel.appendChild(inner);
+					inner.addEventListener('pointerdown', e => e.stopPropagation());
+					document.getElementById('bdClose')?.addEventListener('click', () => { bdPanel.hidden = true; });
+				});
+			}
+
+			// Accessibility panel
+			const accessBtn = document.getElementById('campPauseAccess');
+			if (accessBtn) {
+				accessBtn.addEventListener('click', () => {
+					close();
+					let acPanel = document.getElementById('accessPanel');
+					if (!acPanel) {
+						acPanel = document.createElement('div');
+						acPanel.id = 'accessPanel';
+						document.body.appendChild(acPanel);
+						acPanel.addEventListener('pointerdown', e => { if(e.target===acPanel) acPanel.hidden=true; });
+					}
+					acPanel.hidden = false;
+					acPanel.className = 'pk-backdrop';
+					acPanel.innerHTML = '';
+					const inner = document.createElement('div');
+					inner.className = 'pk-modal pk-modal-sm';
+					inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">⚙️ ACCESSIBILITY</span>' +
+						'<button id="acClose" class="pk-close" type="button">' + ico(ICO.close) + '</button></div>';
+					const body = document.createElement('div');
+					body.className = 'pk-modal-body';
+					body.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+					function makeToggleRow(label, desc, key) {
+						const cfg = AccessibilitySettings.load();
+						const row = document.createElement('div');
+						row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--pk-border);border-radius:8px';
+						const info = document.createElement('div');
+						const lbl = document.createElement('div');
+						lbl.style.cssText = 'font-size:9px;color:var(--pk-text)';
+						lbl.textContent = label;
+						const dsc = document.createElement('div');
+						dsc.style.cssText = 'font-size:7px;color:var(--pk-muted);margin-top:2px';
+						dsc.textContent = desc;
+						info.appendChild(lbl);
+						info.appendChild(dsc);
+						const btn = document.createElement('button');
+						btn.className = 'pk-btn pk-btn-sm ' + (cfg[key] ? 'pk-btn-gold' : 'pk-btn-dark');
+						btn.style.minWidth = '44px';
+						btn.textContent = cfg[key] ? 'On' : 'Off';
+						btn.addEventListener('click', () => {
+							const newVal = AccessibilitySettings.toggle(key);
+							btn.className = 'pk-btn pk-btn-sm ' + (newVal ? 'pk-btn-gold' : 'pk-btn-dark');
+							btn.textContent = newVal ? 'On' : 'Off';
+						});
+						row.appendChild(info);
+						row.appendChild(btn);
+						return row;
+					}
+					body.appendChild(makeToggleRow('High Contrast', 'Increases colour contrast across the UI', 'highContrast'));
+					body.appendChild(makeToggleRow('Reduce Motion', 'Disables particle effects and animations', 'reduceMotion'));
+					inner.appendChild(body);
+					acPanel.appendChild(inner);
+					inner.addEventListener('pointerdown', e => e.stopPropagation());
+					document.getElementById('acClose')?.addEventListener('click', () => { acPanel.hidden = true; });
+				});
+			}
+
 			document.addEventListener('keydown', (e) => {
 				if (e.key === 'Escape') {
 					if (Dialog.isOpen()) { Dialog.close(); return; }
@@ -5909,11 +6244,17 @@
 					// across the camera viewport at random.
 					this.leafContainer = this.add.container(0, 0).setDepth(4).setScrollFactor(0);
 					this.leaves = [];
-					// Rain weather — fixed-screen raindrops. Toggle with R key.
+					// Weather system — rain, snow, fog.
 					this.rainContainer = this.add.container(0, 0).setDepth(4.5).setScrollFactor(0);
 					this.raindrops = [];
 					this.isRaining = false;
+					this.snowContainer = this.add.container(0, 0).setDepth(4.4).setScrollFactor(0);
+					this.snowflakes = [];
+					this.isSnowing = false;
+					this.fogOverlay = this.add.rectangle(0, 0, 2000, 2000, 0xc8d8e8, 0).setOrigin(0,0).setDepth(4.3).setScrollFactor(0);
+					this.isFoggy = false;
 					WeatherSystem.check(this);
+					if (this.isFoggy) this.fogOverlay.setAlpha(0.32);
 	
 					this.dir = this.spawnFrom === 'market' ? 2 : 0;
 					this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
@@ -6809,7 +7150,39 @@
 						}
 					}
 				}
-	
+
+				updateSnow() {
+					if (!this.snowContainer) return;
+					if (!this.isSnowing && this.snowflakes.length === 0) return;
+					const vw = this.scale.width;
+					const vh = this.scale.height;
+					if (this.isSnowing && this.tick % 3 === 0 && this.snowflakes.length < 60) {
+						const flake = this.add.text(Math.random() * vw, -12, '❄', { fontSize: (7 + (Math.random() * 6 | 0)) + 'px', alpha: 0.7 + Math.random() * 0.3 });
+						flake.setScrollFactor(0).setDepth(4.4);
+						this.snowContainer.add(flake);
+						this.snowflakes.push({ obj: flake, vy: 0.8 + Math.random() * 1.2, vx: Math.random() * 0.8 - 0.4, wobble: Math.random() * Math.PI * 2 });
+					}
+					for (let i = this.snowflakes.length - 1; i >= 0; i--) {
+						const f = this.snowflakes[i];
+						f.wobble += 0.03;
+						f.obj.y += f.vy;
+						f.obj.x += f.vx + Math.sin(f.wobble) * 0.4;
+						if (f.obj.y > vh + 20) {
+							f.obj.destroy();
+							this.snowflakes.splice(i, 1);
+						}
+					}
+				}
+
+				updateFog() {
+					if (!this.fogOverlay) return;
+					const targetAlpha = this.isFoggy ? 0.30 : 0;
+					const current = this.fogOverlay.alpha;
+					if (Math.abs(current - targetAlpha) > 0.003) {
+						this.fogOverlay.setAlpha(current + (targetAlpha - current) * 0.04);
+					}
+				}
+
 				updateLeaves() {
 					if (!this.leafContainer) return;
 					const vw = this.scale.width;
@@ -7234,6 +7607,8 @@
 					this.updateSmoke();
 					this.updateLeaves();
 					this.updateRain();
+					this.updateSnow();
+					this.updateFog();
 					this._updateSeasonalParticles();
 					this._updateInventoryHud();
 					// Refresh plant visuals every 8 ticks so the ripe-berry bob animates smoothly.

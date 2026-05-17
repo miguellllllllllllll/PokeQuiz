@@ -30,7 +30,8 @@
 	const PostcardSystem  = (window.CAMP_SYSTEMS || {}).PostcardSystem;
 	const PhotoMode       = (window.CAMP_SYSTEMS || {}).PhotoMode;
 	const ShinyEncounters = (window.CAMP_SYSTEMS || {}).ShinyEncounters;
-	const Music           = (window.CAMP_SYSTEMS || {}).Music;
+	const Music                 = (window.CAMP_SYSTEMS || {}).Music;
+	const AccessibilitySettings = (window.CAMP_SYSTEMS || {}).AccessibilitySettings;
 	const applyWrapTop    = (window.CAMP_SYSTEMS || {}).applyWrapTop;
 	const readBootHash    = (window.CAMP_SYSTEMS || {}).readBootHash;
 	const updateDayNightTint = (window.CAMP_SYSTEMS || {}).updateDayNightTint;
@@ -251,5 +252,10 @@
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireMusicBtn);
 	else wireMusicBtn();
+
+	// ── Incoming postcard from URL ────────────────────────────────────────────────
+	if (document.readyState === 'loading')
+		document.addEventListener('DOMContentLoaded', () => PostcardSystem?.receiveFromURL());
+	else PostcardSystem?.receiveFromURL();
 
 })();

@@ -2529,3 +2529,32 @@ body.camp-body {
   font-family: inherit;
   pointer-events: none;
 }
+
+/* ── Accessibility modes ─────────────────────────────────────────────────── */
+
+/* High Contrast */
+body.pk-high-contrast {
+  --pk-text:    #ffffff;
+  --pk-muted:   #dddddd;
+  --pk-faint:   #aaaaaa;
+  --pk-gold:    #ffe040;
+  --pk-border:  rgba(255,224,64,0.6);
+  --pk-green:   #44ff88;
+  --pk-red:     #ff5555;
+  --pk-panel:   #000000;
+  --pk-dark:    #111111;
+  --pk-mid:     #1a1a1a;
+}
+body.pk-high-contrast .pk-modal,
+body.pk-high-contrast .camp-pause-panel {
+  border: 2px solid var(--pk-gold);
+}
+
+/* Reduce Motion — suppress CSS animations and transitions */
+body.pk-reduce-motion *,
+body.pk-reduce-motion *::before,
+body.pk-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
