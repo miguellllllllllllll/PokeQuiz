@@ -333,6 +333,18 @@ function saveBest(mistakes) {
   if (mistakes < cur) localStorage.setItem('pokequiz_connections_best', String(mistakes));
 }
 
+// ── Shuffle ──────────────────────────────────────────────────────────────────
+let shuffledOrder = [];
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 // ── Render ───────────────────────────────────────────────────────────────────
 function renderStrikes() {
   const balls = document.querySelectorAll('.conn-ball');
@@ -358,9 +370,13 @@ function renderGrid() {
 
   // Remaining unsolved Pokémon
   const solved = new Set(state.solvedGroups.flatMap(g => g.members));
-  const remaining = state.puzzle.groups
-    .flatMap(g => g.members)
-    .filter(m => !solved.has(m));
+  const allMembers = state.puzzle.groups.flatMap(g => g.members);
+
+  // Build or trim shuffled order to only remaining
+  if (shuffledOrder.length === 0) {
+    shuffledOrder = shuffleArray(allMembers);
+  }
+  const remaining = shuffledOrder.filter(m => !solved.has(m));
 
   for (const name of remaining) {
     const pill = document.createElement('button');
@@ -510,14 +526,67 @@ function finishGame(won) {
   }, won ? 500 : 1000);
 }
 
+const TIER_EMOJI = { yellow: '🟨', green: '🟩', blue: '🟦', purple: '🟪' };
+const TIER_CLASS  = { yellow: 'sq-yellow', green: 'sq-green', blue: 'sq-blue', purple: 'sq-purple' };
+
+function buildShareGrid(won) {
+  const container = $('connShareGrid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Build rows: each row is one "guess attempt" that maps to a solved group tier
+  // For simplicity, show solved groups in solve order + unsolved at bottom (on loss)
+  const groups = state.puzzle.groups;
+  const solvedTiers = state.solvedGroups.map(g => g.tier);
+  const allTiers = [...solvedTiers];
+
+  // Add unsolved groups on loss (shown in puzzle order)
+  if (!won) {
+    for (const g of groups) {
+      if (!state.solvedGroups.includes(g)) allTiers.push(g.tier);
+    }
+  }
+
+  for (const tier of allTiers) {
+    const row = document.createElement('div');
+    row.className = 'conn-share-row';
+    for (let i = 0; i < 4; i++) {
+      const sq = document.createElement('div');
+      sq.className = `conn-share-square ${TIER_CLASS[tier] || ''}`;
+      sq.textContent = TIER_EMOJI[tier] || '⬜';
+      row.appendChild(sq);
+    }
+    container.appendChild(row);
+  }
+}
+
+// ── Leaderboard submit ───────────────────────────────────────────────────────
+let submitted = false;
+function postLeaderboard() {
+  if (submitted) return;
+  submitted = true;
+  const name = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
+  const pid = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
+  const streak = loadStreak();
+  if (!name || !pid || streak <= 0) return;
+  window.PokeUtil.submitScore({ game: 'connections', name, score: streak, playerId: pid });
+}
+
 function showResult(won, tokens, mistakes) {
+  postLeaderboard();
+
   const gameSection = $('connGame');
   const resultSection = $('connResult');
   if (gameSection) gameSection.hidden = true;
   if (resultSection) resultSection.hidden = false;
 
+  const emojiEl = $('connResultEmoji');
+  if (emojiEl) emojiEl.textContent = won ? '🎉' : '😢';
+
   const title = $('connResultTitle');
   if (title) title.textContent = won ? 'Connections Complete!' : 'Better luck next time!';
+
+  buildShareGrid(won);
 
   const streakEl = $('connResultStreak');
   if (streakEl) streakEl.textContent = loadStreak();
@@ -533,7 +602,7 @@ function showResult(won, tokens, mistakes) {
 
   const tokenEl = $('connResultTokens');
   if (tokenEl) {
-    tokenEl.innerHTML = `<span class="token-burst">+${tokens} Tokens earned!</span>`;
+    tokenEl.innerHTML = `<span class="token-burst">🪙 +${tokens} Tokens earned!</span>`;
   }
 }
 
@@ -555,6 +624,18 @@ function init() {
 
   const deselectBtn = $('connDeselect');
   if (deselectBtn) deselectBtn.addEventListener('click', onDeselectAll);
+
+  const shuffleBtn = $('connShuffle');
+  if (shuffleBtn) {
+    shuffleBtn.addEventListener('click', () => {
+      const solved = new Set(state.solvedGroups.flatMap(g => g.members));
+      const remaining = shuffledOrder.filter(m => !solved.has(m));
+      const reshuffled = shuffleArray(remaining);
+      // Rebuild shuffledOrder: solved positions stay removed, rebuild remaining order
+      shuffledOrder = [...shuffledOrder.filter(m => solved.has(m)), ...reshuffled];
+      renderGrid();
+    });
+  }
 
   const playAgainBtn = $('connPlayAgain');
   if (playAgainBtn) playAgainBtn.addEventListener('click', () => {

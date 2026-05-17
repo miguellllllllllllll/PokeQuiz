@@ -118,6 +118,13 @@
 		initMobileNav();
 	}
 
+	// Register the service worker for offline support / PWA installability.
+	if ('serviceWorker' in navigator) {
+		window.addEventListener('load', () => {
+			navigator.serviceWorker.register('/sw.js').catch(() => {});
+		});
+	}
+
 	window.PokeUtil = {
 		escapeHtml, getQueryParam, getPlayerId, getPlayerName, toast, submitScore,
 	};

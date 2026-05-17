@@ -121,6 +121,34 @@
 					<span class="lb-tab-icon">⏱️</span>
 					<span class="lb-tab-label">Gen Sprint</span>
 				</button>
+				<button type="button" class="lb-tab" data-game="infinite" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">♾️</span>
+					<span class="lb-tab-label">Infinite Trivia</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="wordle" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🟩</span>
+					<span class="lb-tab-label">Pokédle</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="connections" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🔗</span>
+					<span class="lb-tab-label">Connections</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="ability" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">✨</span>
+					<span class="lb-tab-label">Ability Guesser</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="moveset" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">⚔️</span>
+					<span class="lb-tab-label">Moveset Guesser</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="spotlight" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🌟</span>
+					<span class="lb-tab-label">Daily Spotlight</span>
+				</button>
+				<button type="button" class="lb-tab" data-game="team" role="tab" aria-selected="false">
+					<span class="lb-tab-icon">🛡️</span>
+					<span class="lb-tab-label">Counter Team</span>
+				</button>
 			</div>
 
 			<div id="modeTabs" class="lb-mode-tabs" hidden></div>
@@ -280,15 +308,34 @@
 					return;
 				}
 				modeTabsEl.hidden = false;
+				modeTabsEl.setAttribute('role', 'tablist');
+				modeTabsEl.setAttribute('aria-label', 'Game mode');
 
-				// One tab per mode — no "All" tab
-				cfg.modes.forEach(({ key, label }) => {
+				// One tab per mode — no "All" tab. Keyboard: roving tabindex + arrows.
+				cfg.modes.forEach(({ key, label }, idx) => {
 					const btn = document.createElement('button');
 					btn.type = 'button';
-					btn.className = 'lb-mode-tab' + (activeMode === key ? ' is-active' : '');
+					const isActive = activeMode === key;
+					btn.className = 'lb-mode-tab' + (isActive ? ' is-active' : '');
 					btn.dataset.mode = key;
 					btn.textContent = label;
+					btn.setAttribute('role', 'tab');
+					btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+					btn.setAttribute('aria-controls', 'lbPanel');
+					btn.tabIndex = isActive ? 0 : -1;
 					btn.addEventListener('click', () => selectMode(key));
+					btn.addEventListener('keydown', (e) => {
+						const tabs = [...modeTabsEl.querySelectorAll('.lb-mode-tab')];
+						let n = -1;
+						if (e.key === 'ArrowRight' || e.key === 'ArrowDown') n = (idx + 1) % tabs.length;
+						else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') n = (idx - 1 + tabs.length) % tabs.length;
+						else if (e.key === 'Home') n = 0;
+						else if (e.key === 'End') n = tabs.length - 1;
+						else return;
+						e.preventDefault();
+						tabs[n].focus();
+						selectMode(tabs[n].dataset.mode);
+					});
 					modeTabsEl.appendChild(btn);
 				});
 			}
@@ -330,7 +377,10 @@
 				activeMode = mode;
 				// Sync active state on mode tabs
 				modeTabsEl.querySelectorAll('.lb-mode-tab').forEach((b) => {
-					b.classList.toggle('is-active', b.dataset.mode === mode);
+					const active = b.dataset.mode === mode;
+					b.classList.toggle('is-active', active);
+					b.setAttribute('aria-selected', active ? 'true' : 'false');
+					b.tabIndex = active ? 0 : -1;
 				});
 				await loadAndRender(activeGame, mode);
 			}

@@ -20,201 +20,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/base.css">
-  <style>
-    .puzzle-card {
-      max-width: 800px; margin: 0 auto;
-      position: relative; overflow: hidden;
-    }
-    .puzzle-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
-    .puzzle-pokeball {
-      position: absolute; right: -130px; top: -130px;
-      width: 380px; opacity: 0.04;
-      animation: bgSpin 40s linear infinite;
-    }
-    @keyframes bgSpin { to { transform: rotate(360deg); } }
-    .puzzle-inner { position: relative; z-index: 1; }
-
-    /* ── Intro screen ── */
-    .intro-screen { padding: 8px; text-align: center; }
-    .intro-screen .back-link {
-      display: inline-block; font-size: 12px; font-weight: 700; color: var(--muted);
-      text-decoration: none; margin-bottom: 20px; letter-spacing: 0.4px; text-align: left; display: block;
-    }
-    .intro-screen .back-link:hover { color: var(--poke-red); }
-    .intro-title { font-size: clamp(15px, 3.5vw, 22px); margin: 0 0 12px; }
-    .title-flicker { color: var(--poke-yellow); text-shadow: 2px 2px 0 var(--poke-black); }
-    .intro-lede { color: #444; font-size: 14px; margin: 0 auto 28px; max-width: 52ch; }
-    .intro-rules {
-      background: rgba(255,203,5,0.1); border: 1px solid rgba(255,203,5,0.4);
-      border-radius: 14px; padding: 18px 22px; margin: 0 auto 28px; max-width: 500px;
-      text-align: left;
-    }
-    .intro-rules h3 { font-size: 11px; color: var(--poke-black); text-shadow: none; margin-bottom: 10px; }
-    .intro-rules ul { margin: 0; padding-left: 18px; font-size: 13px; color: #444; line-height: 1.8; }
-    .intro-rules li strong { color: var(--poke-black); }
-    .score-summary {
-      font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--muted);
-      margin-bottom: 24px;
-    }
-    .score-summary span { color: var(--poke-red); }
-
-    /* ── Progress bar ── */
-    .progress-row {
-      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
-    }
-    .progress-track {
-      flex: 1; height: 8px; background: rgba(0,0,0,0.08); border-radius: 99px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; background: var(--poke-red); border-radius: 99px;
-      transition: width 0.4s ease;
-    }
-    .progress-label {
-      font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap;
-    }
-
-    /* ── Gym leader card ── */
-    .leader-card {
-      display: flex; align-items: center; gap: 16px;
-      background: linear-gradient(135deg, #1a1a2e, #16213e);
-      border-radius: 16px; padding: 18px 22px; margin-bottom: 20px; color: #fff;
-    }
-    .leader-emoji { font-size: 48px; line-height: 1; flex-shrink: 0; }
-    .leader-info { flex: 1; }
-    .leader-name {
-      font-family: 'Press Start 2P', monospace; font-size: 13px;
-      color: var(--poke-yellow); text-shadow: 1px 1px 0 rgba(0,0,0,0.5); margin-bottom: 4px;
-    }
-    .leader-specialty { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
-    .leader-team { display: flex; flex-wrap: wrap; gap: 8px; }
-    .enemy-mon {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #fff;
-    }
-    .enemy-mon-types { display: flex; gap: 4px; }
-    .type-badge {
-      padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 0.5px; color: #fff;
-    }
-
-    /* ── Pick area ── */
-    .pick-label {
-      font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;
-      letter-spacing: 1px; margin-bottom: 12px;
-    }
-    .pick-label span { color: var(--poke-red); font-family: 'Press Start 2P', monospace; font-size: 11px; }
-    .pool-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;
-    }
-    @media (max-width: 560px) { .pool-grid { grid-template-columns: repeat(2, 1fr); } }
-
-    .pool-mon {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      padding: 14px 10px; background: #fff; border: 2px solid rgba(0,0,0,0.1);
-      border-radius: 14px; cursor: pointer; font-family: inherit;
-      transition: all 0.12s ease; text-align: center;
-    }
-    .pool-mon:hover:not(.disabled-pick) {
-      border-color: var(--poke-red); transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(238,21,21,0.14);
-    }
-    .pool-mon.selected {
-      border-color: var(--poke-red); background: rgba(238,21,21,0.05);
-      box-shadow: 0 0 0 3px rgba(238,21,21,0.2);
-    }
-    .pool-mon.selected::after {
-      content: '✓'; display: block; position: absolute;
-      top: -8px; right: -8px; width: 20px; height: 20px;
-      background: var(--poke-red); color: #fff; border-radius: 50%;
-      font-size: 11px; font-weight: 800; line-height: 20px;
-    }
-    .pool-mon { position: relative; }
-    .pool-mon.disabled-pick { opacity: 0.45; cursor: not-allowed; }
-    .pool-mon-emoji { font-size: 28px; line-height: 1; }
-    .pool-mon-name { font-size: 13px; font-weight: 700; color: var(--ink); }
-    .pool-mon-types { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
-
-    .battle-btn-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
-    .battle-btn { font-size: 15px; padding: 14px 36px; }
-
-    /* ── Results ── */
-    .results-area {
-      background: #fafafa; border: 1px solid rgba(0,0,0,0.08);
-      border-radius: 16px; padding: 20px; margin-bottom: 20px;
-    }
-    .results-title {
-      font-family: 'Press Start 2P', monospace; font-size: 12px;
-      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black);
-      margin-bottom: 14px; text-align: center;
-    }
-    .matrix-table {
-      width: 100%; border-collapse: collapse; font-size: 12px;
-      margin-bottom: 16px;
-    }
-    .matrix-table th {
-      padding: 8px; background: var(--poke-black); color: var(--poke-yellow);
-      font-family: 'Press Start 2P', monospace; font-size: 9px; text-align: center;
-      letter-spacing: 0.4px;
-    }
-    .matrix-table th:first-child { text-align: left; min-width: 110px; }
-    .matrix-table td {
-      padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06);
-      text-align: center; font-weight: 700;
-    }
-    .matrix-table td:first-child { text-align: left; font-size: 13px; }
-    .eff-2x   { background: #dcfce7; color: #15803d; }
-    .eff-1x   { background: #fef9c3; color: #713f12; }
-    .eff-half { background: #fee2e2; color: #991b1b; }
-    .eff-0x   { background: #f1f5f9; color: #475569; }
-
-    .round-score {
-      text-align: center; font-size: 14px; font-weight: 700;
-      color: var(--ink); margin-bottom: 16px;
-    }
-    .round-score .score-big {
-      font-family: 'Press Start 2P', monospace; font-size: 22px;
-      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black); margin-right: 6px;
-    }
-    .round-score .score-max { font-size: 13px; color: var(--muted); }
-
-    .controls-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-
-    /* ── Final screen ── */
-    .final-screen { text-align: center; padding: 10px; }
-    .final-screen h2 { font-size: 20px; margin-bottom: 8px; }
-    .total-score-box {
-      display: flex; flex-direction: column; align-items: center;
-      background: linear-gradient(135deg, #1a1a2e, #16213e);
-      border-radius: 18px; padding: 28px 36px; margin: 20px auto;
-      max-width: 320px; gap: 8px;
-    }
-    .total-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; }
-    .total-num {
-      font-family: 'Press Start 2P', monospace; font-size: 44px;
-      color: var(--poke-yellow); text-shadow: 3px 3px 0 rgba(0,0,0,0.4); line-height: 1;
-    }
-    .total-pts { font-size: 14px; color: rgba(255,255,255,0.7); }
-    .tokens-earned {
-      font-size: 14px; font-weight: 700; color: var(--poke-black);
-      background: var(--poke-yellow); border: 2px solid var(--poke-black);
-      border-radius: 999px; padding: 8px 20px; display: inline-block; margin-bottom: 20px;
-    }
-    .final-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
-
-    /* ── Token pop ── */
-    .token-pop {
-      position: fixed; bottom: 30px; right: 24px;
-      background: var(--poke-yellow); color: var(--poke-black);
-      font-weight: 800; font-size: 14px; padding: 10px 18px;
-      border-radius: 999px; border: 2px solid var(--poke-black);
-      box-shadow: 0 4px 0 rgba(0,0,0,0.3); z-index: 9999;
-      opacity: 0; transform: translateY(10px);
-      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
-    }
-    .token-pop.show { opacity: 1; transform: translateY(0); }
-  </style>
+  <link rel="stylesheet" href="css/puzzle-shared.css">
+  <link rel="stylesheet" href="css/puzzle-team.css">
 </head>
 <body>
   <header class="site-header">
@@ -238,8 +47,8 @@
       <!-- INTRO -->
       <div id="introScreen" class="puzzle-inner intro-screen">
         <a class="back-link" href="puzzle.html">&larr; Puzzle Hub</a>
-        <div class="eyebrow" style="justify-content:center;margin-bottom:14px;">
-          <span class="dot"></span><span>Strategy Puzzle</span>
+        <div class="pz-eyebrow" style="justify-content:center;margin-bottom:14px;">
+          <span class="pz-eyebrow-dot"></span><span>Strategy Puzzle</span>
         </div>
         <h1 class="intro-title">Team Builder <span class="title-flicker">Challenge</span></h1>
         <p class="intro-lede">Face 10 gym leaders. Each time, pick 3 Pok&eacute;mon from a pool of 6 to counter their team using type effectiveness.</p>
@@ -267,7 +76,7 @@
             <div class="progress-fill" id="progressFill" style="width:0%"></div>
           </div>
           <span class="progress-label" id="progressLabel">1 / 10</span>
-          <span style="font-family:'Press Start 2P',monospace;font-size:11px;color:var(--poke-red);" id="runScore">0 pts</span>
+          <span class="run-score" id="runScore">0 pts</span>
         </div>
 
         <!-- Gym leader -->
@@ -306,8 +115,8 @@
       <!-- FINAL SCREEN -->
       <div id="finalScreen" class="puzzle-inner" hidden>
         <div class="final-screen">
-          <div class="eyebrow" style="justify-content:center;margin-bottom:14px;">
-            <span class="dot"></span><span>Challenge Complete!</span>
+          <div class="pz-eyebrow" style="justify-content:center;margin-bottom:14px;">
+            <span class="pz-eyebrow-dot"></span><span>Challenge Complete!</span>
           </div>
           <h2>All 10 Battles Done!</h2>
           <div class="total-score-box">
@@ -316,7 +125,7 @@
             <span class="total-pts">points</span>
           </div>
           <div class="tokens-earned" id="tokensEarnedDisplay">🪙 Tokens earned: 0</div>
-          <p id="finalMsg" style="color:#555;margin-bottom:10px;font-size:14px;"></p>
+          <p id="finalMsg" class="pz-lede" style="margin-bottom:10px;"></p>
           <div class="final-actions">
             <button class="btn" id="playAgainBtn" type="button">Play Again</button>
             <a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
@@ -327,9 +136,11 @@
   </main>
 
   <footer>Made with care by Angelo Miguel G. Vinluan</footer>
+  <div id="pzToast" class="pz-toast" aria-live="polite"></div>
   <div class="token-pop" id="tokenPop">🪙 +<span id="tokenAmount">0</span> tokens!</div>
 
   <script src="js/util.js" defer></script>
+  <script src="js/profile.js" defer></script>
   <script>
   /* ================================================================
      TYPE EFFECTIVENESS — simplified matchup table
@@ -756,7 +567,18 @@
     }
   }
 
+  let submitted = false;
+  function postLeaderboard() {
+    if (submitted) return;
+    submitted = true;
+    const name = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
+    const pid = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
+    if (!name || !pid || totalScore <= 0) return;
+    window.PokeUtil.submitScore({ game: 'team', name, score: totalScore, playerId: pid });
+  }
+
   function showFinalScreen() {
+    postLeaderboard();
     document.getElementById('gameView').hidden   = true;
     document.getElementById('finalScreen').hidden = false;
 

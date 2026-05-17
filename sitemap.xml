@@ -14,8 +14,16 @@
 	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-stats</loc><priority>0.7</priority></url>
 	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-type</loc><priority>0.7</priority></url>
 	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-zoom</loc><priority>0.7</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-wordle</loc><priority>0.7</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-connections</loc><priority>0.7</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-infinite</loc><priority>0.7</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-spotlight</loc><priority>0.7</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-ability</loc><priority>0.7</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-moveset</loc><priority>0.7</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/puzzle-team</loc><priority>0.7</priority></url>
 	<url><loc>https://poke-quiz-chi.vercel.app/ranking</loc><priority>0.8</priority></url>
 	<url><loc>https://poke-quiz-chi.vercel.app/camp</loc><priority>0.8</priority></url>
+	<url><loc>https://poke-quiz-chi.vercel.app/badges</loc><priority>0.6</priority></url>
 	<url><loc>https://poke-quiz-chi.vercel.app/profile</loc><priority>0.6</priority></url>
 	<url><loc>https://poke-quiz-chi.vercel.app/trainer</loc><priority>0.6</priority></url>
 	<url><loc>https://poke-quiz-chi.vercel.app/trainer-card</loc><priority>0.6</priority></url>

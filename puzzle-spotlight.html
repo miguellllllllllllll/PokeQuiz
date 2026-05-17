@@ -15,296 +15,10 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="manifest" href="manifest.json">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/puzzle.css">
-	<style>
-		.sp-card {
-			max-width: 600px;
-			margin: 0 auto;
-			padding: 32px;
-			position: relative;
-		}
-		.sp-header {
-			text-align: center;
-			margin-bottom: 24px;
-		}
-		.sp-eyebrow {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 10px;
-			color: var(--poke-red);
-			letter-spacing: 1.5px;
-			margin-bottom: 8px;
-		}
-		.sp-title {
-			font-size: 22px;
-			font-weight: 800;
-			margin: 0 0 4px;
-		}
-		.sp-date {
-			font-size: 12px;
-			color: #888;
-		}
-		/* Progress dots */
-		.sp-dots {
-			display: flex;
-			justify-content: center;
-			gap: 8px;
-			margin-bottom: 24px;
-		}
-		.sp-dot {
-			width: 14px;
-			height: 14px;
-			border-radius: 50%;
-			border: 2px solid #ccc;
-			background: #fff;
-			transition: background 0.2s, border-color 0.2s;
-		}
-		.sp-dot.done { background: #22c55e; border-color: #16a34a; }
-		.sp-dot.wrong { background: #ef4444; border-color: #dc2626; }
-		.sp-dot.active { border-color: var(--poke-red); background: rgba(238,21,21,0.1); }
-		/* Round card */
-		.sp-round {
-			background: linear-gradient(135deg, #fffbea 0%, #ffeaea 100%);
-			border: 2px solid var(--poke-yellow);
-			border-radius: 18px;
-			padding: 28px;
-			text-align: center;
-			margin-bottom: 18px;
-			box-shadow: 0 8px 24px rgba(180,10,10,0.08);
-		}
-		.sp-round-label {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 9px;
-			color: #888;
-			letter-spacing: 1px;
-			margin-bottom: 8px;
-		}
-		.sp-round-title {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 13px;
-			color: var(--poke-red);
-			margin-bottom: 16px;
-		}
-		/* Sprite */
-		.sp-sprite-wrap {
-			display: flex;
-			justify-content: center;
-			margin-bottom: 16px;
-		}
-		.sp-sprite {
-			width: 160px;
-			height: 160px;
-			image-rendering: pixelated;
-			transition: filter 0.6s ease;
-		}
-		.sp-sprite.silhouette { filter: brightness(0) contrast(1); }
-		/* Timer */
-		.sp-timer-wrap {
-			display: flex;
-			align-items: center;
-			gap: 10px;
-			margin-bottom: 16px;
-		}
-		.sp-timer-track {
-			flex: 1;
-			height: 10px;
-			background: #f5e7e7;
-			border-radius: 999px;
-			overflow: hidden;
-			border: 1.5px solid rgba(0,0,0,0.08);
-		}
-		.sp-timer-fill {
-			height: 100%;
-			background: linear-gradient(90deg, #ef4444, #dc2626);
-			width: 100%;
-			border-radius: 999px;
-			transition: width linear;
-		}
-		.sp-timer-num {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 13px;
-			color: var(--poke-red);
-			min-width: 24px;
-			text-align: right;
-		}
-		/* Question text */
-		.sp-q {
-			font-size: 17px;
-			font-weight: 700;
-			margin-bottom: 16px;
-			color: var(--poke-black);
-			line-height: 1.45;
-		}
-		/* Choices */
-		.sp-choices {
-			display: grid;
-			gap: 10px;
-		}
-		.sp-choice {
-			display: grid;
-			grid-template-columns: 36px 1fr;
-			align-items: center;
-			gap: 14px;
-			padding: 12px 16px;
-			background: #fff;
-			border: 2px solid #ede5e5;
-			border-radius: 12px;
-			cursor: pointer;
-			transition: border-color 0.15s, background 0.15s;
-			font-size: 14px;
-			font-weight: 600;
-			text-align: left;
-		}
-		.sp-choice:hover:not(.locked) { border-color: var(--poke-red); background: #fffafa; }
-		.sp-choice.locked { cursor: default; }
-		.sp-choice.correct { border-color: #22c55e; background: rgba(34,197,94,0.12); }
-		.sp-choice.wrong { border-color: #ef4444; background: rgba(239,68,68,0.1); }
-		.sp-choice-letter {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			width: 32px;
-			height: 32px;
-			border-radius: 50%;
-			background: linear-gradient(180deg, #2a2a2a, #000);
-			color: var(--poke-yellow);
-			font-weight: 700;
-			font-size: 11px;
-			font-family: 'Press Start 2P', monospace;
-			border: 2px solid var(--poke-yellow);
-		}
-		.sp-choice.correct .sp-choice-letter {
-			background: linear-gradient(180deg, #22c55e, #16a34a);
-			border-color: #14532d;
-			color: #fff;
-		}
-		.sp-choice.wrong .sp-choice-letter {
-			background: linear-gradient(180deg, #ef4444, #dc2626);
-			border-color: #7f1d1d;
-			color: #fff;
-		}
-		/* Text input (cry round) */
-		.sp-text-input-wrap {
-			display: flex;
-			gap: 8px;
-			margin-bottom: 12px;
-		}
-		.sp-text-input {
-			flex: 1;
-			padding: 12px 16px;
-			border: 2px solid #ede5e5;
-			border-radius: 12px;
-			font-size: 15px;
-			font-family: 'Inter', sans-serif;
-			font-weight: 600;
-			outline: none;
-			transition: border-color 0.15s;
-		}
-		.sp-text-input:focus { border-color: var(--poke-red); }
-		.sp-text-submit {
-			padding: 12px 20px;
-			background: var(--poke-red);
-			color: #fff;
-			border: none;
-			border-radius: 12px;
-			font-weight: 700;
-			font-size: 14px;
-			cursor: pointer;
-			font-family: 'Inter', sans-serif;
-			transition: background 0.15s;
-		}
-		.sp-text-submit:hover { background: var(--poke-red-dark); }
-		.sp-datalist { display: none; }
-		/* Audio button */
-		.sp-cry-btn {
-			padding: 10px 20px;
-			background: linear-gradient(180deg, #2a2a2a, #000);
-			color: var(--poke-yellow);
-			border: 2px solid var(--poke-yellow);
-			border-radius: 999px;
-			font-family: 'Press Start 2P', monospace;
-			font-size: 10px;
-			cursor: pointer;
-			margin-bottom: 16px;
-			transition: opacity 0.15s;
-		}
-		.sp-cry-btn:hover { opacity: 0.85; }
-		/* Feedback */
-		.sp-feedback {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 10px;
-			min-height: 22px;
-			margin-top: 10px;
-			color: #22c55e;
-		}
-		.sp-feedback.bad { color: #ef4444; }
-		/* Results */
-		.sp-results {
-			text-align: center;
-			padding: 24px;
-			background: radial-gradient(circle at 50% 0%, rgba(255,203,5,0.25), transparent 60%), linear-gradient(135deg, #fffbea, #ffeaea);
-			border: 2px solid var(--poke-yellow);
-			border-radius: 18px;
-			display: none;
-		}
-		.sp-results-sprite {
-			width: 160px;
-			height: 160px;
-			image-rendering: pixelated;
-			margin: 0 auto 12px;
-		}
-		.sp-results-name {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 16px;
-			color: var(--poke-red);
-			text-shadow: 2px 2px 0 var(--poke-black);
-			margin-bottom: 8px;
-		}
-		.sp-score-display {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 40px;
-			color: var(--poke-red);
-			text-shadow: 3px 3px 0 var(--poke-black);
-			margin: 12px 0;
-		}
-		.sp-score-label { font-size: 13px; color: #555; margin-bottom: 8px; }
-		.sp-token-grant {
-			display: inline-flex;
-			align-items: center;
-			gap: 8px;
-			padding: 8px 18px;
-			background: rgba(234,179,8,0.12);
-			border: 1.5px solid rgba(234,179,8,0.45);
-			border-radius: 10px;
-			font-size: 13px;
-			font-weight: 700;
-			color: #92400e;
-			margin: 10px 0;
-		}
-		.sp-tomorrow {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 9px;
-			color: #888;
-			margin-top: 14px;
-			line-height: 1.8;
-		}
-		.sp-results-actions {
-			display: flex;
-			gap: 10px;
-			justify-content: center;
-			flex-wrap: wrap;
-			margin-top: 14px;
-		}
-		/* Already done banner */
-		.sp-done-banner {
-			text-align: center;
-			padding: 32px;
-			background: radial-gradient(circle at 50% 0%, rgba(255,203,5,0.2), transparent 60%), linear-gradient(135deg, #fffbea, #ffeaea);
-			border: 2px solid var(--poke-yellow);
-			border-radius: 18px;
-		}
-		.sp-done-banner h2 { margin-bottom: 10px; font-size: 18px; }
-	</style>
+	<link rel="stylesheet" href="css/puzzle-shared.css">
+	<link rel="stylesheet" href="css/puzzle-spotlight.css">
 </head>
 <body>
 	<header class="site-header">
@@ -341,6 +55,7 @@
 
 	<main class="container">
 		<section class="card sp-card">
+			<a class="pz-back" href="puzzle.html">&larr; Puzzle Hub</a>
 			<div class="sp-header">
 				<div class="sp-eyebrow">&#11088; Daily Feature</div>
 				<h1 class="sp-title">Pok&eacute;mon Spotlight</h1>
@@ -359,6 +74,8 @@
 	</main>
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<div id="pzToast" class="pz-toast" aria-live="polite"></div>
 
 	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
@@ -517,10 +234,10 @@
 			const db = document.getElementById('spDoneBanner');
 			db.style.display = 'block';
 			db.innerHTML = `
-				<div style="font-size:48px;margin-bottom:10px;">&#127775;</div>
+				<span class="pz-result-emoji">&#127775;</span>
 				<h2>Already done today!</h2>
-				<p style="color:#666;margin-bottom:16px;">Come back tomorrow for a new spotlight Pok&eacute;mon.</p>
-				<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+				<p class="pz-lede" style="margin-bottom:18px;">Come back tomorrow for a new spotlight Pok&eacute;mon.</p>
+				<div class="pz-result-actions">
 					<a href="puzzle.html" class="btn">Back to Puzzles</a>
 					<a href="camp.html" class="btn btn-secondary">Spend Tokens &#127957;&#65039;</a>
 				</div>
@@ -936,8 +653,20 @@
 			});
 		}
 
+		// --- Leaderboard submit ---
+		let submitted = false;
+		function postLeaderboard() {
+			if (submitted) return;
+			submitted = true;
+			const name = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
+			const pid = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
+			if (!name || !pid || score <= 0) return;
+			window.PokeUtil.submitScore({ game: 'spotlight', name, score: score, playerId: pid });
+		}
+
 		// --- Final results ---
 		function showFinalResults() {
+			postLeaderboard();
 			document.getElementById('spMain').style.display = 'none';
 			document.getElementById('spFeedback').style.display = 'none';
 
@@ -952,11 +681,15 @@
 
 			const resultsEl = document.getElementById('spResults');
 			resultsEl.style.display = 'block';
+			const resultEmoji = score === 5 ? '🏆' : score >= 3 ? '⭐' : '😢';
+			const roundDots = roundResults.map(r => r ? '🟢' : '🔴').join(' ');
 			resultsEl.innerHTML = `
+				<span class="pz-result-emoji">${resultEmoji}</span>
 				<img src="${spriteUrl}" class="sp-results-sprite" alt="${escapeHtml(pokemonName)}">
 				<div class="sp-results-name">${escapeHtml(pokemonName)}</div>
+				<div class="sp-result-dots">${roundResults.map(r => `<span class="sp-result-dot">${r ? '✅' : '❌'}</span>`).join('')}</div>
 				<div class="sp-score-label">Your score</div>
-				<div class="sp-score-display">${score}<span style="font-size:20px;color:#888"> / 5</span></div>
+				<div class="sp-score-display">${score}<span class="sp-score-denom"> / 5</span></div>
 				<div class="sp-token-grant">&#128176; +${tokens} tokens earned &mdash; Balance: ${balance}</div>
 				<div class="sp-tomorrow">Come back tomorrow for a new spotlight!</div>
 				<div class="sp-results-actions">

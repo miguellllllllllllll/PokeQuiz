@@ -85,5 +85,40 @@
 				{ key: '120', label: '2 minutes' },
 			],
 		},
+		infinite: {
+			label: 'Infinite Trivia', scoreLabel: 'Streak', timeBased: false,
+			modes: null,
+		},
+		wordle: {
+			label: 'Pokédle', scoreLabel: 'Streak', timeBased: false,
+			modes: null,
+		},
+		connections: {
+			label: 'Connections', scoreLabel: 'Streak', timeBased: false,
+			modes: null,
+		},
+		ability: {
+			label: 'Ability Guesser', scoreLabel: 'Streak', timeBased: false,
+			modes: [
+				{ key: 'ability-name',    label: 'Description → Ability' },
+				{ key: 'pokemon-ability', label: 'Pokémon → Ability' },
+			],
+		},
+		moveset: {
+			label: 'Moveset Guesser', scoreLabel: 'Streak', timeBased: false,
+			modes: [
+				{ key: 'casual',   label: 'Casual' },
+				{ key: 'standard', label: 'Standard' },
+				{ key: 'hardcore', label: 'Hardcore' },
+			],
+		},
+		spotlight: {
+			label: 'Daily Spotlight', scoreLabel: 'Score', timeBased: false,
+			modes: null,
+		},
+		team: {
+			label: 'Counter Team', scoreLabel: 'Score', timeBased: false,
+			modes: null,
+		},
 	};
 })();

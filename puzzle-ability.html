@@ -20,184 +20,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/base.css">
-  <style>
-    .puzzle-card {
-      max-width: 720px;
-      margin: 0 auto;
-      position: relative;
-      overflow: hidden;
-    }
-    .puzzle-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
-    .puzzle-pokeball {
-      position: absolute; right: -130px; top: -130px;
-      width: 380px; opacity: 0.04;
-      animation: bgSpin 40s linear infinite;
-    }
-    @keyframes bgSpin { to { transform: rotate(360deg); } }
-    .puzzle-inner { position: relative; z-index: 1; }
-
-    /* ── Mode select ── */
-    .mode-select { padding: 8px; }
-    .back-link {
-      display: inline-block; font-size: 12px; font-weight: 700;
-      color: var(--muted); text-decoration: none; margin-bottom: 20px; letter-spacing: 0.4px;
-    }
-    .back-link:hover { color: var(--poke-red); }
-    .mode-select-head { margin-bottom: 28px; }
-    .mode-title-big { font-size: clamp(15px, 4vw, 22px); margin: 0 0 10px; line-height: 1.3; }
-    .lede { color: #444; font-size: 14px; margin: 0; }
-    .title-flicker { color: var(--poke-yellow); text-shadow: 2px 2px 0 var(--poke-black); }
-    .mode-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px;
-    }
-    @media (max-width: 480px) { .mode-grid { grid-template-columns: 1fr; } }
-    .mode-card {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-      padding: 22px 14px; background: #fff; border: 2px solid rgba(0,0,0,0.1);
-      border-radius: 16px; cursor: pointer; font-family: inherit;
-      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; text-align: center;
-    }
-    .mode-card:hover {
-      border-color: var(--poke-red); transform: translateY(-3px); box-shadow: var(--shadow-md);
-    }
-    .mode-card-title {
-      font-family: 'Press Start 2P', monospace; font-size: 11px;
-      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black);
-    }
-    .mode-card-sub { font-size: 12px; color: var(--muted); }
-    .mode-card-best { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .mode-card-best strong { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--poke-red); }
-    .diff-pill {
-      display: inline-block; padding: 3px 10px; border-radius: 999px;
-      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
-    }
-    .diff-a { background: rgba(59,76,202,0.1); color: #1e3a8a; }
-    .diff-b { background: rgba(234,179,8,0.14); color: #92400e; }
-    .mode-icon { font-size: 34px; }
-
-    /* ── Game header ── */
-    .game-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
-    }
-    .mode-badge {
-      font-family: 'Press Start 2P', monospace; font-size: 9px;
-      padding: 5px 12px; background: var(--poke-black); color: var(--poke-yellow);
-      border-radius: 999px; letter-spacing: 0.5px;
-    }
-    .streak-group { display: flex; gap: 16px; align-items: center; }
-    .streak-tile { display: flex; flex-direction: column; align-items: center; }
-    .stat-num {
-      font-family: 'Press Start 2P', monospace; font-size: 18px;
-      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black); line-height: 1;
-    }
-    .stat-label {
-      font-size: 10px; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.7px; margin-top: 2px;
-    }
-
-    /* ── Mode toggle tabs ── */
-    .tab-row {
-      display: flex; gap: 0; margin-bottom: 22px;
-      border: 2px solid rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden;
-    }
-    .tab-btn {
-      flex: 1; padding: 10px 8px; border: none; background: #fff; cursor: pointer;
-      font-family: inherit; font-size: 12px; font-weight: 700; color: var(--muted);
-      transition: background 0.15s, color 0.15s; letter-spacing: 0.3px;
-    }
-    .tab-btn.active { background: var(--poke-red); color: #fff; }
-    .tab-btn:first-child { border-right: 2px solid rgba(0,0,0,0.1); }
-
-    /* ── Prompt card ── */
-    .prompt-area {
-      background: linear-gradient(135deg, #f0f4ff, #eff6ff);
-      border: 2px solid rgba(59,76,202,0.15);
-      border-radius: 16px; padding: 24px; margin-bottom: 22px; text-align: center;
-    }
-    .prompt-label {
-      font-size: 11px; font-weight: 700; color: #3b4cca;
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
-    }
-    .prompt-text {
-      font-size: 16px; color: var(--ink); line-height: 1.6; font-weight: 600;
-    }
-    .pokemon-display {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-    }
-    .pokemon-emoji { font-size: 52px; line-height: 1; }
-    .pokemon-name-lbl {
-      font-family: 'Press Start 2P', monospace; font-size: 13px;
-      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black);
-    }
-    .pokemon-type-badge {
-      display: inline-flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; justify-content: center;
-    }
-    .type-tag {
-      padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.6px; color: #fff;
-    }
-
-    /* ── Choices ── */
-    .choices-label {
-      font-size: 11px; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
-    }
-    .choices-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px;
-    }
-    @media (max-width: 480px) { .choices-grid { grid-template-columns: 1fr; } }
-    .choice-btn {
-      padding: 14px 12px; background: #fff; border: 2px solid rgba(0,0,0,0.1);
-      border-radius: 12px; font-family: inherit; font-size: 14px; font-weight: 700;
-      cursor: pointer; transition: all 0.12s ease; text-align: center; color: var(--ink);
-      line-height: 1.3;
-    }
-    .choice-btn:hover:not(:disabled) {
-      border-color: var(--poke-blue, #3b4cca); background: rgba(59,76,202,0.04);
-      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,76,202,0.1);
-    }
-    .choice-btn.correct { background: #dcfce7; border-color: #22c55e; color: #15803d; }
-    .choice-btn.wrong   { background: #fee2e2; border-color: var(--poke-red); color: #b91c1c; }
-    .choice-btn:disabled { cursor: not-allowed; }
-
-    /* ── Feedback ── */
-    .feedback-box {
-      padding: 14px 18px; border-radius: 12px; font-weight: 700;
-      font-size: 15px; margin-bottom: 14px; text-align: center; display: none;
-    }
-    .feedback-box.correct-fb { background: #dcfce7; color: #15803d; border: 2px solid #bbf7d0; display: block; }
-    .feedback-box.wrong-fb   { background: #fee2e2; color: #b91c1c; border: 2px solid #fecaca; display: block; }
-
-    .controls-row {
-      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
-    }
-
-    /* ── Token pop ── */
-    .token-pop {
-      position: fixed; bottom: 30px; right: 24px;
-      background: var(--poke-yellow); color: var(--poke-black);
-      font-weight: 800; font-size: 14px; padding: 10px 18px;
-      border-radius: 999px; border: 2px solid var(--poke-black);
-      box-shadow: 0 4px 0 rgba(0,0,0,0.3); z-index: 9999;
-      opacity: 0; transform: translateY(10px);
-      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
-    }
-    .token-pop.show { opacity: 1; transform: translateY(0); }
-
-    /* ── Game over ── */
-    .game-over-inner { text-align: center; padding: 20px 0; }
-    .game-over-inner h2 { font-size: 20px; margin-bottom: 16px; }
-    .over-stats { display: flex; gap: 32px; justify-content: center; margin: 20px 0 24px; }
-    .over-tile  { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .over-num   {
-      font-family: 'Press Start 2P', monospace; font-size: 32px;
-      color: var(--poke-red); text-shadow: 2px 2px 0 var(--poke-black);
-    }
-    .over-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .over-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-  </style>
+  <link rel="stylesheet" href="css/puzzle-shared.css">
+  <link rel="stylesheet" href="css/puzzle-ability.css">
 </head>
 <body>
   <header class="site-header">
@@ -222,27 +48,27 @@
       <div id="modeSelect" class="puzzle-inner mode-select">
         <a class="back-link" href="puzzle.html">&larr; Puzzle Hub</a>
         <div class="mode-select-head">
-          <div class="eyebrow"><span class="dot"></span><span>New Puzzle</span></div>
+          <div class="pz-eyebrow"><span class="pz-eyebrow-dot"></span><span>New Puzzle</span></div>
           <h1 class="mode-title-big">Ability <span class="title-flicker">Guesser</span></h1>
           <p class="lede">Test your knowledge of Pok&eacute;mon abilities. Two ways to play &mdash; pick a mode.</p>
         </div>
         <div class="mode-grid">
           <button class="mode-card" data-mode="ability-name" type="button">
             <span class="diff-pill diff-a">Mode A</span>
-            <span class="mode-icon">📖</span>
+            <span class="mode-icon">🔍</span>
             <span class="mode-card-title">Description → Name</span>
             <span class="mode-card-sub">Read the ability description.<br>Pick the correct ability name.</span>
             <span class="mode-card-best">Best: <strong id="bestAbilityName">0</strong></span>
           </button>
           <button class="mode-card" data-mode="pokemon-ability" type="button">
             <span class="diff-pill diff-b">Mode B</span>
-            <span class="mode-icon">🔍</span>
+            <span class="mode-icon">⚡</span>
             <span class="mode-card-title">Pokémon → Ability</span>
             <span class="mode-card-sub">See the Pok&eacute;mon.<br>Pick its signature ability.</span>
             <span class="mode-card-best">Best: <strong id="bestPokemonAbility">0</strong></span>
           </button>
         </div>
-        <p style="font-size:13px;color:var(--muted);text-align:center;">Both modes: right = streak +2 tokens &bull; Max 10 tokens/session</p>
+        <p class="mode-note">Both modes: correct = streak +2 tokens &bull; Max 10 tokens/session</p>
       </div>
 
       <!-- GAME VIEW -->
@@ -288,8 +114,8 @@
       <!-- GAME OVER -->
       <div id="gameOver" class="puzzle-inner" hidden>
         <div class="game-over-inner">
-          <div class="eyebrow" style="justify-content:center;margin-bottom:12px;">
-            <span class="dot"></span><span>Run Over</span>
+          <div class="pz-eyebrow" style="justify-content:center;margin-bottom:12px;">
+            <span class="pz-eyebrow-dot"></span><span>Run Over</span>
           </div>
           <h2>Game Over</h2>
           <div class="over-stats">
@@ -302,7 +128,7 @@
               <span class="over-label">Best</span>
             </div>
           </div>
-          <p id="gameOverMsg" style="color:#555;margin-bottom:20px;"></p>
+          <p id="gameOverMsg" class="pz-lede" style="margin-bottom:20px;"></p>
           <div class="over-actions">
             <button class="btn" id="retryBtn" type="button">Try Again</button>
             <button class="btn btn-secondary" id="modeBtn" type="button">Change Mode</button>
@@ -314,9 +140,11 @@
   </main>
 
   <footer>Made with care by Angelo Miguel G. Vinluan</footer>
+  <div id="pzToast" class="pz-toast" aria-live="polite"></div>
   <div class="token-pop" id="tokenPop">🪙 +<span id="tokenAmount">2</span> tokens!</div>
 
   <script src="js/util.js" defer></script>
+  <script src="js/profile.js" defer></script>
   <script>
   /* ================================================================
      ABILITY DATA — 62 entries for Mode A (description → ability name)
@@ -443,8 +271,18 @@
   let shuffledA = [], shuffledB = [];
   let idxA = 0, idxB = 0;
   let currentEntry = null;
+  let submitted = false;
   const TOKEN_REWARD = 2;
   const TOKEN_CAP    = 10;
+
+  function postLeaderboard() {
+    if (submitted) return;
+    submitted = true;
+    const name = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
+    const pid = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
+    if (!name || !pid || streak <= 0) return;
+    window.PokeUtil.submitScore({ game: 'ability', name, score: streak, mode: currentMode, playerId: pid });
+  }
 
   /* ================================================================
      INIT
@@ -475,6 +313,7 @@
   function startMode(mode) {
     currentMode = mode;
     streak = 0;
+    submitted = false;
     sessionTokens = 0;
     bestStreak = parseInt(localStorage.getItem(`pokequiz_ability_best_${mode}`) || '0');
 
@@ -499,6 +338,7 @@
   function switchTab(tab) {
     currentMode = tab;
     streak = 0;
+    submitted = false;
     bestStreak = parseInt(localStorage.getItem(`pokequiz_ability_best_${tab}`) || '0');
     sessionTokens = 0;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -604,6 +444,7 @@
   }
 
   function onWrong(correct) {
+    postLeaderboard();
     streak = 0;
     updateStats();
 

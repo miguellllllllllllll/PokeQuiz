@@ -445,6 +445,28 @@ function getHints(guessedId, guessedName) {
   };
 }
 
+// ── Silhouette helpers ───────────────────────────────────────────────────────
+function pokeSpriteUrl(id) {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+}
+
+function initSilhouette(id) {
+  const img = document.getElementById('pzwSilhouette');
+  if (!img) return;
+  img.src = pokeSpriteUrl(id);
+  img.classList.remove('revealed');
+  const label = document.getElementById('pzwSilhouetteLabel');
+  if (label) { label.textContent = '???'; label.classList.remove('revealed'); }
+}
+
+function revealSilhouette(name) {
+  const img = document.getElementById('pzwSilhouette');
+  if (!img) return;
+  img.classList.add('revealed');
+  const label = document.getElementById('pzwSilhouetteLabel');
+  if (label) { label.textContent = name; label.classList.add('revealed'); }
+}
+
 // ── DOM helpers ──────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
@@ -585,7 +607,7 @@ function submitGuess(rawName) {
     awardTokens(tokens);
     saveStreak(loadStreak() + 1);
     saveResult(true, guesses.length);
-    setTimeout(() => showResult(true, tokens, guesses.length), 400);
+    setTimeout(() => showResult(true, tokens, guesses.length), 350);
     return;
   }
 
@@ -595,7 +617,7 @@ function submitGuess(rawName) {
     const tokens = 5;
     awardTokens(tokens);
     saveResult(false, guesses.length);
-    setTimeout(() => showResult(false, tokens, guesses.length), 400);
+    setTimeout(() => showResult(false, tokens, guesses.length), 350);
   }
 }
 
@@ -605,31 +627,61 @@ function saveResult(won, guessCount) {
   localStorage.setItem(key, JSON.stringify({ won, guessCount }));
 }
 
+// ── Leaderboard submit ────────────────────────────────────────────────────────
+let submitted = false;
+function postLeaderboard() {
+  if (submitted) return;
+  submitted = true;
+  const name = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
+  const pid = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
+  const streak = loadStreak();
+  if (!name || !pid || streak <= 0) return;
+  window.PokeUtil.submitScore({ game: 'wordle', name, score: streak, playerId: pid });
+}
+
 // ── Result screen ─────────────────────────────────────────────────────────────
 function showResult(won, tokens, guessCount) {
-  const gameSection = $('wordleGame');
-  const resultSection = $('wordleResult');
-  if (gameSection) gameSection.hidden = true;
-  if (resultSection) resultSection.hidden = false;
+  postLeaderboard();
 
-  const title = $('wordleResultTitle');
-  if (title) title.textContent = won ? `Got it in ${guessCount}!` : 'Better luck tomorrow!';
+  // Reveal silhouette first
+  revealSilhouette(mystery.name);
 
-  const answerEl = $('wordleResultAnswer');
-  if (answerEl) {
-    answerEl.innerHTML = won
-      ? `The answer was <strong>${mystery.name}</strong>`
-      : `The answer was <strong>${mystery.name}</strong> — try again tomorrow!`;
-  }
+  // Short delay then flip to result section
+  setTimeout(() => {
+    const gameSection = $('wordleGame');
+    const resultSection = $('wordleResult');
+    if (gameSection) gameSection.hidden = true;
+    if (resultSection) resultSection.hidden = false;
 
-  const streakEl = $('wordleResultStreak');
-  if (streakEl) streakEl.textContent = loadStreak();
+    const emojiEl = $('wordleResultEmoji');
+    if (emojiEl) emojiEl.textContent = won ? '🎉' : '😢';
 
-  const guessesEl = $('wordleResultGuesses');
-  if (guessesEl) guessesEl.textContent = won ? guessCount : '✗';
+    const title = $('wordleResultTitle');
+    if (title) title.textContent = won ? `Got it in ${guessCount}!` : 'Better luck tomorrow!';
 
-  const tokenEl = $('wordleResultTokens');
-  if (tokenEl) tokenEl.innerHTML = `<span class="token-burst">+${tokens} Tokens earned!</span>`;
+    // Show revealed sprite on result screen
+    const spriteEl = $('pzwResultSprite');
+    if (spriteEl) {
+      spriteEl.src = pokeSpriteUrl(mystery.id);
+      spriteEl.alt = mystery.name;
+    }
+
+    const answerEl = $('wordleResultAnswer');
+    if (answerEl) {
+      answerEl.innerHTML = won
+        ? `The answer was <strong>${mystery.name}</strong> — great job!`
+        : `The answer was <strong>${mystery.name}</strong> — try again tomorrow!`;
+    }
+
+    const streakEl = $('wordleResultStreak');
+    if (streakEl) streakEl.textContent = loadStreak();
+
+    const guessesEl = $('wordleResultGuesses');
+    if (guessesEl) guessesEl.textContent = won ? guessCount : '✗';
+
+    const tokenEl = $('wordleResultTokens');
+    if (tokenEl) tokenEl.innerHTML = `<span class="token-burst">🪙 +${tokens} Tokens earned!</span>`;
+  }, 600);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -653,6 +705,9 @@ async function init() {
   const savedKey = `pokequiz_wordle_${todayKey}`;
   const saved = localStorage.getItem(savedKey);
   // (we still allow re-play in the same session for UX simplicity)
+
+  // Load silhouette
+  initSilhouette(mystery.id);
 
   // Update stats display
   const streakEl = $('wordleStatStreak');
