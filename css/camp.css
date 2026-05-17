@@ -1718,7 +1718,7 @@ body.camp-body {
 /* ── Side drawer (quests, achievements) ─────────────────────────────────── */
 
 .pk-drawer {
-  position: fixed;
+  position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
