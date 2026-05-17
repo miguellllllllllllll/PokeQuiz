@@ -5147,14 +5147,10 @@
 				// NPC sprite sheets (PMD walk; row 0 frame 0 used as the static idle).
 				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
 				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
-				// Pre-load companion sprite if player has chosen one
-				const _preInv = Inventory.load();
-				if (_preInv.companionForm != null && _preInv.companionForm !== _preInv.eeveeForm) {
-					const _pf = FOLLOWER_FORMS[_preInv.companionForm];
-					if (_pf?.url) {
-						this.load.spritesheet(_pf.sheet, _pf.url, { frameWidth: _pf.frameW, frameHeight: _pf.frameH });
-					}
-				}
+				// NOTE: Companion sprite is intentionally NOT preloaded here with Phaser's loader.
+				// The default FOLLOWER_FORMS dims (40×40) are wrong for most PMD sheets.
+				// _buildCamp() bootstraps with Eevee then calls _switchFollower(), which uses
+				// a native Image() fetch + frame-auto-detection + stale-texture validation.
 			}
 
 			create() {
@@ -5375,29 +5371,33 @@
 				// frame indices are computed from that.
 				const _inv0 = Inventory.load();
 				const formKey = _inv0.companionForm != null ? _inv0.companionForm : (_inv0.eeveeForm || 'eevee');
-				const form = FOLLOWER_FORMS[formKey] || FOLLOWER_FORMS.eevee;
-				const cols = form.cols;
-				const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
-				const eeveeAnims = [
-					[formKey + '-walk-south', rowFrames(0), 0],
-					[formKey + '-walk-west',  rowFrames(6), 6 * cols],
-					[formKey + '-walk-north', rowFrames(4), 4 * cols],
-					[formKey + '-walk-east',  rowFrames(2), 2 * cols],
+				// Bootstrap with Eevee (always preloaded) so the sprite exists immediately.
+				// Using the companion form's default dims here (cols:6, frameH:40) would create
+				// wrong animations for most PMD sheets. _switchFollower below does a CDN fetch,
+				// auto-detects the real frame dims, and swaps in the correct texture + anims.
+				const _bootF = FOLLOWER_FORMS.eevee;
+				const _bCols = _bootF.cols; // 7 — always correct
+				const _bRow  = (row) => Array.from({ length: _bCols }, (_, i) => row * _bCols + i);
+				const _bootAnims = [
+					['eevee-walk-south', _bRow(0), 0],
+					['eevee-walk-west',  _bRow(6), 6 * _bCols],
+					['eevee-walk-north', _bRow(4), 4 * _bCols],
+					['eevee-walk-east',  _bRow(2), 2 * _bCols],
 				];
-				for (const [key, frames] of eeveeAnims) {
+				for (const [key, frames] of _bootAnims) {
 					if (!this.anims.exists(key)) {
 						this.anims.create({ key, frameRate: 10, repeat: -1,
-							frames: this.anims.generateFrameNumbers(form.sheet, { frames }) });
+							frames: this.anims.generateFrameNumbers(_bootF.sheet, { frames }) });
 					}
 				}
-				this.eeveeAnimKeys = eeveeAnims.map(([k]) => k);
-				this.eeveeIdleFrame = eeveeAnims.map(([,,idle]) => idle);
-				this.followerForm = formKey;
+				this.eeveeAnimKeys = _bootAnims.map(([k]) => k);
+				this.eeveeIdleFrame = _bootAnims.map(([,,idle]) => idle);
+				this.followerForm = 'eevee';
 				const _followerInv = Inventory.load();
 				const _scaleMult = SCALE_MULT[_followerInv.cosmetics?.partnerScale] ?? 1;
-				this.follower = this.add.sprite(this.player.x, this.player.y + 14, form.sheet, this.eeveeIdleFrame[0]);
-				this.follower.setOrigin(0.5, form.originY);
-				this.follower.setScale(form.scale * _scaleMult);
+				this.follower = this.add.sprite(this.player.x, this.player.y + 14, _bootF.sheet, this.eeveeIdleFrame[0]);
+				this.follower.setOrigin(0.5, _bootF.originY);
+				this.follower.setScale(_bootF.scale * _scaleMult);
 				this._followerScaleMult = _scaleMult;
 				this.follower.setDepth(3.5);
 
@@ -5425,6 +5425,9 @@
 					}
 				};
 				this._applyFollowerShiny();
+				// Now asynchronously swap in the real companion form with verified frame dims.
+				// silent=true: no toast, no nickname-clear, no inventory save (already persisted).
+				this._switchFollower(formKey, { silent: true });
 
 				this.followerHistory = [];
 				this.followerDir = 0;
@@ -5560,13 +5563,29 @@
 				this._surfDriftTick = 0;
 				this._surfDiscoveredIsland = false;
 
-				// scale; the player dot is overlaid every frame in updateMinimap().
+				// Minimap: pre-render the static tile layer once to an offscreen canvas.
+				// updateMinimap() then does 1 drawImage blit + 2 fillRects per frame instead
+				// of iterating all 1200 tiles each frame (which caused frame drops while walking).
 				this.minimapEl = document.getElementById('campMinimap');
 				if (this.minimapEl) {
 					this.minimapEl.width = MAP_W * 3;
 					this.minimapEl.height = MAP_H * 3;
-					const mctx = this.minimapEl.getContext('2d');
-					mctx.imageSmoothingEnabled = false;
+					this._minimapCtx = this.minimapEl.getContext('2d');
+					this._minimapCtx.imageSmoothingEnabled = false;
+					// Build offscreen tile cache.
+					const _offscreen = document.createElement('canvas');
+					_offscreen.width  = MAP_W * 3;
+					_offscreen.height = MAP_H * 3;
+					const _octx = _offscreen.getContext('2d');
+					_octx.fillStyle = '#000';
+					_octx.fillRect(0, 0, _offscreen.width, _offscreen.height);
+					for (let _r = 0; _r < MAP_H; _r++) {
+						for (let _c = 0; _c < MAP_W; _c++) {
+							_octx.fillStyle = miniMapColor(this.map[_r][_c]);
+							_octx.fillRect(_c*3, _r*3, 3, 3);
+						}
+					}
+					this._minimapCache = _offscreen;
 				}
 			}
 
@@ -5809,8 +5828,47 @@
 			}
 
 			_ensureFollowerSprite(form, onReady) {
-				if (this.textures.exists(form.sheet)) { onReady(); return; }
 				if (!form.url) { onReady(); return; }
+
+				// --- Cached-texture path ---
+				if (this.textures.exists(form.sheet)) {
+					const tex  = this.textures.get(form.sheet);
+					const src  = tex.source && tex.source[0];
+					const f0   = tex.frames && (tex.frames['0'] || tex.frames[0]);
+					const cachedH = f0 ? (f0.realHeight || f0.height || f0.cutHeight || 0) : 0;
+					const srcH    = src ? src.height : 0;
+					const expectedH = srcH > 0 ? Math.round(srcH / 8) : 0;
+
+					// If we can verify the dims and they look correct, reuse the texture.
+					if (cachedH > 0 && expectedH > 0 && cachedH === expectedH) {
+						// Patch form dims from the cached texture so _switchFollower is consistent.
+						const cachedW = f0 ? (f0.realWidth || f0.width || f0.cutWidth || cachedH) : cachedH;
+						form.frameH = cachedH;
+						form.frameW = cachedW;
+						form.cols   = src ? Math.round(src.width / cachedW) : (form.cols || 4);
+						// (Re)compute scale — may be missing if this is the first switch this session.
+						if (form.dex && POKEMON_HEIGHTS[form.dex]) {
+							const targetVis = 35 * Math.sqrt(POKEMON_HEIGHTS[form.dex] / 1.7);
+							form.scale = Math.min(1.1, Math.max(0.40, targetVis / cachedH));
+						}
+						onReady();
+						return;
+					}
+
+					// Dims don't match (stale texture from a previous buggy load) — destroy and re-fetch.
+					console.warn('[Camp] Stale texture', form.sheet,
+						'— expected frameH', expectedH, 'got', cachedH, '; reloading.');
+					this.textures.remove(form.sheet);
+					// Also purge stale anims keyed to this sheet so they get rebuilt.
+					const prefix = (typeof this.followerForm === 'number'
+						? this.followerForm : String(form.sheet).replace('pmd-', ''));
+					['walk-south','walk-west','walk-north','walk-east'].forEach(s => {
+						const k = prefix + '-' + s;
+						if (this.anims.exists(k)) this.anims.remove(k);
+					});
+				}
+
+				// --- Fresh load ---
 				// Fetch off the render loop via native Image — no this.load.start() stutter.
 				const img = new window.Image();
 				img.crossOrigin = 'anonymous';
@@ -5822,23 +5880,37 @@
 							// Auto-detect frame dimensions from actual image dimensions.
 							// PMD Walk-Anim always has exactly 8 rows (8 directions).
 							const frameH = Math.round(img.naturalHeight / 8);
-							// Try standard frame widths; pick the smallest that yields cols 3–8.
+							// Prefer col counts [4, 6, 3] — most PMD sheets use 4 walk frames.
+							// Try standard widths; pick smallest that gives a preferred col count first,
+							// then fall back to anything in 3–8.
 							const stdW = [24, 28, 32, 36, 40, 48, 56, 64];
+							const preferred = [4, 6, 3, 5, 7, 8];
 							let frameW = frameH, cols = 4;
-							for (const w of stdW) {
-								if (img.naturalWidth % w === 0) {
-									const c = img.naturalWidth / w;
-									if (c >= 3 && c <= 8) { frameW = w; cols = c; break; }
+							// First pass: preferred col counts
+							outer: for (const pc of preferred) {
+								for (const w of stdW) {
+									if (img.naturalWidth % w === 0 && img.naturalWidth / w === pc) {
+										frameW = w; cols = pc; break outer;
+									}
+								}
+							}
+							// Second pass fallback: any 3–8 col count
+							if (frameW === frameH) {
+								for (const w of stdW) {
+									if (img.naturalWidth % w === 0) {
+										const c = img.naturalWidth / w;
+										if (c >= 3 && c <= 8) { frameW = w; cols = c; break; }
+									}
 								}
 							}
 							// Patch the shared form object so _switchFollower reads correct dims.
 							form.frameW = frameW; form.frameH = frameH; form.cols = cols;
 							// Compute proportional scale from Pokédex height vs trainer.
-							// Trainer = 38px frame × 0.75 scale = 28.5 world-px tall.
-							// sqrt(h/1.7) gives: Pikachu(0.4m)→49% trainer, Charizard(1.7m)→100%, Snorlax(2.1m)→111%.
+							// Trainer ≈ 38px frame × 0.75 scale = 28.5 world-px (raised to 35 for better visibility).
+							// sqrt(h/1.7): Pikachu(0.4m)→60%, Charizard(1.7m)→100%, Snorlax(2.1m)→111%.
 							if (form.dex && POKEMON_HEIGHTS[form.dex]) {
-								const targetVis = 28.5 * Math.sqrt(POKEMON_HEIGHTS[form.dex] / 1.7);
-								form.scale = Math.min(1.1, Math.max(0.28, targetVis / frameH));
+								const targetVis = 35 * Math.sqrt(POKEMON_HEIGHTS[form.dex] / 1.7);
+								form.scale = Math.min(1.1, Math.max(0.40, targetVis / frameH));
 							}
 							this.textures.addSpriteSheet(form.sheet, img, { frameWidth: frameW, frameHeight: frameH });
 						}
@@ -5852,7 +5924,7 @@
 				img.src = form.url;
 			}
 
-			_switchFollower(formKey) {
+			_switchFollower(formKey, opts = {}) {
 				// Prevent stacking concurrent loads (e.g. rapid picker taps).
 				if (this._followerLoading) return;
 				this._followerLoading = true;
@@ -5861,7 +5933,7 @@
 					this._followerLoading = false;
 					// Read cols AFTER _ensureFollowerSprite may have patched form.cols
 					// (previously cols was captured before the async load — caused wrong frame slicing).
-					const cols = form.cols;
+					const cols = form.cols || 4;
 					const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
 					const animDefs = [
 						[formKey + '-walk-south', rowFrames(0), 0],
@@ -5869,11 +5941,12 @@
 						[formKey + '-walk-north', rowFrames(4), 4 * cols],
 						[formKey + '-walk-east',  rowFrames(2), 2 * cols],
 					];
+					// Always destroy and recreate anims — they may have been built with
+					// wrong cols if the texture was previously stale (e.g. 6 cols → 4 cols).
 					for (const [key, frames] of animDefs) {
-						if (!this.anims.exists(key)) {
-							this.anims.create({ key, frameRate: 10, repeat: -1,
-								frames: this.anims.generateFrameNumbers(form.sheet, { frames }) });
-						}
+						if (this.anims.exists(key)) this.anims.remove(key);
+						this.anims.create({ key, frameRate: 10, repeat: -1,
+							frames: this.anims.generateFrameNumbers(form.sheet, { frames }) });
 					}
 					this.eeveeAnimKeys = animDefs.map(([k]) => k);
 					this.eeveeIdleFrame = animDefs.map(([,,idle]) => idle);
@@ -5886,16 +5959,19 @@
 					}
 					// Reapply shiny tint (setTexture clears tint).
 					if (this._applyFollowerShiny) this._applyFollowerShiny();
-					// Clear nickname for the new partner (single global key — reset on switch).
-					try { localStorage.setItem(NICKNAME_KEY, ''); } catch {}
-					const ni = document.getElementById('cpNickname');
-					if (ni) ni.value = '';
+					if (!opts.silent) {
+						// User-initiated switch: clear nickname for the new partner.
+						try { localStorage.setItem(NICKNAME_KEY, ''); } catch {}
+						const ni = document.getElementById('cpNickname');
+						if (ni) ni.value = '';
+						// Persist companion choice.
+						const inv = Inventory.load();
+						inv.companionForm = formKey;
+						Inventory.save(inv);
+						showToast(ico(ICO.npc) + ' ' + form.displayName + ' is walking with you!');
+					}
+					// Always update the label (shows nickname whether loading on start or switching).
 					if (this._updateFollowerLabel) this._updateFollowerLabel();
-					// Persist companion choice.
-					const inv = Inventory.load();
-					inv.companionForm = formKey;
-					Inventory.save(inv);
-					showToast(ico(ICO.npc) + ' ' + form.displayName + ' is walking with you!');
 				});
 			}
 
@@ -6206,15 +6282,14 @@
 			}
 
 			updateMinimap() {
-				if (!this.minimapEl) return;
-				const mctx = this.minimapEl.getContext('2d');
-				mctx.fillStyle = '#000';
-				mctx.fillRect(0, 0, this.minimapEl.width, this.minimapEl.height);
-				for (let r = 0; r < MAP_H; r++) {
-					for (let c = 0; c < MAP_W; c++) {
-						mctx.fillStyle = miniMapColor(this.map[r][c]);
-						mctx.fillRect(c*3, r*3, 3, 3);
-					}
+				if (!this.minimapEl || !this._minimapCtx) return;
+				const mctx = this._minimapCtx;
+				// Blit static tile layer — O(1) per frame (vs O(tiles) before).
+				if (this._minimapCache) {
+					mctx.drawImage(this._minimapCache, 0, 0);
+				} else {
+					mctx.fillStyle = '#000';
+					mctx.fillRect(0, 0, this.minimapEl.width, this.minimapEl.height);
 				}
 				// Player dot — bright yellow
 				const px = Math.floor(this.player.x / TILE) * 3;
