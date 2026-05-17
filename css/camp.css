@@ -2136,3 +2136,256 @@ body.camp-body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── Shiny Encounter Modal ──────────────────────────────────────────────── */
+.shiny-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+  animation: shinyModalIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.shiny-modal[hidden] { display: none; }
+
+@keyframes shinyModalIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.shiny-modal-inner {
+  background: linear-gradient(135deg, #0a001a 0%, #1a0030 50%, #0d0020 100%);
+  border: 2px solid #b060ff;
+  border-radius: 20px;
+  padding: 28px 24px 22px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(160, 80, 255, 0.5), 0 0 120px rgba(160, 80, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.shiny-modal-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 10%, rgba(180, 100, 255, 0.18), transparent 60%);
+  pointer-events: none;
+}
+
+.shiny-sparkle {
+  font-size: 36px;
+  line-height: 1;
+  animation: shinySpin 2s ease-in-out infinite;
+  display: block;
+  margin-bottom: 6px;
+}
+
+@keyframes shinySpin {
+  0%, 100% { transform: scale(1) rotate(-5deg); }
+  50%       { transform: scale(1.15) rotate(5deg); }
+}
+
+.shiny-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  color: #d8a0ff;
+  text-shadow: 0 0 16px rgba(200, 120, 255, 0.8);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.shiny-pokemon-display {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.shiny-sprite {
+  image-rendering: pixelated;
+  width: 96px;
+  height: 96px;
+  filter: drop-shadow(0 0 12px rgba(200, 150, 255, 0.8));
+  animation: shinyBob 1.6s ease-in-out infinite;
+}
+
+@keyframes shinyBob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+.shiny-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(180, 100, 255, 0.9);
+  margin: 0 0 12px;
+}
+
+.shiny-flee-bar-wrap {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.shiny-flee-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4444, #ff8800);
+  border-radius: 999px;
+  box-shadow: 0 0 6px rgba(255, 100, 0, 0.5);
+}
+
+.shiny-hint {
+  font-size: 12px;
+  color: #ccc;
+  margin: 0 0 14px;
+  line-height: 1.6;
+}
+
+.shiny-hint strong { color: #ffdd44; }
+
+.shiny-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.shiny-btn-catch {
+  padding: 10px 20px;
+  background: linear-gradient(180deg, #b060ff 0%, #7c3aed 100%);
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #3b1a7a;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.shiny-btn-catch:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #3b1a7a; }
+.shiny-btn-catch:active { transform: translateY(2px); box-shadow: 0 2px 0 #3b1a7a; }
+
+.shiny-btn-flee {
+  padding: 10px 20px;
+  background: rgba(255,255,255,0.07);
+  color: #aaa;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 999px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.shiny-btn-flee:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* Quiz area inside shiny modal */
+.shiny-quiz-area {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.shiny-q-counter {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #b060ff;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.shiny-timer-bar-wrap {
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.shiny-timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
+  border-radius: 999px;
+}
+
+.shiny-question {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.shiny-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shiny-answer-btn {
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.06);
+  color: #ddd;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.shiny-answer-btn:hover:not(:disabled) {
+  background: rgba(176, 96, 255, 0.2);
+  border-color: #b060ff;
+  color: #fff;
+}
+
+.shiny-answer-btn.shiny-correct { background: rgba(34,197,94,0.25); border-color: #22c55e; color: #86efac; }
+.shiny-answer-btn.shiny-wrong   { background: rgba(239,68,68,0.25);  border-color: #ef4444; color: #fca5a5; }
+.shiny-answer-btn:disabled { cursor: default; opacity: 0.8; }
+
+.shiny-result {
+  margin-top: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  animation: fadeIn 0.3s ease;
+}
+
+.shiny-caught { color: #86efac; }
+.shiny-fled   { color: #fca5a5; }
+
+/* ── Camp Mood Badge ─────────────────────────────────────────────────────── */
+.camp-mood-badge {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  transition: opacity 0.3s;
+}
+
+.camp-mood-badge[data-mood="excited"] { border-color: #facc15; color: #fef08a; }
+.camp-mood-badge[data-mood="happy"]   { border-color: #4ade80; color: #bbf7d0; }
+.camp-mood-badge[data-mood="tired"]   { border-color: #94a3b8; color: #cbd5e1; }
+.camp-mood-badge[hidden] { display: none; }

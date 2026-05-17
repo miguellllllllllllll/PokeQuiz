@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Team Builder Challenge &middot; PokeQuiz</title>
+  <meta name="author" content="Angelo Miguel G. Vinluan">
+  <link rel="icon" type="image/png" href="Pictures/pokeball.png">
+  <meta name="description" content="Build the best counter-team against gym leaders in this PokeQuiz puzzle.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .puzzle-card {
+      max-width: 800px; margin: 0 auto;
+      position: relative; overflow: hidden;
+    }
+    .puzzle-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+    .puzzle-pokeball {
+      position: absolute; right: -130px; top: -130px;
+      width: 380px; opacity: 0.04;
+      animation: bgSpin 40s linear infinite;
+    }
+    @keyframes bgSpin { to { transform: rotate(360deg); } }
+    .puzzle-inner { position: relative; z-index: 1; }
+
+    /* ── Intro screen ── */
+    .intro-screen { padding: 8px; text-align: center; }
+    .intro-screen .back-link {
+      display: inline-block; font-size: 12px; font-weight: 700; color: var(--muted);
+      text-decoration: none; margin-bottom: 20px; letter-spacing: 0.4px; text-align: left; display: block;
+    }
+    .intro-screen .back-link:hover { color: var(--poke-red); }
+    .intro-title { font-size: clamp(15px, 3.5vw, 22px); margin: 0 0 12px; }
+    .title-flicker { color: var(--poke-yellow); text-shadow: 2px 2px 0 var(--poke-black); }
+    .intro-lede { color: #444; font-size: 14px; margin: 0 auto 28px; max-width: 52ch; }
+    .intro-rules {
+      background: rgba(255,203,5,0.1); border: 1px solid rgba(255,203,5,0.4);
+      border-radius: 14px; padding: 18px 22px; margin: 0 auto 28px; max-width: 500px;
+      text-align: left;
+    }
+    .intro-rules h3 { font-size: 11px; color: var(--poke-black); text-shadow: none; margin-bottom: 10px; }
+    .intro-rules ul { margin: 0; padding-left: 18px; font-size: 13px; color: #444; line-height: 1.8; }
+    .intro-rules li strong { color: var(--poke-black); }
+    .score-summary {
+      font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--muted);
+      margin-bottom: 24px;
+    }
+    .score-summary span { color: var(--poke-red); }
+
+    /* ── Progress bar ── */
+    .progress-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    }
+    .progress-track {
+      flex: 1; height: 8px; background: rgba(0,0,0,0.08); border-radius: 99px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: var(--poke-red); border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+    .progress-label {
+      font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap;
+    }
+
+    /* ── Gym leader card ── */
+    .leader-card {
+      display: flex; align-items: center; gap: 16px;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-radius: 16px; padding: 18px 22px; margin-bottom: 20px; color: #fff;
+    }
+    .leader-emoji { font-size: 48px; line-height: 1; flex-shrink: 0; }
+    .leader-info { flex: 1; }
+    .leader-name {
+      font-family: 'Press Start 2P', monospace; font-size: 13px;
+      color: var(--poke-yellow); text-shadow: 1px 1px 0 rgba(0,0,0,0.5); margin-bottom: 4px;
+    }
+    .leader-specialty { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
+    .leader-team { display: flex; flex-wrap: wrap; gap: 8px; }
+    .enemy-mon {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #fff;
+    }
+    .enemy-mon-types { display: flex; gap: 4px; }
+    .type-badge {
+      padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.5px; color: #fff;
+    }
+
+    /* ── Pick area ── */
+    .pick-label {
+      font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .pick-label span { color: var(--poke-red); font-family: 'Press Start 2P', monospace; font-size: 11px; }
+    .pool-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;
+    }
+    @media (max-width: 560px) { .pool-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .pool-mon {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      padding: 14px 10px; background: #fff; border: 2px solid rgba(0,0,0,0.1);
+      border-radius: 14px; cursor: pointer; font-family: inherit;
+      transition: all 0.12s ease; text-align: center;
+    }
+    .pool-mon:hover:not(.disabled-pick) {
+      border-color: var(--poke-red); transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(238,21,21,0.14);
+    }
+    .pool-mon.selected {
+      border-color: var(--poke-red); background: rgba(238,21,21,0.05);
+      box-shadow: 0 0 0 3px rgba(238,21,21,0.2);
+    }
+    .pool-mon.selected::after {
+      content: '✓'; display: block; position: absolute;
+      top: -8px; right: -8px; width: 20px; height: 20px;
+      background: var(--poke-red); color: #fff; border-radius: 50%;
+      font-size: 11px; font-weight: 800; line-height: 20px;
+    }
+    .pool-mon { position: relative; }
+    .pool-mon.disabled-pick { opacity: 0.45; cursor: not-allowed; }
+    .pool-mon-emoji { font-size: 28px; line-height: 1; }
+    .pool-mon-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .pool-mon-types { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+
+    .battle-btn-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+    .battle-btn { font-size: 15px; padding: 14px 36px; }
+
+    /* ── Results ── */
+    .results-area {
+      background: #fafafa; border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 16px; padding: 20px; margin-bottom: 20px;
+    }
+    .results-title {
+      font-family: 'Press Start 2P', monospace; font-size: 12px;
+      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black);
+      margin-bottom: 14px; text-align: center;
+    }
+    .matrix-table {
+      width: 100%; border-collapse: collapse; font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .matrix-table th {
+      padding: 8px; background: var(--poke-black); color: var(--poke-yellow);
+      font-family: 'Press Start 2P', monospace; font-size: 9px; text-align: center;
+      letter-spacing: 0.4px;
+    }
+    .matrix-table th:first-child { text-align: left; min-width: 110px; }
+    .matrix-table td {
+      padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06);
+      text-align: center; font-weight: 700;
+    }
+    .matrix-table td:first-child { text-align: left; font-size: 13px; }
+    .eff-2x   { background: #dcfce7; color: #15803d; }
+    .eff-1x   { background: #fef9c3; color: #713f12; }
+    .eff-half { background: #fee2e2; color: #991b1b; }
+    .eff-0x   { background: #f1f5f9; color: #475569; }
+
+    .round-score {
+      text-align: center; font-size: 14px; font-weight: 700;
+      color: var(--ink); margin-bottom: 16px;
+    }
+    .round-score .score-big {
+      font-family: 'Press Start 2P', monospace; font-size: 22px;
+      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black); margin-right: 6px;
+    }
+    .round-score .score-max { font-size: 13px; color: var(--muted); }
+
+    .controls-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    /* ── Final screen ── */
+    .final-screen { text-align: center; padding: 10px; }
+    .final-screen h2 { font-size: 20px; margin-bottom: 8px; }
+    .total-score-box {
+      display: flex; flex-direction: column; align-items: center;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-radius: 18px; padding: 28px 36px; margin: 20px auto;
+      max-width: 320px; gap: 8px;
+    }
+    .total-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; }
+    .total-num {
+      font-family: 'Press Start 2P', monospace; font-size: 44px;
+      color: var(--poke-yellow); text-shadow: 3px 3px 0 rgba(0,0,0,0.4); line-height: 1;
+    }
+    .total-pts { font-size: 14px; color: rgba(255,255,255,0.7); }
+    .tokens-earned {
+      font-size: 14px; font-weight: 700; color: var(--poke-black);
+      background: var(--poke-yellow); border: 2px solid var(--poke-black);
+      border-radius: 999px; padding: 8px 20px; display: inline-block; margin-bottom: 20px;
+    }
+    .final-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+
+    /* ── Token pop ── */
+    .token-pop {
+      position: fixed; bottom: 30px; right: 24px;
+      background: var(--poke-yellow); color: var(--poke-black);
+      font-weight: 800; font-size: 14px; padding: 10px 18px;
+      border-radius: 999px; border: 2px solid var(--poke-black);
+      box-shadow: 0 4px 0 rgba(0,0,0,0.3); z-index: 9999;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+    }
+    .token-pop.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="play.html">Play</a>
+      <a href="quizzes.html">Quizzes</a>
+      <a href="puzzle.html" class="active">Puzzles</a>
+      <a href="ranking.html">Leaderboard</a>
+      <a href="camp.html">Camp</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card puzzle-card">
+      <div class="puzzle-bg" aria-hidden="true">
+        <img class="puzzle-pokeball" src="Pictures/pokeball.png" alt="">
+      </div>
+
+      <!-- INTRO -->
+      <div id="introScreen" class="puzzle-inner intro-screen">
+        <a class="back-link" href="puzzle.html">&larr; Puzzle Hub</a>
+        <div class="eyebrow" style="justify-content:center;margin-bottom:14px;">
+          <span class="dot"></span><span>Strategy Puzzle</span>
+        </div>
+        <h1 class="intro-title">Team Builder <span class="title-flicker">Challenge</span></h1>
+        <p class="intro-lede">Face 10 gym leaders. Each time, pick 3 Pok&eacute;mon from a pool of 6 to counter their team using type effectiveness.</p>
+        <div class="intro-rules">
+          <h3>How Scoring Works</h3>
+          <ul>
+            <li><strong>2× super effective</strong> = +3 pts</li>
+            <li><strong>1× neutral</strong> = +1 pt</li>
+            <li><strong>0.5× not very effective</strong> = −1 pt</li>
+            <li><strong>0× immune</strong> = −3 pts</li>
+          </ul>
+          <ul style="margin-top:10px;">
+            <li>Each of your 3 Pok&eacute;mon attacks each enemy with their primary type</li>
+            <li>Score = sum of all matchups across your whole team</li>
+          </ul>
+        </div>
+        <div class="score-summary" id="bestScoreDisplay">Best Score: <span id="bestScoreNum">—</span></div>
+        <button class="btn battle-btn" id="startBtn" type="button">Start Challenge!</button>
+      </div>
+
+      <!-- GAME VIEW -->
+      <div id="gameView" class="puzzle-inner" hidden>
+        <div class="progress-row">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+          </div>
+          <span class="progress-label" id="progressLabel">1 / 10</span>
+          <span style="font-family:'Press Start 2P',monospace;font-size:11px;color:var(--poke-red);" id="runScore">0 pts</span>
+        </div>
+
+        <!-- Gym leader -->
+        <div class="leader-card" id="leaderCard">
+          <span class="leader-emoji" id="leaderEmoji"></span>
+          <div class="leader-info">
+            <div class="leader-name" id="leaderName"></div>
+            <div class="leader-specialty" id="leaderSpecialty"></div>
+            <div class="leader-team" id="leaderTeam"></div>
+          </div>
+        </div>
+
+        <!-- Pool picker -->
+        <div class="pick-label">Choose <span id="pickCount">3</span> Pok&eacute;mon to battle</div>
+        <div class="pool-grid" id="poolGrid"></div>
+
+        <div class="battle-btn-wrap">
+          <button class="btn battle-btn" id="battleBtn" disabled type="button">Battle! ⚔</button>
+        </div>
+
+        <!-- Results (hidden until battle) -->
+        <div id="resultsArea" class="results-area" hidden>
+          <div class="results-title">⚔ Battle Results</div>
+          <div id="matrixWrap"></div>
+          <div class="round-score">
+            <span class="score-big" id="roundScoreNum">0</span>
+            <span>pts this round</span>
+            <span class="score-max" id="roundScoreMax"></span>
+          </div>
+          <div class="controls-row">
+            <button class="btn" id="nextRoundBtn" type="button">Next Round &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINAL SCREEN -->
+      <div id="finalScreen" class="puzzle-inner" hidden>
+        <div class="final-screen">
+          <div class="eyebrow" style="justify-content:center;margin-bottom:14px;">
+            <span class="dot"></span><span>Challenge Complete!</span>
+          </div>
+          <h2>All 10 Battles Done!</h2>
+          <div class="total-score-box">
+            <span class="total-label">Total Score</span>
+            <span class="total-num" id="totalScoreNum">0</span>
+            <span class="total-pts">points</span>
+          </div>
+          <div class="tokens-earned" id="tokensEarnedDisplay">🪙 Tokens earned: 0</div>
+          <p id="finalMsg" style="color:#555;margin-bottom:10px;font-size:14px;"></p>
+          <div class="final-actions">
+            <button class="btn" id="playAgainBtn" type="button">Play Again</button>
+            <a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Made with care by Angelo Miguel G. Vinluan</footer>
+  <div class="token-pop" id="tokenPop">🪙 +<span id="tokenAmount">0</span> tokens!</div>
+
+  <script>
+  /* ================================================================
+     TYPE EFFECTIVENESS — simplified matchup table
+     effectiveness[attackType][defenseType] = multiplier
+  ================================================================ */
+  const EFF = {};
+  const TYPES = ['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground',
+                 'Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
+  // Default 1x
+  TYPES.forEach(a => { EFF[a] = {}; TYPES.forEach(d => { EFF[a][d] = 1; }); });
+
+  function se(atk, ...defs) { defs.forEach(d => { EFF[atk][d] = 2; }); }
+  function nve(atk, ...defs) { defs.forEach(d => { EFF[atk][d] = 0.5; }); }
+  function imm(atk, ...defs) { defs.forEach(d => { EFF[atk][d] = 0; }); }
+
+  // Water
+  se('Water','Fire','Ground','Rock');
+  nve('Water','Water','Grass','Dragon');
+  // Fire
+  se('Fire','Grass','Bug','Ice','Steel');
+  nve('Fire','Fire','Water','Rock','Dragon');
+  // Electric
+  se('Electric','Water','Flying');
+  nve('Electric','Electric','Grass','Dragon');
+  imm('Electric','Ground');
+  // Grass
+  se('Grass','Water','Ground','Rock');
+  nve('Grass','Fire','Grass','Poison','Flying','Bug','Dragon','Steel');
+  // Rock
+  se('Rock','Fire','Ice','Flying','Bug');
+  nve('Rock','Fighting','Ground','Steel');
+  // Fighting
+  se('Fighting','Normal','Ice','Rock','Dark','Steel');
+  nve('Fighting','Poison','Flying','Psychic','Bug','Fairy');
+  imm('Fighting','Ghost');
+  // Ground
+  se('Ground','Fire','Electric','Poison','Rock','Steel');
+  nve('Ground','Grass','Bug');
+  imm('Ground','Flying');
+  // Psychic
+  se('Psychic','Fighting','Poison');
+  nve('Psychic','Psychic','Steel');
+  imm('Psychic','Dark');
+  // Ice
+  se('Ice','Grass','Ground','Flying','Dragon');
+  nve('Ice','Water','Ice','Steel');
+  // Dragon
+  se('Dragon','Dragon');
+  nve('Dragon','Steel');
+  imm('Dragon','Fairy');
+  // Dark
+  se('Dark','Ghost','Psychic');
+  nve('Dark','Fighting','Dark','Fairy');
+  imm('Dark','Normal');
+  // Steel
+  se('Steel','Ice','Rock','Fairy');
+  nve('Steel','Fire','Water','Electric','Steel');
+  // Fairy
+  se('Fairy','Fighting','Dragon','Dark');
+  nve('Fairy','Fire','Poison','Steel');
+  imm('Fairy','Dragon');
+  // Flying
+  se('Flying','Fighting','Bug','Grass');
+  nve('Flying','Electric','Rock','Steel');
+  imm('Flying','Ground');
+  // Bug
+  se('Bug','Grass','Psychic','Dark');
+  nve('Bug','Fire','Fighting','Flying','Ghost','Steel','Fairy');
+  // Ghost
+  se('Ghost','Ghost','Psychic');
+  nve('Ghost','Dark');
+  imm('Ghost','Normal');
+  // Poison
+  se('Poison','Grass','Fairy');
+  nve('Poison','Poison','Ground','Rock','Ghost');
+  imm('Poison','Steel');
+  // Normal — nothing super effective
+  nve('Normal','Rock','Steel');
+  imm('Normal','Ghost');
+
+  /* ================================================================
+     GYM LEADER CHALLENGES — 10 entries
+  ================================================================ */
+  const CHALLENGES = [
+    {
+      leader:"Brock", specialty:"Rock-type specialist", emoji:"⛰️",
+      team:[
+        { name:"Geodude",  types:["Rock","Ground"] },
+        { name:"Onix",     types:["Rock","Ground"] },
+      ],
+      pool:[
+        { name:"Squirtle", emoji:"💧", types:["Water"]          },
+        { name:"Bulbasaur",emoji:"🌿", types:["Grass","Poison"] },
+        { name:"Charmander",emoji:"🔥",types:["Fire"]           },
+        { name:"Pikachu",  emoji:"⚡", types:["Electric"]       },
+        { name:"Geodude",  emoji:"🪨", types:["Rock","Ground"]  },
+        { name:"Pidgey",   emoji:"🐦", types:["Normal","Flying"]},
+      ]
+    },
+    {
+      leader:"Misty", specialty:"Water-type specialist", emoji:"💧",
+      team:[
+        { name:"Staryu",  types:["Water"]          },
+        { name:"Starmie", types:["Water","Psychic"] },
+      ],
+      pool:[
+        { name:"Pikachu",   emoji:"⚡", types:["Electric"]        },
+        { name:"Bellsprout",emoji:"🌿", types:["Grass","Poison"]  },
+        { name:"Magnemite", emoji:"🔩", types:["Electric","Steel"] },
+        { name:"Psyduck",   emoji:"🦆", types:["Water"]           },
+        { name:"Haunter",   emoji:"👻", types:["Ghost","Poison"]  },
+        { name:"Rhydon",    emoji:"🦏", types:["Ground","Rock"]   },
+      ]
+    },
+    {
+      leader:"Lt. Surge", specialty:"Electric-type specialist", emoji:"⚡",
+      team:[
+        { name:"Voltorb", types:["Electric"] },
+        { name:"Pikachu", types:["Electric"] },
+        { name:"Raichu",  types:["Electric"] },
+      ],
+      pool:[
+        { name:"Marowak",  emoji:"💀", types:["Ground"]         },
+        { name:"Diglett",  emoji:"🕳️", types:["Ground"]         },
+        { name:"Dugtrio",  emoji:"🕳️", types:["Ground"]         },
+        { name:"Pikachu",  emoji:"⚡", types:["Electric"]       },
+        { name:"Jolteon",  emoji:"⚡", types:["Electric"]       },
+        { name:"Eevee",    emoji:"🦊", types:["Normal"]         },
+      ]
+    },
+    {
+      leader:"Erika", specialty:"Grass-type specialist", emoji:"🌸",
+      team:[
+        { name:"Tangela",     types:["Grass"]         },
+        { name:"Weepinbell",  types:["Grass","Poison"] },
+        { name:"Victreebel",  types:["Grass","Poison"] },
+      ],
+      pool:[
+        { name:"Charizard",emoji:"🔥", types:["Fire","Flying"]  },
+        { name:"Rapidash", emoji:"🐎", types:["Fire"]           },
+        { name:"Scyther",  emoji:"✂️", types:["Bug","Flying"]   },
+        { name:"Venomoth", emoji:"🦋", types:["Bug","Poison"]   },
+        { name:"Moltres",  emoji:"🔥", types:["Fire","Flying"]  },
+        { name:"Arcanine", emoji:"🐕", types:["Fire"]           },
+      ]
+    },
+    {
+      leader:"Koga", specialty:"Poison-type specialist", emoji:"☠️",
+      team:[
+        { name:"Koffing", types:["Poison"] },
+        { name:"Muk",     types:["Poison"] },
+        { name:"Weezing", types:["Poison"] },
+      ],
+      pool:[
+        { name:"Alakazam",emoji:"🥄", types:["Psychic"]         },
+        { name:"Espeon",  emoji:"🌞", types:["Psychic"]         },
+        { name:"Gengar",  emoji:"👻", types:["Ghost","Poison"]  },
+        { name:"Nidoking",emoji:"👑", types:["Poison","Ground"] },
+        { name:"Rhydon",  emoji:"🦏", types:["Ground","Rock"]   },
+        { name:"Sandslash",emoji:"🏜️",types:["Ground"]          },
+      ]
+    },
+    {
+      leader:"Sabrina", specialty:"Psychic-type specialist", emoji:"🔮",
+      team:[
+        { name:"Abra",    types:["Psychic"] },
+        { name:"Kadabra", types:["Psychic"] },
+        { name:"Alakazam",types:["Psychic"] },
+      ],
+      pool:[
+        { name:"Gengar",    emoji:"👻", types:["Ghost","Poison"]  },
+        { name:"Tyranitar", emoji:"🦖", types:["Rock","Dark"]     },
+        { name:"Umbreon",   emoji:"🌙", types:["Dark"]            },
+        { name:"Hydreigon", emoji:"🐲", types:["Dark","Dragon"]   },
+        { name:"Scizor",    emoji:"✂️", types:["Bug","Steel"]     },
+        { name:"Murkrow",   emoji:"🪶", types:["Dark","Flying"]   },
+      ]
+    },
+    {
+      leader:"Blaine", specialty:"Fire-type specialist", emoji:"🌋",
+      team:[
+        { name:"Growlithe",types:["Fire"] },
+        { name:"Ponyta",   types:["Fire"] },
+        { name:"Arcanine", types:["Fire"] },
+      ],
+      pool:[
+        { name:"Vaporeon", emoji:"💠", types:["Water"]          },
+        { name:"Blastoise",emoji:"💧", types:["Water"]          },
+        { name:"Starmie",  emoji:"⭐", types:["Water","Psychic"]},
+        { name:"Rhydon",   emoji:"🦏", types:["Ground","Rock"]  },
+        { name:"Golem",    emoji:"🪨", types:["Rock","Ground"]  },
+        { name:"Sandslash",emoji:"🏜️", types:["Ground"]         },
+      ]
+    },
+    {
+      leader:"Giovanni", specialty:"Ground-type specialist", emoji:"💼",
+      team:[
+        { name:"Rhyhorn",  types:["Ground","Rock"]  },
+        { name:"Dugtrio",  types:["Ground"]         },
+        { name:"Nidoqueen",types:["Poison","Ground"] },
+      ],
+      pool:[
+        { name:"Venusaur",emoji:"🌿", types:["Grass","Poison"]  },
+        { name:"Lapras",  emoji:"🧊", types:["Water","Ice"]     },
+        { name:"Starmie", emoji:"⭐", types:["Water","Psychic"] },
+        { name:"Gyarados",emoji:"🐉", types:["Water","Flying"]  },
+        { name:"Cloyster",emoji:"🐚", types:["Water","Ice"]     },
+        { name:"Dewgong", emoji:"🌊", types:["Water","Ice"]     },
+      ]
+    },
+    {
+      leader:"Cynthia", specialty:"Mixed powerhouse", emoji:"🏆",
+      team:[
+        { name:"Spiritomb",types:["Ghost","Dark"] },
+        { name:"Milotic",  types:["Water"]        },
+        { name:"Garchomp", types:["Dragon","Ground"]},
+      ],
+      pool:[
+        { name:"Lucario",  emoji:"🥊", types:["Fighting","Steel"] },
+        { name:"Togekiss", emoji:"🕊️", types:["Fairy","Flying"]  },
+        { name:"Glaceon",  emoji:"❄️", types:["Ice"]              },
+        { name:"Empoleon", emoji:"🐧", types:["Water","Steel"]    },
+        { name:"Infernape",emoji:"🔥", types:["Fire","Fighting"]  },
+        { name:"Weavile",  emoji:"❄️", types:["Dark","Ice"]       },
+      ]
+    },
+    {
+      leader:"Red", specialty:"Legendary Trainer", emoji:"🎮",
+      team:[
+        { name:"Pikachu",  types:["Electric"]       },
+        { name:"Snorlax",  types:["Normal"]         },
+        { name:"Venusaur", types:["Grass","Poison"] },
+        { name:"Charizard",types:["Fire","Flying"]  },
+        { name:"Blastoise",types:["Water"]          },
+        { name:"Espeon",   types:["Psychic"]        },
+      ],
+      pool:[
+        { name:"Rhydon",  emoji:"🦏", types:["Ground","Rock"]  },
+        { name:"Golem",   emoji:"🪨", types:["Rock","Ground"]  },
+        { name:"Gyarados",emoji:"🐉", types:["Water","Flying"] },
+        { name:"Arcanine",emoji:"🐕", types:["Fire"]           },
+        { name:"Alakazam",emoji:"🥄", types:["Psychic"]        },
+        { name:"Umbreon", emoji:"🌙", types:["Dark"]           },
+      ]
+    },
+  ];
+
+  /* ================================================================
+     STATE
+  ================================================================ */
+  let challengeIndex = 0;
+  let totalScore = 0;
+  let selectedPool = []; // indices
+  const PICK_COUNT = 3;
+
+  /* ================================================================
+     INIT
+  ================================================================ */
+  document.addEventListener('DOMContentLoaded', () => {
+    const best = localStorage.getItem('pokequiz_team_best');
+    document.getElementById('bestScoreNum').textContent = best !== null ? best : '—';
+
+    document.getElementById('startBtn').addEventListener('click', startChallenge);
+    document.getElementById('battleBtn').addEventListener('click', doBattle);
+    document.getElementById('nextRoundBtn').addEventListener('click', nextRound);
+    document.getElementById('playAgainBtn').addEventListener('click', () => {
+      document.getElementById('finalScreen').hidden = true;
+      document.getElementById('introScreen').hidden = false;
+    });
+  });
+
+  function startChallenge() {
+    challengeIndex = 0;
+    totalScore = 0;
+    document.getElementById('introScreen').hidden = true;
+    document.getElementById('finalScreen').hidden  = true;
+    document.getElementById('gameView').hidden      = false;
+    loadChallenge();
+  }
+
+  /* ================================================================
+     CHALLENGE LOGIC
+  ================================================================ */
+  function loadChallenge() {
+    const ch = CHALLENGES[challengeIndex];
+    selectedPool = [];
+
+    // Progress
+    const pct = (challengeIndex / CHALLENGES.length) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = `${challengeIndex + 1} / ${CHALLENGES.length}`;
+    document.getElementById('runScore').textContent = totalScore + ' pts';
+
+    // Leader
+    document.getElementById('leaderEmoji').textContent     = ch.emoji;
+    document.getElementById('leaderName').textContent      = ch.leader;
+    document.getElementById('leaderSpecialty').textContent = ch.specialty;
+
+    const teamEl = document.getElementById('leaderTeam');
+    teamEl.innerHTML = '';
+    ch.team.forEach(mon => {
+      const el = document.createElement('div');
+      el.className = 'enemy-mon';
+      const badges = mon.types.map(t =>
+        `<span class="type-badge" style="background:${typeColor(t)}">${t}</span>`
+      ).join('');
+      el.innerHTML = `<span style="font-weight:800">${mon.name}</span><span class="enemy-mon-types">${badges}</span>`;
+      teamEl.appendChild(el);
+    });
+
+    // Pool
+    const grid = document.getElementById('poolGrid');
+    grid.innerHTML = '';
+    ch.pool.forEach((mon, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'pool-mon';
+      btn.type = 'button';
+      const badges = mon.types.map(t =>
+        `<span class="type-badge" style="background:${typeColor(t)}">${t}</span>`
+      ).join('');
+      btn.innerHTML = `
+        <span class="pool-mon-emoji">${mon.emoji}</span>
+        <span class="pool-mon-name">${mon.name}</span>
+        <div class="pool-mon-types">${badges}</div>`;
+      btn.addEventListener('click', () => togglePick(i, btn));
+      grid.appendChild(btn);
+    });
+
+    // Results hidden, battle btn
+    document.getElementById('resultsArea').hidden = true;
+    document.getElementById('battleBtn').disabled  = true;
+    document.getElementById('battleBtn').textContent = 'Battle! ⚔';
+  }
+
+  function togglePick(idx, btn) {
+    if (btn.classList.contains('disabled-pick')) return;
+    if (btn.classList.contains('selected')) {
+      btn.classList.remove('selected');
+      selectedPool = selectedPool.filter(i => i !== idx);
+    } else {
+      if (selectedPool.length >= PICK_COUNT) return;
+      btn.classList.add('selected');
+      selectedPool.push(idx);
+    }
+    // Disable un-selected if full
+    const grid = document.getElementById('poolGrid');
+    const btns = grid.querySelectorAll('.pool-mon');
+    btns.forEach((b, i) => {
+      if (!b.classList.contains('selected') && selectedPool.length >= PICK_COUNT) {
+        b.classList.add('disabled-pick');
+      } else if (!b.classList.contains('selected')) {
+        b.classList.remove('disabled-pick');
+      }
+    });
+    document.getElementById('battleBtn').disabled = selectedPool.length < PICK_COUNT;
+  }
+
+  function doBattle() {
+    const ch = CHALLENGES[challengeIndex];
+    const myTeam = selectedPool.map(i => ch.pool[i]);
+    const enemyTeam = ch.team;
+
+    // Build effectiveness matrix
+    let roundScore = 0;
+    let maxScore   = myTeam.length * enemyTeam.length * 3;
+
+    // my Pokémon's attack type = their first (primary) type
+    const matrix = myTeam.map(myMon => {
+      const atkType = myMon.types[0];
+      return enemyTeam.map(enemy => {
+        // Take best multiplier across enemy types for attacker
+        let mult = 1;
+        enemy.types.forEach(defType => {
+          const m = (EFF[atkType] && EFF[atkType][defType]) !== undefined
+            ? EFF[atkType][defType] : 1;
+          // For multi-type: multiply (standard dual-type calc)
+          mult = mult * m;
+        });
+        const pts = mult >= 2 ? 3 : mult === 1 ? 1 : mult === 0 ? -3 : -1;
+        roundScore += pts;
+        return { mult, pts };
+      });
+    });
+
+    totalScore += roundScore;
+
+    // Render matrix
+    const wrap = document.getElementById('matrixWrap');
+    let html = `<table class="matrix-table"><thead><tr><th>Your Team vs.</th>`;
+    enemyTeam.forEach(e => { html += `<th>${e.name}</th>`; });
+    html += `</tr></thead><tbody>`;
+    myTeam.forEach((myMon, mi) => {
+      html += `<tr><td>${myMon.emoji} ${myMon.name}</td>`;
+      matrix[mi].forEach(cell => {
+        const cls = cell.mult >= 2 ? 'eff-2x' : cell.mult === 0 ? 'eff-0x' : cell.mult < 1 ? 'eff-half' : 'eff-1x';
+        const label = cell.mult >= 2 ? `${cell.mult}× (+${cell.pts})` : cell.mult === 0 ? `Immune (${cell.pts})` : `${cell.mult}× (${cell.pts > 0 ? '+' : ''}${cell.pts})`;
+        html += `<td class="${cls}">${label}</td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+    wrap.innerHTML = html;
+
+    document.getElementById('roundScoreNum').textContent = roundScore;
+    document.getElementById('roundScoreMax').textContent = `(max possible: ${maxScore} pts)`;
+    document.getElementById('resultsArea').hidden = false;
+    document.getElementById('battleBtn').disabled = true;
+
+    // Disable pool picks
+    document.querySelectorAll('.pool-mon').forEach(b => b.classList.add('disabled-pick'));
+
+    const isLast = challengeIndex >= CHALLENGES.length - 1;
+    const nextBtn = document.getElementById('nextRoundBtn');
+    nextBtn.textContent = isLast ? 'See Final Score 🏆' : 'Next Round →';
+  }
+
+  function nextRound() {
+    challengeIndex++;
+    if (challengeIndex >= CHALLENGES.length) {
+      showFinalScreen();
+    } else {
+      document.getElementById('resultsArea').hidden = true;
+      loadChallenge();
+    }
+  }
+
+  function showFinalScreen() {
+    document.getElementById('gameView').hidden   = true;
+    document.getElementById('finalScreen').hidden = false;
+
+    document.getElementById('totalScoreNum').textContent = totalScore;
+
+    // Tokens: 2 per 10 points
+    const tokensEarned = Math.max(0, Math.floor(totalScore / 10) * 2);
+    document.getElementById('tokensEarnedDisplay').textContent = `🪙 Tokens earned: ${tokensEarned}`;
+
+    if (tokensEarned > 0) grantTokens(tokensEarned);
+
+    // Save best
+    const prev = parseInt(localStorage.getItem('pokequiz_team_best') || '0');
+    if (totalScore > prev) {
+      localStorage.setItem('pokequiz_team_best', totalScore);
+      document.getElementById('bestScoreNum').textContent = totalScore;
+    }
+
+    // Message
+    const maxPossible = CHALLENGES.reduce((sum, ch) => sum + 3 * 3 * ch.team.length, 0);
+    const pct = totalScore / maxPossible;
+    let msg = '';
+    if (pct >= 0.85) msg = '🏆 Outstanding! You\'re a true type-matchup master!';
+    else if (pct >= 0.65) msg = '⭐ Great job! Your team-building instincts are sharp.';
+    else if (pct >= 0.4) msg = '🎯 Decent effort — keep studying those type charts!';
+    else msg = '📚 Keep practicing — type matchups take time to master.';
+    document.getElementById('finalMsg').textContent = msg;
+  }
+
+  /* ================================================================
+     TOKENS
+  ================================================================ */
+  function grantTokens(amount) {
+    const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+    inv.tokens = (inv.tokens || 0) + amount;
+    localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+    showTokenPop(amount);
+  }
+  function showTokenPop(amount) {
+    const el = document.getElementById('tokenPop');
+    document.getElementById('tokenAmount').textContent = amount;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  /* ================================================================
+     UTILS
+  ================================================================ */
+  function typeColor(type) {
+    const MAP = {
+      Normal:'#A8A878', Fire:'#F08030', Water:'#6890F0', Electric:'#F8D030',
+      Grass:'#78C850', Ice:'#98D8D8', Fighting:'#C03028', Poison:'#A040A0',
+      Ground:'#E0C068', Flying:'#A890F0', Psychic:'#F85888', Bug:'#A8B820',
+      Rock:'#B8A038', Ghost:'#705898', Dragon:'#7038F8', Dark:'#705848',
+      Steel:'#B8B8D0', Fairy:'#EE99AC',
+    };
+    return MAP[type] || '#888';
+  }
+  </script>
+</body>
+</html>

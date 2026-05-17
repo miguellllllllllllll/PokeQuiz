@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Pok&eacute;dle &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Guess the daily mystery Pokémon in 6 attempts with attribute hints.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Pok&eacute;dle — PokeQuiz">
+	<meta property="og:description" content="Guess the daily mystery Pokémon in 6 attempts with attribute hints.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/puzzle-wordle">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Pok&eacute;dle — PokeQuiz">
+	<meta name="twitter:description" content="Guess the daily mystery Pokémon in 6 attempts with attribute hints.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle-wordle.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="quiz.html">Quizzes</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card">
+			<div class="wordle-wrap">
+
+				<!-- Game section -->
+				<div id="wordleGame">
+					<div class="wordle-head">
+						<a class="back-link" href="puzzle.html" style="display:inline-block;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--poke-red);text-decoration:none;">&larr; Puzzle Hub</a>
+						<div class="eyebrow" style="justify-content:center;">
+							<span class="dot"></span>
+							<span>Daily Puzzle</span>
+						</div>
+						<h1>Pok&eacute;dle</h1>
+						<p class="lede">Guess the mystery Pok&eacute;mon in 6 attempts. Hints reveal after each guess!</p>
+					</div>
+
+					<!-- Stats -->
+					<div class="wordle-stats">
+						<div class="wordle-stat">
+							<span class="ws-num" id="wordleStatStreak">0</span>
+							<span class="ws-label">Win Streak</span>
+						</div>
+						<div class="wordle-stat">
+							<span class="ws-num">6</span>
+							<span class="ws-label">Max Guesses</span>
+						</div>
+					</div>
+
+					<!-- Legend -->
+					<div class="wordle-legend">
+						<span class="wl-item"><span class="wl-dot correct"></span> Correct</span>
+						<span class="wl-item"><span class="wl-dot close"></span> Close / Partial</span>
+						<span class="wl-item"><span class="wl-dot wrong"></span> Wrong</span>
+					</div>
+
+					<!-- Input area -->
+					<div class="wordle-input-wrap">
+						<input
+							id="wordleInput"
+							class="wordle-input"
+							type="text"
+							placeholder="Type a Pok&eacute;mon name&hellip;"
+							autocomplete="off"
+							autocorrect="off"
+							autocapitalize="off"
+							spellcheck="false"
+							maxlength="32"
+						>
+						<button id="wordleGuessBtn" class="btn wordle-guess-btn" type="button">Guess</button>
+						<div id="wordleAC" class="wordle-autocomplete" hidden></div>
+					</div>
+
+					<!-- Feedback -->
+					<div id="wordleFeedback" class="wordle-feedback" aria-live="polite"></div>
+
+					<!-- Remaining -->
+					<div id="wordleRemaining" class="wordle-remaining"></div>
+
+					<!-- Guess table -->
+					<div class="wordle-table-wrap">
+						<table class="wordle-table" aria-label="Guess history">
+							<thead>
+								<tr>
+									<th>Pok&eacute;mon</th>
+									<th>Gen</th>
+									<th>Type 1</th>
+									<th>Type 2</th>
+									<th>Height</th>
+									<th>Legendary</th>
+								</tr>
+							</thead>
+							<tbody id="wordleTbody">
+								<tr><td colspan="6" class="wordle-empty">Make your first guess above!</td></tr>
+							</tbody>
+						</table>
+					</div>
+
+					<!-- Hint key -->
+					<div style="margin-top:12px;background:rgba(255,203,5,0.10);border:1px solid rgba(255,203,5,0.35);border-radius:10px;padding:12px 16px;font-size:12px;color:#7a5700;">
+						<strong>Height:</strong> Tiny &lt;0.5m &bull; Small 0.5–1m &bull; Medium 1–2m &bull; Large 2–4m &bull; Huge &gt;4m
+					</div>
+				</div>
+
+				<!-- Result section -->
+				<div id="wordleResult" class="wordle-result" hidden>
+					<div class="eyebrow" style="justify-content:center;margin-bottom:16px;">
+						<span class="dot"></span>
+						<span>Puzzle Complete</span>
+					</div>
+					<h2 id="wordleResultTitle">Got it!</h2>
+
+					<p id="wordleResultAnswer" class="wordle-result-answer"></p>
+
+					<div class="wordle-result-stats">
+						<div class="wordle-result-stat">
+							<span class="wrs-num" id="wordleResultStreak">0</span>
+							<span class="wrs-label">Win Streak</span>
+						</div>
+						<div class="wordle-result-stat">
+							<span class="wrs-num" id="wordleResultGuesses">—</span>
+							<span class="wrs-label">Guesses Used</span>
+						</div>
+					</div>
+
+					<div id="wordleResultTokens"></div>
+
+					<div class="wordle-result-actions">
+						<button id="wordlePlayAgain" class="btn" type="button">Back to Puzzle Hub</button>
+						<a href="puzzle-connections.html" class="btn btn-secondary">Try Connections &rarr;</a>
+					</div>
+				</div>
+
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle-wordle.js" defer></script>
+</body>
+</html>

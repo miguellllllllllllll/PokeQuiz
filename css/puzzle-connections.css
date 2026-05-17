@@ -1,0 +1,355 @@
+/* ── Connections Layout ────────────────────────────────────────────────── */
+
+.connections-wrap {
+	max-width: 680px;
+	margin: 0 auto;
+}
+
+.connections-head {
+	text-align: center;
+	margin-bottom: 28px;
+}
+
+.connections-head h1 {
+	font-size: 22px;
+	margin: 8px 0 6px;
+}
+
+.connections-head .lede {
+	color: var(--muted);
+	font-size: 13.5px;
+	margin: 0;
+}
+
+/* ── Stats bar ─────────────────────────────────────────────────────────── */
+
+.conn-stats {
+	display: flex;
+	justify-content: center;
+	gap: 28px;
+	margin-bottom: 20px;
+}
+
+.conn-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.conn-stat-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 18px;
+	color: var(--poke-red);
+	text-shadow: 1px 1px 0 var(--poke-black);
+	line-height: 1;
+}
+
+.conn-stat-label {
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	color: var(--muted);
+}
+
+/* ── Strikes ───────────────────────────────────────────────────────────── */
+
+.conn-strikes {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	margin-bottom: 24px;
+}
+
+.conn-strikes-label {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+	color: var(--muted);
+}
+
+.conn-balls {
+	display: flex;
+	gap: 8px;
+}
+
+.conn-ball {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background:
+		radial-gradient(circle at 50% 38%, #fff 0 26%, var(--poke-black) 27% 30%,
+			var(--poke-red) 31% 100%);
+	border: 2px solid var(--poke-black);
+	box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+	transition: filter 0.3s, transform 0.2s;
+	position: relative;
+}
+
+.conn-ball::after {
+	content: '';
+	position: absolute;
+	top: 45%;
+	left: 5%;
+	right: 5%;
+	height: 2px;
+	background: var(--poke-black);
+	border-radius: 999px;
+}
+
+.conn-ball.used {
+	background:
+		radial-gradient(circle at 50% 38%, #aaa 0 26%, #555 27% 30%,
+			#444 31% 100%);
+	filter: grayscale(0.6) brightness(0.7);
+	transform: scale(0.85);
+}
+
+/* ── Grid ──────────────────────────────────────────────────────────────── */
+
+.conn-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.conn-pill {
+	padding: 14px 8px;
+	background: #f5f5f5;
+	border: 2px solid #ddd;
+	border-radius: 10px;
+	font-size: 11.5px;
+	font-weight: 700;
+	text-align: center;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.1s;
+	font-family: 'Inter', sans-serif;
+	color: var(--ink);
+	letter-spacing: 0.2px;
+	line-height: 1.3;
+	user-select: none;
+	min-height: 56px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.conn-pill:hover {
+	background: #ececec;
+	border-color: #bbb;
+	transform: translateY(-1px);
+}
+
+.conn-pill.selected {
+	background: var(--poke-black);
+	border-color: var(--poke-black);
+	color: #fff;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+.conn-pill.shake {
+	animation: connShake 0.4s ease;
+}
+
+@keyframes connShake {
+	0%, 100% { transform: translateX(0); }
+	20% { transform: translateX(-6px); }
+	40% { transform: translateX(6px); }
+	60% { transform: translateX(-4px); }
+	80% { transform: translateX(4px); }
+}
+
+/* ── Solved groups ─────────────────────────────────────────────────────── */
+
+.conn-solved-groups {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 16px;
+}
+
+.conn-solved-group {
+	border-radius: 10px;
+	padding: 14px 16px;
+	animation: groupPop 0.35s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+
+@keyframes groupPop {
+	from { opacity: 0; transform: scaleY(0.6); }
+	to { opacity: 1; transform: scaleY(1); }
+}
+
+.conn-solved-group.tier-yellow {
+	background: #f9e400;
+	border: 2px solid #c9b800;
+}
+
+.conn-solved-group.tier-green {
+	background: #68b35d;
+	border: 2px solid #4a8540;
+	color: #fff;
+}
+
+.conn-solved-group.tier-blue {
+	background: #4e6fce;
+	border: 2px solid #2e4fae;
+	color: #fff;
+}
+
+.conn-solved-group.tier-purple {
+	background: #8b4db8;
+	border: 2px solid #622f8f;
+	color: #fff;
+}
+
+.csg-label {
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 1.2px;
+	opacity: 0.75;
+	margin-bottom: 4px;
+}
+
+.csg-title {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 12px;
+	line-height: 1.4;
+	margin-bottom: 6px;
+}
+
+.csg-members {
+	font-size: 13px;
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+/* ── Controls ──────────────────────────────────────────────────────────── */
+
+.conn-controls {
+	display: flex;
+	gap: 10px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-bottom: 16px;
+}
+
+/* ── Feedback ──────────────────────────────────────────────────────────── */
+
+.conn-feedback {
+	text-align: center;
+	font-size: 14px;
+	font-weight: 700;
+	min-height: 24px;
+	margin-bottom: 16px;
+	color: var(--poke-red);
+}
+
+/* ── Result screen ─────────────────────────────────────────────────────── */
+
+.conn-result {
+	text-align: center;
+}
+
+.conn-result h2 {
+	font-size: 20px;
+	margin-bottom: 10px;
+}
+
+.conn-result-stats {
+	display: flex;
+	justify-content: center;
+	gap: 24px;
+	margin: 24px 0;
+}
+
+.conn-result-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+
+.crs-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 28px;
+	color: var(--poke-red);
+	text-shadow: 2px 2px 0 var(--poke-black);
+}
+
+.crs-label {
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	color: var(--muted);
+}
+
+.conn-result-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-top: 20px;
+}
+
+/* ── Token toast ───────────────────────────────────────────────────────── */
+
+.token-burst {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 18px;
+	background: linear-gradient(180deg, var(--poke-yellow) 0%, #e6a700 100%);
+	border: 2px solid var(--poke-black);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	color: var(--poke-black);
+	box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+	animation: tokenPop 0.4s cubic-bezier(.34,1.56,.64,1);
+	margin-top: 12px;
+}
+
+@keyframes tokenPop {
+	from { opacity: 0; transform: scale(0.6); }
+	to { opacity: 1; transform: scale(1); }
+}
+
+/* ── One-away hint ─────────────────────────────────────────────────────── */
+
+.one-away-toast {
+	display: inline-block;
+	padding: 6px 16px;
+	background: rgba(255,203,5,0.18);
+	border: 1px solid rgba(255,203,5,0.6);
+	border-radius: 999px;
+	font-size: 13px;
+	font-weight: 700;
+	color: #7a5700;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+	.conn-grid {
+		grid-template-columns: repeat(4, 1fr);
+		gap: 7px;
+	}
+
+	.conn-pill {
+		font-size: 10px;
+		padding: 10px 4px;
+		min-height: 48px;
+	}
+
+	.csg-title { font-size: 10px; }
+
+	.conn-result-stats { gap: 14px; }
+	.crs-num { font-size: 22px; }
+}

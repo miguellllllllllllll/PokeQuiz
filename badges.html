@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Gym Badges &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Your PokeQuiz gym badge collection — 8 Kanto badges earned through in-game achievements.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Gym Badges — PokeQuiz">
+	<meta property="og:description" content="Earn all 8 Kanto gym badges through PokeQuiz achievements.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/badges">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Gym Badges — PokeQuiz">
+	<meta name="twitter:description" content="Earn all 8 Kanto gym badges through PokeQuiz achievements.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/badges.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="quizzes.html">Quizzes</a>
+			<a href="puzzle.html">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container badges-page">
+		<a class="back-link" href="trainer-card.html">&larr; Back to Trainer Card</a>
+
+		<!-- Page header -->
+		<div class="badges-hero">
+			<div class="badges-hero-bg" aria-hidden="true"></div>
+			<div class="badges-hero-inner">
+				<div class="badges-eyebrow">
+					<span class="badges-dot"></span>
+					<span>Kanto Gym Badges</span>
+				</div>
+				<h1 class="badges-title">Badge Case</h1>
+				<p class="badges-subtitle">Earn badges by completing challenges across PokeQuiz.</p>
+				<div class="badges-count-pill" id="badgesCountPill">
+					<span id="badgesEarnedCount">0</span> / 8 Badges
+				</div>
+			</div>
+		</div>
+
+		<!-- Badge Case Grid -->
+		<section class="card badges-card">
+			<header class="section-head">
+				<h2>Kanto Badge Case</h2>
+				<p>Complete challenges to earn badges. Unearned badges appear in grayscale.</p>
+			</header>
+			<div class="badges-case" id="badgesCase" aria-label="Badge collection">
+				<!-- Rendered by JS -->
+			</div>
+		</section>
+
+		<!-- Legend / Tips -->
+		<section class="card badges-tips-card">
+			<header class="section-head">
+				<h2>How to Earn Badges</h2>
+				<p>Each badge has a unique challenge. Track your progress here.</p>
+			</header>
+			<div class="badges-tips-list" id="badgesTipsList">
+				<!-- Rendered by JS -->
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script src="js/badges.js" defer></script>
+	<script defer>
+	(function () {
+		'use strict';
+
+		function init() {
+			if (!window.PokeBadges) return;
+
+			const earned = PokeBadges.computeAndSave();
+			const count  = PokeBadges.countEarned(earned);
+			const meta   = PokeBadges.meta;
+
+			// Update count pill
+			const countEl = document.getElementById('badgesEarnedCount');
+			if (countEl) countEl.textContent = count;
+
+			// Render badge case
+			const caseEl = document.getElementById('badgesCase');
+			if (caseEl) {
+				caseEl.innerHTML = meta.map(badge => {
+					const isEarned = !!earned[badge.id];
+					return `
+						<div class="badge-slot${isEarned ? ' earned' : ' locked'}" data-id="${badge.id}" style="--badge-color: ${badge.color};">
+							<div class="badge-slot-inner">
+								<div class="badge-icon-wrap" aria-hidden="true">
+									<span class="badge-emoji">${badge.emoji}</span>
+									${!isEarned ? '<span class="badge-lock">🔒</span>' : ''}
+									${isEarned ? '<span class="badge-shine"></span>' : ''}
+								</div>
+								<div class="badge-info">
+									<div class="badge-name">${badge.name}</div>
+									<div class="badge-gym">${badge.gym} · ${badge.city}</div>
+									${isEarned
+										? '<div class="badge-status earned-label">✓ Earned</div>'
+										: `<div class="badge-status locked-label">🔒 Locked</div>`
+									}
+								</div>
+							</div>
+						</div>
+					`;
+				}).join('');
+			}
+
+			// Render tips list
+			const tipsEl = document.getElementById('badgesTipsList');
+			if (tipsEl) {
+				tipsEl.innerHTML = meta.map(badge => {
+					const isEarned = !!earned[badge.id];
+					return `
+						<div class="tip-row${isEarned ? ' tip-earned' : ''}">
+							<span class="tip-emoji">${badge.emoji}</span>
+							<div class="tip-body">
+								<div class="tip-name">${badge.name}</div>
+								<div class="tip-req">${badge.unlock}</div>
+							</div>
+							<div class="tip-status">${isEarned ? '<span class="tip-check">✓</span>' : '<span class="tip-x">–</span>'}</div>
+						</div>
+					`;
+				}).join('');
+			}
+		}
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', init);
+		} else {
+			init();
+		}
+	})();
+	</script>
+</body>
+</html>

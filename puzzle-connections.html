@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Connections &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Group 16 Pokémon into 4 categories in this daily Pokémon Connections puzzle.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Pokémon Connections — PokeQuiz">
+	<meta property="og:description" content="Group 16 Pokémon into 4 categories in this daily Pokémon Connections puzzle.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/puzzle-connections">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Pokémon Connections — PokeQuiz">
+	<meta name="twitter:description" content="Group 16 Pokémon into 4 categories in this daily Pokémon Connections puzzle.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle-connections.css">
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="quiz.html">Quizzes</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Name</span>
+					<span class="pp-name-view">&mdash;</span>
+				</div>
+				<div class="pp-row">
+					<span class="pp-row-label">Best Score</span>
+					<span class="pp-score-view">&mdash;</span>
+				</div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card">
+			<div class="connections-wrap">
+
+				<!-- Game section -->
+				<div id="connGame">
+					<div class="connections-head">
+						<a class="back-link" href="puzzle.html" style="display:inline-block;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--poke-red);text-decoration:none;">&larr; Puzzle Hub</a>
+						<div class="eyebrow" style="justify-content:center;">
+							<span class="dot"></span>
+							<span>Daily Puzzle</span>
+						</div>
+						<h1>Pok&eacute;mon Connections</h1>
+						<p class="lede">Select 4 Pok&eacute;mon that share a common theme. 4 strikes and it's over!</p>
+					</div>
+
+					<!-- Stats -->
+					<div class="conn-stats">
+						<div class="conn-stat">
+							<span class="conn-stat-num" id="connStreak">0</span>
+							<span class="conn-stat-label">Best Streak</span>
+						</div>
+						<div class="conn-stat">
+							<span class="conn-stat-num" id="connBest">&mdash;</span>
+							<span class="conn-stat-label">Fewest Mistakes</span>
+						</div>
+					</div>
+
+					<!-- Strikes -->
+					<div class="conn-strikes">
+						<span class="conn-strikes-label">Strikes:</span>
+						<div class="conn-balls">
+							<div class="conn-ball" aria-label="Strike 1"></div>
+							<div class="conn-ball" aria-label="Strike 2"></div>
+							<div class="conn-ball" aria-label="Strike 3"></div>
+							<div class="conn-ball" aria-label="Strike 4"></div>
+						</div>
+					</div>
+
+					<!-- Solved groups appear here -->
+					<div id="connSolvedGroups" class="conn-solved-groups"></div>
+
+					<!-- Pokémon grid -->
+					<div id="connGrid" class="conn-grid" role="group" aria-label="Pokémon selection grid"></div>
+
+					<!-- Feedback -->
+					<div id="connFeedback" class="conn-feedback" aria-live="polite"></div>
+
+					<!-- Controls -->
+					<div class="conn-controls">
+						<button id="connDeselect" class="btn btn-secondary" type="button">Deselect All</button>
+						<button id="connSubmit" class="btn" type="button" disabled>Submit</button>
+					</div>
+
+					<!-- Legend -->
+					<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;font-size:11px;font-weight:700;color:var(--muted);">
+						<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#f9e400;display:inline-block;border:1px solid #c9b800;"></span> Easy</span>
+						<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#68b35d;display:inline-block;border:1px solid #4a8540;"></span> Medium</span>
+						<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#4e6fce;display:inline-block;border:1px solid #2e4fae;"></span> Hard</span>
+						<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#8b4db8;display:inline-block;border:1px solid #622f8f;"></span> Hardest</span>
+					</div>
+				</div>
+
+				<!-- Result section -->
+				<div id="connResult" class="conn-result" hidden>
+					<div class="eyebrow" style="justify-content:center;margin-bottom:16px;">
+						<span class="dot"></span>
+						<span>Puzzle Complete</span>
+					</div>
+					<h2 id="connResultTitle">Connections Complete!</h2>
+
+					<div class="conn-result-stats">
+						<div class="conn-result-stat">
+							<span class="crs-num" id="connResultStreak">0</span>
+							<span class="crs-label">Best Streak</span>
+						</div>
+						<div class="conn-result-stat">
+							<span class="crs-num" id="connResultMistakes">0</span>
+							<span class="crs-label">Today's Mistakes</span>
+						</div>
+						<div class="conn-result-stat">
+							<span class="crs-num" id="connResultBest">&mdash;</span>
+							<span class="crs-label">Fewest Mistakes</span>
+						</div>
+					</div>
+
+					<div id="connResultTokens"></div>
+
+					<div class="conn-result-actions">
+						<button id="connPlayAgain" class="btn" type="button">Back to Puzzle Hub</button>
+						<a href="puzzle-wordle.html" class="btn btn-secondary">Try Pok&eacute;dle &rarr;</a>
+					</div>
+				</div>
+
+			</div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script src="js/puzzle-connections.js" defer></script>
+</body>
+</html>

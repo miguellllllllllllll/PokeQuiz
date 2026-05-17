@@ -485,3 +485,363 @@
 		grid-template-columns: repeat(2, 1fr);
 	}
 }
+
+/* ── Gym Badge Mini Strip (hero) ─────────────────────────────────────────── */
+.tc-gym-strip {
+	margin-top: 14px;
+}
+
+.tc-gym-strip-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	text-decoration: none;
+	padding: 6px 14px 6px 10px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(246, 200, 76, 0.2);
+	border-radius: 999px;
+	transition: border-color 0.15s, background 0.15s;
+}
+
+.tc-gym-strip-link:hover {
+	border-color: rgba(246, 200, 76, 0.5);
+	background: rgba(246, 200, 76, 0.06);
+}
+
+.tc-gym-strip-label {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 1.5px;
+	color: rgba(255, 255, 255, 0.45);
+}
+
+.tc-gym-strip-icons {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+.tc-gym-badge-icon {
+	font-size: 18px;
+	line-height: 1;
+	display: inline-block;
+	filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+	transition: transform 0.1s;
+}
+
+.tc-gym-badge-icon:hover {
+	transform: scale(1.2);
+}
+
+.tc-gym-empty {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.3);
+	font-style: italic;
+}
+
+/* ── Section link ────────────────────────────────────────────────────────── */
+.tc-section-link {
+	color: var(--poke-red);
+	text-decoration: none;
+	font-weight: 700;
+	font-size: 13px;
+}
+.tc-section-link:hover { text-decoration: underline; }
+
+/* ── Gym Badges Card Grid ────────────────────────────────────────────────── */
+.tc-badges-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 10px;
+}
+
+@media (max-width: 600px) {
+	.tc-badges-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 380px) {
+	.tc-badges-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.tc-badge-tile {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 14px 8px 12px;
+	background: linear-gradient(160deg, #fafafa 0%, #fff8f0 100%);
+	border: 2px solid transparent;
+	border-radius: 14px;
+	text-align: center;
+	position: relative;
+	transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+	cursor: default;
+}
+
+.tc-badge-tile.earned {
+	border-color: var(--badge-color, var(--poke-yellow));
+	box-shadow: 0 3px 12px rgba(180, 140, 20, 0.2);
+}
+
+.tc-badge-tile.locked {
+	filter: grayscale(1) brightness(0.85);
+	border-color: rgba(0, 0, 0, 0.07);
+}
+
+.tc-badge-tile:hover {
+	transform: translateY(-2px);
+}
+
+.tc-badge-tile-emoji {
+	font-size: 28px;
+	line-height: 1;
+	display: block;
+}
+
+.tc-badge-tile-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 6px;
+	color: var(--poke-red);
+	line-height: 1.4;
+}
+
+.tc-badge-tile.locked .tc-badge-tile-name {
+	color: var(--muted);
+}
+
+.tc-badge-tile-check {
+	position: absolute;
+	top: 6px;
+	right: 8px;
+	font-size: 10px;
+	color: #22c55e;
+	font-weight: 900;
+}
+
+.tc-badge-tile-lock {
+	position: absolute;
+	top: 6px;
+	right: 7px;
+	font-size: 10px;
+	opacity: 0.5;
+}
+
+/* ── Achievements Grid ───────────────────────────────────────────────────── */
+.tc-achievements-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tc-ach-card {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 14px 16px;
+	border-radius: 14px;
+	border: 1.5px solid rgba(0, 0, 0, 0.06);
+	background: linear-gradient(160deg, #fafafa 0%, #fff8f0 100%);
+	transition: border-color 0.12s, transform 0.1s;
+}
+
+.tc-ach-card.earned {
+	border-color: rgba(34, 197, 94, 0.35);
+	background: linear-gradient(160deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.tc-ach-card.locked {
+	opacity: 0.65;
+}
+
+.tc-ach-card:hover {
+	transform: translateX(2px);
+}
+
+.tc-ach-icon {
+	font-size: 28px;
+	flex: 0 0 36px;
+	text-align: center;
+	line-height: 1;
+}
+
+.tc-ach-body {
+	flex: 1;
+	min-width: 0;
+}
+
+.tc-ach-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: var(--poke-red);
+	margin-bottom: 4px;
+}
+
+.tc-ach-card.earned .tc-ach-name {
+	color: #15803d;
+}
+
+.tc-ach-desc {
+	font-size: 12px;
+	color: var(--muted);
+	line-height: 1.4;
+}
+
+.tc-ach-status {
+	flex: 0 0 auto;
+}
+
+.tc-ach-check {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	background: #22c55e;
+	color: #fff;
+	border-radius: 999px;
+	font-size: 9px;
+	font-weight: 900;
+	font-family: 'Press Start 2P', monospace;
+	letter-spacing: 0.5px;
+	white-space: nowrap;
+}
+
+.tc-ach-lock {
+	font-size: 18px;
+	opacity: 0.4;
+}
+
+/* ── Pokédex Section ─────────────────────────────────────────────────────── */
+.tc-dex-progress-wrap {
+	margin-bottom: 22px;
+}
+
+.tc-dex-progress-bar-outer {
+	height: 18px;
+	background: rgba(0, 0, 0, 0.06);
+	border-radius: 999px;
+	overflow: hidden;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	margin-bottom: 8px;
+}
+
+.tc-dex-progress-bar-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--poke-red) 0%, #ff6b6b 50%, var(--poke-yellow) 100%);
+	border-radius: 999px;
+	transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+	min-width: 0;
+}
+
+.tc-dex-progress-meta {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.tc-dex-count {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	color: var(--poke-red);
+}
+
+.tc-dex-pct {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 13px;
+	color: var(--poke-yellow);
+	text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+}
+
+/* Recent list */
+.tc-dex-recent-wrap {
+	margin-bottom: 22px;
+}
+
+.tc-dex-recent-label {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 1.2px;
+	color: var(--muted);
+	margin-bottom: 10px;
+}
+
+.tc-dex-recent-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.tc-dex-recent-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 5px 12px;
+	background: rgba(238, 21, 21, 0.07);
+	border: 1px solid rgba(238, 21, 21, 0.15);
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--poke-red);
+}
+
+.tc-dex-recent-date {
+	color: var(--muted);
+	font-weight: 400;
+	font-size: 11px;
+}
+
+.tc-dex-none {
+	font-size: 13px;
+	color: var(--muted);
+	font-style: italic;
+}
+
+/* Mini grid */
+.tc-dex-grid-wrap {
+	border-top: 1px dashed rgba(0, 0, 0, 0.08);
+	padding-top: 18px;
+}
+
+.tc-dex-grid-label {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 1.2px;
+	color: var(--muted);
+	margin-bottom: 12px;
+}
+
+.tc-dex-mini-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+}
+
+.tc-dex-sq {
+	width: 10px;
+	height: 10px;
+	border-radius: 2px;
+	background: rgba(0, 0, 0, 0.1);
+	display: inline-block;
+	transition: background 0.15s;
+}
+
+.tc-dex-sq.reg {
+	background: var(--poke-red);
+	box-shadow: 0 0 4px rgba(238, 21, 21, 0.3);
+}
+
+/* ── Responsive additions ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+	.tc-badges-grid {
+		grid-template-columns: repeat(4, 1fr);
+	}
+
+	.tc-ach-card {
+		padding: 12px 12px;
+	}
+
+	.tc-ach-icon {
+		font-size: 22px;
+		flex: 0 0 28px;
+	}
+}

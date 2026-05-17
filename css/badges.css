@@ -1,0 +1,350 @@
+/* ── Badges Page ─────────────────────────────────────────────────────────── */
+
+.badges-page {
+	max-width: 960px;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.badges-hero {
+	position: relative;
+	background: #0d0d0d;
+	border-radius: 22px;
+	border: 2px solid var(--poke-yellow);
+	box-shadow:
+		0 0 0 4px rgba(246, 200, 76, 0.12),
+		0 12px 40px rgba(0, 0, 0, 0.45),
+		inset 0 1px 0 rgba(255, 255, 255, 0.06);
+	padding: 40px 44px;
+	margin-bottom: 28px;
+	overflow: hidden;
+}
+
+.badges-hero-bg {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(ellipse 60% 80% at 90% 50%, rgba(246, 200, 76, 0.08) 0%, transparent 70%),
+		radial-gradient(ellipse 40% 60% at 10% 50%, rgba(238, 21, 21, 0.07) 0%, transparent 70%);
+}
+
+.badges-hero-bg::after {
+	content: '';
+	position: absolute;
+	right: -80px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 280px;
+	height: 280px;
+	background-image: url('../Pictures/pokeball.png');
+	background-size: contain;
+	background-repeat: no-repeat;
+	opacity: 0.04;
+	animation: badgesSpin 40s linear infinite;
+}
+
+@keyframes badgesSpin {
+	from { transform: translateY(-50%) rotate(0deg); }
+	to   { transform: translateY(-50%) rotate(360deg); }
+}
+
+.badges-hero-inner {
+	position: relative;
+	z-index: 1;
+}
+
+.badges-eyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-family: 'Inter', sans-serif;
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--poke-yellow);
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	margin-bottom: 14px;
+	opacity: 0.85;
+}
+
+.badges-dot {
+	width: 7px;
+	height: 7px;
+	background: var(--poke-yellow);
+	border-radius: 50%;
+	box-shadow: 0 0 8px rgba(246, 200, 76, 0.6);
+	animation: badgePulse 2.2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+	0%, 100% { box-shadow: 0 0 8px rgba(246, 200, 76, 0.6); }
+	50%       { box-shadow: 0 0 16px rgba(246, 200, 76, 0.2); }
+}
+
+.badges-title {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 28px;
+	color: var(--poke-yellow);
+	text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6), 0 0 20px rgba(246, 200, 76, 0.2);
+	margin: 0 0 10px;
+	line-height: 1.2;
+}
+
+.badges-subtitle {
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.5);
+	margin: 0 0 18px;
+}
+
+.badges-count-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 18px;
+	background: rgba(246, 200, 76, 0.1);
+	border: 1px solid rgba(246, 200, 76, 0.35);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	color: var(--poke-yellow);
+	letter-spacing: 0.5px;
+}
+
+/* ── Badge Case Grid ─────────────────────────────────────────────────────── */
+.badges-card {
+	margin-bottom: 22px;
+}
+
+.badges-case {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+}
+
+@media (max-width: 700px) {
+	.badges-case {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 420px) {
+	.badges-case {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+/* Individual badge slot */
+.badge-slot {
+	border-radius: 18px;
+	border: 2px solid transparent;
+	padding: 2px;
+	transition: transform 0.15s, box-shadow 0.15s;
+	cursor: default;
+}
+
+.badge-slot.earned {
+	border-color: var(--badge-color, var(--poke-yellow));
+	box-shadow: 0 4px 18px rgba(180, 140, 20, 0.25);
+	animation: badgeGlow 3s ease-in-out infinite;
+}
+
+@keyframes badgeGlow {
+	0%, 100% { box-shadow: 0 4px 18px rgba(180, 140, 20, 0.2); }
+	50%       { box-shadow: 0 4px 28px rgba(180, 140, 20, 0.4); }
+}
+
+.badge-slot.locked {
+	border-color: rgba(255, 255, 255, 0.1);
+	filter: grayscale(1) brightness(0.55);
+}
+
+.badge-slot:hover {
+	transform: translateY(-3px);
+}
+
+.badge-slot-inner {
+	background: linear-gradient(160deg, #111 0%, #1a1a1a 100%);
+	border-radius: 16px;
+	padding: 20px 16px 18px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	text-align: center;
+	min-height: 160px;
+	justify-content: center;
+}
+
+.badge-icon-wrap {
+	position: relative;
+	width: 64px;
+	height: 64px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.badge-emoji {
+	font-size: 40px;
+	line-height: 1;
+	display: block;
+	filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+}
+
+.badge-lock {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	font-size: 16px;
+	line-height: 1;
+	opacity: 0.7;
+}
+
+.badge-shine {
+	position: absolute;
+	inset: -6px;
+	border-radius: 50%;
+	background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.18) 0%, transparent 70%);
+	pointer-events: none;
+}
+
+.badge-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.badge-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	color: var(--poke-yellow);
+	letter-spacing: 0.3px;
+	line-height: 1.4;
+}
+
+.badge-slot.locked .badge-name {
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.badge-gym {
+	font-size: 10px;
+	color: rgba(255, 255, 255, 0.4);
+	font-weight: 600;
+}
+
+.badge-status {
+	margin-top: 4px;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+	padding: 3px 10px;
+	border-radius: 999px;
+}
+
+.earned-label {
+	background: rgba(34, 197, 94, 0.15);
+	color: #22c55e;
+	border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.locked-label {
+	background: rgba(255, 255, 255, 0.05);
+	color: rgba(255, 255, 255, 0.3);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Tips / How-To Section ──────────────────────────────────────────────── */
+.badges-tips-card {
+	margin-bottom: 22px;
+}
+
+.badges-tips-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.tip-row {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 14px 16px;
+	border-radius: 12px;
+	transition: background 0.12s;
+}
+
+.tip-row:hover {
+	background: rgba(0, 0, 0, 0.03);
+}
+
+.tip-row.tip-earned {
+	background: rgba(34, 197, 94, 0.06);
+}
+
+.tip-emoji {
+	font-size: 26px;
+	flex: 0 0 32px;
+	text-align: center;
+	line-height: 1;
+}
+
+.tip-body {
+	flex: 1;
+	min-width: 0;
+}
+
+.tip-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: var(--poke-red);
+	margin-bottom: 4px;
+}
+
+.tip-req {
+	font-size: 13px;
+	color: var(--muted);
+	line-height: 1.4;
+}
+
+.tip-status {
+	flex: 0 0 32px;
+	text-align: center;
+}
+
+.tip-check {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	background: #22c55e;
+	color: #fff;
+	border-radius: 50%;
+	font-size: 13px;
+	font-weight: 900;
+}
+
+.tip-x {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	background: rgba(0, 0, 0, 0.06);
+	color: rgba(0, 0, 0, 0.3);
+	border-radius: 50%;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+	.badges-hero {
+		padding: 26px 22px;
+	}
+
+	.badges-title {
+		font-size: 18px;
+	}
+}

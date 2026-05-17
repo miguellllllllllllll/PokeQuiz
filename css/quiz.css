@@ -336,3 +336,190 @@
 	text-transform: uppercase;
 	letter-spacing: 0.6px;
 }
+
+/* --- Feature 1 & 2: Mode badges --- */
+.mode-badges {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.mode-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 4px 12px;
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	letter-spacing: 0.5px;
+	font-weight: 700;
+	border: 2px solid transparent;
+	box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+}
+
+.mode-badge-nuzlocke {
+	background: #1a0000;
+	color: #ff4444;
+	border-color: #ff4444;
+	text-shadow: 0 0 8px rgba(255,68,68,0.6);
+}
+
+.mode-badge-timed {
+	background: #001a2a;
+	color: #facc15;
+	border-color: #facc15;
+	text-shadow: 0 0 8px rgba(250,204,21,0.5);
+}
+
+/* --- Feature 2: Timer bar --- */
+.timer-wrap {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 10px;
+	padding: 6px 0;
+}
+
+.timer-bar-track {
+	flex: 1;
+	height: 12px;
+	background: #f5e7e7;
+	border-radius: 999px;
+	overflow: hidden;
+	border: 1.5px solid rgba(0,0,0,0.08);
+}
+
+.timer-bar-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #ef4444, #dc2626);
+	width: 100%;
+	border-radius: 999px;
+	box-shadow: 0 0 8px rgba(239,68,68,0.5);
+}
+
+.timer-seconds {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 14px;
+	color: var(--poke-red);
+	min-width: 28px;
+	text-align: right;
+}
+
+/* --- Feature 1: Nuzlocke results --- */
+.results-nuzlocke {
+	background: linear-gradient(135deg, #0d0000 0%, #1a0000 60%, #2a0000 100%) !important;
+	border-color: #ff4444 !important;
+	color: #fff !important;
+}
+
+.nuzlocke-skull {
+	font-size: 64px;
+	line-height: 1;
+	margin-bottom: 8px;
+	filter: drop-shadow(0 0 16px rgba(255,0,0,0.7));
+	animation: nuzPulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes nuzPulse {
+	from { transform: scale(1); filter: drop-shadow(0 0 12px rgba(255,0,0,0.6)); }
+	to { transform: scale(1.08); filter: drop-shadow(0 0 28px rgba(255,0,0,0.9)); }
+}
+
+.nuzlocke-title {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 20px;
+	color: #ff4444;
+	text-shadow: 3px 3px 0 #000;
+	margin: 0 0 12px;
+}
+
+.nuzlocke-survived {
+	font-size: 16px;
+	color: #ccc;
+	margin-bottom: 16px;
+	line-height: 1.8;
+}
+
+.nuzlocke-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 48px;
+	color: #ff4444;
+	text-shadow: 4px 4px 0 #000;
+	display: block;
+}
+
+/* --- Feature 2: Timed summary --- */
+.timed-summary {
+	font-size: 13px;
+	color: #92400e;
+	margin-bottom: 8px;
+	padding: 6px 14px;
+	background: rgba(250,204,21,0.12);
+	border-radius: 8px;
+	border: 1px solid rgba(250,204,21,0.4);
+	display: inline-block;
+}
+
+/* --- Feature 5: Challenge banner --- */
+.challenge-banner {
+	background: linear-gradient(90deg, var(--poke-red) 0%, #b80f0f 100%);
+	color: #fff;
+	padding: 10px 20px;
+	font-size: 13px;
+	font-weight: 700;
+	text-align: center;
+	border-radius: 10px 10px 0 0;
+	border-bottom: 3px solid var(--poke-yellow);
+	margin: -28px -28px 20px -28px;
+	letter-spacing: 0.3px;
+}
+
+/* --- Feature 5: Challenge result --- */
+.challenge-result {
+	padding: 10px 20px;
+	border-radius: 10px;
+	font-weight: 700;
+	font-size: 15px;
+	margin-bottom: 12px;
+}
+
+.challenge-win {
+	background: rgba(34,197,94,0.15);
+	border: 2px solid #22c55e;
+	color: #15803d;
+}
+
+.challenge-lose {
+	background: rgba(239,68,68,0.1);
+	border: 2px solid #ef4444;
+	color: #b91c1c;
+}
+
+/* --- Feature 5: Toast notification --- */
+.pq-toast {
+	position: fixed;
+	bottom: 28px;
+	left: 50%;
+	transform: translateX(-50%) translateY(80px);
+	background: #111;
+	color: var(--poke-yellow);
+	padding: 12px 24px;
+	border-radius: 12px;
+	border: 2px solid var(--poke-yellow);
+	font-family: 'Press Start 2P', monospace;
+	font-size: 10px;
+	line-height: 1.6;
+	text-align: center;
+	z-index: 9999;
+	box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+	opacity: 0;
+	transition: transform 0.3s ease, opacity 0.3s ease;
+	max-width: 340px;
+	pointer-events: none;
+}
+
+.pq-toast.pq-toast-show {
+	opacity: 1;
+	transform: translateX(-50%) translateY(0);
+}

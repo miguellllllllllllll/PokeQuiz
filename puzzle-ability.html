@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ability Guesser &middot; PokeQuiz</title>
+  <meta name="author" content="Angelo Miguel G. Vinluan">
+  <link rel="icon" type="image/png" href="Pictures/pokeball.png">
+  <meta name="description" content="Guess the Pokémon ability from its description in this PokeQuiz puzzle.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .puzzle-card {
+      max-width: 720px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+    .puzzle-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+    .puzzle-pokeball {
+      position: absolute; right: -130px; top: -130px;
+      width: 380px; opacity: 0.04;
+      animation: bgSpin 40s linear infinite;
+    }
+    @keyframes bgSpin { to { transform: rotate(360deg); } }
+    .puzzle-inner { position: relative; z-index: 1; }
+
+    /* ── Mode select ── */
+    .mode-select { padding: 8px; }
+    .back-link {
+      display: inline-block; font-size: 12px; font-weight: 700;
+      color: var(--muted); text-decoration: none; margin-bottom: 20px; letter-spacing: 0.4px;
+    }
+    .back-link:hover { color: var(--poke-red); }
+    .mode-select-head { margin-bottom: 28px; }
+    .mode-title-big { font-size: clamp(15px, 4vw, 22px); margin: 0 0 10px; line-height: 1.3; }
+    .lede { color: #444; font-size: 14px; margin: 0; }
+    .title-flicker { color: var(--poke-yellow); text-shadow: 2px 2px 0 var(--poke-black); }
+    .mode-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px;
+    }
+    @media (max-width: 480px) { .mode-grid { grid-template-columns: 1fr; } }
+    .mode-card {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 22px 14px; background: #fff; border: 2px solid rgba(0,0,0,0.1);
+      border-radius: 16px; cursor: pointer; font-family: inherit;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; text-align: center;
+    }
+    .mode-card:hover {
+      border-color: var(--poke-red); transform: translateY(-3px); box-shadow: var(--shadow-md);
+    }
+    .mode-card-title {
+      font-family: 'Press Start 2P', monospace; font-size: 11px;
+      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black);
+    }
+    .mode-card-sub { font-size: 12px; color: var(--muted); }
+    .mode-card-best { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .mode-card-best strong { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--poke-red); }
+    .diff-pill {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
+    }
+    .diff-a { background: rgba(59,76,202,0.1); color: #1e3a8a; }
+    .diff-b { background: rgba(234,179,8,0.14); color: #92400e; }
+    .mode-icon { font-size: 34px; }
+
+    /* ── Game header ── */
+    .game-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+    }
+    .mode-badge {
+      font-family: 'Press Start 2P', monospace; font-size: 9px;
+      padding: 5px 12px; background: var(--poke-black); color: var(--poke-yellow);
+      border-radius: 999px; letter-spacing: 0.5px;
+    }
+    .streak-group { display: flex; gap: 16px; align-items: center; }
+    .streak-tile { display: flex; flex-direction: column; align-items: center; }
+    .stat-num {
+      font-family: 'Press Start 2P', monospace; font-size: 18px;
+      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black); line-height: 1;
+    }
+    .stat-label {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.7px; margin-top: 2px;
+    }
+
+    /* ── Mode toggle tabs ── */
+    .tab-row {
+      display: flex; gap: 0; margin-bottom: 22px;
+      border: 2px solid rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px 8px; border: none; background: #fff; cursor: pointer;
+      font-family: inherit; font-size: 12px; font-weight: 700; color: var(--muted);
+      transition: background 0.15s, color 0.15s; letter-spacing: 0.3px;
+    }
+    .tab-btn.active { background: var(--poke-red); color: #fff; }
+    .tab-btn:first-child { border-right: 2px solid rgba(0,0,0,0.1); }
+
+    /* ── Prompt card ── */
+    .prompt-area {
+      background: linear-gradient(135deg, #f0f4ff, #eff6ff);
+      border: 2px solid rgba(59,76,202,0.15);
+      border-radius: 16px; padding: 24px; margin-bottom: 22px; text-align: center;
+    }
+    .prompt-label {
+      font-size: 11px; font-weight: 700; color: #3b4cca;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .prompt-text {
+      font-size: 16px; color: var(--ink); line-height: 1.6; font-weight: 600;
+    }
+    .pokemon-display {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .pokemon-emoji { font-size: 52px; line-height: 1; }
+    .pokemon-name-lbl {
+      font-family: 'Press Start 2P', monospace; font-size: 13px;
+      color: var(--poke-red); text-shadow: 1px 1px 0 var(--poke-black);
+    }
+    .pokemon-type-badge {
+      display: inline-flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; justify-content: center;
+    }
+    .type-tag {
+      padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px; color: #fff;
+    }
+
+    /* ── Choices ── */
+    .choices-label {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+    }
+    .choices-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px;
+    }
+    @media (max-width: 480px) { .choices-grid { grid-template-columns: 1fr; } }
+    .choice-btn {
+      padding: 14px 12px; background: #fff; border: 2px solid rgba(0,0,0,0.1);
+      border-radius: 12px; font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.12s ease; text-align: center; color: var(--ink);
+      line-height: 1.3;
+    }
+    .choice-btn:hover:not(:disabled) {
+      border-color: var(--poke-blue, #3b4cca); background: rgba(59,76,202,0.04);
+      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,76,202,0.1);
+    }
+    .choice-btn.correct { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+    .choice-btn.wrong   { background: #fee2e2; border-color: var(--poke-red); color: #b91c1c; }
+    .choice-btn:disabled { cursor: not-allowed; }
+
+    /* ── Feedback ── */
+    .feedback-box {
+      padding: 14px 18px; border-radius: 12px; font-weight: 700;
+      font-size: 15px; margin-bottom: 14px; text-align: center; display: none;
+    }
+    .feedback-box.correct-fb { background: #dcfce7; color: #15803d; border: 2px solid #bbf7d0; display: block; }
+    .feedback-box.wrong-fb   { background: #fee2e2; color: #b91c1c; border: 2px solid #fecaca; display: block; }
+
+    .controls-row {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    }
+
+    /* ── Token pop ── */
+    .token-pop {
+      position: fixed; bottom: 30px; right: 24px;
+      background: var(--poke-yellow); color: var(--poke-black);
+      font-weight: 800; font-size: 14px; padding: 10px 18px;
+      border-radius: 999px; border: 2px solid var(--poke-black);
+      box-shadow: 0 4px 0 rgba(0,0,0,0.3); z-index: 9999;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+    }
+    .token-pop.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Game over ── */
+    .game-over-inner { text-align: center; padding: 20px 0; }
+    .game-over-inner h2 { font-size: 20px; margin-bottom: 16px; }
+    .over-stats { display: flex; gap: 32px; justify-content: center; margin: 20px 0 24px; }
+    .over-tile  { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .over-num   {
+      font-family: 'Press Start 2P', monospace; font-size: 32px;
+      color: var(--poke-red); text-shadow: 2px 2px 0 var(--poke-black);
+    }
+    .over-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .over-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="play.html">Play</a>
+      <a href="quizzes.html">Quizzes</a>
+      <a href="puzzle.html" class="active">Puzzles</a>
+      <a href="ranking.html">Leaderboard</a>
+      <a href="camp.html">Camp</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card puzzle-card">
+      <div class="puzzle-bg" aria-hidden="true">
+        <img class="puzzle-pokeball" src="Pictures/pokeball.png" alt="">
+      </div>
+
+      <!-- MODE SELECT -->
+      <div id="modeSelect" class="puzzle-inner mode-select">
+        <a class="back-link" href="puzzle.html">&larr; Puzzle Hub</a>
+        <div class="mode-select-head">
+          <div class="eyebrow"><span class="dot"></span><span>New Puzzle</span></div>
+          <h1 class="mode-title-big">Ability <span class="title-flicker">Guesser</span></h1>
+          <p class="lede">Test your knowledge of Pok&eacute;mon abilities. Two ways to play &mdash; pick a mode.</p>
+        </div>
+        <div class="mode-grid">
+          <button class="mode-card" data-mode="ability-name" type="button">
+            <span class="diff-pill diff-a">Mode A</span>
+            <span class="mode-icon">📖</span>
+            <span class="mode-card-title">Description → Name</span>
+            <span class="mode-card-sub">Read the ability description.<br>Pick the correct ability name.</span>
+            <span class="mode-card-best">Best: <strong id="bestAbilityName">0</strong></span>
+          </button>
+          <button class="mode-card" data-mode="pokemon-ability" type="button">
+            <span class="diff-pill diff-b">Mode B</span>
+            <span class="mode-icon">🔍</span>
+            <span class="mode-card-title">Pokémon → Ability</span>
+            <span class="mode-card-sub">See the Pok&eacute;mon.<br>Pick its signature ability.</span>
+            <span class="mode-card-best">Best: <strong id="bestPokemonAbility">0</strong></span>
+          </button>
+        </div>
+        <p style="font-size:13px;color:var(--muted);text-align:center;">Both modes: right = streak +2 tokens &bull; Max 10 tokens/session</p>
+      </div>
+
+      <!-- GAME VIEW -->
+      <div id="gameView" class="puzzle-inner" hidden>
+        <div class="game-header">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <span class="mode-badge" id="modeBadge">Mode A</span>
+            <a class="back-link" href="#" id="quitLink" style="margin:0">&larr; Change Mode</a>
+          </div>
+          <div class="streak-group">
+            <div class="streak-tile">
+              <span class="stat-num" id="streakNum">0</span>
+              <span class="stat-label">Streak</span>
+            </div>
+            <div class="streak-tile">
+              <span class="stat-num" id="bestNum">0</span>
+              <span class="stat-label">Best</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-mode toggle inside game -->
+        <div class="tab-row" id="tabRow">
+          <button class="tab-btn active" data-tab="ability-name" type="button">Description → Ability Name</button>
+          <button class="tab-btn"        data-tab="pokemon-ability" type="button">Pokémon → Their Ability</button>
+        </div>
+
+        <div class="prompt-area" id="promptArea">
+          <div class="prompt-label" id="promptLabel">What ability is this?</div>
+          <div id="promptContent"></div>
+        </div>
+
+        <div class="choices-label">Pick the correct answer</div>
+        <div class="choices-grid" id="choicesGrid"></div>
+
+        <div class="feedback-box" id="feedbackBox"></div>
+
+        <div class="controls-row">
+          <button class="btn" id="nextBtn" hidden>Next &rarr;</button>
+        </div>
+      </div>
+
+      <!-- GAME OVER -->
+      <div id="gameOver" class="puzzle-inner" hidden>
+        <div class="game-over-inner">
+          <div class="eyebrow" style="justify-content:center;margin-bottom:12px;">
+            <span class="dot"></span><span>Run Over</span>
+          </div>
+          <h2>Game Over</h2>
+          <div class="over-stats">
+            <div class="over-tile">
+              <span class="over-num" id="finalStreak">0</span>
+              <span class="over-label">Streak</span>
+            </div>
+            <div class="over-tile">
+              <span class="over-num" id="finalBest">0</span>
+              <span class="over-label">Best</span>
+            </div>
+          </div>
+          <p id="gameOverMsg" style="color:#555;margin-bottom:20px;"></p>
+          <div class="over-actions">
+            <button class="btn" id="retryBtn" type="button">Try Again</button>
+            <button class="btn btn-secondary" id="modeBtn" type="button">Change Mode</button>
+            <a class="btn btn-ghost" href="puzzle.html">Puzzle Hub</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Made with care by Angelo Miguel G. Vinluan</footer>
+  <div class="token-pop" id="tokenPop">🪙 +<span id="tokenAmount">2</span> tokens!</div>
+
+  <script>
+  /* ================================================================
+     ABILITY DATA — 62 entries for Mode A (description → ability name)
+  ================================================================ */
+  const ABILITY_DATA = [
+    { ability:"Levitate",     description:"This Pokémon floats above the ground, making it immune to Ground-type moves, Spikes, Toxic Spikes, and the Arena Trap ability.", distractors:["Wonder Guard","Magic Guard","Lightning Rod","Air Lock"] },
+    { ability:"Wonder Guard", description:"Only moves that are super effective can hit this Pokémon.", distractors:["Levitate","Magic Guard","Sturdy","Battle Armor"] },
+    { ability:"Intimidate",   description:"Lowers the Attack stat of opposing Pokémon by one stage when this Pokémon enters battle.", distractors:["Pressure","Moxie","Hustle","Rivalry"] },
+    { ability:"Pressure",     description:"When this Pokémon is the target of a move, the opponent uses two PP instead of one.", distractors:["Intimidate","Unnerve","Mold Breaker","Scrappy"] },
+    { ability:"Speed Boost",  description:"This Pokémon's Speed stat increases by one stage at the end of every turn.", distractors:["Chlorophyll","Swift Swim","Unburden","Motor Drive"] },
+    { ability:"Magic Guard",  description:"This Pokémon only takes damage from direct attacks; all indirect damage such as poison, burn, and weather is ignored.", distractors:["Wonder Guard","Levitate","Immunity","Shield Dust"] },
+    { ability:"Mold Breaker", description:"This Pokémon's moves ignore the target's ability when that ability would affect the move.", distractors:["Pressure","Turboblaze","Teravolt","Infiltrator"] },
+    { ability:"Drought",      description:"When this Pokémon enters battle, it summons harsh sunlight that lasts for five turns.", distractors:["Drizzle","Sand Stream","Snow Warning","Cloud Nine"] },
+    { ability:"Drizzle",      description:"When this Pokémon enters battle, it summons rain that lasts for five turns.", distractors:["Drought","Sand Stream","Snow Warning","Damp"] },
+    { ability:"Sand Stream",  description:"When this Pokémon enters battle, it summons a sandstorm that lasts for five turns.", distractors:["Drought","Drizzle","Snow Warning","Sand Veil"] },
+    { ability:"Torrent",      description:"Boosts the power of Water-type moves by 50% when this Pokémon's HP falls below one-third.", distractors:["Blaze","Overgrow","Swarm","Rain Dish"] },
+    { ability:"Blaze",        description:"Boosts the power of Fire-type moves by 50% when this Pokémon's HP falls below one-third.", distractors:["Torrent","Overgrow","Swarm","Flame Body"] },
+    { ability:"Overgrow",     description:"Boosts the power of Grass-type moves by 50% when this Pokémon's HP falls below one-third.", distractors:["Blaze","Torrent","Swarm","Chlorophyll"] },
+    { ability:"Swarm",        description:"Boosts the power of Bug-type moves by 50% when this Pokémon's HP falls below one-third.", distractors:["Blaze","Overgrow","Torrent","Compound Eyes"] },
+    { ability:"Guts",         description:"Boosts the Attack stat by 50% when this Pokémon is afflicted with a status condition.", distractors:["Marvel Scale","Quick Feet","Natural Cure","Shed Skin"] },
+    { ability:"Marvel Scale",  description:"Boosts the Defense stat by 50% when this Pokémon is afflicted with a status condition.", distractors:["Guts","Thick Fat","Solid Rock","Battle Armor"] },
+    { ability:"Hustle",       description:"Boosts the Attack stat by 50% but reduces the accuracy of physical moves by 20%.", distractors:["Reckless","Guts","Sheer Force","No Guard"] },
+    { ability:"Synchronize",  description:"When this Pokémon is inflicted with poison, paralysis, or a burn, the attacker also receives the same status condition.", distractors:["Trace","Telepathy","Natural Cure","Shed Skin"] },
+    { ability:"Trace",        description:"When this Pokémon enters battle, it copies the ability of one of the opposing Pokémon.", distractors:["Synchronize","Imposter","Role Play","Skill Swap"] },
+    { ability:"Insomnia",     description:"Prevents the Pokémon from being put to sleep.", distractors:["Vital Spirit","Early Bird","Natural Cure","Sweet Veil"] },
+    { ability:"Vital Spirit", description:"Prevents the Pokémon from being put to sleep and prevents the use of sleep-inducing moves.", distractors:["Insomnia","Early Bird","Limber","Immunity"] },
+    { ability:"Immunity",     description:"Prevents the Pokémon from being poisoned.", distractors:["Insomnia","Limber","Oblivious","Own Tempo"] },
+    { ability:"Limber",       description:"Prevents the Pokémon from being paralyzed.", distractors:["Immunity","Own Tempo","Oblivious","Insomnia"] },
+    { ability:"Soundproof",   description:"Gives immunity to all sound-based moves such as Hyper Voice, Uproar, and Perish Song.", distractors:["Bulletproof","Filter","Magic Bounce","Soundproof"] },
+    { ability:"Steadfast",    description:"Raises the Pokémon's Speed stat by one stage every time it flinches.", distractors:["Inner Focus","Anger Point","Quick Feet","Rattled"] },
+    { ability:"Anger Point",  description:"Raises the Pokémon's Attack to the maximum when it receives a critical hit.", distractors:["Steadfast","Justified","Moxie","Defiant"] },
+    { ability:"Moxie",        description:"Boosts the Attack stat by one stage after the Pokémon knocks out another Pokémon.", distractors:["Anger Point","Beast Boost","Soul-Heart","Grim Neigh"] },
+    { ability:"Justified",    description:"Boosts the Attack stat by one stage when the Pokémon is hit by a Dark-type move.", distractors:["Rattled","Defiant","Anger Point","Competitive"] },
+    { ability:"Defiant",      description:"Raises the Attack stat by two stages whenever any of this Pokémon's stats are lowered by an opponent.", distractors:["Competitive","Justified","Anger Point","Moxie"] },
+    { ability:"Competitive",  description:"Raises the Special Attack stat by two stages whenever any of this Pokémon's stats are lowered by an opponent.", distractors:["Defiant","Justified","Anger Point","Moxie"] },
+    { ability:"Adaptability", description:"Powers up moves of the same type as the Pokémon by changing the STAB multiplier from 1.5× to 2×.", distractors:["Hustle","Reckless","Technician","Sheer Force"] },
+    { ability:"Technician",   description:"Powers up moves that have a base power of 60 or less by 50%.", distractors:["Adaptability","Sheer Force","Skill Link","Iron Fist"] },
+    { ability:"Sheer Force",  description:"Removes the additional effects of moves that have them, but boosts those moves' power by 30%.", distractors:["Technician","Reckless","Iron Fist","Tough Claws"] },
+    { ability:"Iron Fist",    description:"Boosts the power of punching moves by 20%.", distractors:["Sheer Force","Technician","Strong Jaw","Tough Claws"] },
+    { ability:"Strong Jaw",   description:"Boosts the power of biting moves by 50%.", distractors:["Iron Fist","Sheer Force","Technician","Tough Claws"] },
+    { ability:"Swift Swim",   description:"Doubles the Pokémon's Speed stat when rain is in effect.", distractors:["Chlorophyll","Sand Rush","Slush Rush","Motor Drive"] },
+    { ability:"Chlorophyll",  description:"Doubles the Pokémon's Speed stat when harsh sunlight is in effect.", distractors:["Swift Swim","Sand Rush","Leaf Guard","Solar Power"] },
+    { ability:"Sand Rush",    description:"Doubles the Pokémon's Speed stat during a sandstorm.", distractors:["Swift Swim","Chlorophyll","Sand Veil","Sand Force"] },
+    { ability:"Regenerator",  description:"Restores one-third of the Pokémon's maximum HP when it switches out of battle.", distractors:["Natural Cure","Shed Skin","Healer","Pickup"] },
+    { ability:"Natural Cure", description:"All status conditions are healed when the Pokémon switches out of battle.", distractors:["Regenerator","Shed Skin","Healer","Hydration"] },
+    { ability:"Shed Skin",    description:"The Pokémon has a 1-in-3 chance of healing its own status condition at the end of each turn.", distractors:["Natural Cure","Regenerator","Hydration","Healer"] },
+    { ability:"Rough Skin",   description:"Inflicts damage equal to one-eighth the attacker's max HP when the Pokémon is hit by a contact move.", distractors:["Iron Barbs","Rocky Helmet","Poison Point","Static"] },
+    { ability:"Iron Barbs",   description:"Inflicts damage equal to one-eighth the attacker's max HP when the Pokémon is hit by a contact move (ability version of Rough Skin).", distractors:["Rough Skin","Spiky Shield","Thorns","Rocky Helmet"] },
+    { ability:"Static",       description:"Contact with the Pokémon may cause paralysis (30% chance) in the attacker.", distractors:["Poison Point","Effect Spore","Flame Body","Cute Charm"] },
+    { ability:"Flame Body",   description:"Contact with the Pokémon may inflict a burn (30% chance) on the attacker. Also halves the number of steps to hatch Eggs.", distractors:["Static","Poison Point","Effect Spore","Magma Armor"] },
+    { ability:"Intimidate",   description:"Lowers the Attack of all opposing Pokémon by one stage when this Pokémon enters battle.", distractors:["Pressure","Unnerve","Slow Start","Stench"] },
+    { ability:"Multitype",    description:"Changes the Pokémon's type to match the Plate or Z-Crystal it holds. Exclusive to Arceus.", distractors:["RKS System","Protean","Color Change","Forecast"] },
+    { ability:"Protean",      description:"The Pokémon changes its type to match the type of the move it is about to use, before the move lands.", distractors:["Multitype","Color Change","Forecast","Libero"] },
+    { ability:"Magic Bounce", description:"Reflects status moves back at the user rather than affecting this Pokémon.", distractors:["Magic Guard","Mirror Armor","Oblivious","Soundproof"] },
+    { ability:"Unaware",      description:"Ignores any stat changes in the target when calculating the power of this Pokémon's moves and damage taken.", distractors:["Simple","Contrary","Clear Body","White Smoke"] },
+    { ability:"Contrary",     description:"Makes stat changes have an inverse effect, so moves that lower stats will raise them instead and vice versa.", distractors:["Simple","Unaware","Competitive","Defiant"] },
+    { ability:"Quiver Dance",  description:"Raises the user's Special Attack, Special Defense, and Speed by one stage each.", distractors:["Contrary","Speed Boost","Tinted Lens","Compound Eyes"] },
+    { ability:"Tinted Lens",  description:"Powers up moves that are not very effective, doubling their damage.", distractors:["Unaware","Mold Breaker","Sniper","Keen Eye"] },
+    { ability:"Prankster",    description:"Gives non-damaging moves priority of +1.", distractors:["Gale Wings","Quick Draw","Triage","Queenly Majesty"] },
+    { ability:"Gale Wings",   description:"Gives Flying-type moves +1 priority when the Pokémon is at full HP.", distractors:["Prankster","Quick Draw","Aerilate","Pixilate"] },
+    { ability:"Aerilate",     description:"Normal-type moves become Flying-type and receive a 20% power boost.", distractors:["Pixilate","Refrigerate","Galvanize","Gale Wings"] },
+    { ability:"Pixilate",     description:"Normal-type moves become Fairy-type and receive a 20% power boost.", distractors:["Aerilate","Refrigerate","Galvanize","Normalize"] },
+    { ability:"Thick Fat",    description:"Reduces the damage taken from Fire- and Ice-type moves by half.", distractors:["Heatproof","Dry Skin","Water Absorb","Solid Rock"] },
+    { ability:"Water Absorb", description:"Restores up to one-quarter of maximum HP when hit by a Water-type move, instead of taking damage.", distractors:["Dry Skin","Volt Absorb","Thick Fat","Storm Drain"] },
+    { ability:"Volt Absorb",  description:"Restores up to one-quarter of maximum HP when hit by an Electric-type move, instead of taking damage.", distractors:["Water Absorb","Motor Drive","Dry Skin","Lightning Rod"] },
+    { ability:"Sturdy",       description:"The Pokémon cannot be knocked out in one hit if it starts the turn at full HP. Also provides immunity to one-hit KO moves.", distractors:["Wonder Guard","Battle Armor","Rock Head","Solid Rock"] },
+    { ability:"Rock Head",    description:"Protects the Pokémon from recoil damage from moves like Double-Edge and Brave Bird.", distractors:["Sturdy","Reckless","Iron Fist","Sheer Force"] },
+  ];
+
+  /* ================================================================
+     POKÉMON → ABILITY DATA — 40 entries for Mode B
+  ================================================================ */
+  const POKEMON_ABILITY_DATA = [
+    { pokemon:"Pikachu",    emoji:"⚡", types:["Electric"],       ability:"Static",       distractors:["Lightning Rod","Swift Swim","Surge Surfer","Motor Drive"] },
+    { pokemon:"Gengar",     emoji:"👻", types:["Ghost","Poison"], ability:"Cursed Body",  distractors:["Levitate","Pressure","Wonder Guard","Magic Guard"] },
+    { pokemon:"Alakazam",   emoji:"🥄", types:["Psychic"],        ability:"Synchronize",  distractors:["Trace","Telepathy","Magic Guard","Pressure"] },
+    { pokemon:"Gyarados",   emoji:"🐉", types:["Water","Flying"], ability:"Intimidate",   distractors:["Moxie","Swift Swim","Marvel Scale","Dragon Dance"] },
+    { pokemon:"Charizard",  emoji:"🔥", types:["Fire","Flying"],  ability:"Blaze",        distractors:["Solar Power","Drought","Flame Body","Speed Boost"] },
+    { pokemon:"Blastoise",  emoji:"💧", types:["Water"],          ability:"Torrent",      distractors:["Rain Dish","Swift Swim","Drizzle","Shell Armor"] },
+    { pokemon:"Venusaur",   emoji:"🌿", types:["Grass","Poison"], ability:"Overgrow",     distractors:["Chlorophyll","Effect Spore","Thick Fat","Harvest"] },
+    { pokemon:"Mewtwo",     emoji:"🔮", types:["Psychic"],        ability:"Pressure",     distractors:["Magic Guard","Insomnia","Unnerve","Neuroforce"] },
+    { pokemon:"Snorlax",    emoji:"😴", types:["Normal"],         ability:"Immunity",     distractors:["Thick Fat","Gluttony","Natural Cure","Guts"] },
+    { pokemon:"Dragonite",  emoji:"🐲", types:["Dragon","Flying"],ability:"Multiscale",   distractors:["Inner Focus","Marvel Scale","Hustle","Dragon Scale"] },
+    { pokemon:"Scizor",     emoji:"✂️", types:["Bug","Steel"],    ability:"Technician",   distractors:["Light Metal","Swarm","Iron Fist","Hyper Cutter"] },
+    { pokemon:"Heracross",  emoji:"🐛", types:["Bug","Fighting"], ability:"Guts",         distractors:["Moxie","Swarm","Reckless","No Guard"] },
+    { pokemon:"Tyranitar",  emoji:"🦖", types:["Rock","Dark"],    ability:"Sand Stream",  distractors:["Rough Skin","Unnerve","Iron Fist","Rock Head"] },
+    { pokemon:"Espeon",     emoji:"🌞", types:["Psychic"],        ability:"Synchronize",  distractors:["Magic Bounce","Trace","Inner Focus","Cute Charm"] },
+    { pokemon:"Umbreon",    emoji:"🌙", types:["Dark"],           ability:"Synchronize",  distractors:["Inner Focus","Shed Skin","Cursed Body","Adaptability"] },
+    { pokemon:"Blissey",    emoji:"🩷", types:["Normal"],         ability:"Natural Cure", distractors:["Serene Grace","Healer","Thick Fat","Regenerator"] },
+    { pokemon:"Vaporeon",   emoji:"💠", types:["Water"],          ability:"Water Absorb", distractors:["Hydration","Swift Swim","Rain Dish","Drizzle"] },
+    { pokemon:"Jolteon",    emoji:"⚡", types:["Electric"],       ability:"Volt Absorb",  distractors:["Motor Drive","Lightning Rod","Static","Quick Feet"] },
+    { pokemon:"Flareon",    emoji:"🔴", types:["Fire"],           ability:"Flash Fire",   distractors:["Flame Body","Guts","Drought","Thick Fat"] },
+    { pokemon:"Togekiss",   emoji:"🕊️", types:["Fairy","Flying"], ability:"Serene Grace", distractors:["Hustle","Super Luck","Cute Charm","Pixilate"] },
+    { pokemon:"Garchomp",   emoji:"🦈", types:["Dragon","Ground"],ability:"Rough Skin",   distractors:["Sand Veil","Guts","Multiscale","Mold Breaker"] },
+    { pokemon:"Lucario",    emoji:"🥊", types:["Fighting","Steel"],ability:"Steadfast",   distractors:["Justified","Inner Focus","Iron Fist","No Guard"] },
+    { pokemon:"Metagross",  emoji:"🤖", types:["Steel","Psychic"],ability:"Clear Body",   distractors:["Light Metal","Filter","Levitate","Tough Claws"] },
+    { pokemon:"Salamence",  emoji:"🐲", types:["Dragon","Flying"],ability:"Intimidate",   distractors:["Moxie","Aerilate","Marvel Scale","Multiscale"] },
+    { pokemon:"Weavile",    emoji:"❄️", types:["Dark","Ice"],     ability:"Pressure",     distractors:["Pickpocket","Sharp Claw","Intimidate","Speed Boost"] },
+    { pokemon:"Gliscor",    emoji:"🦂", types:["Ground","Flying"],ability:"Poison Heal",  distractors:["Sand Veil","Hyper Cutter","Iron Barbs","Immunity"] },
+    { pokemon:"Excadrill",  emoji:"⛏️", types:["Ground","Steel"], ability:"Sand Rush",    distractors:["Sand Force","Mold Breaker","Sturdy","Iron Fist"] },
+    { pokemon:"Breloom",    emoji:"🍄", types:["Grass","Fighting"],ability:"Effect Spore", distractors:["Technician","Poison Heal","Hustle","Thick Fat"] },
+    { pokemon:"Rotom-Wash", emoji:"🌀", types:["Electric","Water"],ability:"Levitate",    distractors:["Volt Absorb","Motor Drive","Water Absorb","Trace"] },
+    { pokemon:"Arcanine",   emoji:"🐕", types:["Fire"],           ability:"Intimidate",   distractors:["Flash Fire","Rock Head","Speed Boost","Drought"] },
+    { pokemon:"Starmie",    emoji:"⭐", types:["Water","Psychic"],ability:"Natural Cure", distractors:["Illuminate","Analytic","Swift Swim","Illuminate"] },
+    { pokemon:"Politoed",   emoji:"🐸", types:["Water"],          ability:"Drizzle",      distractors:["Swift Swim","Water Absorb","Damp","Hydration"] },
+    { pokemon:"Ninetales",  emoji:"🦊", types:["Fire"],           ability:"Drought",      distractors:["Flash Fire","Flame Body","Blaze","Intimidate"] },
+    { pokemon:"Clefable",   emoji:"🌟", types:["Fairy"],          ability:"Magic Guard",  distractors:["Cute Charm","Unaware","Friend Guard","Technician"] },
+    { pokemon:"Smeargle",   emoji:"🎨", types:["Normal"],         ability:"Own Tempo",    distractors:["Technician","Moody","Run Away","Adaptability"] },
+    { pokemon:"Wobbuffet",  emoji:"😮", types:["Psychic"],        ability:"Shadow Tag",   distractors:["Telepathy","Synchronize","Pressure","Trace"] },
+    { pokemon:"Shedinja",   emoji:"🪲", types:["Bug","Ghost"],    ability:"Wonder Guard", distractors:["Levitate","Sturdy","Battle Armor","Magic Guard"] },
+    { pokemon:"Shuckle",    emoji:"🪲", types:["Bug","Rock"],     ability:"Sturdy",       distractors:["Gluttony","Contrary","Wonder Guard","Shell Armor"] },
+    { pokemon:"Skarmory",   emoji:"🦅", types:["Steel","Flying"], ability:"Sturdy",       distractors:["Keen Eye","Rock Head","Battle Armor","Filter"] },
+    { pokemon:"Ferrothorn", emoji:"🌵", types:["Grass","Steel"],  ability:"Iron Barbs",   distractors:["Anticipation","Rough Skin","Tough Claws","Bulletproof"] },
+  ];
+
+  /* ================================================================
+     STATE
+  ================================================================ */
+  let currentMode = 'ability-name';
+  let streak = 0;
+  let bestStreak = 0;
+  let sessionTokens = 0;
+  let answered = false;
+  let shuffledA = [], shuffledB = [];
+  let idxA = 0, idxB = 0;
+  let currentEntry = null;
+  const TOKEN_REWARD = 2;
+  const TOKEN_CAP    = 10;
+
+  /* ================================================================
+     INIT
+  ================================================================ */
+  document.addEventListener('DOMContentLoaded', () => {
+    loadBests();
+
+    document.querySelectorAll('.mode-card').forEach(btn => {
+      btn.addEventListener('click', () => startMode(btn.dataset.mode));
+    });
+    document.getElementById('quitLink').addEventListener('click', e => {
+      e.preventDefault(); showModeSelect();
+    });
+    document.getElementById('nextBtn').addEventListener('click', nextEntry);
+    document.getElementById('retryBtn').addEventListener('click', () => startMode(currentMode));
+    document.getElementById('modeBtn').addEventListener('click', showModeSelect);
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+  });
+
+  function loadBests() {
+    document.getElementById('bestAbilityName').textContent    = localStorage.getItem('pokequiz_ability_best_ability-name')    || 0;
+    document.getElementById('bestPokemonAbility').textContent = localStorage.getItem('pokequiz_ability_best_pokemon-ability') || 0;
+  }
+
+  function startMode(mode) {
+    currentMode = mode;
+    streak = 0;
+    sessionTokens = 0;
+    bestStreak = parseInt(localStorage.getItem(`pokequiz_ability_best_${mode}`) || '0');
+
+    shuffledA = shuffle([...ABILITY_DATA]);
+    shuffledB = shuffle([...POKEMON_ABILITY_DATA]);
+    idxA = 0; idxB = 0;
+
+    document.getElementById('modeSelect').hidden = true;
+    document.getElementById('gameOver').hidden   = true;
+    document.getElementById('gameView').hidden   = false;
+
+    // Sync tabs
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === mode);
+    });
+    document.getElementById('modeBadge').textContent = mode === 'ability-name' ? 'Mode A' : 'Mode B';
+
+    updateStats();
+    loadEntry();
+  }
+
+  function switchTab(tab) {
+    currentMode = tab;
+    streak = 0;
+    bestStreak = parseInt(localStorage.getItem(`pokequiz_ability_best_${tab}`) || '0');
+    sessionTokens = 0;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.getElementById('modeBadge').textContent = tab === 'ability-name' ? 'Mode A' : 'Mode B';
+    updateStats();
+    loadEntry();
+  }
+
+  function showModeSelect() {
+    document.getElementById('gameView').hidden   = true;
+    document.getElementById('gameOver').hidden   = true;
+    document.getElementById('modeSelect').hidden = false;
+    loadBests();
+  }
+
+  /* ================================================================
+     ENTRY LOGIC
+  ================================================================ */
+  function loadEntry() {
+    answered = false;
+    const fb = document.getElementById('feedbackBox');
+    fb.className = 'feedback-box';
+    fb.textContent = '';
+    document.getElementById('nextBtn').hidden = true;
+
+    if (currentMode === 'ability-name') {
+      if (idxA >= shuffledA.length) { shuffledA = shuffle([...ABILITY_DATA]); idxA = 0; }
+      currentEntry = shuffledA[idxA++];
+
+      document.getElementById('promptLabel').textContent = 'What ability matches this description?';
+      document.getElementById('promptContent').innerHTML =
+        `<p class="prompt-text">"${currentEntry.description}"</p>`;
+
+      renderChoices([currentEntry.ability, ...currentEntry.distractors.slice(0,3)], currentEntry.ability);
+
+    } else {
+      if (idxB >= shuffledB.length) { shuffledB = shuffle([...POKEMON_ABILITY_DATA]); idxB = 0; }
+      currentEntry = shuffledB[idxB++];
+
+      document.getElementById('promptLabel').textContent = "What is this Pokémon's signature ability?";
+      const typeBadges = currentEntry.types.map(t =>
+        `<span class="type-tag" style="background:${typeColor(t)}">${t}</span>`
+      ).join('');
+      document.getElementById('promptContent').innerHTML = `
+        <div class="pokemon-display">
+          <span class="pokemon-emoji">${currentEntry.emoji}</span>
+          <span class="pokemon-name-lbl">${currentEntry.pokemon}</span>
+          <div class="pokemon-type-badge">${typeBadges}</div>
+        </div>`;
+
+      renderChoices([currentEntry.ability, ...currentEntry.distractors.slice(0,3)], currentEntry.ability);
+    }
+  }
+
+  function renderChoices(options, correct) {
+    const choices = shuffle([...options]);
+    const grid = document.getElementById('choicesGrid');
+    grid.innerHTML = '';
+    choices.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.type = 'button';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => handleChoice(opt, btn, correct));
+      grid.appendChild(btn);
+    });
+  }
+
+  function handleChoice(chosen, btn, correct) {
+    if (answered) return;
+    answered = true;
+    document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+
+    if (chosen === correct) {
+      btn.classList.add('correct');
+      onCorrect(correct);
+    } else {
+      btn.classList.add('wrong');
+      document.querySelectorAll('.choice-btn').forEach(b => {
+        if (b.textContent === correct) b.classList.add('correct');
+      });
+      onWrong(correct);
+    }
+  }
+
+  function onCorrect(correct) {
+    streak++;
+    if (streak > bestStreak) {
+      bestStreak = streak;
+      localStorage.setItem(`pokequiz_ability_best_${currentMode}`, bestStreak);
+    }
+    updateStats();
+
+    if (sessionTokens < TOKEN_CAP) {
+      sessionTokens += TOKEN_REWARD;
+      grantTokens(TOKEN_REWARD);
+    }
+
+    const fb = document.getElementById('feedbackBox');
+    fb.className = 'feedback-box correct-fb';
+    fb.textContent = `✅ Correct! The answer is "${correct}"!`;
+    document.getElementById('nextBtn').hidden = false;
+  }
+
+  function onWrong(correct) {
+    streak = 0;
+    updateStats();
+
+    const fb = document.getElementById('feedbackBox');
+    fb.className = 'feedback-box wrong-fb';
+    fb.textContent = `❌ Wrong! The correct answer was "${correct}".`;
+    document.getElementById('nextBtn').hidden = false;
+  }
+
+  function nextEntry() { loadEntry(); }
+
+  function updateStats() {
+    document.getElementById('streakNum').textContent = streak;
+    document.getElementById('bestNum').textContent   = bestStreak;
+  }
+
+  /* ================================================================
+     TOKENS
+  ================================================================ */
+  function grantTokens(amount) {
+    const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+    inv.tokens = (inv.tokens || 0) + amount;
+    localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+    showTokenPop(amount);
+  }
+  function showTokenPop(amount) {
+    const el = document.getElementById('tokenPop');
+    document.getElementById('tokenAmount').textContent = amount;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2000);
+  }
+
+  /* ================================================================
+     UTILS
+  ================================================================ */
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function typeColor(type) {
+    const MAP = {
+      Normal:'#A8A878', Fire:'#F08030', Water:'#6890F0', Electric:'#F8D030',
+      Grass:'#78C850', Ice:'#98D8D8', Fighting:'#C03028', Poison:'#A040A0',
+      Ground:'#E0C068', Flying:'#A890F0', Psychic:'#F85888', Bug:'#A8B820',
+      Rock:'#B8A038', Ghost:'#705898', Dragon:'#7038F8', Dark:'#705848',
+      Steel:'#B8B8D0', Fairy:'#EE99AC',
+    };
+    return MAP[type] || '#888';
+  }
+  </script>
+</body>
+</html>

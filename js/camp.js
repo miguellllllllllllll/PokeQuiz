@@ -5357,6 +5357,346 @@
 		};
 	}
 
+
+	// ── Partner Mood System ───────────────────────────────────────────────────────
+	const PartnerMood = (() => {
+		function get(inv) {
+			const today = new Date().toISOString().slice(0,10);
+			if (inv.lastShinyToday === today || inv.lastPerfectQuizDate === today) return 'excited';
+			const now = Date.now();
+			const fedRecently = inv.lastBerryFed && (now - inv.lastBerryFed) < 2 * 3600000;
+			const quizToday = inv.lastQuizPlayed === today;
+			const bonusToday = (() => { try { return localStorage.getItem('pokequiz_camp_daily') === today; } catch(e) { return false; } })();
+			if (fedRecently || quizToday || bonusToday) return 'happy';
+			const noVisit24h = !inv.lastLogin || (now - inv.lastLogin) > 24 * 3600000;
+			if (noVisit24h) return 'tired';
+			return 'neutral';
+		}
+		function emoji(mood) {
+			if (mood === 'excited') return '🤩';
+			if (mood === 'happy') return '😊';
+			if (mood === 'tired') return '😴';
+			return '😐';
+		}
+		function tokenMultiplier(mood) {
+			return (mood === 'happy' || mood === 'excited') ? 1.1 : 1.0;
+		}
+		return { get, emoji, tokenMultiplier };
+	})();
+
+	// ── Shiny Pokemon Encounters ──────────────────────────────────────────────────
+	const SHINY_POOL = [
+		'Bulbasaur','Charmander','Squirtle','Pikachu','Eevee','Snorlax','Gengar',
+		'Mewtwo','Mew','Lapras','Vaporeon','Jolteon','Flareon','Umbreon','Espeon',
+		'Glaceon','Leafeon','Sylveon','Dragonite','Gyarados','Lucario','Garchomp',
+		'Togekiss','Gardevoir','Alakazam','Machamp','Golem','Arcanine','Ninetales',
+		'Rapidash','Slowbro','Magneton','Clefable','Chansey','Scyther','Electabuzz',
+		'Magmar','Pinsir','Tauros','Ditto','Porygon','Aerodactyl','Articuno',
+		'Zapdos','Moltres','Dratini','Dragonair','Kabuto',
+	];
+
+	const SHINY_HARD_QUESTIONS = [
+		{ q:'Which Pokemon has the highest base Speed stat in Gen 1?', opts:['Jolteon','Electrode','Aerodactyl','Dugtrio'], a:0 },
+		{ q:'What is Eevee primary type?', opts:['Normal','Fairy','Psychic','Dragon'], a:0 },
+		{ q:'Which move has 100% accuracy and causes sleep?', opts:['Spore','Sleep Powder','Hypnosis','Yawn'], a:0 },
+		{ q:'What type is Shedinja weak to?', opts:['Fire','Water','Ghost','Normal'], a:0 },
+		{ q:'How many Pokemon are in the original 151?', opts:['151','150','152','149'], a:0 },
+		{ q:'Which Pokemon evolves using a Sun Stone into Sunflora?', opts:['Sunkern','Oddish','Bellsprout','Hoppip'], a:0 },
+		{ q:'What is the signature move of Dragonite?', opts:['Draco Meteor','Outrage','Dragon Rush','Hyper Beam'], a:1 },
+		{ q:'Which Gym Leader uses Rock-type Pokemon in Kanto?', opts:['Brock','Lt. Surge','Misty','Erika'], a:0 },
+		{ q:'What held item doubles a Pokemon Speed when HP is low?', opts:['Salac Berry','Liechi Berry','Apicot Berry','Petaya Berry'], a:0 },
+		{ q:'How many PP does Hydro Pump have?', opts:['5','10','8','15'], a:0 },
+		{ q:'Which ability prevents stat reduction from opponent moves?', opts:['Clear Body','Sturdy','Battle Armor','Shell Armor'], a:0 },
+		{ q:'What type combination does Charizard have?', opts:['Fire/Flying','Fire/Dragon','Fire only','Fire/Rock'], a:0 },
+		{ q:'Which Legendary is found in Seafoam Islands?', opts:['Articuno','Zapdos','Moltres','Mewtwo'], a:0 },
+		{ q:'What is the max EVs a Pokemon can have in one stat?', opts:['252','255','256','248'], a:0 },
+		{ q:'Which Pokemon learns Nasty Plot naturally?', opts:['Togekiss','Gardevoir','Alakazam','Espeon'], a:0 },
+		{ q:'What is the base power of Earthquake?', opts:['100','90','120','80'], a:0 },
+		{ q:'Which item raises Sp. Atk when eaten at low HP?', opts:['Petaya Berry','Salac Berry','Liechi Berry','Lansat Berry'], a:0 },
+		{ q:'Which Pokemon has the move Quiver Dance?', opts:['Volcarona','Butterfree','Beautifly','Dustox'], a:0 },
+		{ q:'What typing does Togekiss have?', opts:['Fairy/Flying','Normal/Flying','Psychic/Flying','Fairy only'], a:0 },
+		{ q:'Which move bypasses accuracy checks to always hit?', opts:['Swift','Aerial Ace','Shock Wave','All of these'], a:3 },
+		{ q:'What is the BST of Arceus?', opts:['720','680','700','750'], a:0 },
+		{ q:'How many evolutions does Eevee have?', opts:['8','7','9','6'], a:0 },
+		{ q:'Which Pokemon can learn both Thunder and Blizzard naturally?', opts:['Lapras','Snorlax','Clefable','Jigglypuff'], a:0 },
+		{ q:'What type is Gengar?', opts:['Ghost/Poison','Ghost only','Poison/Dark','Ghost/Dark'], a:0 },
+		{ q:'Which held item boosts the power of Dragon-type moves?', opts:['Dragon Fang','Dragon Scale','Draco Plate','Dragon Gem'], a:0 },
+		{ q:'What level does Magikarp evolve into Gyarados?', opts:['20','25','15','30'], a:0 },
+		{ q:'Which ability makes all moves hit Ghost-type Pokemon?', opts:['Scrappy','Normalize','Mold Breaker','Tinted Lens'], a:0 },
+		{ q:'What is the name of Mewtwo signature move?', opts:['Psystrike','Psychic','Psyshock','Psycho Cut'], a:0 },
+		{ q:'Which Pokemon has the Levitate ability in Kanto?', opts:['Gengar','Haunter','Gastly','All three'], a:3 },
+		{ q:'How many total moves can a Pokemon know at once?', opts:['4','6','8','3'], a:0 },
+		{ q:'What is the Pokemon with the highest base HP?', opts:['Blissey','Chansey','Snorlax','Wobbuffet'], a:0 },
+		{ q:'Which move has 150 power and causes recharge?', opts:['Hyper Beam','Giga Impact','Frenzy Plant','Blast Burn'], a:0 },
+		{ q:'What type does Fairy resist?', opts:['Dragon','Fighting','Dark','All of these'], a:3 },
+		{ q:'Which Pokemon is the Legendary Birds trio guardian?', opts:['Lugia','Ho-Oh','Rayquaza','Articuno'], a:0 },
+		{ q:'What is Pikachu hidden ability?', opts:['Lightning Rod','Static','Volt Absorb','Plus'], a:0 },
+		{ q:'Which item prevents a Pokemon from being switched out?', opts:['Shed Shell','Smoke Ball','Grip Claw','Safety Goggles'], a:0 },
+		{ q:'How many Pokemon are in a full party?', opts:['6','8','4','5'], a:0 },
+		{ q:'Which move raises all stats by one stage?', opts:['Ancient Power','Silver Wind','Ominous Wind','All of these'], a:3 },
+		{ q:'What Generation introduced the Fairy type?', opts:['Gen 6','Gen 5','Gen 7','Gen 4'], a:0 },
+		{ q:'Which Pokemon evolves from Feebas?', opts:['Milotic','Gyarados','Kingdra','Seaking'], a:0 },
+	];
+
+	const ShinyEncounters = (() => {
+		let shinySprite = null;
+		let sparkleText = null;
+		let shinyData = null;
+		let fleeTimer = null;
+		let catchModalOpen = false;
+
+		function _clearShiny(scene) {
+			if (shinySprite) { shinySprite.destroy(); shinySprite = null; }
+			if (sparkleText) { sparkleText.destroy(); sparkleText = null; }
+			if (fleeTimer) { clearInterval(fleeTimer); fleeTimer = null; }
+			shinyData = null;
+			const timerEl = document.getElementById('shinyTimer');
+			if (timerEl) timerEl.hidden = true;
+		}
+
+		function spawn(scene) {
+			if (shinyData) return;
+			const name = SHINY_POOL[Math.floor(Math.random() * SHINY_POOL.length)];
+			const tx = 5 + Math.floor(Math.random() * (MAP_W - 10));
+			const ty = 5 + Math.floor(Math.random() * (MAP_H - 10));
+			const px = tx * TILE + TILE / 2;
+			const py = ty * TILE + TILE / 2;
+			shinySprite = scene.add.text(px, py, '⭐', { fontSize: '20px' }).setDepth(3).setOrigin(0.5);
+			sparkleText = scene.add.text(px, py - 20, '✨', { fontSize: '12px' }).setDepth(3.1).setOrigin(0.5);
+			shinyData = { name, tx, ty, timeLeft: 45 };
+			showToast('✨ A wild shiny ' + name + ' appeared! (45s)');
+			const timerEl = document.getElementById('shinyTimer');
+			const nameEl = document.getElementById('shinyTimerName');
+			const countEl = document.getElementById('shinyTimerCount');
+			if (timerEl) { timerEl.hidden = false; }
+			if (nameEl) nameEl.textContent = name;
+			if (countEl) countEl.textContent = '45';
+			fleeTimer = setInterval(function() {
+				if (!shinyData) { clearInterval(fleeTimer); fleeTimer = null; return; }
+				shinyData.timeLeft--;
+				if (countEl) countEl.textContent = shinyData.timeLeft;
+				if (shinyData.timeLeft <= 0) {
+					showToast('✨ ' + shinyData.name + ' fled!');
+					_clearShiny(scene);
+				}
+			}, 1000);
+		}
+
+		function update(scene, tick) {
+			if (!shinySprite || !shinyData) return;
+			if (tick % 180 === 0) {
+				shinyData.tx = Math.max(2, Math.min(MAP_W - 3, shinyData.tx + (Math.random() < 0.5 ? -1 : 1)));
+				shinyData.ty = Math.max(2, Math.min(MAP_H - 3, shinyData.ty + (Math.random() < 0.5 ? -1 : 1)));
+			}
+			const px = shinyData.tx * TILE + TILE / 2;
+			const py = shinyData.ty * TILE + TILE / 2;
+			shinySprite.setPosition(px, py);
+			sparkleText.setPosition(px, py - 20);
+		}
+
+		function tick5s(scene) {
+			const inv = Inventory.load();
+			const chance = inv.hasShinyCharm ? 3 / 1000 : 1 / 1000;
+			if (Math.random() < chance) spawn(scene);
+		}
+
+		function checkInteract(scene) {
+			if (!shinyData || catchModalOpen) return false;
+			const px = scene._player ? Math.floor(scene._player.x / TILE) : -99;
+			const py = scene._player ? Math.floor(scene._player.y / TILE) : -99;
+			const dist = Math.abs(px - shinyData.tx) + Math.abs(py - shinyData.ty);
+			return dist <= 2;
+		}
+
+		function openCatchModal(scene) {
+			catchModalOpen = true;
+			const pool = [];
+			while (pool.length < 5) {
+				const q = SHINY_HARD_QUESTIONS[Math.floor(Math.random() * SHINY_HARD_QUESTIONS.length)];
+				if (!pool.includes(q)) pool.push(q);
+			}
+			scene._shinyCatchPool = pool;
+			scene._shinyCatchQIdx = 0;
+			const modal = document.getElementById('shinyCatchModal');
+			if (modal) modal.hidden = false;
+			_renderQuestion(scene);
+		}
+
+		function _renderQuestion(scene) {
+			const pool = scene._shinyCatchPool;
+			const idx = scene._shinyCatchQIdx;
+			const q = pool[idx];
+			const modal = document.getElementById('shinyCatchModal');
+			if (!modal) return;
+			modal.innerHTML = '<div class="shiny-catch-inner">' +
+				'<div class="shiny-catch-head">✨ Catch ' + (shinyData ? shinyData.name : '') + '!</div>' +
+				'<div class="shiny-catch-sub">Question ' + (idx + 1) + ' of 5</div>' +
+				'<div class="shiny-catch-timer-wrap"><div class="shiny-catch-timer-bar" id="shinyCatchTimerBar" style="width:100%"></div></div>' +
+				'<div class="shiny-catch-question">' + q.q + '</div>' +
+				'<div class="shiny-catch-opts">' +
+				q.opts.map(function(o, i) { return '<button class="shiny-catch-opt" data-i="' + i + '">' + o + '</button>'; }).join('') +
+				'</div></div>';
+			modal.querySelectorAll('.shiny-catch-opt').forEach(function(btn) {
+				btn.addEventListener('click', function() { _answerQuestion(scene, parseInt(btn.dataset.i, 10)); });
+			});
+			scene._shinyCatchQTimerStart = Date.now();
+			if (scene._shinyCatchQTimer) clearInterval(scene._shinyCatchQTimer);
+			scene._shinyCatchQTimer = setInterval(function() {
+				const elapsed = Date.now() - scene._shinyCatchQTimerStart;
+				const pct = Math.max(0, 100 - (elapsed / 15000) * 100);
+				const bar = document.getElementById('shinyCatchTimerBar');
+				if (bar) bar.style.width = pct + '%';
+				if (elapsed >= 15000) {
+					clearInterval(scene._shinyCatchQTimer);
+					scene._shinyCatchQTimer = null;
+					_failCatch(scene);
+				}
+			}, 100);
+		}
+
+		function _answerQuestion(scene, idx) {
+			if (scene._shinyCatchQTimer) { clearInterval(scene._shinyCatchQTimer); scene._shinyCatchQTimer = null; }
+			const pool = scene._shinyCatchPool;
+			const q = pool[scene._shinyCatchQIdx];
+			if (idx !== q.a) { _failCatch(scene); return; }
+			scene._shinyCatchQIdx++;
+			if (scene._shinyCatchQIdx >= 5) { _successCatch(scene); return; }
+			_renderQuestion(scene);
+		}
+
+		function _failCatch(scene) {
+			catchModalOpen = false;
+			const modal = document.getElementById('shinyCatchModal');
+			if (modal) modal.hidden = true;
+			const name = shinyData ? shinyData.name : 'Pokemon';
+			showToast('✨ ' + name + ' fled! So close...');
+			_clearShiny(scene);
+		}
+
+		function _successCatch(scene) {
+			catchModalOpen = false;
+			const modal = document.getElementById('shinyCatchModal');
+			if (modal) modal.hidden = true;
+			const name = shinyData ? shinyData.name : 'Pokemon';
+			const inv = Inventory.load();
+			inv.shinies = inv.shinies || [];
+			inv.shinies.push({ name, at: Date.now() });
+			const today = new Date().toISOString().slice(0, 10);
+			inv.lastShinyToday = today;
+			const mood = PartnerMood.get(inv);
+			const mult = PartnerMood.tokenMultiplier(mood);
+			inv.tokens = (inv.tokens || 0) + Math.round(50 * mult);
+			Inventory.save(inv);
+			_clearShiny(scene);
+			showToast('✨ You caught a shiny ' + name + '! +50 tokens!');
+			if (typeof Sound !== 'undefined') Sound.win();
+		}
+
+		function openCollection() {
+			const inv = Inventory.load();
+			const shinies = inv.shinies || [];
+			let html = '<b>✨ Shiny Collection (' + shinies.length + ')</b><br>';
+			if (shinies.length === 0) {
+				html += 'No shinies caught yet! Keep exploring.';
+			} else {
+				shinies.forEach(function(s) {
+					const dt = new Date(s.at).toLocaleDateString();
+					html += '⭐ <b>' + s.name + '</b> &mdash; caught ' + dt + '<br>';
+				});
+			}
+			if (typeof Dialog !== 'undefined') Dialog.open(html);
+		}
+
+		function getCount() {
+			const inv = Inventory.load();
+			return (inv.shinies || []).length;
+		}
+
+		return { spawn, update, tick5s, checkInteract, openCatchModal, openCollection, getCount };
+	})();
+
+	// ── Photo Mode ────────────────────────────────────────────────────────────────
+	const PhotoMode = (() => {
+		function take(scene) {
+			const hideEls = document.querySelectorAll('.photo-mode-hide');
+			hideEls.forEach(function(el) { el._pmDisplay = el.style.display; el.style.display = 'none'; });
+			const overlay = document.createElement('div');
+			overlay.id = '_photoCountdown';
+			overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:80px;color:#fff;text-shadow:0 0 20px #000;z-index:9999;pointer-events:none;';
+			document.body.appendChild(overlay);
+			let count = 3;
+			function tick() {
+				if (count > 0) { overlay.textContent = String(count); count--; setTimeout(tick, 700); }
+				else {
+					overlay.textContent = '📷';
+					setTimeout(function() {
+						if (scene.game && scene.game.renderer) {
+							scene.game.renderer.snapshot(function(img) {
+								const link = document.createElement('a');
+								link.href = img.src;
+								link.download = 'pokequiz-camp-' + Date.now() + '.png';
+								link.click();
+								overlay.remove();
+								hideEls.forEach(function(el) { el.style.display = el._pmDisplay || ''; });
+								showToast('Photo saved! 📷');
+							});
+						} else {
+							overlay.remove();
+							hideEls.forEach(function(el) { el.style.display = el._pmDisplay || ''; });
+						}
+					}, 400);
+				}
+			}
+			tick();
+		}
+		return { take };
+	})();
+
+	// ── Seasonal Camp Events ──────────────────────────────────────────────────────
+	const SeasonalEvents = (() => {
+		function _getSeason() {
+			const now = new Date();
+			const m = now.getMonth() + 1;
+			const d = now.getDate();
+			if ((m === 10 && d >= 25) || (m === 11 && d <= 5)) return 'halloween';
+			if ((m === 12 && d >= 20) || (m === 1 && d <= 3)) return 'winter';
+			if (m === 4 && d >= 1 && d <= 7) return 'spring';
+			if ((m === 6 && d >= 21) || (m === 7 && d <= 4)) return 'summer';
+			return null;
+		}
+		const SEASON_CONFIGS = {
+			halloween: { color: 0xFF6600, alpha: 0.18, emojis: ['🎃','🕷️','👻'], dialog: 'Happy Halloween!' },
+			winter:    { color: 0x4488FF, alpha: 0.15, emojis: ['❄️','⛄','🎄'], dialog: 'Happy Holidays!' },
+			spring:    { color: 0xFF88CC, alpha: 0.12, emojis: ['🌸','🌺','🌷'], dialog: 'Spring has sprung!' },
+			summer:    { color: 0xFFDD00, alpha: 0.12, emojis: ['☀️','🌊','🏖️'], dialog: 'Summer vibes!' },
+		};
+		function applyToScene(scene) {
+			const season = _getSeason();
+			if (!season) return;
+			const cfg = SEASON_CONFIGS[season];
+			scene.add.rectangle(0, 0, MAP_W * TILE, MAP_H * TILE, cfg.color, cfg.alpha)
+				.setOrigin(0, 0).setDepth(1.5).setScrollFactor(1);
+			const positions = [
+				{ x: 3 * TILE, y: 3 * TILE },
+				{ x: (MAP_W - 4) * TILE, y: 3 * TILE },
+				{ x: Math.floor(MAP_W / 2) * TILE, y: (MAP_H - 4) * TILE },
+			];
+			cfg.emojis.forEach(function(em, i) {
+				const pos = positions[i] || positions[0];
+				scene.add.text(pos.x, pos.y, em, { fontSize: '28px' }).setDepth(1.6).setScrollFactor(1);
+			});
+			const today = new Date().toISOString().slice(0, 10);
+			const key = 'pokequiz_season_dialog_' + today;
+			try {
+				if (!localStorage.getItem(key)) {
+					localStorage.setItem(key, '1');
+					setTimeout(function() { if (typeof Dialog !== 'undefined') Dialog.open(cfg.dialog); }, 1500);
+				}
+			} catch(e) {}
+		}
+		return { applyToScene };
+	})();
+
 	// ── Surf / movement helpers ───────────────────────────────────────────────────
 	function canWalkOn(tileId, inv) {
 		if (!SOLID.has(tileId)) return true;
@@ -5795,6 +6135,9 @@
 						});
 					}
 				}
+
+				// ── Seasonal Events (date-specific overlays) ───────────────────────
+				SeasonalEvents.applyToScene(this);
 
 				// ── Camp rating display near south gate ───────────────────────────
 				{
@@ -6291,6 +6634,21 @@
 						'</div>';
 				}
 
+				// Shiny counter
+				const shinyCount = ShinyEncounters.getCount();
+				html += div() +
+					'<div class="hud-item">' +
+						'<span class="hud-ico hud-ico--shiny" aria-hidden="true">✨</span>' +
+						'<span class="hud-val">' + shinyCount + '</span>' +
+					'</div>';
+
+				// Partner mood
+				const mood = PartnerMood.get(inv);
+				html += div() +
+					'<div class="hud-item" title="Partner mood: ' + mood + '">' +
+						'<span style="font-size:14px">' + PartnerMood.emoji(mood) + '</span>' +
+					'</div>';
+
 				el.innerHTML = html;
 			}
 
@@ -6306,6 +6664,7 @@
 				}
 				inv.friendshipBerries -= 1;
 				inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship || 0) + FRIENDSHIP_PER_BERRY);
+				inv.lastBerryFed = Date.now();
 				Inventory.save(inv);
 				DailyQuests.increment('feed');
 				if (inv.friendship >= FRIENDSHIP_MAX) {
@@ -6645,6 +7004,10 @@
 				applyDayNight();
 				Dialog.tick();
 
+				// Shiny encounter update & 5-second spawn roll
+				ShinyEncounters.update(this, this.tick);
+				if (this.tick % 300 === 0) ShinyEncounters.tick5s(this);
+
 				const dialogOpen = Dialog.isOpen();
 				const k = this.keys, d = this.dpad;
 
@@ -6699,6 +7062,9 @@
 				}
 				if (Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact')) {
 					if (dialogOpen) Dialog.advance();
+					else if (ShinyEncounters.checkInteract(this)) {
+						ShinyEncounters.openCatchModal(this);
+					}
 					else if (Inventory.load().scytheEquipped && this._scytheSwing()) {
 						/* scythe handled the input */
 					}
@@ -8719,4 +9085,27 @@
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wirePostcardBtn);
 	else wirePostcardBtn();
+
+	// ── Photo Mode button wiring ──────────────────────────────────────────────────
+	{
+		function wirePhotoBtn() {
+			document.getElementById('campPhotoBtn')?.addEventListener('click', () => {
+				const scene = window.__campScene;
+				if (scene) PhotoMode.take(scene);
+			});
+		}
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wirePhotoBtn);
+		else wirePhotoBtn();
+	}
+
+	// ── Shiny Collection button wiring ────────────────────────────────────────────
+	{
+		function wireShinyBtn() {
+			document.getElementById('campShinyBtn')?.addEventListener('click', () => {
+				ShinyEncounters.openCollection();
+			});
+		}
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireShinyBtn);
+		else wireShinyBtn();
+	}
 })();

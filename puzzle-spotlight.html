@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Daily Spotlight &middot; PokeQuiz</title>
+	<meta name="author" content="Angelo Miguel G. Vinluan">
+	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="A new Pokémon spotlight every day — 5 mini-challenges!">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Daily Spotlight — PokeQuiz">
+	<meta property="og:description" content="A new Pokémon spotlight every day — 5 mini-challenges!">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle.css">
+	<style>
+		.sp-card {
+			max-width: 600px;
+			margin: 0 auto;
+			padding: 32px;
+			position: relative;
+		}
+		.sp-header {
+			text-align: center;
+			margin-bottom: 24px;
+		}
+		.sp-eyebrow {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 10px;
+			color: var(--poke-red);
+			letter-spacing: 1.5px;
+			margin-bottom: 8px;
+		}
+		.sp-title {
+			font-size: 22px;
+			font-weight: 800;
+			margin: 0 0 4px;
+		}
+		.sp-date {
+			font-size: 12px;
+			color: #888;
+		}
+		/* Progress dots */
+		.sp-dots {
+			display: flex;
+			justify-content: center;
+			gap: 8px;
+			margin-bottom: 24px;
+		}
+		.sp-dot {
+			width: 14px;
+			height: 14px;
+			border-radius: 50%;
+			border: 2px solid #ccc;
+			background: #fff;
+			transition: background 0.2s, border-color 0.2s;
+		}
+		.sp-dot.done { background: #22c55e; border-color: #16a34a; }
+		.sp-dot.wrong { background: #ef4444; border-color: #dc2626; }
+		.sp-dot.active { border-color: var(--poke-red); background: rgba(238,21,21,0.1); }
+		/* Round card */
+		.sp-round {
+			background: linear-gradient(135deg, #fffbea 0%, #ffeaea 100%);
+			border: 2px solid var(--poke-yellow);
+			border-radius: 18px;
+			padding: 28px;
+			text-align: center;
+			margin-bottom: 18px;
+			box-shadow: 0 8px 24px rgba(180,10,10,0.08);
+		}
+		.sp-round-label {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 9px;
+			color: #888;
+			letter-spacing: 1px;
+			margin-bottom: 8px;
+		}
+		.sp-round-title {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 13px;
+			color: var(--poke-red);
+			margin-bottom: 16px;
+		}
+		/* Sprite */
+		.sp-sprite-wrap {
+			display: flex;
+			justify-content: center;
+			margin-bottom: 16px;
+		}
+		.sp-sprite {
+			width: 160px;
+			height: 160px;
+			image-rendering: pixelated;
+			transition: filter 0.6s ease;
+		}
+		.sp-sprite.silhouette { filter: brightness(0) contrast(1); }
+		/* Timer */
+		.sp-timer-wrap {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			margin-bottom: 16px;
+		}
+		.sp-timer-track {
+			flex: 1;
+			height: 10px;
+			background: #f5e7e7;
+			border-radius: 999px;
+			overflow: hidden;
+			border: 1.5px solid rgba(0,0,0,0.08);
+		}
+		.sp-timer-fill {
+			height: 100%;
+			background: linear-gradient(90deg, #ef4444, #dc2626);
+			width: 100%;
+			border-radius: 999px;
+			transition: width linear;
+		}
+		.sp-timer-num {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 13px;
+			color: var(--poke-red);
+			min-width: 24px;
+			text-align: right;
+		}
+		/* Question text */
+		.sp-q {
+			font-size: 17px;
+			font-weight: 700;
+			margin-bottom: 16px;
+			color: var(--poke-black);
+			line-height: 1.45;
+		}
+		/* Choices */
+		.sp-choices {
+			display: grid;
+			gap: 10px;
+		}
+		.sp-choice {
+			display: grid;
+			grid-template-columns: 36px 1fr;
+			align-items: center;
+			gap: 14px;
+			padding: 12px 16px;
+			background: #fff;
+			border: 2px solid #ede5e5;
+			border-radius: 12px;
+			cursor: pointer;
+			transition: border-color 0.15s, background 0.15s;
+			font-size: 14px;
+			font-weight: 600;
+			text-align: left;
+		}
+		.sp-choice:hover:not(.locked) { border-color: var(--poke-red); background: #fffafa; }
+		.sp-choice.locked { cursor: default; }
+		.sp-choice.correct { border-color: #22c55e; background: rgba(34,197,94,0.12); }
+		.sp-choice.wrong { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+		.sp-choice-letter {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 32px;
+			height: 32px;
+			border-radius: 50%;
+			background: linear-gradient(180deg, #2a2a2a, #000);
+			color: var(--poke-yellow);
+			font-weight: 700;
+			font-size: 11px;
+			font-family: 'Press Start 2P', monospace;
+			border: 2px solid var(--poke-yellow);
+		}
+		.sp-choice.correct .sp-choice-letter {
+			background: linear-gradient(180deg, #22c55e, #16a34a);
+			border-color: #14532d;
+			color: #fff;
+		}
+		.sp-choice.wrong .sp-choice-letter {
+			background: linear-gradient(180deg, #ef4444, #dc2626);
+			border-color: #7f1d1d;
+			color: #fff;
+		}
+		/* Text input (cry round) */
+		.sp-text-input-wrap {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 12px;
+		}
+		.sp-text-input {
+			flex: 1;
+			padding: 12px 16px;
+			border: 2px solid #ede5e5;
+			border-radius: 12px;
+			font-size: 15px;
+			font-family: 'Inter', sans-serif;
+			font-weight: 600;
+			outline: none;
+			transition: border-color 0.15s;
+		}
+		.sp-text-input:focus { border-color: var(--poke-red); }
+		.sp-text-submit {
+			padding: 12px 20px;
+			background: var(--poke-red);
+			color: #fff;
+			border: none;
+			border-radius: 12px;
+			font-weight: 700;
+			font-size: 14px;
+			cursor: pointer;
+			font-family: 'Inter', sans-serif;
+			transition: background 0.15s;
+		}
+		.sp-text-submit:hover { background: var(--poke-red-dark); }
+		.sp-datalist { display: none; }
+		/* Audio button */
+		.sp-cry-btn {
+			padding: 10px 20px;
+			background: linear-gradient(180deg, #2a2a2a, #000);
+			color: var(--poke-yellow);
+			border: 2px solid var(--poke-yellow);
+			border-radius: 999px;
+			font-family: 'Press Start 2P', monospace;
+			font-size: 10px;
+			cursor: pointer;
+			margin-bottom: 16px;
+			transition: opacity 0.15s;
+		}
+		.sp-cry-btn:hover { opacity: 0.85; }
+		/* Feedback */
+		.sp-feedback {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 10px;
+			min-height: 22px;
+			margin-top: 10px;
+			color: #22c55e;
+		}
+		.sp-feedback.bad { color: #ef4444; }
+		/* Results */
+		.sp-results {
+			text-align: center;
+			padding: 24px;
+			background: radial-gradient(circle at 50% 0%, rgba(255,203,5,0.25), transparent 60%), linear-gradient(135deg, #fffbea, #ffeaea);
+			border: 2px solid var(--poke-yellow);
+			border-radius: 18px;
+			display: none;
+		}
+		.sp-results-sprite {
+			width: 160px;
+			height: 160px;
+			image-rendering: pixelated;
+			margin: 0 auto 12px;
+		}
+		.sp-results-name {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 16px;
+			color: var(--poke-red);
+			text-shadow: 2px 2px 0 var(--poke-black);
+			margin-bottom: 8px;
+		}
+		.sp-score-display {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 40px;
+			color: var(--poke-red);
+			text-shadow: 3px 3px 0 var(--poke-black);
+			margin: 12px 0;
+		}
+		.sp-score-label { font-size: 13px; color: #555; margin-bottom: 8px; }
+		.sp-token-grant {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 8px 18px;
+			background: rgba(234,179,8,0.12);
+			border: 1.5px solid rgba(234,179,8,0.45);
+			border-radius: 10px;
+			font-size: 13px;
+			font-weight: 700;
+			color: #92400e;
+			margin: 10px 0;
+		}
+		.sp-tomorrow {
+			font-family: 'Press Start 2P', monospace;
+			font-size: 9px;
+			color: #888;
+			margin-top: 14px;
+			line-height: 1.8;
+		}
+		.sp-results-actions {
+			display: flex;
+			gap: 10px;
+			justify-content: center;
+			flex-wrap: wrap;
+			margin-top: 14px;
+		}
+		/* Already done banner */
+		.sp-done-banner {
+			text-align: center;
+			padding: 32px;
+			background: radial-gradient(circle at 50% 0%, rgba(255,203,5,0.2), transparent 60%), linear-gradient(135deg, #fffbea, #ffeaea);
+			border: 2px solid var(--poke-yellow);
+			border-radius: 18px;
+		}
+		.sp-done-banner h2 { margin-bottom: 10px; font-size: 18px; }
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a href="index.html" class="brand-link"><h1 class="brand">PokeQuiz</h1></a>
+		<nav>
+			<a href="index.html">Home</a>
+			<a href="play.html">Play</a>
+			<a href="quizzes.html">Quizzes</a>
+			<a href="puzzle.html" class="active">Puzzles</a>
+			<a href="ranking.html">Leaderboard</a>
+			<a href="camp.html">Camp</a>
+		</nav>
+		<div class="profile-wrap">
+			<button class="profile-btn" aria-haspopup="true" aria-expanded="false" type="button">
+				<img class="profile-avatar" src="Pictures/pokeball.png" alt="">
+				<span class="profile-name">Trainer</span>
+			</button>
+			<div class="profile-panel" hidden role="dialog" aria-label="Trainer profile">
+				<div class="pp-title">Trainer Profile</div>
+				<div class="pp-row"><span class="pp-row-label">Name</span><span class="pp-name-view">&mdash;</span></div>
+				<div class="pp-row"><span class="pp-row-label">Best Score</span><span class="pp-score-view">&mdash;</span></div>
+				<div class="pp-edit-form" hidden>
+					<input class="pp-input" type="text" maxlength="24" placeholder="Your name">
+					<button class="pp-mini-btn pp-save-btn" type="button">Save</button>
+					<button class="pp-mini-btn pp-secondary pp-cancel-btn" type="button">Cancel</button>
+				</div>
+				<div class="pp-actions">
+					<button class="pp-edit-btn" type="button">Edit Name</button>
+					<button class="pp-clear-btn" type="button">Clear Data</button>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="container">
+		<section class="card sp-card">
+			<div class="sp-header">
+				<div class="sp-eyebrow">&#11088; Daily Feature</div>
+				<h1 class="sp-title">Pok&eacute;mon Spotlight</h1>
+				<div class="sp-date" id="spDate"></div>
+			</div>
+
+			<div id="spMain">
+				<div class="sp-dots" id="spDots"></div>
+				<div id="spRound" class="sp-round"></div>
+				<div id="spFeedback" class="sp-feedback"></div>
+			</div>
+
+			<div class="sp-results" id="spResults"></div>
+			<div id="spDoneBanner" class="sp-done-banner" style="display:none"></div>
+		</section>
+	</main>
+
+	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<script src="js/util.js" defer></script>
+	<script src="js/profile.js" defer></script>
+	<script>
+	(function() {
+		// Curated list of well-known Pokémon IDs (Gen 1-5 favorites, 365 entries via repetition)
+		const BASE_LIST = [
+			1,2,3,4,5,6,7,8,9,25,26,
+			39,40,52,54,58,60,63,66,74,79,
+			81,84,92,100,103,106,107,112,113,116,
+			120,122,127,128,130,131,132,133,134,135,
+			136,137,143,144,145,146,147,148,149,150,151,
+			// Gen 2
+			152,153,154,155,156,157,158,159,160,175,
+			176,177,180,183,184,185,186,196,197,202,
+			208,210,212,213,214,218,228,229,230,231,
+			233,234,235,236,238,243,244,245,246,247,
+			248,249,250,251,
+			// Gen 3
+			252,255,258,261,263,270,273,276,280,283,
+			285,287,298,302,304,307,309,311,312,315,
+			318,333,335,351,352,359,363,371,374,375,
+			376,377,378,379,380,381,382,383,384,385,386,
+			// Gen 4
+			387,390,393,399,403,406,408,412,418,420,
+			422,425,427,431,433,438,439,440,441,442,
+			443,444,445,446,447,448,449,450,458,459,
+			460,461,462,463,464,465,466,467,468,469,
+			470,471,472,473,474,475,476,477,478,479,
+			480,481,482,483,484,485,486,487,488,490,
+			491,492,493,
+			// Gen 5
+			495,498,501,504,506,509,511,513,515,519,
+			522,524,527,529,531,532,538,539,546,548,
+			550,554,557,559,561,563,566,569,570,572,
+			574,577,579,580,582,585,587,588,590,592,
+			594,595,596,597,599,602,604,605,607,610,
+			613,615,616,618,619,621,622,624,626,628,
+			629,631,633,636,638,639,640,641,642,643,
+			644,645,646,647,648,649
+		];
+
+		// Extend to 365 by cycling
+		const CURATED = [];
+		for (let i = 0; i < 365; i++) CURATED.push(BASE_LIST[i % BASE_LIST.length]);
+
+		// Pokemon names map (id -> name) — enough for our curated set
+		// We'll fetch from PokeAPI sprites URL patterns; names from a small inline map
+		const POKEMON_NAMES = {
+			1:'Bulbasaur',2:'Ivysaur',3:'Venusaur',4:'Charmander',5:'Charmeleon',6:'Charizard',
+			7:'Squirtle',8:'Wartortle',9:'Blastoise',25:'Pikachu',26:'Raichu',
+			39:'Jigglypuff',40:'Wigglytuff',52:'Meowth',54:'Psyduck',58:'Growlithe',
+			60:'Poliwag',63:'Abra',66:'Machop',74:'Geodude',79:'Slowpoke',
+			81:'Magnemite',84:'Doduo',92:'Gastly',100:'Voltorb',103:'Exeggutor',
+			106:'Hitmonlee',107:'Hitmonchan',112:'Rhydon',113:'Chansey',116:'Horsea',
+			120:'Staryu',122:'Mr. Mime',127:'Pinsir',128:'Tauros',130:'Gyarados',
+			131:'Lapras',132:'Ditto',133:'Eevee',134:'Vaporeon',135:'Jolteon',
+			136:'Flareon',137:'Porygon',143:'Snorlax',144:'Articuno',145:'Zapdos',
+			146:'Moltres',147:'Dratini',148:'Dragonair',149:'Dragonite',150:'Mewtwo',151:'Mew',
+			152:'Chikorita',153:'Bayleef',154:'Meganium',155:'Cyndaquil',156:'Quilava',
+			157:'Typhlosion',158:'Totodile',159:'Croconaw',160:'Feraligatr',
+			175:'Togepi',176:'Togetic',177:'Natu',180:'Flaaffy',183:'Marill',
+			184:'Azumarill',185:'Sudowoodo',186:'Politoed',196:'Espeon',197:'Umbreon',
+			202:'Wobbuffet',208:'Steelix',210:'Granbull',212:'Scizor',213:'Shuckle',
+			214:'Heracross',218:'Slugma',228:'Houndour',229:'Houndoom',230:'Kingdra',
+			231:'Phanpy',233:'Porygon2',234:'Stantler',235:'Smeargle',236:'Tyrogue',
+			238:'Smoochum',243:'Raikou',244:'Entei',245:'Suicune',246:'Larvitar',
+			247:'Pupitar',248:'Tyranitar',249:'Lugia',250:'Ho-Oh',251:'Celebi',
+			252:'Treecko',255:'Torchic',258:'Mudkip',261:'Poochyena',263:'Zigzagoon',
+			270:'Lotad',273:'Seedot',276:'Taillow',280:'Ralts',283:'Surskit',
+			285:'Shroomish',287:'Slakoth',298:'Azurill',302:'Sableye',304:'Aron',
+			307:'Meditite',309:'Electrike',311:'Plusle',312:'Minun',315:'Roselia',
+			318:'Carvanha',333:'Swablu',335:'Zangoose',351:'Castform',352:'Kecleon',
+			359:'Absol',363:'Spheal',371:'Bagon',374:'Beldum',375:'Metang',
+			376:'Metagross',377:'Regirock',378:'Regice',379:'Registeel',380:'Latias',
+			381:'Latios',382:'Kyogre',383:'Groudon',384:'Rayquaza',385:'Jirachi',386:'Deoxys',
+			387:'Turtwig',390:'Chimchar',393:'Piplup',399:'Bidoof',403:'Shinx',
+			406:'Budew',408:'Cranidos',412:'Burmy',418:'Buizel',420:'Cherubi',
+			422:'Shellos',425:'Drifloon',427:'Buneary',431:'Glameow',433:'Chingling',
+			438:'Bonsly',439:'Mime Jr.',440:'Happiny',441:'Chatot',442:'Spiritomb',
+			443:'Gible',444:'Gabite',445:'Garchomp',446:'Munchlax',447:'Riolu',
+			448:'Lucario',449:'Hippopotas',450:'Hippowdon',458:'Mantyke',459:'Snover',
+			460:'Abomasnow',461:'Weavile',462:'Magnezone',463:'Lickilicky',464:'Rhyperior',
+			465:'Tangrowth',466:'Electivire',467:'Magmortar',468:'Togekiss',469:'Yanmega',
+			470:'Leafeon',471:'Glaceon',472:'Gliscor',473:'Mamoswine',474:'Porygon-Z',
+			475:'Gallade',476:'Probopass',477:'Dusknoir',478:'Froslass',479:'Rotom',
+			480:'Uxie',481:'Mesprit',482:'Azelf',483:'Dialga',484:'Palkia',
+			485:'Heatran',486:'Regigigas',487:'Giratina',488:'Cresselia',490:'Manaphy',
+			491:'Darkrai',492:'Shaymin',493:'Arceus',
+			495:'Snivy',498:'Tepig',501:'Oshawott',504:'Patrat',506:'Lillipup',
+			509:'Purrloin',511:'Pansage',513:'Pansear',515:'Panpour',519:'Pidove',
+			522:'Blitzle',524:'Roggenrola',527:'Woobat',529:'Drilbur',531:'Audino',
+			532:'Timburr',538:'Throh',539:'Sawk',546:'Cottonee',548:'Petilil',
+			550:'Basculin',554:'Darumaka',557:'Dwebble',559:'Scraggy',561:'Sigilyph',
+			563:'Cofagrigus',566:'Archen',569:'Garbodor',570:'Zorua',572:'Minccino',
+			574:'Gothita',577:'Solosis',579:'Reuniclus',580:'Ducklett',582:'Vanillite',
+			585:'Deerling',587:'Emolga',588:'Karrablast',590:'Foongus',592:'Frillish',
+			594:'Alomomola',595:'Joltik',596:'Galvantula',597:'Ferroseed',599:'Klink',
+			602:'Tynamo',604:'Eelektross',605:'Elgyem',607:'Litwick',610:'Axew',
+			613:'Cubchoo',615:'Cryogonal',616:'Shelmet',618:'Stunfisk',619:'Mienfoo',
+			621:'Druddigon',622:'Golett',624:'Pawniard',626:'Bouffalant',628:'Braviary',
+			629:'Vullaby',631:'Heatmor',633:'Deino',636:'Larvesta',638:'Cobalion',
+			639:'Terrakion',640:'Virizion',641:'Tornadus',642:'Thundurus',643:'Reshiram',
+			644:'Zekrom',645:'Landorus',646:'Kyurem',647:'Keldeo',648:'Meloetta',649:'Genesect'
+		};
+
+		function escapeHtml(s) {
+			return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+		}
+
+		function getTodayStr() {
+			const d = new Date();
+			return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+		}
+
+		function getDayOfYear() {
+			const now = new Date();
+			const start = new Date(now.getFullYear(), 0, 0);
+			const diff = now - start;
+			const oneDay = 1000*60*60*24;
+			return Math.floor(diff / oneDay);
+		}
+
+		function grantTokens(amount) {
+			try {
+				const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+				if (typeof inv.tokens !== 'number') inv.tokens = 0;
+				inv.tokens += amount;
+				localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+				return inv.tokens;
+			} catch { return 0; }
+		}
+
+		function shuffle(arr, seed) {
+			// seeded Fisher-Yates using seed as initial value
+			const a = arr.slice();
+			let s = seed;
+			function rng() { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646; }
+			for (let i = a.length - 1; i > 0; i--) {
+				const j = Math.floor(rng() * (i + 1));
+				[a[i], a[j]] = [a[j], a[i]];
+			}
+			return a;
+		}
+
+		const ALL_TYPES = ['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison',
+			'Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
+
+		const todayStr = getTodayStr();
+		document.getElementById('spDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+		// Check if already played today
+		const DONE_KEY = `pokequiz_spotlight_${todayStr}`;
+		if (localStorage.getItem(DONE_KEY)) {
+			document.getElementById('spMain').style.display = 'none';
+			const db = document.getElementById('spDoneBanner');
+			db.style.display = 'block';
+			db.innerHTML = `
+				<div style="font-size:48px;margin-bottom:10px;">&#127775;</div>
+				<h2>Already done today!</h2>
+				<p style="color:#666;margin-bottom:16px;">Come back tomorrow for a new spotlight Pok&eacute;mon.</p>
+				<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+					<a href="puzzle.html" class="btn">Back to Puzzles</a>
+					<a href="camp.html" class="btn btn-secondary">Spend Tokens &#127957;&#65039;</a>
+				</div>
+			`;
+			return;
+		}
+
+		// Determine today's Pokémon
+		const dayIdx = getDayOfYear() % CURATED.length;
+		const pokemonId = CURATED[dayIdx];
+		const pokemonName = POKEMON_NAMES[pokemonId] || 'Pokémon';
+		const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`;
+		const cryUrl = `https://play.pokemonshowdown.com/audio/cries/${pokemonName.toLowerCase().replace(/[^a-z]/g,'')}.mp3`;
+
+		// State
+		let currentRound = 0;
+		let score = 0;
+		let roundResults = [];
+		let timerInterval = null;
+
+		// Dots
+		const dotsEl = document.getElementById('spDots');
+		dotsEl.innerHTML = Array.from({length:5}, (_,i) => `<div class="sp-dot" id="dot-${i}"></div>`).join('');
+
+		function setDotActive(i) {
+			document.querySelectorAll('.sp-dot').forEach((d,j) => {
+				d.classList.remove('active');
+				if (j === i) d.classList.add('active');
+			});
+		}
+
+		function markDot(i, correct) {
+			const d = document.getElementById(`dot-${i}`);
+			d.classList.remove('active');
+			d.classList.add(correct ? 'done' : 'wrong');
+		}
+
+		function stopTimer() {
+			if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+		}
+
+		function startTimer(seconds, onExpire) {
+			stopTimer();
+			const fillEl = document.getElementById('spTimerFill');
+			const numEl = document.getElementById('spTimerNum');
+			if (!fillEl || !numEl) return;
+			let rem = seconds;
+			numEl.textContent = rem;
+			fillEl.style.transition = 'none';
+			fillEl.style.width = '100%';
+			requestAnimationFrame(() => {
+				fillEl.style.transition = `width ${seconds}s linear`;
+				fillEl.style.width = '0%';
+			});
+			timerInterval = setInterval(() => {
+				rem--;
+				if (numEl) numEl.textContent = rem;
+				if (rem <= 0) { stopTimer(); onExpire(); }
+			}, 1000);
+		}
+
+		function timerHtml(seconds) {
+			return `
+				<div class="sp-timer-wrap">
+					<div class="sp-timer-track"><div class="sp-timer-fill" id="spTimerFill"></div></div>
+					<span class="sp-timer-num" id="spTimerNum">${seconds}</span>
+				</div>
+			`;
+		}
+
+		function choicesHtml(choices, correctIdx) {
+			const letters = ['A','B','C','D'];
+			return `<div class="sp-choices">
+				${choices.map((c, i) => `
+					<button class="sp-choice" onclick="pickChoice(this, ${i === correctIdx})">
+						<span class="sp-choice-letter">${letters[i]}</span>
+						<span>${escapeHtml(String(c))}</span>
+					</button>
+				`).join('')}
+			</div>`;
+		}
+
+		window.pickChoice = function(btn, isCorrect) {
+			if (btn.classList.contains('locked')) return;
+			stopTimer();
+			lockChoices(isCorrect ? btn : null);
+			showFeedback(isCorrect);
+			setTimeout(advanceRound, isCorrect ? 900 : 1500);
+		};
+
+		function lockChoices(correctBtn) {
+			document.querySelectorAll('.sp-choice').forEach(b => {
+				b.classList.add('locked');
+			});
+			// Mark correct one
+			document.querySelectorAll('.sp-choice').forEach(b => {
+				if (b === correctBtn) b.classList.add('correct');
+			});
+			if (!correctBtn) {
+				// highlight correct from dataset
+				document.querySelectorAll('.sp-choice').forEach(b => {
+					if (b.onclick && b.onclick.toString().includes('true')) b.classList.add('correct');
+				});
+			}
+		}
+
+		function showFeedback(correct) {
+			const fb = document.getElementById('spFeedback');
+			if (!fb) return;
+			fb.textContent = correct ? '✓ Correct!' : '✗ Wrong!';
+			fb.className = 'sp-feedback' + (correct ? '' : ' bad');
+		}
+
+		// Load external data
+		let statsData = null;
+		let flavorData = null;
+		let typesData = null;
+		let dataLoaded = 0;
+
+		function tryStart() {
+			dataLoaded++;
+			if (dataLoaded >= 3) showRound(0);
+		}
+
+		fetch('js/pokemon-stats.json').then(r=>r.json()).then(d => { statsData = d; tryStart(); }).catch(()=>{ statsData=[]; tryStart(); });
+		fetch('js/pokemon-flavor.json').then(r=>r.json()).then(d => { flavorData = d; tryStart(); }).catch(()=>{ flavorData=[]; tryStart(); });
+		fetch('js/pokemon-types.json').then(r=>r.json()).then(d => { typesData = d; tryStart(); }).catch(()=>{ typesData=[]; tryStart(); });
+
+		function getStats() {
+			if (!statsData) return null;
+			return statsData.find(s => s.id === pokemonId) || null;
+		}
+
+		function getFlavor() {
+			if (!flavorData) return '';
+			const entry = flavorData.find(f => f.id === pokemonId);
+			return entry ? entry.flavor : '';
+		}
+
+		function getTypes() {
+			if (!typesData) return ['Normal'];
+			const entry = typesData.find(t => t.id === pokemonId);
+			return entry ? entry.types.map(t => t.charAt(0).toUpperCase() + t.slice(1)) : ['Normal'];
+		}
+
+		function showRound(idx) {
+			currentRound = idx;
+			setDotActive(idx);
+			document.getElementById('spFeedback').textContent = '';
+			document.getElementById('spFeedback').className = 'sp-feedback';
+			document.getElementById('spMain').style.display = '';
+
+			const rd = document.getElementById('spRound');
+
+			if (idx === 0) showSilhouetteRound(rd);
+			else if (idx === 1) showCryRound(rd);
+			else if (idx === 2) showDexRound(rd);
+			else if (idx === 3) showStatRound(rd);
+			else if (idx === 4) showTypeRound(rd);
+		}
+
+		function advanceRound() {
+			const correct = window._lastRoundCorrect;
+			markDot(currentRound, !!correct);
+			if (correct) score++;
+			roundResults.push(!!correct);
+
+			if (currentRound < 4) {
+				showRound(currentRound + 1);
+			} else {
+				showFinalResults();
+			}
+		}
+
+		// --- Round 1: Silhouette ---
+		function showSilhouetteRound(rd) {
+			// Build wrong name choices (seeded from dayIdx)
+			const otherIds = Object.keys(POKEMON_NAMES).map(Number).filter(id => id !== pokemonId);
+			const shuffled = shuffle(otherIds, dayIdx * 7 + 1).slice(0, 3);
+			const wrongNames = shuffled.map(id => POKEMON_NAMES[id] || `#${id}`);
+			const allChoices = shuffle([pokemonName, ...wrongNames], dayIdx * 3 + 2);
+			const correctIdx = allChoices.indexOf(pokemonName);
+
+			rd.innerHTML = `
+				<div class="sp-round-label">Round 1 of 5</div>
+				<div class="sp-round-title">&#128065;&#65039; Silhouette</div>
+				<div class="sp-sprite-wrap">
+					<img src="${spriteUrl}" class="sp-sprite silhouette" id="silSprite" alt="Mystery Pokémon silhouette">
+				</div>
+				<div class="sp-q">Who's that Pok&eacute;mon?</div>
+				${timerHtml(10)}
+				${choicesHtml(allChoices, correctIdx)}
+			`;
+			window._lastRoundCorrect = false;
+
+			// Patch onclick to also set _lastRoundCorrect
+			rd.querySelectorAll('.sp-choice').forEach((btn, i) => {
+				const isC = (i === correctIdx);
+				btn.onclick = () => {
+					if (btn.classList.contains('locked')) return;
+					window._lastRoundCorrect = isC;
+					stopTimer();
+					rd.querySelectorAll('.sp-choice').forEach(b => b.classList.add('locked'));
+					btn.classList.add(isC ? 'correct' : 'wrong');
+					if (!isC) rd.querySelectorAll('.sp-choice')[correctIdx].classList.add('correct');
+					showFeedback(isC);
+					if (isC) document.getElementById('silSprite').classList.remove('silhouette');
+					setTimeout(advanceRound, isC ? 900 : 1500);
+				};
+			});
+
+			startTimer(10, () => {
+				window._lastRoundCorrect = false;
+				rd.querySelectorAll('.sp-choice').forEach((b, i) => {
+					b.classList.add('locked');
+					if (i === correctIdx) b.classList.add('correct');
+				});
+				showFeedback(false);
+				setTimeout(advanceRound, 1500);
+			});
+		}
+
+		// --- Round 2: Cry ---
+		function showCryRound(rd) {
+			const otherIds = Object.keys(POKEMON_NAMES).map(Number).filter(id => id !== pokemonId);
+			const autocompleteList = [pokemonName, ...otherIds.map(id => POKEMON_NAMES[id]).filter(Boolean)].sort();
+
+			rd.innerHTML = `
+				<div class="sp-round-label">Round 2 of 5</div>
+				<div class="sp-round-title">&#127925; Cry</div>
+				<div class="sp-q">Listen to the Pok&eacute;mon's cry and type its name!</div>
+				<button class="sp-cry-btn" id="playCryBtn" onclick="playCry()">&#9654;&#65039; Play Cry</button>
+				${timerHtml(20)}
+				<div class="sp-text-input-wrap">
+					<input list="poke-autocomplete" class="sp-text-input" id="cryInput" type="text" placeholder="Type Pokémon name…" autocomplete="off">
+					<datalist id="poke-autocomplete">
+						${autocompleteList.map(n => `<option value="${escapeHtml(n)}">`).join('')}
+					</datalist>
+					<button class="sp-text-submit" onclick="submitCry()">Go</button>
+				</div>
+			`;
+			window._lastRoundCorrect = false;
+
+			const input = document.getElementById('cryInput');
+			input.addEventListener('keydown', e => { if (e.key === 'Enter') submitCry(); });
+
+			window.playCry = function() {
+				const audio = new Audio(cryUrl);
+				audio.play().catch(() => {
+					document.getElementById('spFeedback').textContent = 'Could not load audio — try anyway!';
+				});
+			};
+
+			window.submitCry = function() {
+				stopTimer();
+				const val = (document.getElementById('cryInput').value || '').trim().toLowerCase();
+				const correct = val === pokemonName.toLowerCase();
+				window._lastRoundCorrect = correct;
+				showFeedback(correct);
+				if (!correct) {
+					document.getElementById('spFeedback').textContent = `✗ It was ${pokemonName}!`;
+					document.getElementById('spFeedback').className = 'sp-feedback bad';
+				}
+				setTimeout(advanceRound, 1400);
+			};
+
+			startTimer(20, () => {
+				window._lastRoundCorrect = false;
+				document.getElementById('spFeedback').textContent = `✗ Time's up! It was ${pokemonName}.`;
+				document.getElementById('spFeedback').className = 'sp-feedback bad';
+				setTimeout(advanceRound, 1400);
+			});
+		}
+
+		// --- Round 3: Pokédex ---
+		function showDexRound(rd) {
+			let flavor = getFlavor();
+			// Redact name (case-insensitive)
+			const re = new RegExp(pokemonName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+			const redacted = flavor ? flavor.replace(re, '???') : 'This mysterious Pokémon has intrigued researchers for years.';
+
+			const otherIds = shuffle(Object.keys(POKEMON_NAMES).map(Number).filter(id => id !== pokemonId), dayIdx * 11).slice(0, 3);
+			const wrongNames = otherIds.map(id => POKEMON_NAMES[id] || `#${id}`);
+			const allChoices = shuffle([pokemonName, ...wrongNames], dayIdx * 5 + 3);
+			const correctIdx = allChoices.indexOf(pokemonName);
+
+			rd.innerHTML = `
+				<div class="sp-round-label">Round 3 of 5</div>
+				<div class="sp-round-title">&#128218; Pok&eacute;dex</div>
+				<div class="sp-q" style="font-size:15px;background:#fff;border:1.5px solid #ede5e5;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-style:italic;color:#333;">"${escapeHtml(redacted)}"</div>
+				<div class="sp-q">Which Pok&eacute;mon is this?</div>
+				${timerHtml(15)}
+				${choicesHtml(allChoices, correctIdx)}
+			`;
+			window._lastRoundCorrect = false;
+
+			rd.querySelectorAll('.sp-choice').forEach((btn, i) => {
+				const isC = (i === correctIdx);
+				btn.onclick = () => {
+					if (btn.classList.contains('locked')) return;
+					window._lastRoundCorrect = isC;
+					stopTimer();
+					rd.querySelectorAll('.sp-choice').forEach(b => b.classList.add('locked'));
+					btn.classList.add(isC ? 'correct' : 'wrong');
+					if (!isC) rd.querySelectorAll('.sp-choice')[correctIdx].classList.add('correct');
+					showFeedback(isC);
+					setTimeout(advanceRound, isC ? 900 : 1500);
+				};
+			});
+
+			startTimer(15, () => {
+				window._lastRoundCorrect = false;
+				rd.querySelectorAll('.sp-choice').forEach((b, i) => {
+					b.classList.add('locked');
+					if (i === correctIdx) b.classList.add('correct');
+				});
+				showFeedback(false);
+				setTimeout(advanceRound, 1500);
+			});
+		}
+
+		// --- Round 4: Stat ---
+		function showStatRound(rd) {
+			const stats = getStats();
+			const baseSpd = stats ? stats.spd : 50;
+
+			// Generate wrong choices: ±10-30 around correct, seeded
+			const offsets = shuffle([-28,-19,-13,-7,7,13,19,28], dayIdx * 13).slice(0, 3);
+			const wrongs = offsets.map(o => Math.max(1, baseSpd + o));
+			const allChoices = shuffle([baseSpd, ...wrongs], dayIdx * 17 + 4);
+			const correctIdx = allChoices.indexOf(baseSpd);
+
+			rd.innerHTML = `
+				<div class="sp-round-label">Round 4 of 5</div>
+				<div class="sp-round-title">&#128200; Stats</div>
+				<div class="sp-sprite-wrap">
+					<img src="${spriteUrl}" class="sp-sprite" alt="${escapeHtml(pokemonName)}">
+				</div>
+				<div class="sp-q">What is <strong>${escapeHtml(pokemonName)}</strong>'s base Speed stat?</div>
+				${timerHtml(15)}
+				${choicesHtml(allChoices, correctIdx)}
+			`;
+			window._lastRoundCorrect = false;
+
+			rd.querySelectorAll('.sp-choice').forEach((btn, i) => {
+				const isC = (i === correctIdx);
+				btn.onclick = () => {
+					if (btn.classList.contains('locked')) return;
+					window._lastRoundCorrect = isC;
+					stopTimer();
+					rd.querySelectorAll('.sp-choice').forEach(b => b.classList.add('locked'));
+					btn.classList.add(isC ? 'correct' : 'wrong');
+					if (!isC) rd.querySelectorAll('.sp-choice')[correctIdx].classList.add('correct');
+					showFeedback(isC);
+					setTimeout(advanceRound, isC ? 900 : 1500);
+				};
+			});
+
+			startTimer(15, () => {
+				window._lastRoundCorrect = false;
+				rd.querySelectorAll('.sp-choice').forEach((b, i) => {
+					b.classList.add('locked');
+					if (i === correctIdx) b.classList.add('correct');
+				});
+				showFeedback(false);
+				setTimeout(advanceRound, 1500);
+			});
+		}
+
+		// --- Round 5: Type ---
+		function showTypeRound(rd) {
+			const pokeTypes = getTypes();
+			const primaryType = pokeTypes[0];
+
+			const wrongTypes = shuffle(ALL_TYPES.filter(t => t !== primaryType), dayIdx * 19).slice(0, 3);
+			const allChoices = shuffle([primaryType, ...wrongTypes], dayIdx * 23 + 5);
+			const correctIdx = allChoices.indexOf(primaryType);
+
+			rd.innerHTML = `
+				<div class="sp-round-label">Round 5 of 5</div>
+				<div class="sp-round-title">&#127380; Type</div>
+				<div class="sp-sprite-wrap">
+					<img src="${spriteUrl}" class="sp-sprite" alt="${escapeHtml(pokemonName)}">
+				</div>
+				<div class="sp-q">What is <strong>${escapeHtml(pokemonName)}</strong>'s primary type?</div>
+				${timerHtml(10)}
+				${choicesHtml(allChoices, correctIdx)}
+			`;
+			window._lastRoundCorrect = false;
+
+			rd.querySelectorAll('.sp-choice').forEach((btn, i) => {
+				const isC = (i === correctIdx);
+				btn.onclick = () => {
+					if (btn.classList.contains('locked')) return;
+					window._lastRoundCorrect = isC;
+					stopTimer();
+					rd.querySelectorAll('.sp-choice').forEach(b => b.classList.add('locked'));
+					btn.classList.add(isC ? 'correct' : 'wrong');
+					if (!isC) rd.querySelectorAll('.sp-choice')[correctIdx].classList.add('correct');
+					showFeedback(isC);
+					setTimeout(advanceRound, isC ? 900 : 1500);
+				};
+			});
+
+			startTimer(10, () => {
+				window._lastRoundCorrect = false;
+				rd.querySelectorAll('.sp-choice').forEach((b, i) => {
+					b.classList.add('locked');
+					if (i === correctIdx) b.classList.add('correct');
+				});
+				showFeedback(false);
+				setTimeout(advanceRound, 1500);
+			});
+		}
+
+		// --- Final results ---
+		function showFinalResults() {
+			document.getElementById('spMain').style.display = 'none';
+			document.getElementById('spFeedback').style.display = 'none';
+
+			let tokens = 5;
+			if (score === 5) tokens = 30;
+			else if (score === 4) tokens = 20;
+			else if (score === 3) tokens = 10;
+			const balance = grantTokens(tokens);
+
+			// Mark as done today
+			try { localStorage.setItem(DONE_KEY, '1'); } catch {}
+
+			const resultsEl = document.getElementById('spResults');
+			resultsEl.style.display = 'block';
+			resultsEl.innerHTML = `
+				<img src="${spriteUrl}" class="sp-results-sprite" alt="${escapeHtml(pokemonName)}">
+				<div class="sp-results-name">${escapeHtml(pokemonName)}</div>
+				<div class="sp-score-label">Your score</div>
+				<div class="sp-score-display">${score}<span style="font-size:20px;color:#888"> / 5</span></div>
+				<div class="sp-token-grant">&#128176; +${tokens} tokens earned &mdash; Balance: ${balance}</div>
+				<div class="sp-tomorrow">Come back tomorrow for a new spotlight!</div>
+				<div class="sp-results-actions">
+					<a href="puzzle.html" class="btn">Back to Puzzles</a>
+					<a href="camp.html" class="btn btn-secondary">Spend Tokens &#127957;&#65039;</a>
+					<a href="ranking.html" class="btn btn-ghost">Leaderboard</a>
+				</div>
+			`;
+		}
+	})();
+	</script>
+</body>
+</html>
