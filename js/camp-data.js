@@ -822,3 +822,12 @@ window.CAMP_DATA.SIGN_MESSAGES_MARKET = {
 window.CAMP_DATA.PLANTS_KEY = 'pokequiz_camp_plants';
 // ── STATS_KEY ────────────────────────────────────────────────────────
 window.CAMP_DATA.STATS_KEY = 'pokequiz_camp_stats';
+
+// ── INVENTORY_KEY ────────────────────────────────────────────────────────
+window.CAMP_DATA.INVENTORY_KEY = 'pokequiz_camp_inventory';
+// ── FRIENDSHIP_MAX ────────────────────────────────────────────────────────
+window.CAMP_DATA.FRIENDSHIP_MAX = 100;
+// ── DAILY_BONUS_KEY ────────────────────────────────────────────────────────
+window.CAMP_DATA.DAILY_BONUS_KEY = 'pokequiz_camp_daily';
+// ── DAILY_BONUS_MS ────────────────────────────────────────────────────────
+window.CAMP_DATA.DAILY_BONUS_MS = 22 * 60 * 60 * 1000; // 22 hours so timezone shifts can't lock you out

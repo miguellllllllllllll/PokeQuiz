@@ -891,4 +891,988 @@
 		})();
 	window.CAMP_SYSTEMS.TouchActions = TouchActions;
 
+	// CAMP_DATA constants used by Inventory, Daily, BerryBreeding, NotifBell
+	const INVENTORY_KEY  = (window.CAMP_DATA || {}).INVENTORY_KEY;
+	const FRIENDSHIP_MAX = (window.CAMP_DATA || {}).FRIENDSHIP_MAX || 100;
+	const DAILY_BONUS_KEY = (window.CAMP_DATA || {}).DAILY_BONUS_KEY;
+	const DAILY_BONUS_MS  = (window.CAMP_DATA || {}).DAILY_BONUS_MS || (22*3600*1000);
+
+
+	// ── getEffectiveGrowMs ────────────────────────────────────────────────
+		function getEffectiveGrowMs() {
+			const inv = Inventory.load();
+			let ms = GROW_MS;
+			// Herbal Tea fast-grow boost: 80% faster (10% of normal time)
+			if (inv.boosts && inv.boosts.fastGrow > Date.now()) ms = Math.floor(ms * 0.1);
+			// Furniture grow speed bonus: 20% faster
+			const fb = getFurnitureBonuses ? getFurnitureBonuses() : { growSpeedBonus: 0 };
+			if (fb.growSpeedBonus > 0) ms = Math.floor(ms * (1 - fb.growSpeedBonus));
+			// Partner passive: Leafeon gives +30% grow speed; Growth Boost tutor skill gives +50%
+			const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { growSpeedBonus: 0, tutorGrowBonus: 0 };
+			if (pp.growSpeedBonus > 0) ms = Math.floor(ms * (1 - pp.growSpeedBonus));
+			if ((pp.tutorGrowBonus || 0) > 0) ms = Math.floor(ms * (1 - pp.tutorGrowBonus));
+			return Math.max(1000, ms);
+		}
+	window.CAMP_SYSTEMS.getEffectiveGrowMs = getEffectiveGrowMs;
+
+	// ── Inventory ────────────────────────────────────────────────────────
+		const Inventory = (() => {
+			const DEFAULT = {
+				seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0,
+				eeveeForm: 'eevee', stone: null,
+				hasScythe: false, scytheEquipped: false,
+				cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [], roomItems: [], roomPlacements: {}, houseRoomItems: [], housePlacements: {} },
+			};
+			function load() {
+				try {
+					const raw = localStorage.getItem(INVENTORY_KEY);
+					if (raw) {
+						const parsed = JSON.parse(raw);
+						// Deep-merge cosmetics so new keys added to DEFAULT are always present.
+						const cosm = Object.assign({}, DEFAULT.cosmetics, parsed.cosmetics || {});
+						if (!Array.isArray(cosm.decor)) cosm.decor = [];
+						if (!Array.isArray(cosm.roomItems)) cosm.roomItems = [];
+						if (!cosm.roomPlacements || typeof cosm.roomPlacements !== 'object') cosm.roomPlacements = {};
+						if (cosm.roomActive) {
+							Object.entries(cosm.roomActive).forEach(([k, v]) => {
+								if (v && ROOM_ITEMS[k] && !cosm.roomPlacements[k])
+									cosm.roomPlacements[k] = { r: ROOM_ITEMS[k].r, c: ROOM_ITEMS[k].c };
+							});
+							delete cosm.roomActive;
+						}
+						if (!Array.isArray(cosm.houseRoomItems)) cosm.houseRoomItems = [];
+						if (!cosm.housePlacements || typeof cosm.housePlacements !== 'object') cosm.housePlacements = {};
+						if (cosm.houseRoomActive) {
+							Object.entries(cosm.houseRoomActive).forEach(([k, v]) => {
+								if (v && HOUSE_ITEMS[k] && !cosm.housePlacements[k])
+									cosm.housePlacements[k] = { r: HOUSE_ITEMS[k].r, c: HOUSE_ITEMS[k].c };
+							});
+							delete cosm.houseRoomActive;
+						}
+						// Away-time check: if lastLogin is set, compute time away and award items
+						if (parsed.lastLogin) {
+							const awayMs = Date.now() - parsed.lastLogin;
+							const awayHours = awayMs / 3600000;
+							if (awayHours >= 1) {
+								// Camp rating bonus (calculated here since CampRating module not yet defined;
+								// we replicate the logic inline to avoid forward-reference issues)
+								const _placements = Object.keys({
+									...(parsed.cosmetics?.roomPlacements || {}),
+									...(parsed.cosmetics?.housePlacements || {}),
+								}).length;
+								let _rScore = Math.min(2, Math.floor(_placements / 2));
+								try { const _pl = JSON.parse(localStorage.getItem('pokequiz_plants') || '[]'); if (_pl.length >= 2) _rScore += 1; } catch {}
+								if ((parsed.pcBox || []).length >= 3) _rScore += 1;
+								if ((parsed.friendship || 0) >= 80) _rScore += 1;
+								const _rMult = 1 + (Math.min(5, Math.max(1, _rScore)) - 1) * 0.2;
+	
+								let msg = '';
+								if (awayHours >= 8) {
+									parsed.seeds = (parsed.seeds||0) + Math.round(3 * _rMult);
+									parsed.friendshipBerries = (parsed.friendshipBerries||0) + Math.round(2 * _rMult);
+									parsed.tokens = (parsed.tokens||0) + Math.round(10 * _rMult);
+									msg = 'Away 8h+: found seeds, berries & tokens! (×' + _rMult.toFixed(1) + ' camp bonus)';
+								} else if (awayHours >= 4) {
+									parsed.seeds = (parsed.seeds||0) + Math.round(2 * _rMult);
+									parsed.friendshipBerries = (parsed.friendshipBerries||0) + Math.round(1 * _rMult);
+									msg = 'Away 4h+: found seeds & berries! (×' + _rMult.toFixed(1) + ')';
+								} else if (awayHours >= 1) {
+									parsed.seeds = (parsed.seeds||0) + Math.round(1 * _rMult);
+									msg = 'Away 1h+: found a seed!';
+								}
+								if (msg) {
+									parsed.lastLogin = Date.now();
+									localStorage.setItem(INVENTORY_KEY, JSON.stringify(parsed));
+									setTimeout(() => { if (typeof showToast !== 'undefined') showToast(ico(ICO.camp) + ' Your Pokémon explored! ' + msg); }, 2000);
+								}
+							}
+						}
+						return Object.assign({}, DEFAULT, parsed, { cosmetics: cosm });
+					}
+				} catch {}
+				return Object.assign({}, DEFAULT, { cosmetics: Object.assign({}, DEFAULT.cosmetics) });
+			}
+			function save(inv) {
+				try {
+					inv.lastLogin = Date.now();
+					localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv));
+				} catch {}
+			}
+			return { load, save };
+		})();
+	window.CAMP_SYSTEMS.Inventory = Inventory;
+
+	// ── Daily ────────────────────────────────────────────────────────
+		const Daily = (() => {
+			function lastClaim() {
+				try { return Number(localStorage.getItem(DAILY_BONUS_KEY) || 0); } catch { return 0; }
+			}
+			function ready() { return (Date.now() - lastClaim()) >= DAILY_BONUS_MS; }
+			function claim() {
+				const inv = Inventory.load();
+				inv.tokens = (inv.tokens || 0) + 20;
+				inv.seeds = (inv.seeds || 0) + 1;
+				Inventory.save(inv);
+				const prevClaim = lastClaim();
+				try { localStorage.setItem(DAILY_BONUS_KEY, String(Date.now())); } catch {}
+				// Update stats: streak continues if last claim was within 48h.
+				const s = Stats.load();
+				const hoursSince = prevClaim ? (Date.now() - prevClaim) / 3600000 : 999;
+				s.loginStreak = (prevClaim && hoursSince < 48) ? (s.loginStreak || 0) + 1 : 1;
+				s.totalDaysPlayed = (s.totalDaysPlayed || 0) + 1;
+				s.totalTokensEarned = (s.totalTokensEarned || 0) + 20;
+				Stats.save(s);
+			}
+			function hoursLeft() {
+				const ms = DAILY_BONUS_MS - (Date.now() - lastClaim());
+				return Math.max(0, Math.ceil(ms / (60 * 60 * 1000)));
+			}
+			return { ready, claim, hoursLeft };
+		})();
+	window.CAMP_SYSTEMS.Daily = Daily;
+
+	// ── Pokedex ────────────────────────────────────────────────────────
+		const Pokedex = (() => {
+			const DEX = [
+				{id:1,n:'Bulbasaur'},{id:2,n:'Ivysaur'},{id:3,n:'Venusaur'},
+				{id:4,n:'Charmander'},{id:5,n:'Charmeleon'},{id:6,n:'Charizard'},
+				{id:7,n:'Squirtle'},{id:8,n:'Wartortle'},{id:9,n:'Blastoise'},
+				{id:10,n:'Caterpie'},{id:11,n:'Metapod'},{id:12,n:'Butterfree'},
+				{id:13,n:'Weedle'},{id:14,n:'Kakuna'},{id:15,n:'Beedrill'},
+				{id:16,n:'Pidgey'},{id:17,n:'Pidgeotto'},{id:18,n:'Pidgeot'},
+				{id:19,n:'Rattata'},{id:20,n:'Raticate'},{id:21,n:'Spearow'},
+				{id:22,n:'Fearow'},{id:23,n:'Ekans'},{id:24,n:'Arbok'},
+				{id:25,n:'Pikachu'},{id:26,n:'Raichu'},{id:27,n:'Sandshrew'},
+				{id:28,n:'Sandslash'},{id:29,n:'Nidoran♀'},{id:30,n:'Nidorina'},
+				{id:31,n:'Nidoqueen'},{id:32,n:'Nidoran♂'},{id:33,n:'Nidorino'},
+				{id:34,n:'Nidoking'},{id:35,n:'Clefairy'},{id:36,n:'Clefable'},
+				{id:37,n:'Vulpix'},{id:38,n:'Ninetales'},{id:39,n:'Jigglypuff'},
+				{id:40,n:'Wigglytuff'},{id:41,n:'Zubat'},{id:42,n:'Golbat'},
+				{id:43,n:'Oddish'},{id:44,n:'Gloom'},{id:45,n:'Vileplume'},
+				{id:46,n:'Paras'},{id:47,n:'Parasect'},{id:48,n:'Venonat'},
+				{id:49,n:'Venomoth'},{id:50,n:'Diglett'},{id:51,n:'Dugtrio'},
+				{id:52,n:'Meowth'},{id:53,n:'Persian'},{id:54,n:'Psyduck'},
+				{id:55,n:'Golduck'},{id:56,n:'Mankey'},{id:57,n:'Primeape'},
+				{id:58,n:'Growlithe'},{id:59,n:'Arcanine'},{id:60,n:'Poliwag'},
+				{id:61,n:'Poliwhirl'},{id:62,n:'Poliwrath'},{id:63,n:'Abra'},
+				{id:64,n:'Kadabra'},{id:65,n:'Alakazam'},{id:66,n:'Machop'},
+				{id:67,n:'Machoke'},{id:68,n:'Machamp'},{id:69,n:'Bellsprout'},
+				{id:70,n:'Weepinbell'},{id:71,n:'Victreebel'},{id:72,n:'Tentacool'},
+				{id:73,n:'Tentacruel'},{id:74,n:'Geodude'},{id:75,n:'Graveler'},
+				{id:76,n:'Golem'},{id:77,n:'Ponyta'},{id:78,n:'Rapidash'},
+				{id:79,n:'Slowpoke'},{id:80,n:'Slowbro'},{id:81,n:'Magnemite'},
+				{id:82,n:'Magneton'},{id:83,n:"Farfetch'd"},{id:84,n:'Doduo'},
+				{id:85,n:'Dodrio'},{id:86,n:'Seel'},{id:87,n:'Dewgong'},
+				{id:88,n:'Grimer'},{id:89,n:'Muk'},{id:90,n:'Shellder'},
+				{id:91,n:'Cloyster'},{id:92,n:'Gastly'},{id:93,n:'Haunter'},
+				{id:94,n:'Gengar'},{id:95,n:'Onix'},{id:96,n:'Drowzee'},
+				{id:97,n:'Hypno'},{id:98,n:'Krabby'},{id:99,n:'Kingler'},
+				{id:100,n:'Voltorb'},{id:101,n:'Electrode'},{id:102,n:'Exeggcute'},
+				{id:103,n:'Exeggutor'},{id:104,n:'Cubone'},{id:105,n:'Marowak'},
+				{id:106,n:'Hitmonlee'},{id:107,n:'Hitmonchan'},{id:108,n:'Lickitung'},
+				{id:109,n:'Koffing'},{id:110,n:'Weezing'},{id:111,n:'Rhyhorn'},
+				{id:112,n:'Rhydon'},{id:113,n:'Chansey'},{id:114,n:'Tangela'},
+				{id:115,n:'Kangaskhan'},{id:116,n:'Horsea'},{id:117,n:'Seadra'},
+				{id:118,n:'Goldeen'},{id:119,n:'Seaking'},{id:120,n:'Staryu'},
+				{id:121,n:'Starmie'},{id:122,n:'Mr. Mime'},{id:123,n:'Scyther'},
+				{id:124,n:'Jynx'},{id:125,n:'Electabuzz'},{id:126,n:'Magmar'},
+				{id:127,n:'Pinsir'},{id:128,n:'Tauros'},{id:129,n:'Magikarp'},
+				{id:130,n:'Gyarados'},{id:131,n:'Lapras'},{id:132,n:'Ditto'},
+				{id:133,n:'Eevee'},{id:134,n:'Vaporeon'},{id:135,n:'Jolteon'},
+				{id:136,n:'Flareon'},{id:137,n:'Porygon'},{id:138,n:'Omanyte'},
+				{id:139,n:'Omastar'},{id:140,n:'Kabuto'},{id:141,n:'Kabutops'},
+				{id:142,n:'Aerodactyl'},{id:143,n:'Snorlax'},{id:144,n:'Articuno'},
+				{id:145,n:'Zapdos'},{id:146,n:'Moltres'},{id:147,n:'Dratini'},
+				{id:148,n:'Dragonair'},{id:149,n:'Dragonite'},{id:150,n:'Mewtwo'},
+				{id:151,n:'Mew'},
+			];
+			function loadData() {
+				try { return JSON.parse(localStorage.getItem('pokequiz_dex') || '{"seen":[],"caught":[]}'); }
+				catch { return { seen: [], caught: [] }; }
+			}
+			function saveData(d) { localStorage.setItem('pokequiz_dex', JSON.stringify(d)); }
+			function markSeen(id) {
+				const d = loadData();
+				if (!d.seen.includes(id)) { d.seen.push(id); saveData(d); }
+			}
+			function markCaught(id) {
+				const d = loadData();
+				if (!d.seen.includes(id)) d.seen.push(id);
+				// Always push — duplicates allowed so you can own multiple of the same species.
+				d.caught.push(id);
+				saveData(d);
+				// Milestones are based on unique species count, not total instances.
+				checkMilestones(new Set(d.caught).size);
+			}
+			function isCaught(id) { return loadData().caught.includes(id); }
+			function checkMilestones(n) {
+				if (n === 10) { showToast(ico(ICO.book) + ' Pokédex milestone: 10 caught! +20 ' + ico(ICO.token)); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+20; Inventory.save(inv); }
+				if (n === 30) { showToast(ico(ICO.book) + ' Pokédex milestone: 30 caught! +50 ' + ico(ICO.token)); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+50; Inventory.save(inv); }
+				if (n === 60) { showToast(ico(ICO.book) + ' Pokédex milestone: 60 caught! +100 ' + ico(ICO.token)); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+100; Inventory.save(inv); }
+				if (n === 100) { showToast(ico(ICO.achieve) + ' 100 Pokémon caught! Master Trainer!'); Achievements.unlock('dex100'); }
+			}
+			function open() {
+				let panel = document.getElementById('dexPanel');
+				if (!panel) {
+					panel = document.createElement('div');
+					panel.id = 'dexPanel';
+					document.body.appendChild(panel);
+					panel.addEventListener('pointerdown', () => { panel.hidden = true; });
+				}
+				panel.hidden = false;
+				panel.className = 'pk-backdrop';
+				panel.innerHTML = '';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal';
+				inner.innerHTML = '<div class="pk-modal-head">' +
+					'<span class="pk-modal-title">' + ico(ICO.book) + ' POKÉDEX</span>' +
+					'<span id="dexCounter" style="font-size:9px;color:var(--pk-muted)"></span>' +
+					'<button id="dexClose" class="pk-close" type="button">' + ico(ICO.close) + '</button>' +
+					'</div>';
+				const body = document.createElement('div');
+				body.className = 'pk-modal-body';
+				body.style.cssText = 'padding-top:10px';
+				const grid = document.createElement('div');
+				grid.id = 'dexGrid';
+				grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:5px';
+				body.appendChild(grid);
+				inner.appendChild(body);
+				panel.appendChild(inner);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				document.getElementById('dexClose').addEventListener('click', () => { panel.hidden = true; });
+				const data = loadData();
+				const counter = document.getElementById('dexCounter');
+				const uniqueSpecies = new Set(data.caught).size;
+				const totalOwned   = data.caught.length;
+				counter.textContent = uniqueSpecies + ' / 151' + (totalOwned > uniqueSpecies ? '  (' + totalOwned + ' total)' : '');
+				DEX.forEach(p => {
+					const seen = data.seen.includes(p.id);
+					const caught = data.caught.includes(p.id);
+					const cell = document.createElement('div');
+					cell.className = 'pk-dex-cell' + (caught ? ' is-caught' : '');
+					cell.title = caught ? p.n : (seen ? '???' : '---');
+					const img = document.createElement('img');
+					img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;' + (!seen ? 'filter:brightness(0)' : seen && !caught ? 'filter:brightness(0.25) saturate(0)' : '');
+					img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/' + p.id + '.png';
+					img.loading = 'lazy';
+					const num = document.createElement('div');
+					num.className = 'pk-dex-num' + (caught ? ' is-caught' : '');
+					num.textContent = '#' + String(p.id).padStart(3,'0');
+					cell.appendChild(img);
+					cell.appendChild(num);
+					grid.appendChild(cell);
+				});
+			}
+			// Returns the raw caught array (may contain duplicate dex IDs — one per owned instance).
+			function getCaught() { return loadData().caught; }
+			return { markSeen, markCaught, isCaught, getCaught, open };
+		})();
+	window.CAMP_SYSTEMS.Pokedex = Pokedex;
+
+	// ── CurryCooking ────────────────────────────────────────────────────────
+		const CurryCooking = (() => {
+			const RECIPES = [
+				{ label: ico(ICO.curry) + ' Plain Curry',    ingredients: { pecha: 1 }, desc: '+5 friendship',         effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+5); } },
+				{ label: ico(ICO.curry) + ' Oran Curry',     ingredients: { oran: 1 },  desc: '+15 friendship',        effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+15); } },
+				{ label: ico(ICO.curry) + ' Sitrus Curry',   ingredients: { sitrus: 1 }, desc: '+30 friendship + heal', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+30); inv.partnerHp = 100; } },
+				{ label: ico(ICO.curry) + ' Mixed Berry Curry', ingredients: { pecha:1, oran:1 }, desc: '+20 friendship + 10 min rhythm boost', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+20); if(!inv.boosts) inv.boosts={}; inv.boosts.rhythmBoost = Date.now()+10*60*1000; } },
+				{ label: ico(ICO.curry) + ' Spicy Curry',    ingredients: { pecha:2 },  desc: '+10 friendship + fast-grow 15min', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+10); if(!inv.boosts) inv.boosts={}; inv.boosts.fastGrow = Date.now()+15*60*1000; } },
+			];
+			function canMake(recipe) {
+				const inv = Inventory.load();
+				const bt = inv.berryTypes || {};
+				for (const [type, amt] of Object.entries(recipe.ingredients)) {
+					if ((bt[type]||0) < amt) return false;
+				}
+				return true;
+			}
+			function open() {
+				let panel = document.getElementById('curryPanel');
+				if (!panel) {
+					panel = document.createElement('div');
+					panel.id = 'curryPanel';
+					panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+					document.body.appendChild(panel);
+					panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+				}
+				panel.hidden = false;
+				const inv = Inventory.load();
+				const bt = inv.berryTypes || {};
+				panel.className = 'pk-backdrop';
+				panel.innerHTML = '';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal pk-modal-sm';
+				inner.innerHTML = '<div class="pk-modal-head">' +
+					'<span class="pk-modal-title" style="color:#ff9820">' + ico(ICO.curry) + ' CURRY COOKING</span>' +
+					'<button id="curryClose" class="pk-close" style="color:#ff9820" type="button">' + ico(ICO.close) + '</button>' +
+					'</div>';
+				const body = document.createElement('div');
+				body.className = 'pk-modal-body';
+				const berryLine = document.createElement('div');
+				berryLine.style.cssText = 'font-size:8px;color:#ffc080;margin-bottom:14px;padding:8px 10px;background:rgba(255,136,0,0.08);border-radius:8px;border:1px solid rgba(255,136,0,0.2)';
+				berryLine.innerHTML = 'Berries: ' + ico(ICO.berry,'berry-pecha') + (bt.pecha||0) + ' &nbsp;' + ico(ICO.berry,'berry-oran') + (bt.oran||0) + ' &nbsp;' + ico(ICO.berry,'berry-sitrus') + (bt.sitrus||0);
+				body.appendChild(berryLine);
+				const list = document.createElement('div');
+				list.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+				RECIPES.forEach((r, i) => {
+					const can = canMake(r);
+					const ingStr = Object.entries(r.ingredients).map(([k,v]) => v+'× '+k).join(', ');
+					const row = document.createElement('div');
+					row.className = 'pk-curry-row' + (can ? ' can-make' : '');
+					const nm = document.createElement('div');
+					nm.className = 'pk-curry-name';
+					nm.textContent = r.label;
+					const dc = document.createElement('div');
+					dc.className = 'pk-curry-desc';
+					dc.textContent = r.desc + ' · needs: ' + ingStr;
+					row.appendChild(nm);
+					row.appendChild(dc);
+					if (can) {
+						const cookBtn = document.createElement('button');
+						cookBtn.dataset.recipe = i;
+						cookBtn.type = 'button';
+						cookBtn.className = 'pk-btn pk-btn-sm';
+						cookBtn.style.cssText = 'background:linear-gradient(180deg,#ff9820,#cc6600);color:#fff;margin-top:6px';
+						cookBtn.textContent = 'Cook!';
+						row.appendChild(cookBtn);
+					}
+					list.appendChild(row);
+				});
+				body.appendChild(list);
+				inner.appendChild(body);
+				panel.appendChild(inner);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				document.getElementById('curryClose').addEventListener('click', () => { panel.hidden = true; });
+				list.querySelectorAll('[data-recipe]').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const recipe = RECIPES[parseInt(btn.dataset.recipe)];
+						const inv2 = Inventory.load();
+						if (!inv2.berryTypes) inv2.berryTypes = {};
+						for (const [type, amt] of Object.entries(recipe.ingredients)) {
+							inv2.berryTypes[type] = (inv2.berryTypes[type]||0) - amt;
+						}
+						recipe.effect(inv2);
+						Inventory.save(inv2);
+						showToast(ico(ICO.curry) + ' ' + recipe.label + ' cooked! ' + recipe.desc);
+						Achievements.unlock('chef');
+						TrainerLevel.addXP('cook');
+						panel.hidden = true;
+					});
+				});
+			}
+			return { open };
+		})();
+	window.CAMP_SYSTEMS.CurryCooking = CurryCooking;
+
+	// ── Amie ────────────────────────────────────────────────────────
+		const Amie = (() => {
+			let taps = 0, sessionBonus = 0;
+			const MAX_SESSION = 10;
+			function open() {
+				let panel = document.getElementById('amiePanel');
+				if (!panel) {
+					panel = document.createElement('div');
+					panel.id = 'amiePanel';
+					panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+					document.body.appendChild(panel);
+				}
+				taps = 0; sessionBonus = 0;
+				panel.hidden = false;
+				render(panel);
+			}
+			function render(panel) {
+				panel.className = 'pk-backdrop';
+				panel.innerHTML = '';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal pk-modal-sm';
+				inner.style.textAlign = 'center';
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">' + ico(ICO.play) + ' POKÉMON PLAY</span></div>';
+				const body = document.createElement('div');
+				body.className = 'pk-modal-body';
+				body.innerHTML = '<div id="amieSprite" style="font-size:64px;cursor:pointer;user-select:none;margin:8px 0 4px;display:inline-block;transition:transform 0.1s">🐾</div>' +
+					'<div id="amieMsg" style="font-size:9px;color:var(--pk-muted);margin:10px 0 6px;min-height:18px">Tap your partner to play!</div>' +
+					'<div id="amieTaps" style="font-size:8px;color:var(--pk-gold);margin-bottom:16px">Taps: 0 / ' + MAX_SESSION + '</div>' +
+					'<button id="amieClose" type="button" class="pk-btn pk-btn-dark pk-btn-sm">Done</button>';
+				inner.appendChild(body);
+				panel.appendChild(inner);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				const sprite = document.getElementById('amieSprite');
+				const msg = document.getElementById('amieMsg');
+				const tapsEl = document.getElementById('amieTaps');
+				const MESSAGES = ['💚','Yay!','Hehe~','Again!','♪','Purrr~','So fun!'];
+				sprite.addEventListener('click', () => {
+					if (taps >= MAX_SESSION) { msg.textContent = 'I need a rest! Come back later~'; return; }
+					taps++;
+					sessionBonus++;
+					sprite.style.transform = 'scale(1.3)';
+					setTimeout(() => { sprite.style.transform = 'scale(1)'; }, 100);
+					msg.textContent = MESSAGES[taps % MESSAGES.length];
+					tapsEl.textContent = 'Taps: ' + taps + ' / ' + MAX_SESSION;
+					if (taps === MAX_SESSION) {
+						const inv2 = Inventory.load();
+						const bonus = Math.min(sessionBonus, 5);
+						inv2.friendship = Math.min(100, (inv2.friendship||0) + bonus);
+						Inventory.save(inv2);
+						msg.innerHTML = ico(ICO.star) + ' +' + bonus + ' friendship! Session complete!';
+						showToast('+' + bonus + ' friendship from playing!');
+					}
+				});
+				document.getElementById('amieClose').addEventListener('click', () => {
+					if (sessionBonus > 0 && taps < MAX_SESSION) {
+						const inv2 = Inventory.load();
+						const bonus = Math.floor(sessionBonus / 2);
+						if (bonus > 0) { inv2.friendship = Math.min(100,(inv2.friendship||0)+bonus); Inventory.save(inv2); showToast('+' + bonus + ' friendship!'); }
+					}
+					panel.hidden = true;
+				});
+			}
+			return { open };
+		})();
+	window.CAMP_SYSTEMS.Amie = Amie;
+
+	// ── RoomEditor ────────────────────────────────────────────────────────
+		const RoomEditor = (() => {
+			let openFlag = false;
+			let activeScene = 'upstairs';
+			let placingKey = null;
+			function $(id) { return document.getElementById(id); }
+	
+			function itemsForScene() {
+				return activeScene === 'house' ? HOUSE_ITEMS : ROOM_ITEMS;
+			}
+	
+			function invKeysForScene() {
+				return activeScene === 'house'
+					? { ownedKey: 'houseRoomItems', placementsKey: 'housePlacements' }
+					: { ownedKey: 'roomItems',      placementsKey: 'roomPlacements' };
+			}
+	
+			function liveUpdate() {
+				const items = itemsForScene();
+				const { placementsKey } = invKeysForScene();
+				const inv = Inventory.load();
+				const placements = inv.cosmetics?.[placementsKey] || {};
+				const scene = activeScene === 'house' ? window.__houseScene : window.__upstairsScene;
+				if (!scene || !scene._roomItemObjs) return;
+				Object.entries(items).forEach(([key]) => {
+					const obj = scene._roomItemObjs[key];
+					const pos = placements[key];
+					if (obj) {
+						if (pos) {
+							obj.setPosition(pos.c * 16 + 8, pos.r * 16 + 8);
+							obj.setAngle((pos.rot || 0) * 90);
+							obj.setVisible(true);
+						} else {
+							obj.setVisible(false);
+						}
+					}
+				});
+			}
+	
+			function startPlace(key) {
+				placingKey = key;
+				if (!window.__gridMode) window.__gridMode = {};
+				// Preserve existing rotation when moving an already-placed item
+				const { placementsKey } = invKeysForScene();
+				const existingPos = (Inventory.load().cosmetics?.[placementsKey] || {})[key];
+				window.__gridMode.active = true;
+				window.__gridMode.key = key;
+				window.__gridMode.sceneKey = activeScene;
+				window.__gridMode.hoverR = -1;
+				window.__gridMode.hoverC = -1;
+				window.__gridMode.rot = existingPos?.rot || 0;
+				refresh();
+			}
+	
+			function rotateWhilePlacing() {
+				if (!window.__gridMode) return;
+				window.__gridMode.rot = ((window.__gridMode.rot || 0) + 1) % 4;
+				refresh();
+			}
+	
+			function cancelPlace() {
+				placingKey = null;
+				if (window.__gridMode) window.__gridMode.active = false;
+				refresh();
+			}
+	
+			function confirmPlace(r, c) {
+				if (!placingKey) return;
+				const { ownedKey, placementsKey } = invKeysForScene();
+				const i = Inventory.load();
+				if (!i.cosmetics) i.cosmetics = {};
+				if (!Array.isArray(i.cosmetics[ownedKey])) i.cosmetics[ownedKey] = [];
+				if (!i.cosmetics[placementsKey]) i.cosmetics[placementsKey] = {};
+				if (!i.cosmetics[ownedKey].includes(placingKey)) i.cosmetics[ownedKey].push(placingKey);
+				i.cosmetics[placementsKey][placingKey] = { r, c, rot: window.__gridMode?.rot ?? 0 };
+				Inventory.save(i);
+				cancelPlace();
+				liveUpdate();
+				refresh();
+				// Achievement: place 5+ furniture pieces
+				const allPlacements = Object.assign({}, i.cosmetics.roomPlacements || {}, i.cosmetics.housePlacements || {});
+				if (Object.keys(allPlacements).length >= 5) Achievements.unlock('decorator');
+			}
+	
+			function refresh() {
+				const list = $('creItemList');
+				if (!list) return;
+				const items = itemsForScene();
+				const { ownedKey, placementsKey } = invKeysForScene();
+				const inv = Inventory.load();
+				const cosm = inv.cosmetics || {};
+				const roomItems = cosm[ownedKey] || [];
+				const placements = cosm[placementsKey] || {};
+				const tokens = inv.tokens || 0;
+	
+				const tokEl = $('creTokens');
+				if (tokEl) tokEl.textContent = tokens;
+	
+				const sceneLbl = $('creSceneLabel');
+				if (sceneLbl) sceneLbl.innerHTML = activeScene === 'house' ? ico(ICO.house) + ' Ground Floor' : ico(ICO.house) + ' Bedroom';
+	
+				const placedCount = Object.keys(placements).filter(k => items[k]).length;
+				const ownedCount  = roomItems.filter(k => items[k]).length;
+				const summaryEl = $('creSummary');
+				if (summaryEl) summaryEl.textContent = ownedCount + ' / ' + Object.keys(items).length + ' owned · ' + placedCount + ' placed';
+	
+				const banner = $('crePlacingBanner');
+				if (banner) {
+					if (placingKey) {
+						const item = items[placingKey];
+						banner.hidden = false;
+						const lbl = banner.querySelector('.cre-placing-label');
+						if (lbl) lbl.innerHTML = 'Click a tile to place ' + (item?.icoKey ? ico(ICO[item.icoKey]||item.icoKey)+' ' : '') + (item?.label || '');
+					} else {
+						banner.hidden = true;
+					}
+				}
+	
+				list.innerHTML = '';
+				const cats = { furniture: [], decor: [] };
+				Object.entries(items).forEach(([key, item]) => {
+					(item.cat === 'decor' ? cats.decor : cats.furniture).push([key, item]);
+				});
+				const catLabels = { furniture: ico(ICO.game) + ' Furniture', decor: ico(ICO.sparkle) + ' Decor' };
+	
+				Object.entries(cats).forEach(([cat, entries]) => {
+					if (!entries.length) return;
+					const hdr = document.createElement('div');
+					hdr.className = 'cre-cat-header';
+					hdr.textContent = catLabels[cat];
+					list.appendChild(hdr);
+	
+					entries.forEach(([key, item]) => {
+						const owned    = roomItems.includes(key);
+						const pos      = placements[key];
+						const placed   = !!pos;
+						const isPlacing = placingKey === key;
+						const canAfford = tokens >= item.price;
+	
+						const card = document.createElement('div');
+						card.className = 'cre-item' +
+							(isPlacing ? ' cre-item--placing' : placed ? ' cre-item--active' : owned ? ' cre-item--owned' : '');
+	
+						const left = document.createElement('div');
+						left.className = 'cre-item-left';
+						// Pixel-art sprite for the item — falls back to emoji span if the
+						// design isn't registered (keeps layout intact for any new item).
+						const emojiEl = FurnitureSprites.makeIcon(key, 32);
+						emojiEl.className = 'cre-item-emoji';
+						const infoEl = document.createElement('div');
+						infoEl.className = 'cre-item-info';
+						const labelEl = document.createElement('div');
+						labelEl.className = 'cre-item-label';
+						labelEl.textContent = item.label.replace(/^\S+\s/, '');
+						const statusEl = document.createElement('div');
+						statusEl.className = 'cre-item-status' +
+							(isPlacing ? ' cre-item-status--placing' : placed ? ' cre-item-status--active' : !owned ? ' cre-item-status--price' : '');
+						statusEl.textContent = isPlacing ? '\u2196 Click a tile\u2026' : placed ? '\u2713 Placed' : owned ? 'In inventory' : item.price + ' \U0001f4b0';
+						infoEl.appendChild(labelEl);
+						infoEl.appendChild(statusEl);
+						left.appendChild(emojiEl);
+						left.appendChild(infoEl);
+	
+						const right = document.createElement('div');
+						right.className = 'cre-item-right';
+	
+						if (isPlacing) {
+							const rotBtn = document.createElement('button');
+							rotBtn.className = 'cre-btn cre-btn--rotate';
+							rotBtn.type = 'button';
+							const rotDeg = ((window.__gridMode?.rot || 0) * 90);
+							rotBtn.title = rotDeg + '°';
+							rotBtn.textContent = '↻ ' + rotDeg + '°';
+							rotBtn.addEventListener('click', rotateWhilePlacing);
+							const cancelBtn = document.createElement('button');
+							cancelBtn.className = 'cre-btn cre-btn--cancel';
+							cancelBtn.type = 'button';
+							cancelBtn.textContent = 'Cancel';
+							cancelBtn.addEventListener('click', cancelPlace);
+							right.appendChild(rotBtn);
+							right.appendChild(cancelBtn);
+						} else if (placed) {
+							const rotateBtn = document.createElement('button');
+							rotateBtn.className = 'cre-btn cre-btn--rotate';
+							rotateBtn.type = 'button';
+							const rotDeg = ((pos?.rot || 0) * 90);
+							rotateBtn.title = rotDeg + '°';
+							rotateBtn.textContent = '↻';
+							rotateBtn.addEventListener('click', () => {
+								const i = Inventory.load();
+								if (!i.cosmetics?.[placementsKey]?.[key]) return;
+								i.cosmetics[placementsKey][key].rot = ((i.cosmetics[placementsKey][key].rot || 0) + 1) % 4;
+								Inventory.save(i);
+								liveUpdate(); refresh();
+							});
+							const moveBtn = document.createElement('button');
+							moveBtn.className = 'cre-btn cre-btn--activate';
+							moveBtn.type = 'button';
+							moveBtn.textContent = 'Move';
+							moveBtn.addEventListener('click', () => startPlace(key));
+							const removeBtn = document.createElement('button');
+							removeBtn.className = 'cre-btn cre-btn--remove';
+							removeBtn.type = 'button';
+							removeBtn.textContent = '\u2715 Remove';
+							removeBtn.addEventListener('click', () => {
+								const i = Inventory.load();
+								if (!i.cosmetics) i.cosmetics = {};
+								if (!i.cosmetics[placementsKey]) i.cosmetics[placementsKey] = {};
+								delete i.cosmetics[placementsKey][key];
+								Inventory.save(i);
+								liveUpdate(); refresh();
+							});
+							right.appendChild(rotateBtn);
+							right.appendChild(moveBtn);
+							right.appendChild(removeBtn);
+						} else if (owned) {
+							const placeBtn = document.createElement('button');
+							placeBtn.className = 'cre-btn cre-btn--activate';
+							placeBtn.type = 'button';
+							placeBtn.textContent = 'Place';
+							placeBtn.addEventListener('click', () => startPlace(key));
+							right.appendChild(placeBtn);
+						} else {
+							const buyBtn = document.createElement('button');
+							buyBtn.className = 'cre-btn cre-btn--buy';
+							buyBtn.type = 'button';
+							buyBtn.textContent = 'Buy';
+							buyBtn.disabled = !canAfford;
+							buyBtn.addEventListener('click', () => {
+								const i = Inventory.load();
+								if ((i.tokens || 0) < item.price) return;
+								i.tokens -= item.price;
+								if (!i.cosmetics) i.cosmetics = {};
+								if (!Array.isArray(i.cosmetics[ownedKey])) i.cosmetics[ownedKey] = [];
+								i.cosmetics[ownedKey].push(key);
+								Inventory.save(i);
+								liveUpdate(); refresh();
+								startPlace(key);
+							});
+							right.appendChild(buyBtn);
+						}
+	
+						card.appendChild(left);
+						card.appendChild(right);
+						list.appendChild(card);
+					});
+				});
+			}
+	
+			function open() {
+				const panel = $('campRoomEditor');
+				if (!panel) return;
+				panel.hidden = false;
+				openFlag = true;
+				refresh();
+			}
+	
+			function close() {
+				cancelPlace();
+				const panel = $('campRoomEditor');
+				if (panel) panel.hidden = true;
+				openFlag = false;
+			}
+	
+			function isOpen() { return openFlag; }
+	
+			function showEditBtn(show, sceneKey) {
+				if (show && sceneKey) activeScene = sceneKey;
+				const btn = $('campRoomEditBtn');
+				if (btn) btn.hidden = !show;
+				if (!show) close();
+			}
+	
+			function wire() {
+				const btn = $('campRoomEditBtn');
+				if (btn && !btn.dataset.wired) {
+					btn.dataset.wired = '1';
+					btn.addEventListener('click', () => openFlag ? close() : open());
+				}
+				const closeBtn = $('creClose');
+				if (closeBtn && !closeBtn.dataset.wired) {
+					closeBtn.dataset.wired = '1';
+					closeBtn.addEventListener('click', close);
+				}
+			}
+	
+			if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+			else wire();
+	
+			return { open, close, isOpen, showEditBtn, liveUpdate, confirmPlace, wire };
+		})();
+	window.CAMP_SYSTEMS.RoomEditor = RoomEditor;
+
+	// ── BerryBreeding ────────────────────────────────────────────────────────
+		const BerryBreeding = (() => {
+			const BREED_RECIPES = {
+				'pecha+pecha':  { name: 'Gold Pecha',  friendship: 30, effect: 'rhythm-boost-5min',  cost: 2, icon: '🍬', key: 'goldPecha'  },
+				'oran+oran':    { name: 'Gold Oran',   friendship: 50, effect: null,                  cost: 2, icon: '🫐', key: 'goldOran'   },
+				'sitrus+sitrus':{ name: 'Gold Sitrus', friendship: 70, effect: 'fast-grow-20min',     cost: 2, icon: '🍋', key: 'goldSitrus' },
+				'pecha+oran':   { name: 'Mago Berry',  friendship: 35, effect: null,                  cost: 1, icon: '🍑', key: 'magoBerry'  },
+				'oran+sitrus':  { name: 'Lum Berry',   friendship: 45, effect: 'fast-grow-10min',     cost: 1, icon: '🍈', key: 'lumBerry'   },
+				'pecha+sitrus': { name: 'Salac Berry', friendship: 40, effect: 'rhythm-boost-10min',  cost: 1, icon: '🍓', key: 'salacBerry' },
+			};
+			const BERRY_LABELS = { pecha: 'Pecha', oran: 'Oran', sitrus: 'Sitrus' };
+			const BERRY_KEYS = ['pecha', 'oran', 'sitrus'];
+	
+			function getBerryCount(inv, type) {
+				if (type === 'pecha') return inv.friendshipBerries || 0;
+				if (type === 'oran') return inv.oranBerries || 0;
+				if (type === 'sitrus') return inv.sitrusBerries || 0;
+				return 0;
+			}
+			function deductBerry(inv, type, amount) {
+				if (type === 'pecha') inv.friendshipBerries = Math.max(0, (inv.friendshipBerries || 0) - amount);
+				else if (type === 'oran') inv.oranBerries = Math.max(0, (inv.oranBerries || 0) - amount);
+				else if (type === 'sitrus') inv.sitrusBerries = Math.max(0, (inv.sitrusBerries || 0) - amount);
+			}
+	
+			function open() {
+				const existing = document.getElementById('berryBreedPanel');
+				if (existing) { existing.remove(); return; }
+				const panel = document.createElement('div');
+				panel.id = 'berryBreedPanel';
+				panel.className = 'pk-backdrop';
+				panel.style.zIndex = '130';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal';
+				inner.style.cssText = 'max-width:380px;width:min(380px,94vw)';
+	
+				function buildPanel() {
+					const inv = Inventory.load();
+					const gb = inv.goldBerries || {};
+					let leftSel = 'pecha', rightSel = 'pecha';
+	
+					function getRecipe(l, r) {
+						return BREED_RECIPES[l + '+' + r] || BREED_RECIPES[r + '+' + l] || null;
+					}
+	
+					function renderHTML() {
+						const recipe = getRecipe(leftSel, rightSel);
+						const inv2 = Inventory.load();
+						const lCount = getBerryCount(inv2, leftSel);
+						const rCount = getBerryCount(inv2, rightSel);
+						let canBrew = false;
+						let previewHTML = '<div style="font-size:8px;color:var(--pk-muted);padding:8px 0">No recipe for this combination.</div>';
+						if (recipe) {
+							const needLeft = leftSel === rightSel ? recipe.cost : 1;
+							const needRight = leftSel === rightSel ? 0 : 1;
+							canBrew = lCount >= needLeft && (leftSel === rightSel || rCount >= needRight);
+							const effectLabel = recipe.effect ? ('<br><span style="font-size:6px;color:#88ccff">' + recipe.effect.replace(/-/g,' ') + '</span>') : '';
+							previewHTML = '<div style="text-align:center;padding:6px 0">' +
+								'<div style="font-size:20px;margin-bottom:4px">' + recipe.icon + '</div>' +
+								'<div style="font-size:8px;color:var(--pk-gold)">' + recipe.name + '</div>' +
+								'<div style="font-size:7px;color:#50dd88">+' + recipe.friendship + ' friendship' + effectLabel + '</div>' +
+								'<div style="font-size:6px;color:var(--pk-muted);margin-top:2px">Cost: ' + needLeft + ' ' + BERRY_LABELS[leftSel] + (leftSel !== rightSel ? ' + 1 ' + BERRY_LABELS[rightSel] : '') + '</div>' +
+							'</div>';
+						}
+						const storedHTML = Object.keys(gb).length > 0
+							? '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px"><div style="font-size:7px;color:var(--pk-muted);margin-bottom:4px">Stored Gold Berries:</div>' +
+								Object.entries(gb).filter(([,v]) => v > 0).map(([k,v]) => {
+									const rec = Object.values(BREED_RECIPES).find(r => r.key === k);
+									return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0">' +
+										'<span style="font-size:12px">' + (rec?.icon || '🍓') + '</span>' +
+										'<span style="font-size:7px;color:#e8eaf0">' + (rec?.name || k) + ' ×' + v + '</span>' +
+										'<button class="pk-btn pk-btn-gold pk-btn-sm" data-use-berry="' + k + '" style="margin-left:auto" type="button">Use</button>' +
+									'</div>';
+								}).join('') + '</div>'
+							: '';
+						return '<div class="pk-modal-head">' +
+							'<span class="pk-modal-title">🌿 BERRY LAB</span>' +
+							'<button class="pk-close" id="berryBreedClose" type="button">' + ico(ICO.close) + '</button>' +
+							'</div>' +
+							'<div class="pk-modal-body">' +
+								'<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:10px">' +
+									'<div>' +
+										'<div style="font-size:7px;color:var(--pk-muted);margin-bottom:4px">Left Berry</div>' +
+										'<select id="breedLeft" style="width:100%;padding:4px;background:#1a2848;color:#e8eaf0;border:1px solid rgba(246,200,76,0.3);border-radius:6px;font-size:7px">' +
+											BERRY_KEYS.map(b => '<option value="' + b + '"' + (b === leftSel ? ' selected' : '') + '>' + BERRY_LABELS[b] + ' (×' + getBerryCount(inv2, b) + ')</option>').join('') +
+										'</select>' +
+									'</div>' +
+									'<div style="font-size:16px;color:var(--pk-muted)">+</div>' +
+									'<div>' +
+										'<div style="font-size:7px;color:var(--pk-muted);margin-bottom:4px">Right Berry</div>' +
+										'<select id="breedRight" style="width:100%;padding:4px;background:#1a2848;color:#e8eaf0;border:1px solid rgba(246,200,76,0.3);border-radius:6px;font-size:7px">' +
+											BERRY_KEYS.map(b => '<option value="' + b + '"' + (b === rightSel ? ' selected' : '') + '>' + BERRY_LABELS[b] + ' (×' + getBerryCount(inv2, b) + ')</option>').join('') +
+										'</select>' +
+									'</div>' +
+								'</div>' +
+								'<div id="breedPreview" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px;margin-bottom:10px">' + previewHTML + '</div>' +
+								'<button id="breedBtn" class="pk-btn pk-btn-gold pk-btn-full"' + (canBrew ? '' : ' disabled') + ' type="button">🧪 Brew!</button>' +
+								storedHTML +
+							'</div>';
+					}
+	
+					inner.innerHTML = renderHTML();
+					inner.addEventListener('pointerdown', e => e.stopPropagation());
+					document.getElementById('berryBreedClose')?.addEventListener('click', () => panel.remove());
+	
+					function rewire() {
+						const lEl = document.getElementById('breedLeft');
+						const rEl = document.getElementById('breedRight');
+						const brewBtn = document.getElementById('breedBtn');
+						if (lEl) lEl.addEventListener('change', () => { leftSel = lEl.value; inner.innerHTML = renderHTML(); rewire(); });
+						if (rEl) rEl.addEventListener('change', () => { rightSel = rEl.value; inner.innerHTML = renderHTML(); rewire(); });
+						if (brewBtn) brewBtn.addEventListener('click', () => {
+							const recipe = getRecipe(leftSel, rightSel);
+							if (!recipe) return;
+							const inv3 = Inventory.load();
+							const needLeft = leftSel === rightSel ? recipe.cost : 1;
+							if (getBerryCount(inv3, leftSel) < needLeft) { showToast('Not enough ' + BERRY_LABELS[leftSel] + '!'); return; }
+							if (leftSel !== rightSel && getBerryCount(inv3, rightSel) < 1) { showToast('Not enough ' + BERRY_LABELS[rightSel] + '!'); return; }
+							deductBerry(inv3, leftSel, needLeft);
+							if (leftSel !== rightSel) deductBerry(inv3, rightSel, 1);
+							if (!inv3.goldBerries) inv3.goldBerries = {};
+							inv3.goldBerries[recipe.key] = (inv3.goldBerries[recipe.key] || 0) + 1;
+							Inventory.save(inv3);
+							showToast(recipe.icon + ' Brewed ' + recipe.name + '!');
+							inner.innerHTML = renderHTML();
+							rewire();
+						});
+						inner.querySelectorAll('[data-use-berry]').forEach(btn2 => {
+							btn2.addEventListener('click', () => {
+								const bkey = btn2.dataset.useBerry;
+								const rec2 = Object.values(BREED_RECIPES).find(r => r.key === bkey);
+								if (!rec2) return;
+								const inv4 = Inventory.load();
+								if (!inv4.goldBerries || !(inv4.goldBerries[bkey] > 0)) { showToast('None left!'); return; }
+								inv4.goldBerries[bkey] -= 1;
+								inv4.friendship = Math.min(FRIENDSHIP_MAX, (inv4.friendship || 0) + rec2.friendship);
+								if (!inv4.boosts) inv4.boosts = {};
+								if (rec2.effect === 'rhythm-boost-5min') inv4.boosts.rhythmBoost = Math.max(inv4.boosts.rhythmBoost || 0, Date.now() + 5*60*1000);
+								else if (rec2.effect === 'rhythm-boost-10min') inv4.boosts.rhythmBoost = Math.max(inv4.boosts.rhythmBoost || 0, Date.now() + 10*60*1000);
+								else if (rec2.effect === 'fast-grow-10min') inv4.boosts.fastGrow = Math.max(inv4.boosts.fastGrow || 0, Date.now() + 10*60*1000);
+								else if (rec2.effect === 'fast-grow-20min') inv4.boosts.fastGrow = Math.max(inv4.boosts.fastGrow || 0, Date.now() + 20*60*1000);
+								Inventory.save(inv4);
+								showToast(rec2.icon + ' Used ' + rec2.name + '! +' + rec2.friendship + ' friendship');
+								inner.innerHTML = renderHTML();
+								rewire();
+							});
+						});
+						document.getElementById('berryBreedClose')?.addEventListener('click', () => panel.remove());
+					}
+					rewire();
+				}
+	
+				panel.appendChild(inner);
+				document.body.appendChild(panel);
+				panel.addEventListener('click', e => { if (e.target === panel) panel.remove(); });
+				buildPanel();
+			}
+			return { open };
+		})();
+	window.CAMP_SYSTEMS.BerryBreeding = BerryBreeding;
+
+	// ── NotifBell ────────────────────────────────────────────────────────
+		const NotifBell = (() => {
+			function check() {
+				const msgs = [];
+				const inv = Inventory.load();
+				// 1. Ripe berries
+				try {
+					const plantsRaw = localStorage.getItem('pokequiz_camp_plants');
+					if (plantsRaw) {
+						const _plants = JSON.parse(plantsRaw);
+						const effMs = typeof getEffectiveGrowMs === 'function' ? getEffectiveGrowMs() : 30000;
+						const ripe = _plants.filter(p => p && (Date.now() - (p.plantedAt||0)) >= effMs);
+						if (ripe.length > 0) msgs.push(ico(ICO.berry) + ' ' + ripe.length + ' ripe berr' + (ripe.length === 1 ? 'y' : 'ies') + ' ready!');
+					}
+				} catch(_) {}
+				// 2. Daily quests incomplete
+				try {
+					const dq = inv.dailyQuests;
+					const today = new Date().toISOString().slice(0,10);
+					if (!dq || dq.date !== today || !dq.claimed) {
+						const QUEST_IDS = ['feed','harvest','market','rhythm','fish','minigame'];
+						const progress = (dq && dq.date === today) ? (dq.progress || {}) : {};
+						const incomplete = QUEST_IDS.filter(id => (progress[id] || 0) < 1).length;
+						if (incomplete > 0) msgs.push(ico(ICO.quest) + ' ' + incomplete + ' daily quest' + (incomplete === 1 ? '' : 's') + ' remaining');
+					}
+				} catch(_) {}
+				// 3. Egg hatching >80%
+				try {
+					if (inv.egg && inv.egg.steps != null) {
+						const pct = Math.min(100, Math.round((inv.egg.steps / 256) * 100));
+						if (pct >= 80) msgs.push(ico(ICO.egg) + ' Egg almost ready! (' + pct + '%)');
+					}
+				} catch(_) {}
+				// 4. Mystery gift available
+				try {
+					const today2 = new Date().toISOString().slice(0,10);
+					const mgKey = 'pokequiz_mystery_gift_' + today2;
+					if (!localStorage.getItem(mgKey)) msgs.push(ico(ICO.gift) + ' Mystery Gift available!');
+				} catch(_) {}
+				// 5. Daily bonus not claimed
+				try {
+					if (typeof Daily !== 'undefined' && Daily.ready()) msgs.push(ico(ICO.star) + ' Daily bonus ready!');
+				} catch(_) {}
+				return msgs;
+			}
+			function updateBadge() {
+				const badge = document.getElementById('campNotifBadge');
+				if (!badge) return;
+				const msgs = check();
+				if (msgs.length > 0) {
+					badge.textContent = msgs.length;
+					badge.hidden = false;
+				} else {
+					badge.hidden = true;
+				}
+			}
+			function open() {
+				const existing = document.getElementById('notifDropdown');
+				if (existing) { existing.remove(); return; }
+				const msgs = check();
+				const btn = document.getElementById('campNotifBtn');
+				const dropdown = document.createElement('div');
+				dropdown.id = 'notifDropdown';
+				dropdown.style.cssText = 'position:absolute;top:44px;right:8px;z-index:200;background:rgba(10,14,28,0.97);border:1px solid rgba(246,200,76,0.28);border-radius:8px;padding:8px 12px;min-width:220px;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,0.5)';
+				if (msgs.length === 0) {
+					dropdown.innerHTML = '<div style="font-size:7px;color:var(--pk-muted);padding:4px 0">No notifications right now!</div>';
+				} else {
+					dropdown.innerHTML = msgs.map(m => '<div style="font-size:7px;color:#e8eaf0;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' + m + '</div>').join('');
+				}
+				const campWrap = document.getElementById('campWrap') || document.body;
+				campWrap.appendChild(dropdown);
+				function dismiss(e) {
+					if (!dropdown.contains(e.target) && e.target !== btn) {
+						dropdown.remove();
+						document.removeEventListener('click', dismiss, true);
+					}
+				}
+				setTimeout(() => document.addEventListener('click', dismiss, true), 0);
+			}
+			function init() {
+				const btn = document.getElementById('campNotifBtn');
+				if (btn) btn.addEventListener('click', () => open());
+				updateBadge();
+				setInterval(updateBadge, 30000);
+			}
+			if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+			else init();
+			return { check, updateBadge, open };
+		})();
+	window.CAMP_SYSTEMS.NotifBell = NotifBell;
+
 })();
