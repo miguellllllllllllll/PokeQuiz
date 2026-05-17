@@ -7166,9 +7166,17 @@
 					const form = FOLLOWER_FORMS[dexId] || FOLLOWER_FORMS.eevee;
 					this._ensureFollowerSprite(form, () => {
 						this._followerLoading = false;
-						// Read cols AFTER _ensureFollowerSprite may have patched form.cols
-						// (previously cols was captured before the async load — caused wrong frame slicing).
-						const cols = form.cols || 4;
+						// Derive cols from the actual loaded texture width so hardcoded form.cols
+						// can never produce overlapping frames (e.g. eeveelution with wrong cols).
+						let cols = form.cols || 4;
+						if (this.textures.exists(form.sheet)) {
+							const _tex = this.textures.get(form.sheet);
+							const _src = _tex.source && _tex.source[0];
+							if (_src && _src.width && form.frameW) {
+								const _detected = Math.round(_src.width / form.frameW);
+								if (_detected >= 3 && _detected <= 12) { cols = _detected; form.cols = cols; }
+							}
+						}
 						const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
 						// Animation keys are shared across all instances of the same species.
 						const animPrefix = animPrefixFromKey(formKey);
