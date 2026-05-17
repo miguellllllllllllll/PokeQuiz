@@ -124,12 +124,20 @@
 - **Accessibility panel**: "Accessibility" button in pause menu; toggles High Contrast mode and Reduce Motion (persisted via localStorage, applied immediately on load)
 - **Mobile swipe gestures**: Swipe left → Pokédex, right → Partner, up → Achievements, down → PC Box (on `#campWrap`)
 
+- **Daily Challenge** (`daily.html` + `js/daily-challenge.js`): seeded 10-question daily quiz; everyone gets the same questions; one attempt per day (gated by `pokequiz_daily_played`); submits to `daily` leaderboard
+- **Evolution Chain mini-game** (`puzzle-evo.html` + `js/puzzle-evo.js`): given a Pokémon, pick another in its evolution chain; Normal + Hard modes; streak scoring; Union-Find handles branching chains (Eevee evolutions); leaderboard tab added
+- **Quiz history / stats page** (`stats.html`): personal bests dashboard reading all `pokequiz_*_best_*` localStorage keys; Camp Life card (catches, harvests, days, streak, tokens); Achievements count
+- **Trainer card sharing** (`js/trainer-card.js`): "Share Card" button encodes `{ name, badges, partner, streak }` as `?tc=<base64url>`; visiting the URL shows a read-only "Viewing [Name]'s Trainer Card" view
+- **Pokémon of the Day** (`PokemonOfDay` in camp-systems.js): date-seeded featured Pokémon sign near the south gate; +10 friendship bonus if your current partner matches (once per day)
+- **Berry Trader NPC** (`BerryTrader` in camp-systems.js): daily rotating trade offers (pecha→oran, oran→sitrus, sitrus→tokens, pecha→friendship berries); youngster NPC in camp
+- **Camp Guestbook** (`Guestbook` in camp-systems.js + `campGuestbookBtn` HUD button): leave messages stored in localStorage (up to 20); full modal panel; NPC/book sign in camp
+- **Secret Area**: hidden interactable tile behind the house (r:7, c:6); once-daily; rewards +30 tokens + 1 Friendship Berry + unlocks "Secret Seeker" achievement
+- **Rhythm game leaderboard**: rhythm battle wins now submit `game: 'rhythm'` score to leaderboard; new tab on ranking.html
+- **Combo multiplier display**: all 8 puzzle games show 🔥 ×1.5 at 3-streak, 🔥 ×2 at 5-streak (visual only)
+
 ## Known Gaps (not yet implemented)
 
 - True seasonal tile palette swaps (currently uses overlay tints + emoji decorations)
 - Seasonal leaderboard (monthly reset + top-3 reward)
-- Daily Challenge (seeded daily quiz + 24hr leaderboard)
-- Quiz streak / combo score multiplier
-- Egg group / evolution chain mini-game
 - Trade board (cosmetic)
-- Secret areas / hidden passages
+- Egg group puzzle (there is an evolution chain game; egg group grouping is separate)
