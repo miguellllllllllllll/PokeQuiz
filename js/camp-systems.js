@@ -45,6 +45,7 @@
 	const MAP_H            = (window.CAMP_DATA || {}).MAP_H;
 	const FOLLOWER_FORMS   = (window.CAMP_DATA || {}).FOLLOWER_FORMS;
 	const PMD_NAMES        = (window.CAMP_DATA || {}).PMD_NAMES;
+	const GEN1_EVOLUTIONS  = (window.CAMP_DATA || {}).GEN1_EVOLUTIONS;
 	const POKEMON_HEIGHTS  = (window.CAMP_DATA || {}).POKEMON_HEIGHTS;
 	const PMD_FRAME_OVERRIDES = (window.CAMP_DATA || {}).PMD_FRAME_OVERRIDES;
 	const WALLPAPER_BG     = (window.CAMP_DATA || {}).WALLPAPER_BG;
@@ -2280,6 +2281,9 @@
 					if (slot) {
 						const dn = formName(slot.form);
 						const shown = slot.nickname || dn;
+						const slotDex = typeof slot.form === 'number' ? slot.form : parseInt(String(slot.form).split(':')[0]);
+						const nextEvo = GEN1_EVOLUTIONS && !isNaN(slotDex) ? GEN1_EVOLUTIONS[slotDex] : null;
+						const nextEvoName = nextEvo ? formName(nextEvo) : null;
 						card.innerHTML =
 							'<div class="pk-box-slot-name">' + (i === activeIdx ? ico(ICO.star) + ' ' : '') + shown + '</div>' +
 							'<div class="pk-box-slot-sub" style="font-size:6px;color:var(--pk-muted)">' +
@@ -2302,6 +2306,14 @@
 								btnRow.appendChild(pcBtn);
 							}
 							card.appendChild(btnRow);
+						}
+						if (nextEvo) {
+							const evoBtn = document.createElement('button');
+							evoBtn.type = 'button'; evoBtn.className = 'pk-btn pk-btn-xs';
+							evoBtn.style.cssText = 'background:linear-gradient(135deg,#7c4dff,#3d1fff);color:#fff;margin-top:4px;width:100%';
+							evoBtn.innerHTML = ico(ICO.bolt) + ' Evolve → ' + nextEvoName;
+							evoBtn.dataset.action = 'evolve'; evoBtn.dataset.idx = i; evoBtn.dataset.nextEvo = nextEvo;
+							card.appendChild(evoBtn);
 						}
 					} else {
 						card.innerHTML = '<div style="font-size:7px;color:var(--pk-faint);text-align:center;padding:16px 0">—</div>';
@@ -2339,12 +2351,25 @@
 							'<div style="font-size:6px;color:var(--pk-muted)">&#9829; ' + (slot.friendship || 0) + '</div>' +
 							'</div>';
 						const partyFull = party.filter(Boolean).length >= PARTY_MAX;
+						const btnWrap = document.createElement('div');
+						btnWrap.style.cssText = 'display:flex;flex-direction:column;gap:3px;align-items:flex-end';
 						const ab = document.createElement('button');
 						ab.type = 'button'; ab.className = 'pk-btn pk-btn-gold pk-btn-xs';
 						ab.textContent = partyFull ? '⇄ Swap' : '→ Party';
 						ab.dataset.action = partyFull ? 'swap' : 'toParty';
 						ab.dataset.pcIdx = pcIdx;
-						row.appendChild(ab);
+						btnWrap.appendChild(ab);
+						const pcSlotDex = typeof slot.form === 'number' ? slot.form : parseInt(String(slot.form).split(':')[0]);
+						const pcNextEvo = GEN1_EVOLUTIONS && !isNaN(pcSlotDex) ? GEN1_EVOLUTIONS[pcSlotDex] : null;
+						if (pcNextEvo) {
+							const evoBtn2 = document.createElement('button');
+							evoBtn2.type = 'button'; evoBtn2.className = 'pk-btn pk-btn-xs';
+							evoBtn2.style.cssText = 'background:linear-gradient(135deg,#7c4dff,#3d1fff);color:#fff;font-size:6px';
+							evoBtn2.innerHTML = ico(ICO.bolt) + ' → ' + formName(pcNextEvo);
+							evoBtn2.dataset.action = 'evolvePC'; evoBtn2.dataset.pcIdx = pcIdx; evoBtn2.dataset.nextEvo = pcNextEvo;
+							btnWrap.appendChild(evoBtn2);
+						}
+						row.appendChild(btnWrap);
 						pcList.appendChild(row);
 					});
 					body.appendChild(pcList);
@@ -2401,6 +2426,35 @@
 						Inventory.save(inv2);
 						showToast(ico(ICO.pc) + ' ' + (moved?.nickname || formName(moved?.form)) + ' moved to PC.');
 						if (idx === activeIdx) window.__campScene?._switchFollower(active?.form ?? 'eevee', { silent: true });
+					} else if (action === 'evolve') {
+						const nextEvo = parseInt(btn.dataset.nextEvo);
+						const evoSlot = inv2.party[idx];
+						if (!evoSlot || !nextEvo) return;
+						const oldName = evoSlot.nickname || formName(evoSlot.form);
+						const newName = formName(nextEvo);
+						evoSlot.form = nextEvo;
+						evoSlot.name = newName;
+						// If this is the active walking partner, switch the follower sprite
+						if (idx === (inv2.partyActive || 0)) {
+							inv2.companionForm = nextEvo;
+							Inventory.save(inv2);
+							window.__campScene?._switchFollower(nextEvo, { silent: true });
+						} else {
+							Inventory.save(inv2);
+						}
+						Pokedex.markSeen(nextEvo);
+						TrainerLevel.addXP('evolve');
+						Achievements.unlock('firstEvol');
+						showToast(ico(ICO.bolt) + ' ' + oldName + ' evolved into ' + newName + '!');
+						// Flash animation
+						const fl = document.createElement('div');
+						fl.style.cssText = 'position:fixed;inset:0;z-index:9999;background:white;opacity:0;pointer-events:none;transition:opacity 0.15s';
+						document.body.appendChild(fl);
+						setTimeout(() => { fl.style.opacity = '0.8'; }, 30);
+						setTimeout(() => { fl.style.opacity = '0'; }, 250);
+						setTimeout(() => { fl.style.opacity = '0.4'; }, 450);
+						setTimeout(() => { fl.style.opacity = '0'; }, 650);
+						setTimeout(() => { if (fl.parentNode) fl.remove(); }, 1200);
 					}
 					render(panel, Inventory.load());
 				});
@@ -2433,6 +2487,25 @@
 						Inventory.save(inv2);
 						window.__campScene?._switchFollower(pcSlot.form, { silent: true });
 						showToast(ico(ICO.trade) + ' ' + (pcSlot.nickname || formName(pcSlot.form)) + ' swapped into party!');
+					} else if (action === 'evolvePC') {
+						const nextEvoPc = parseInt(btn.dataset.nextEvo);
+						if (!pcSlot || !nextEvoPc) return;
+						const oldNamePc = pcSlot.nickname || formName(pcSlot.form);
+						pcSlot.form = nextEvoPc;
+						pcSlot.name = formName(nextEvoPc);
+						Inventory.save(inv2);
+						Pokedex.markSeen(nextEvoPc);
+						TrainerLevel.addXP('evolve');
+						Achievements.unlock('firstEvol');
+						showToast(ico(ICO.bolt) + ' ' + oldNamePc + ' evolved into ' + formName(nextEvoPc) + '!');
+						const fl2 = document.createElement('div');
+						fl2.style.cssText = 'position:fixed;inset:0;z-index:9999;background:white;opacity:0;pointer-events:none;transition:opacity 0.15s';
+						document.body.appendChild(fl2);
+						setTimeout(() => { fl2.style.opacity = '0.8'; }, 30);
+						setTimeout(() => { fl2.style.opacity = '0'; }, 250);
+						setTimeout(() => { fl2.style.opacity = '0.4'; }, 450);
+						setTimeout(() => { fl2.style.opacity = '0'; }, 650);
+						setTimeout(() => { if (fl2.parentNode) fl2.remove(); }, 1200);
 					}
 					render(panel, Inventory.load());
 				});
@@ -6237,7 +6310,7 @@
 					this.load.spritesheet('flareon',  'Pictures/sprites/flareon.png',  { frameWidth: 32, frameHeight: 40 });
 					this.load.spritesheet('jolteon',  'Pictures/sprites/jolteon.png',  { frameWidth: 32, frameHeight: 40 });
 					this.load.spritesheet('leafeon',  'Pictures/sprites/leafeon.png',  { frameWidth: 32, frameHeight: 48 });
-					this.load.spritesheet('glaceon',  'Pictures/sprites/glaceon.png',  { frameWidth: 32, frameHeight: 48 });
+					this.load.spritesheet('glaceon',  'Pictures/sprites/glaceon.png',  { frameWidth: 32, frameHeight: 40 });
 					this.load.spritesheet('sylveon',  'Pictures/sprites/sylveon.png',  { frameWidth: 32, frameHeight: 48 });
 					// NPC trainer overworld sprites (FRLG 32×32 single-frame images).
 					this.load.image('npc-youngster',     'Pictures/sprites/trainer-youngster.png');

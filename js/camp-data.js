@@ -492,6 +492,61 @@ window.CAMP_DATA.SIGN_MESSAGES = {
 	};
 
 
+// ── GEN1_EVOLUTIONS ──────────────────────────────────────────────────────
+// Maps dex ID → next evolved dex ID for all Gen-1 Pokémon.
+// Eeveelutions are handled separately via the friendship/stone system.
+window.CAMP_DATA.GEN1_EVOLUTIONS = {
+	10:11, 11:12,          // Caterpie → Metapod → Butterfree
+	13:14, 14:15,          // Weedle → Kakuna → Beedrill
+	16:17, 17:18,          // Pidgey → Pidgeotto → Pidgeot
+	19:20,                 // Rattata → Raticate
+	21:22,                 // Spearow → Fearow
+	23:24,                 // Ekans → Arbok
+	27:28,                 // Sandshrew → Sandslash
+	29:30, 30:31,          // Nidoran♀ → Nidorina → Nidoqueen
+	32:33, 33:34,          // Nidoran♂ → Nidorino → Nidoking
+	35:36,                 // Clefairy → Clefable
+	37:38,                 // Vulpix → Ninetales
+	39:40,                 // Jigglypuff → Wigglytuff
+	41:42,                 // Zubat → Golbat
+	43:44, 44:45,          // Oddish → Gloom → Vileplume
+	46:47,                 // Paras → Parasect
+	48:49,                 // Venonat → Venomoth
+	50:51,                 // Diglett → Dugtrio
+	52:53,                 // Meowth → Persian
+	54:55,                 // Psyduck → Golduck
+	56:57,                 // Mankey → Primeape
+	58:59,                 // Growlithe → Arcanine
+	60:61, 61:62,          // Poliwag → Poliwhirl → Poliwrath
+	63:64, 64:65,          // Abra → Kadabra → Alakazam
+	66:67, 67:68,          // Machop → Machoke → Machamp
+	69:70, 70:71,          // Bellsprout → Weepinbell → Victreebel
+	72:73,                 // Tentacool → Tentacruel
+	74:75, 75:76,          // Geodude → Graveler → Golem
+	77:78,                 // Ponyta → Rapidash
+	79:80,                 // Slowpoke → Slowbro
+	81:82,                 // Magnemite → Magneton
+	84:85,                 // Doduo → Dodrio
+	86:87,                 // Seel → Dewgong
+	88:89,                 // Grimer → Muk
+	90:91,                 // Shellder → Cloyster
+	92:93, 93:94,          // Gastly → Haunter → Gengar
+	96:97,                 // Drowzee → Hypno
+	98:99,                 // Krabby → Kingler
+	100:101,               // Voltorb → Electrode
+	102:103,               // Exeggcute → Exeggutor
+	104:105,               // Cubone → Marowak
+	109:110,               // Koffing → Weezing
+	111:112,               // Rhyhorn → Rhydon
+	116:117,               // Horsea → Seadra
+	118:119,               // Goldeen → Seaking
+	120:121,               // Staryu → Starmie
+	129:130,               // Magikarp → Gyarados
+	138:139,               // Omanyte → Omastar
+	140:141,               // Kabuto → Kabutops
+	147:148, 148:149,      // Dratini → Dragonair → Dragonite
+};
+
 // ── FOLLOWER_FORMS ────────────────────────────────────────────────────────
 window.CAMP_DATA.FOLLOWER_FORMS = {
 		eevee:    { sheet: 'eevee',    cols: 7, originY: 30/48, scale: 0.80, frameW: 40, frameH: 48, displayName: 'Eevee' },
@@ -501,7 +556,7 @@ window.CAMP_DATA.FOLLOWER_FORMS = {
 		flareon:  { sheet: 'flareon',  cols: 4, originY: 28/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Flareon' },
 		jolteon:  { sheet: 'jolteon',  cols: 4, originY: 29/40, scale: 0.72, frameW: 32, frameH: 40, displayName: 'Jolteon' },
 		leafeon:  { sheet: 'leafeon',  cols: 4, originY: 32/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Leafeon' },
-		glaceon:  { sheet: 'glaceon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Glaceon' },
+		glaceon:  { sheet: 'glaceon',  cols: 4, originY: 28/40, scale: 0.60, frameW: 32, frameH: 40, displayName: 'Glaceon' },
 		sylveon:  { sheet: 'sylveon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Sylveon' },
 	};
 
