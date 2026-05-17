@@ -122,14 +122,16 @@
 
 
 		<!-- Quest board panel -->
-		<div id="questPanel" hidden style="position:fixed;top:0;right:0;bottom:0;width:min(340px,100%);background:linear-gradient(180deg,#1a2440,#0e1826);border-left:2px solid #f6c84c;z-index:50;overflow-y:auto;font-family:'Press Start 2P',monospace;color:#e8eaf0;padding:14px 16px;box-sizing:border-box">
-			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-				<span style="color:#f6c84c;font-size:11px;letter-spacing:1px">📋 DAILY QUESTS</span>
-				<button id="questClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button>
+		<div id="questPanel" class="pk-drawer" hidden role="dialog" aria-label="Daily Quests">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title">📋 DAILY QUESTS</span>
+				<button id="questClose" class="pk-close" type="button" aria-label="Close">✕</button>
 			</div>
-			<div id="questDate" style="font-size:7px;color:#a8c8e8;margin-bottom:12px"></div>
-			<div id="questList" style="display:flex;flex-direction:column;gap:10px"></div>
-			<div id="questBonus" style="margin-top:14px;font-size:8px;color:#f6c84c;min-height:18px"></div>
+			<div class="pk-drawer-body">
+				<div id="questDate" style="font-size:7px;color:var(--pk-muted);margin-bottom:14px"></div>
+				<div id="questList" style="display:flex;flex-direction:column;gap:8px"></div>
+				<div id="questBonus" style="margin-top:16px;font-size:8px;color:var(--pk-gold);min-height:18px"></div>
+			</div>
 		</div>
 
 		<!-- Interaction prompt — anchored to the player on-screen, shown when next to something interactable -->
@@ -154,24 +156,22 @@
 		<!-- Tiny inventory readout (Phase 1: seeds + Friendship Berries) -->
 		<div class="camp-inventory" id="campInventory" aria-hidden="true">🌱 0   🍓 0</div>
 
-		<!-- Trainer Card shortcut icon -->
-		<a class="camp-tc-btn" href="trainer-card.html" title="Trainer Card" aria-label="Open Trainer Card">
-			<span class="camp-tc-icon">🪪</span>
-		</a>
-
-		<!-- Achievements button -->
-		<button class="camp-achieve-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements">🏅</button>
-
-		<!-- Pokédex button -->
-		<button class="camp-dex-btn" id="campDexBtn" title="Pokédex" aria-label="Pokédex">📖</button>
+		<!-- Quick-action button bar (top-right) -->
+		<div class="camp-btn-bar" aria-hidden="true">
+			<a class="camp-quick-btn" id="campTCBtn" href="trainer-card.html" title="Trainer Card" aria-label="Open Trainer Card">🪪</a>
+			<button class="camp-quick-btn" id="campDexBtn" title="Pokédex (D)" aria-label="Pokédex" type="button">📖</button>
+			<button class="camp-quick-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements" type="button">🏅</button>
+		</div>
 
 		<!-- Achievements panel -->
-		<div id="achievePanel" hidden style="position:fixed;top:0;right:0;bottom:0;width:min(340px,100%);background:linear-gradient(180deg,#1a2440,#0e1826);border-left:2px solid #f6c84c;z-index:50;overflow-y:auto;font-family:'Press Start 2P',monospace;color:#e8eaf0;padding:14px 16px;box-sizing:border-box">
-			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-				<span style="color:#f6c84c;font-size:11px">🏅 ACHIEVEMENTS</span>
-				<button id="achieveClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button>
+		<div id="achievePanel" class="pk-drawer" hidden role="dialog" aria-label="Achievements">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title">🏅 ACHIEVEMENTS</span>
+				<button id="achieveClose" class="pk-close" type="button" aria-label="Close">✕</button>
 			</div>
-			<div id="achieveList" style="display:flex;flex-direction:column;gap:8px"></div>
+			<div class="pk-drawer-body">
+				<div id="achieveList" style="display:flex;flex-direction:column;gap:8px"></div>
+			</div>
 		</div>
 
 		<!-- Partner Pokémon panel — feeding + status -->
@@ -196,7 +196,7 @@
 					<input class="cp-nickname-input" id="cpNickname" type="text" maxlength="12" placeholder="Leave blank for default">
 				</div>
 				<div class="cp-actions">
-					<button class="cb-btn" id="cpFeed" type="button">Feed Berry 🍓 <span class="cp-count">×<span id="cpBerries">0</span></span></button>
+					<button class="cb-btn" id="cpFeed" type="button">Feed 🍓 ×<span id="cpBerries">0</span></button>
 					<button class="cb-btn cp-btn-alt" id="cpPet" type="button">Play 💚</button>
 					<button class="cb-btn cp-btn-alt" id="cpPC" type="button">💻 PC Box</button>
 					<button class="cb-btn cp-btn-shiny" id="cpShiny" type="button">✨ Shiny</button>
@@ -215,126 +215,140 @@
 					<div class="cm-balance">💰 <span id="cmTokens">0</span> Tokens</div>
 				</div>
 				<div class="cm-panel-body">
+					<div class="cm-tabs">
+						<button class="cm-tab is-active" data-tab="sell" type="button">💰 Sell</button>
+						<button class="cm-tab" data-tab="buy" type="button">🛒 Buy</button>
+						<button class="cm-tab" data-tab="seeds" type="button">🌱 Seeds</button>
+						<button class="cm-tab" data-tab="cosm" type="button">🎨 Decor</button>
+					</div>
 
-				<div class="cm-section">
-					<h3 class="cm-section-title">Sell</h3>
-					<div class="cm-row">
-						<div class="cm-row-name">🍓 Friendship Berry <span class="cm-row-count">×<span id="cmBerryCount">0</span></span></div>
-						<button class="cb-btn cm-action" id="cmSellOne" type="button">Sell 1 · +10💰</button>
-						<button class="cb-btn cm-action" id="cmSellAll" type="button">Sell All</button>
-					</div>
-				</div>
-
-				<div class="cm-section">
-					<h3 class="cm-section-title">Buy</h3>
-					<div class="cm-row">
-						<div class="cm-row-name">🌱 Berry Seed <span class="cm-row-count">(×<span id="cmSeedCount">0</span> owned)</span></div>
-						<span class="cm-row-cost">5 💰</span>
-						<button class="cb-btn cm-action" id="cmBuySeed" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">🌾 Scythe <span class="cm-row-count cm-scythe-status"></span></div>
-						<span class="cm-row-cost">75 💰</span>
-						<button class="cb-btn cm-action" id="cmBuyScythe" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">📦 Berry Plot Upgrade <span class="cm-row-count" id="cmPlotLevel">(Lv 1)</span></div>
-						<button class="cb-btn cm-action" id="cmUpgradePlot" type="button">Upgrade Plot</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">🔥 Fire Stone <span class="cm-row-count cm-stone-status" data-stone="fire"></span></div>
-						<span class="cm-row-cost">50 💰</span>
-						<button class="cb-btn cm-action" data-buy-stone="fire" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">⚡ Thunder Stone <span class="cm-row-count cm-stone-status" data-stone="thunder"></span></div>
-						<span class="cm-row-cost">50 💰</span>
-						<button class="cb-btn cm-action" data-buy-stone="thunder" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">🌿 Leaf Stone <span class="cm-row-count cm-stone-status" data-stone="leaf"></span></div>
-						<span class="cm-row-cost">50 💰</span>
-						<button class="cb-btn cm-action" data-buy-stone="leaf" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">🧊 Ice Stone <span class="cm-row-count cm-stone-status" data-stone="ice"></span></div>
-						<span class="cm-row-cost">50 💰</span>
-						<button class="cb-btn cm-action" data-buy-stone="ice" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">💎 Shiny Stone <span class="cm-row-count cm-stone-status" data-stone="shiny"></span></div>
-						<span class="cm-row-cost">50 💰</span>
-						<button class="cb-btn cm-action" data-buy-stone="shiny" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">🪱 Fishing Bait <span class="cm-row-count">(×<span id="cmBaitCount">0</span> owned)</span></div>
-						<span class="cm-row-cost">12 💰</span>
-						<button class="cb-btn cm-action" id="cmBuyBait" type="button">Buy ×3</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">⭐ Premium Seed <span class="cm-row-count">(×<span id="cmPremiumSeedCount">0</span> owned)</span></div>
-						<span class="cm-row-cost">18 💰</span>
-						<button class="cb-btn cm-action" id="cmBuyPremiumSeed" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">🫐 Oran Seed <span class="cm-row-count">(×<span id="cmOranSeedCount">0</span> owned)</span></div>
-						<span class="cm-row-cost">20 💰</span>
-						<button class="cb-btn cm-action" id="cmBuyOranSeed" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">📡 Poké Radar <span class="cm-row-count" id="cmRadarStatus"></span></div>
-						<span class="cm-row-cost">80 💰</span>
-						<button class="cb-btn cm-action" id="cmBuyRadar" type="button">Buy</button>
-					</div>
-					<div class="cm-row">
-						<div class="cm-row-name">💥 Rock Smash HM <span class="cm-row-count" id="cmRockSmashStatus"></span></div>
-						<span class="cm-row-cost">60 💰</span>
-						<button class="cb-btn cm-action" id="cmBuyRockSmash" type="button">Buy</button>
-					</div>
-				</div>
-
-				<div class="cm-section">
-					<h3 class="cm-section-title">Cosmetics</h3>
-
-					<div class="cm-cosm-group">
-						<div class="cm-cosm-label">🏠 Wallpaper <span class="cm-row-cost">15💰 each</span></div>
-						<div class="cm-cosm-row">
-							<button class="cm-cosm-btn" data-buy-wallpaper="sakura"  data-label="🌸 Sakura"  type="button">🌸 Sakura</button>
-							<button class="cm-cosm-btn" data-buy-wallpaper="ocean"   data-label="🌊 Ocean"   type="button">🌊 Ocean</button>
-							<button class="cm-cosm-btn" data-buy-wallpaper="forest"  data-label="🌲 Forest"  type="button">🌲 Forest</button>
-							<button class="cm-cosm-btn" data-buy-wallpaper="dusk"    data-label="⭐ Dusk"    type="button">⭐ Dusk</button>
+					<!-- Sell tab -->
+					<div class="cm-tab-pane is-active" id="cmTabSell">
+						<div class="cm-section">
+							<div class="cm-row">
+								<div class="cm-row-name">🍓 Friendship Berry <span class="cm-row-count">×<span id="cmBerryCount">0</span></span></div>
+								<button class="cb-btn cm-action" id="cmSellOne" type="button">Sell 1 · +10💰</button>
+								<button class="cb-btn cm-action" id="cmSellAll" type="button">Sell All</button>
+							</div>
 						</div>
 					</div>
 
-					<div class="cm-cosm-group">
-						<div class="cm-cosm-label">🎨 Camp Accent <span class="cm-row-cost">20💰 each</span></div>
-						<div class="cm-cosm-row">
-							<button class="cm-cosm-btn" data-buy-accent="red"   data-label="🔴 Red"   type="button">🔴 Red</button>
-							<button class="cm-cosm-btn" data-buy-accent="blue"  data-label="🔵 Blue"  type="button">🔵 Blue</button>
-							<button class="cm-cosm-btn" data-buy-accent="green" data-label="🟢 Green" type="button">🟢 Green</button>
+					<!-- Buy tab -->
+					<div class="cm-tab-pane" id="cmTabBuy">
+						<div class="cm-section">
+							<div class="cm-row">
+								<div class="cm-row-name">🌾 Scythe <span class="cm-row-count cm-scythe-status"></span></div>
+								<span class="cm-row-cost">75💰</span>
+								<button class="cb-btn cm-action" id="cmBuyScythe" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">📦 Berry Plot Upgrade <span class="cm-row-count" id="cmPlotLevel">(Lv 1)</span></div>
+								<button class="cb-btn cm-action" id="cmUpgradePlot" type="button">Upgrade</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">🔥 Fire Stone <span class="cm-row-count cm-stone-status" data-stone="fire"></span></div>
+								<span class="cm-row-cost">50💰</span>
+								<button class="cb-btn cm-action" data-buy-stone="fire" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">⚡ Thunder Stone <span class="cm-row-count cm-stone-status" data-stone="thunder"></span></div>
+								<span class="cm-row-cost">50💰</span>
+								<button class="cb-btn cm-action" data-buy-stone="thunder" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">🌿 Leaf Stone <span class="cm-row-count cm-stone-status" data-stone="leaf"></span></div>
+								<span class="cm-row-cost">50💰</span>
+								<button class="cb-btn cm-action" data-buy-stone="leaf" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">🧊 Ice Stone <span class="cm-row-count cm-stone-status" data-stone="ice"></span></div>
+								<span class="cm-row-cost">50💰</span>
+								<button class="cb-btn cm-action" data-buy-stone="ice" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">💎 Shiny Stone <span class="cm-row-count cm-stone-status" data-stone="shiny"></span></div>
+								<span class="cm-row-cost">50💰</span>
+								<button class="cb-btn cm-action" data-buy-stone="shiny" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">🪱 Fishing Bait <span class="cm-row-count">(×<span id="cmBaitCount">0</span>)</span></div>
+								<span class="cm-row-cost">12💰</span>
+								<button class="cb-btn cm-action" id="cmBuyBait" type="button">×3</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">📡 Poké Radar <span class="cm-row-count" id="cmRadarStatus"></span></div>
+								<span class="cm-row-cost">80💰</span>
+								<button class="cb-btn cm-action" id="cmBuyRadar" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">💥 Rock Smash HM <span class="cm-row-count" id="cmRockSmashStatus"></span></div>
+								<span class="cm-row-cost">60💰</span>
+								<button class="cb-btn cm-action" id="cmBuyRockSmash" type="button">Buy</button>
+							</div>
 						</div>
 					</div>
 
-					<div class="cm-cosm-group">
-						<div class="cm-cosm-label">🐾 Partner Size <span class="cm-row-cost">10💰 (tiny/big)</span></div>
-						<div class="cm-cosm-row">
-							<button class="cm-cosm-btn" data-buy-scale="small"  data-label="🔽 Tiny"   type="button">🔽 Tiny</button>
-							<button class="cm-cosm-btn" data-buy-scale="normal" data-label="↔ Normal"  type="button">↔ Normal</button>
-							<button class="cm-cosm-btn" data-buy-scale="large"  data-label="🔼 Big"    type="button">🔼 Big</button>
+					<!-- Seeds tab -->
+					<div class="cm-tab-pane" id="cmTabSeeds">
+						<div class="cm-section">
+							<div class="cm-row">
+								<div class="cm-row-name">🌱 Pecha Seed <span class="cm-row-count">(×<span id="cmSeedCount">0</span>)</span></div>
+								<span class="cm-row-cost">5💰</span>
+								<button class="cb-btn cm-action" id="cmBuySeed" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">🫐 Oran Seed <span class="cm-row-count">(×<span id="cmOranSeedCount">0</span>)</span></div>
+								<span class="cm-row-cost">20💰</span>
+								<button class="cb-btn cm-action" id="cmBuyOranSeed" type="button">Buy</button>
+							</div>
+							<div class="cm-row">
+								<div class="cm-row-name">⭐ Premium Seed <span class="cm-row-count">(×<span id="cmPremiumSeedCount">0</span>)</span></div>
+								<span class="cm-row-cost">18💰</span>
+								<button class="cb-btn cm-action" id="cmBuyPremiumSeed" type="button">Buy</button>
+							</div>
 						</div>
 					</div>
 
-					<div class="cm-cosm-group">
-						<div class="cm-cosm-label">🌿 Camp Decor <span class="cm-row-cost">one-time</span></div>
-						<div class="cm-cosm-row">
-							<button class="cm-cosm-btn" data-buy-decor="flowers" data-label="🌸 Flowers" data-price="25" type="button">🌸 Flowers · 25💰</button>
-							<button class="cm-cosm-btn" data-buy-decor="lantern" data-label="🏮 Lantern" data-price="30" type="button">🏮 Lantern · 30💰</button>
+					<!-- Cosmetics tab -->
+					<div class="cm-tab-pane" id="cmTabCosm">
+						<div class="cm-section">
+							<div class="cm-cosm-group">
+								<div class="cm-cosm-label">🏠 Wallpaper <span class="cm-row-cost">15💰 each</span></div>
+								<div class="cm-cosm-row">
+									<button class="cm-cosm-btn" data-buy-wallpaper="sakura"  data-label="🌸 Sakura"  type="button">🌸 Sakura</button>
+									<button class="cm-cosm-btn" data-buy-wallpaper="ocean"   data-label="🌊 Ocean"   type="button">🌊 Ocean</button>
+									<button class="cm-cosm-btn" data-buy-wallpaper="forest"  data-label="🌲 Forest"  type="button">🌲 Forest</button>
+									<button class="cm-cosm-btn" data-buy-wallpaper="dusk"    data-label="⭐ Dusk"    type="button">⭐ Dusk</button>
+								</div>
+							</div>
+							<div class="cm-cosm-group">
+								<div class="cm-cosm-label">🎨 Camp Accent <span class="cm-row-cost">20💰 each</span></div>
+								<div class="cm-cosm-row">
+									<button class="cm-cosm-btn" data-buy-accent="red"   data-label="🔴 Red"   type="button">🔴 Red</button>
+									<button class="cm-cosm-btn" data-buy-accent="blue"  data-label="🔵 Blue"  type="button">🔵 Blue</button>
+									<button class="cm-cosm-btn" data-buy-accent="green" data-label="🟢 Green" type="button">🟢 Green</button>
+								</div>
+							</div>
+							<div class="cm-cosm-group">
+								<div class="cm-cosm-label">🐾 Partner Size <span class="cm-row-cost">10💰 (small/big)</span></div>
+								<div class="cm-cosm-row">
+									<button class="cm-cosm-btn" data-buy-scale="small"  data-label="🔽 Tiny"   type="button">🔽 Tiny</button>
+									<button class="cm-cosm-btn" data-buy-scale="normal" data-label="↔ Normal"  type="button">↔ Normal</button>
+									<button class="cm-cosm-btn" data-buy-scale="large"  data-label="🔼 Big"    type="button">🔼 Big</button>
+								</div>
+							</div>
+							<div class="cm-cosm-group">
+								<div class="cm-cosm-label">🌿 Camp Decor <span class="cm-row-cost">one-time</span></div>
+								<div class="cm-cosm-row">
+									<button class="cm-cosm-btn" data-buy-decor="flowers" data-label="🌸 Flowers" data-price="25" type="button">🌸 Flowers · 25💰</button>
+									<button class="cm-cosm-btn" data-buy-decor="lantern" data-label="🏮 Lantern" data-price="30" type="button">🏮 Lantern · 30💰</button>
+								</div>
+							</div>
 						</div>
 					</div>
-				</div>
 
-				<div class="cm-status" id="cmStatus"></div>
-				<button class="cb-btn cm-leave" id="cmClose" type="button">Leave</button>
+					<div class="cm-status" id="cmStatus"></div>
+					<button class="cb-btn cm-leave" id="cmClose" type="button">Leave Shop</button>
 
 				</div><!-- /.cm-panel-body -->
 			</div>
@@ -361,11 +375,11 @@
 			<!-- Rhythm difficulty selector -->
 			<div class="cb-screen cb-rhythm-diff" data-screen="rhythm-diff" hidden>
 				<h2 class="cb-title">Rhythm Strike</h2>
-				<p class="cb-rhythm-hint" style="font-size:8px;margin-bottom:16px">Choose difficulty:</p>
-				<div style="display:flex;flex-direction:column;gap:10px;align-items:center">
-					<button class="cb-btn" data-diff="easy"   type="button" style="width:180px">🟢 Easy   · ×1 token</button>
-					<button class="cb-btn" data-diff="normal" type="button" style="width:180px">🟡 Normal · ×2 tokens</button>
-					<button class="cb-btn" data-diff="hard"   type="button" style="width:180px">🔴 Hard   · ×4 tokens</button>
+				<p class="cb-rhythm-hint">Choose your difficulty:</p>
+				<div style="display:flex;flex-direction:column;gap:10px;align-items:center;padding:4px 0 8px">
+					<button class="cb-btn pk-btn-full" data-diff="easy"   type="button" style="max-width:200px;background:linear-gradient(180deg,#50d880,#28a050);color:#fff">🟢 Easy · ×1 token</button>
+					<button class="cb-btn pk-btn-full" data-diff="normal" type="button" style="max-width:200px;background:linear-gradient(180deg,#ffd968,#c89a28);color:#2a1e08">🟡 Normal · ×2 tokens</button>
+					<button class="cb-btn pk-btn-full" data-diff="hard"   type="button" style="max-width:200px;background:linear-gradient(180deg,#f06868,#b02828);color:#fff">🔴 Hard · ×4 tokens</button>
 				</div>
 			</div>
 

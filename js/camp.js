@@ -106,41 +106,48 @@
 			if (!panel) {
 				panel = document.createElement('div');
 				panel.id = 'dexPanel';
-				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
-				const inner = document.createElement('div');
-				inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;width:min(480px,95%);max-height:85vh;display:flex;flex-direction:column;overflow:hidden';
-				inner.innerHTML = '<div style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(246,200,76,0.2)">' +
-					'<span style="color:#f6c84c;font-size:11px">📖 POKÉDEX</span>' +
-					'<span id="dexCounter" style="font-size:9px;color:#a8c8e8"></span>' +
-					'<button id="dexClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button>' +
-					'</div>' +
-					'<div id="dexGrid" style="padding:10px;overflow-y:auto;display:grid;grid-template-columns:repeat(5,1fr);gap:4px"></div>';
-				panel.appendChild(inner);
 				document.body.appendChild(panel);
-				inner.addEventListener('pointerdown', e => e.stopPropagation());
 				panel.addEventListener('pointerdown', () => { panel.hidden = true; });
-				document.getElementById('dexClose').addEventListener('click', () => { panel.hidden = true; });
 			}
 			panel.hidden = false;
+			panel.className = 'pk-backdrop';
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">📖 POKÉDEX</span>' +
+				'<span id="dexCounter" style="font-size:9px;color:var(--pk-muted)"></span>' +
+				'<button id="dexClose" class="pk-close" type="button">✕</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			body.style.cssText = 'padding-top:10px';
+			const grid = document.createElement('div');
+			grid.id = 'dexGrid';
+			grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:5px';
+			body.appendChild(grid);
+			inner.appendChild(body);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('dexClose').addEventListener('click', () => { panel.hidden = true; });
 			const data = loadData();
-			const grid = document.getElementById('dexGrid');
 			const counter = document.getElementById('dexCounter');
 			counter.textContent = data.caught.length + ' / 151';
-			grid.innerHTML = '';
 			DEX.forEach(p => {
 				const seen = data.seen.includes(p.id);
 				const caught = data.caught.includes(p.id);
 				const cell = document.createElement('div');
+				cell.className = 'pk-dex-cell' + (caught ? ' is-caught' : '');
 				cell.title = caught ? p.n : (seen ? '???' : '---');
-				cell.style.cssText = 'background:rgba(255,255,255,0.04);border-radius:6px;padding:3px;text-align:center;border:1px solid ' + (caught ? 'rgba(246,200,76,0.4)' : 'rgba(255,255,255,0.06)');
 				const img = document.createElement('img');
-				img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;' + (!seen ? 'filter:brightness(0)' : '') + (seen && !caught ? ';filter:brightness(0.3)' : '');
+				img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;' + (!seen ? 'filter:brightness(0)' : seen && !caught ? 'filter:brightness(0.25) saturate(0)' : '');
 				img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/' + p.id + '.png';
 				img.loading = 'lazy';
 				const num = document.createElement('div');
-				num.style.cssText = 'font-size:6px;color:' + (caught ? '#f6c84c' : '#555') + ';margin-top:1px';
+				num.className = 'pk-dex-num' + (caught ? ' is-caught' : '');
 				num.textContent = '#' + String(p.id).padStart(3,'0');
-				cell.appendChild(img); cell.appendChild(num);
+				cell.appendChild(img);
+				cell.appendChild(num);
 				grid.appendChild(cell);
 			});
 		}
@@ -176,33 +183,60 @@
 			const activeIdx = inv.pcBoxActive || 0;
 			const box = inv.pcBox || [];
 			const FORMS = { eevee:'Eevee',vaporeon:'Vaporeon',espeon:'Espeon',umbreon:'Umbreon',flareon:'Flareon',jolteon:'Jolteon',leafeon:'Leafeon',glaceon:'Glaceon',sylveon:'Sylveon' };
+			panel.className = 'pk-backdrop';
 			panel.innerHTML = '';
 			const inner = document.createElement('div');
-			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;width:min(420px,95%);max-height:85vh;overflow-y:auto;padding:14px 16px';
-			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:14px"><span style="color:#f6c84c;font-size:11px">💻 PC BOX</span><button id="pcBoxClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button></div>';
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">💻 PC BOX</span>' +
+				'<button id="pcBoxClose" class="pk-close" type="button">✕</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
 			const grid = document.createElement('div');
-			grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px';
+			grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px';
 			for (let i = 0; i < MAX_SLOTS; i++) {
 				const slot = box[i];
 				const card = document.createElement('div');
-				card.style.cssText = 'border-radius:8px;padding:10px;border:2px solid ' + (i === activeIdx ? '#f6c84c' : 'rgba(255,255,255,0.1)') + ';background:rgba(255,255,255,0.03);cursor:pointer';
+				card.className = 'pk-box-slot' + (i === activeIdx ? ' is-active' : '');
 				if (slot) {
 					const formName = FORMS[slot.form] || slot.form;
-					card.innerHTML = '<div style="font-size:9px;color:' + (i===activeIdx?'#f6c84c':'#e8eaf0') + '">' + (i===activeIdx?'★ ':'') + (slot.nickname || formName) + '</div>' +
-						'<div style="font-size:7px;color:#a8c8e8;margin-top:4px">Friendship: ' + (slot.friendship||0) + '</div>' +
-						(i !== activeIdx ? '<button data-slot="'+i+'" style="margin-top:6px;font-family:inherit;font-size:7px;padding:4px 10px;background:linear-gradient(180deg,#ffd968,#f6c84c);border:0;border-radius:6px;cursor:pointer;color:#2a1e08" type="button">Set Active</button>' : '<div style="font-size:7px;color:#88ee88;margin-top:4px">Active Partner</div>');
+					const name = document.createElement('div');
+					name.className = 'pk-box-slot-name';
+					name.textContent = (i === activeIdx ? '★ ' : '') + (slot.nickname || formName);
+					const sub = document.createElement('div');
+					sub.className = 'pk-box-slot-sub';
+					sub.textContent = 'Friendship: ' + (slot.friendship||0);
+					card.appendChild(name);
+					card.appendChild(sub);
+					if (i !== activeIdx) {
+						const btn = document.createElement('button');
+						btn.dataset.slot = i;
+						btn.type = 'button';
+						btn.className = 'pk-btn pk-btn-gold pk-btn-xs';
+						btn.style.marginTop = '6px';
+						btn.textContent = 'Set Active';
+						card.appendChild(btn);
+					} else {
+						const lbl = document.createElement('div');
+						lbl.style.cssText = 'font-size:7px;color:var(--pk-green);margin-top:4px';
+						lbl.textContent = 'Active Partner';
+						card.appendChild(lbl);
+					}
 				} else {
-					card.innerHTML = '<div style="font-size:8px;color:#555;text-align:center;padding:12px 0">Empty Slot</div>';
+					card.innerHTML = '<div style="font-size:8px;color:var(--pk-faint);text-align:center;padding:12px 0">Empty</div>';
 				}
 				grid.appendChild(card);
 			}
-			inner.appendChild(grid);
 			const wt = document.createElement('button');
 			wt.type = 'button';
-			wt.style.cssText = 'margin-top:14px;width:100%;font-family:inherit;font-size:9px;padding:10px;background:linear-gradient(180deg,#4a9e4a,#2a7a2a);color:#fff;border:0;border-radius:8px;cursor:pointer';
+			wt.className = 'pk-btn pk-btn-blue pk-btn-full pk-btn-sm';
+			wt.style.marginTop = '4px';
 			wt.textContent = '🔄 Wonder Trade';
 			wt.addEventListener('click', () => WonderTrade.open());
-			inner.appendChild(wt);
+			body.appendChild(grid);
+			body.appendChild(wt);
+			inner.appendChild(body);
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.getElementById('pcBoxClose').addEventListener('click', () => { panel.hidden = true; });
@@ -259,40 +293,49 @@
 			if (!panel) {
 				panel = document.createElement('div');
 				panel.id = 'wonderTradePanel';
-				panel.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
 				document.body.appendChild(panel);
 				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
 			}
 			panel.hidden = false;
+			panel.className = 'pk-backdrop';
 			panel.innerHTML = '';
 			const FORMS = {eevee:'Eevee',vaporeon:'Vaporeon',espeon:'Espeon',umbreon:'Umbreon',flareon:'Flareon',jolteon:'Jolteon',leafeon:'Leafeon',glaceon:'Glaceon',sylveon:'Sylveon'};
 			const inner = document.createElement('div');
-			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #88aaff;border-radius:10px;padding:16px;width:min(400px,92%);max-height:85vh;overflow-y:auto';
-			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="color:#88aaff;font-size:11px">🔄 WONDER TRADE</span><button id="wtClose" type="button" style="background:none;border:none;color:#88aaff;font-size:16px;cursor:pointer;font-family:inherit">✕</button></div>' +
-				'<div style="font-size:8px;color:#a8c8e8;margin-bottom:12px">Select a Pokémon to trade away for a mystery partner!</div>';
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title" style="color:#88aaff">🔄 WONDER TRADE</span>' +
+				'<button id="wtClose" class="pk-close" style="color:#88aaff" type="button">✕</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			const intro = document.createElement('div');
+			intro.style.cssText = 'font-size:8px;color:var(--pk-muted);margin-bottom:14px';
+			intro.textContent = 'Select a Pokémon to trade away for a mystery partner!';
+			body.appendChild(intro);
 			const list = document.createElement('div');
 			list.style.cssText = 'display:flex;flex-direction:column;gap:6px';
 			const activeIdx = inv.pcBoxActive || 0;
 			box.forEach((slot, i) => {
 				if (!slot) return;
 				const row = document.createElement('div');
-				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid rgba(136,170,255,0.2);border-radius:8px;background:rgba(255,255,255,0.03)';
+				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--pk-border);border-radius:var(--pk-radius-sm);background:rgba(255,255,255,0.03)';
 				const formName = FORMS[slot.form] || slot.form;
-				row.innerHTML = '<div><div style="font-size:8px;color:#e8eaf0">' + (slot.nickname||formName) + ' <span style="color:#555;font-size:7px">(' + formName + ')</span></div>' +
-					'<div style="font-size:7px;color:#a8c8e8">Friendship: ' + (slot.friendship||0) + '</div></div>';
+				row.innerHTML = '<div><div style="font-size:8px;color:var(--pk-text)">' + (slot.nickname||formName) + ' <span style="color:var(--pk-faint);font-size:7px">(' + formName + ')</span></div>' +
+					'<div style="font-size:7px;color:var(--pk-muted)">Friendship: ' + (slot.friendship||0) + '</div></div>';
 				if (i !== activeIdx) {
 					const tradeBtn = document.createElement('button');
 					tradeBtn.dataset.slot = i;
 					tradeBtn.type = 'button';
-					tradeBtn.style.cssText = 'font-family:inherit;font-size:8px;padding:6px 12px;background:linear-gradient(180deg,#6888ee,#4466cc);color:#fff;border:0;border-radius:6px;cursor:pointer';
+					tradeBtn.className = 'pk-btn pk-btn-blue pk-btn-xs';
 					tradeBtn.textContent = 'Trade';
 					row.appendChild(tradeBtn);
 				} else {
-					row.innerHTML += '<span style="font-size:7px;color:#f6c84c">Active</span>';
+					row.innerHTML += '<span style="font-size:7px;color:var(--pk-gold)">Active</span>';
 				}
 				list.appendChild(row);
 			});
-			inner.appendChild(list);
+			body.appendChild(list);
+			inner.appendChild(body);
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.getElementById('wtClose').addEventListener('click', () => { panel.hidden = true; });
@@ -394,22 +437,55 @@
 			panel.hidden = false;
 			const inv = Inventory.load();
 			const ribbons = inv.ribbons || {};
+			panel.className = 'pk-backdrop';
 			panel.innerHTML = '';
 			const inner = document.createElement('div');
-			inner.style.cssText = 'background:linear-gradient(180deg,#2a1440,#1a0c2a);border:2px solid #f6a0e8;border-radius:10px;width:min(420px,95%);padding:16px;';
-			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:14px"><span style="color:#f6a0e8;font-size:11px">🎀 CONTEST HALL</span><button id="contestClose" type="button" style="background:none;border:none;color:#f6a0e8;font-size:16px;cursor:pointer;font-family:inherit">✕</button></div>' +
-				'<div style="font-size:8px;color:#e8c0e8;margin-bottom:12px">Enter your partner in a Pokémon Contest!</div>';
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title" style="color:#f6a0e8">🎀 CONTEST HALL</span>' +
+				'<button id="contestClose" class="pk-close" style="color:#f6a0e8" type="button">✕</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			const subtitle = document.createElement('div');
+			subtitle.style.cssText = 'font-size:8px;color:#e8c0e8;margin-bottom:14px';
+			subtitle.textContent = 'Enter your partner in a Pokémon Contest!';
+			body.appendChild(subtitle);
 			const list = document.createElement('div');
 			list.style.cssText = 'display:flex;flex-direction:column;gap:8px';
 			CATEGORIES.forEach(cat => {
 				const won = ribbons[cat.id];
 				const row = document.createElement('div');
-				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;border:1px solid rgba(246,160,232,0.2);background:rgba(255,255,255,0.03)';
-				row.innerHTML = '<div><div style="font-size:9px;color:#f6a0e8">' + cat.label + '</div><div style="font-size:7px;color:#a8c8e8;margin-top:3px">' + cat.desc + '</div></div>' +
-					(won ? '<span style="font-size:9px">🎀</span>' : '<button data-cat="'+cat.id+'" type="button" style="font-family:inherit;font-size:8px;padding:6px 12px;background:linear-gradient(180deg,#c060b8,#8040a0);color:#fff;border:0;border-radius:6px;cursor:pointer">Enter</button>');
+				row.className = 'pk-contest-row';
+				const info = document.createElement('div');
+				const nameEl = document.createElement('div');
+				nameEl.className = 'pk-contest-name';
+				nameEl.textContent = cat.label;
+				const descEl = document.createElement('div');
+				descEl.className = 'pk-contest-desc';
+				descEl.textContent = cat.desc;
+				info.appendChild(nameEl);
+				info.appendChild(descEl);
+				row.appendChild(info);
+				if (won) {
+					const ribbon = document.createElement('span');
+					ribbon.style.cssText = 'font-size:18px';
+					ribbon.textContent = '🎀';
+					row.appendChild(ribbon);
+				} else {
+					const entBtn = document.createElement('button');
+					entBtn.dataset.cat = cat.id;
+					entBtn.type = 'button';
+					entBtn.className = 'pk-btn pk-btn-sm';
+					entBtn.style.background = 'linear-gradient(180deg,#c060b8,#8040a0)';
+					entBtn.style.color = '#fff';
+					entBtn.textContent = 'Enter';
+					row.appendChild(entBtn);
+				}
 				list.appendChild(row);
 			});
-			inner.appendChild(list);
+			body.appendChild(list);
+			inner.appendChild(body);
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.getElementById('contestClose').addEventListener('click', () => { panel.hidden = true; });
@@ -466,24 +542,48 @@
 			panel.hidden = false;
 			const inv = Inventory.load();
 			const bt = inv.berryTypes || {};
+			panel.className = 'pk-backdrop';
 			panel.innerHTML = '';
 			const inner = document.createElement('div');
-			inner.style.cssText = 'background:linear-gradient(180deg,#2a1800,#1a0e00);border:2px solid #ff8800;border-radius:10px;width:min(420px,95%);max-height:85vh;overflow-y:auto;padding:16px';
-			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:#ff8800;font-size:11px">🍛 CURRY COOKING</span><button id="curryClose" style="background:none;border:none;color:#ff8800;font-size:16px;cursor:pointer;font-family:inherit" type="button">✕</button></div>' +
-				'<div style="font-size:8px;color:#ffc080;margin-bottom:12px">Berries: Pecha:' + (bt.pecha||0) + ' Oran:' + (bt.oran||0) + ' Sitrus:' + (bt.sitrus||0) + '</div>';
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title" style="color:#ff9820">🍛 CURRY COOKING</span>' +
+				'<button id="curryClose" class="pk-close" style="color:#ff9820" type="button">✕</button>' +
+				'</div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			const berryLine = document.createElement('div');
+			berryLine.style.cssText = 'font-size:8px;color:#ffc080;margin-bottom:14px;padding:8px 10px;background:rgba(255,136,0,0.08);border-radius:8px;border:1px solid rgba(255,136,0,0.2)';
+			berryLine.textContent = 'Berries: 🦩' + (bt.pecha||0) + '  \uD83FAB' + (bt.oran||0) + '  🍋' + (bt.sitrus||0);
+			body.appendChild(berryLine);
 			const list = document.createElement('div');
 			list.style.cssText = 'display:flex;flex-direction:column;gap:8px';
 			RECIPES.forEach((r, i) => {
 				const can = canMake(r);
-				const ingStr = Object.entries(r.ingredients).map(([k,v]) => v+'×'+k).join(', ');
+				const ingStr = Object.entries(r.ingredients).map(([k,v]) => v+'× '+k).join(', ');
 				const row = document.createElement('div');
-				row.style.cssText = 'padding:10px;border-radius:8px;border:1px solid rgba(255,136,0,' + (can?'0.4':'0.1') + ');background:rgba(255,255,255,0.03);opacity:' + (can?'1':'0.5');
-				row.innerHTML = '<div style="font-size:9px;color:#ff8800">' + r.label + '</div>' +
-					'<div style="font-size:7px;color:#a8c8e8;margin-top:3px">' + r.desc + ' · needs: ' + ingStr + '</div>' +
-					(can ? '<button data-recipe="'+i+'" style="margin-top:6px;font-family:inherit;font-size:8px;padding:5px 12px;background:linear-gradient(180deg,#ff9820,#cc6600);color:#fff;border:0;border-radius:6px;cursor:pointer" type="button">Cook!</button>' : '');
+				row.className = 'pk-curry-row' + (can ? ' can-make' : '');
+				const nm = document.createElement('div');
+				nm.className = 'pk-curry-name';
+				nm.textContent = r.label;
+				const dc = document.createElement('div');
+				dc.className = 'pk-curry-desc';
+				dc.textContent = r.desc + ' · needs: ' + ingStr;
+				row.appendChild(nm);
+				row.appendChild(dc);
+				if (can) {
+					const cookBtn = document.createElement('button');
+					cookBtn.dataset.recipe = i;
+					cookBtn.type = 'button';
+					cookBtn.className = 'pk-btn pk-btn-sm';
+					cookBtn.style.cssText = 'background:linear-gradient(180deg,#ff9820,#cc6600);color:#fff;margin-top:6px';
+					cookBtn.textContent = 'Cook!';
+					row.appendChild(cookBtn);
+				}
 				list.appendChild(row);
 			});
-			inner.appendChild(list);
+			body.appendChild(list);
+			inner.appendChild(body);
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.getElementById('curryClose').addEventListener('click', () => { panel.hidden = true; });
@@ -523,14 +623,19 @@
 			render(panel);
 		}
 		function render(panel) {
+			panel.className = 'pk-backdrop';
 			panel.innerHTML = '';
 			const inner = document.createElement('div');
-			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:16px;padding:20px 24px;text-align:center;width:min(320px,90%)';
-			inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">💚 POKÉMON PLAY</div>' +
-				'<div id="amieSprite" style="font-size:64px;cursor:pointer;user-select:none;margin:8px 0;display:inline-block;transition:transform 0.1s">🐾</div>' +
-				'<div id="amieMsg" style="font-size:9px;color:#a8c8e8;margin:8px 0;min-height:18px">Tap your partner to play!</div>' +
-				'<div id="amieTaps" style="font-size:8px;color:#f6c84c;margin-bottom:12px">Taps: 0 / ' + MAX_SESSION + '</div>' +
-				'<button id="amieClose" type="button" style="font-family:inherit;font-size:8px;padding:8px 20px;background:linear-gradient(180deg,#4a5e80,#2a3a52);color:#e8eaf0;border:0;border-radius:8px;cursor:pointer">Done</button>';
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.style.textAlign = 'center';
+			inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">💚 POKÉMON PLAY</span></div>';
+			const body = document.createElement('div');
+			body.className = 'pk-modal-body';
+			body.innerHTML = '<div id="amieSprite" style="font-size:64px;cursor:pointer;user-select:none;margin:8px 0 4px;display:inline-block;transition:transform 0.1s">🐾</div>' +
+				'<div id="amieMsg" style="font-size:9px;color:var(--pk-muted);margin:10px 0 6px;min-height:18px">Tap your partner to play!</div>' +
+				'<div id="amieTaps" style="font-size:8px;color:var(--pk-gold);margin-bottom:16px">Taps: 0 / ' + MAX_SESSION + '</div>' +
+				'<button id="amieClose" type="button" class="pk-btn pk-btn-dark pk-btn-sm">Done</button>';
+			inner.appendChild(body);
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			const sprite = document.getElementById('amieSprite');
@@ -1241,6 +1346,19 @@
 				refresh();
 			});
 			$('cmClose') && $('cmClose').addEventListener('click', close);
+
+			// ── Mart tabs ─────────────────────────────────────────────────────────
+			document.querySelectorAll('.cm-tab').forEach(tab => {
+				if (tab.dataset.wired) return;
+				tab.dataset.wired = '1';
+				tab.addEventListener('click', () => {
+					document.querySelectorAll('.cm-tab').forEach(t => t.classList.remove('is-active'));
+					document.querySelectorAll('.cm-tab-pane').forEach(p => p.classList.remove('is-active'));
+					tab.classList.add('is-active');
+					const pane = document.getElementById('cmTab' + tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1));
+					if (pane) pane.classList.add('is-active');
+				});
+			});
 
 			// ── Cosmetics ─────────────────────────────────────────────────────────
 			function buyCosmetic(key, applyFn) {
@@ -3902,19 +4020,26 @@
 			const p = document.createElement('div');
 			p.id = 'fishingPanel';
 			p.hidden = true;
-			p.style.cssText = 'position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);font-family:"Press Start 2P",monospace';
-			p.innerHTML = '<div style="background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;padding:20px 24px;min-width:300px;text-align:center;color:#e8eaf0">' +
-				'<div style="font-size:12px;color:#f6c84c;margin-bottom:12px">🎣 FISHING</div>' +
-				'<div id="fishStatus" style="font-size:9px;margin-bottom:16px;min-height:18px;color:#a8c8e8">Walk up to the water and cast your line…</div>' +
-				'<div id="fishBar" style="position:relative;height:28px;background:#1a3a5a;border-radius:6px;margin:0 auto 12px;width:220px;overflow:hidden">' +
-					'<div id="fishZone" style="position:absolute;top:0;height:100%;background:rgba(100,220,100,0.35);width:30%;left:35%"></div>' +
-					'<div id="fishCursor" style="position:absolute;top:0;height:100%;width:6px;background:#f6c84c;border-radius:3px;left:0%"></div>' +
+			p.className = 'pk-backdrop';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.style.textAlign = 'center';
+			inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎣 FISHING</span></div>' +
+				'<div class="pk-modal-body">' +
+				'<div id="fishStatus" style="font-size:9px;color:var(--pk-muted);margin-bottom:16px;min-height:18px">Walk up to the water and cast your line…</div>' +
+				'<div id="fishBar" style="position:relative;height:28px;background:rgba(10,30,60,0.8);border-radius:8px;margin:0 auto 14px;width:220px;overflow:hidden;border:1px solid rgba(74,158,204,0.3)">' +
+					'<div id="fishZone" style="position:absolute;top:0;height:100%;background:rgba(64,200,112,0.35);width:30%;left:35%"></div>' +
+					'<div id="fishCursor" style="position:absolute;top:0;height:100%;width:6px;background:var(--pk-gold);border-radius:3px;left:0%;box-shadow:0 0 6px rgba(246,200,76,0.6)"></div>' +
 				'</div>' +
-				'<button id="fishCast" type="button" style="font-family:inherit;font-size:9px;padding:10px 22px;background:linear-gradient(180deg,#4a9e4a,#2a7a2a);color:#fff;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px">Cast</button>' +
-				'<button id="fishLogBtn" type="button" style="font-family:inherit;font-size:8px;padding:6px 14px;background:none;border:1px solid #4a7a9a;color:#a8c8e8;border-radius:6px;cursor:pointer;margin-top:4px">📖 Log</button>' +
-			'<div id="fishLog" style="display:none;margin-top:8px;text-align:left;font-size:7px;color:#a8c8e8;max-height:120px;overflow-y:auto"></div>' +
-			'<button id="fishClose" type="button" style="display:block;margin:8px auto 0;font-family:inherit;font-size:8px;background:none;border:none;color:#a8c8e8;cursor:pointer">Leave</button>' +
-			'</div>';
+				'<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">' +
+					'<button id="fishCast" class="pk-btn pk-btn-blue pk-btn-sm" type="button">Cast</button>' +
+					'<button id="fishLogBtn" class="pk-btn pk-btn-ghost pk-btn-xs" type="button">📖 Log</button>' +
+				'</div>' +
+				'<div id="fishLog" style="display:none;margin-top:12px;text-align:left;font-size:7px;color:var(--pk-muted);max-height:100px;overflow-y:auto;padding:4px 8px;background:rgba(0,0,0,0.2);border-radius:6px"></div>' +
+				'<button id="fishClose" class="pk-btn pk-btn-ghost pk-btn-xs" style="display:block;margin:12px auto 0" type="button">Leave</button>' +
+				'</div>';
+			p.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.body.appendChild(p);
 			document.getElementById('fishClose').addEventListener('click', close);
 			document.getElementById('fishCast').addEventListener('click', () => {
@@ -4130,9 +4255,15 @@
 				const prog = Math.min(q.goal, dq.progress[q.id] || 0);
 				const done = prog >= q.goal;
 				const row = document.createElement('div');
-				row.style.cssText = 'padding:8px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid ' + (done ? 'rgba(100,220,100,0.4)' : 'rgba(246,200,76,0.15)');
-				row.innerHTML = '<div style="font-size:8px;margin-bottom:4px;color:' + (done ? '#88ee88' : '#e8eaf0') + '">' + (done ? '✅ ' : '') + q.label + '</div>' +
-					'<div style="font-size:7px;color:#a8c8e8">' + prog + ' / ' + q.goal + ' · +' + q.reward + '🪙</div>';
+				row.className = 'pk-quest-row' + (done ? ' is-done' : '');
+				const lbl = document.createElement('div');
+				lbl.className = 'pk-quest-label' + (done ? ' is-done' : '');
+				lbl.textContent = (done ? '✅ ' : '') + q.label;
+				const prog_el = document.createElement('div');
+				prog_el.className = 'pk-quest-prog';
+				prog_el.textContent = prog + ' / ' + q.goal + '  ·  +' + q.reward + '🪙';
+				row.appendChild(lbl);
+				row.appendChild(prog_el);
 				list.appendChild(row);
 			});
 			const bonusEl = document.getElementById('questBonus');
@@ -7018,32 +7149,34 @@
 			if (!panel) {
 				panel = document.createElement('div');
 				panel.id = 'mysteryGiftPanel';
-				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
 				document.body.appendChild(panel);
 				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
 			}
 			panel.hidden = false;
+			panel.className = 'pk-backdrop';
 			panel.innerHTML = '';
 			const inner = document.createElement('div');
-			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;padding:20px 24px;text-align:center;width:min(360px,90%)';
+			inner.className = 'pk-modal pk-modal-sm';
+			inner.style.textAlign = 'center';
 			if (!gift) {
-				inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">🎁 MYSTERY GIFT</div>' +
-					'<div style="font-size:9px;color:#a8c8e8;margin-bottom:16px">No special gift today.<br>Check back on holidays!</div>' +
-					'<button id="mgClose" type="button" style="font-family:inherit;font-size:9px;padding:8px 20px;background:linear-gradient(180deg,#4a5e80,#2a3a52);color:#e8eaf0;border:0;border-radius:8px;cursor:pointer">Close</button>';
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎁 MYSTERY GIFT</span><button id="mgClose" class="pk-close" type="button">✕</button></div>' +
+					'<div class="pk-modal-body"><div style="font-size:9px;color:var(--pk-muted);margin-bottom:16px">No special gift today.<br><br>Check back on holidays!</div>' +
+					'<button id="mgClose2" class="pk-btn pk-btn-dark pk-btn-sm" type="button">Close</button></div>';
 			} else if (gift.claimed) {
-				inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">🎁 ' + gift.label.toUpperCase() + '</div>' +
-					'<div style="font-size:9px;color:#88ee88;margin-bottom:16px">✅ Already claimed today!</div>' +
-					'<button id="mgClose" type="button" style="font-family:inherit;font-size:9px;padding:8px 20px;background:linear-gradient(180deg,#4a5e80,#2a3a52);color:#e8eaf0;border:0;border-radius:8px;cursor:pointer">Close</button>';
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎁 ' + gift.label.toUpperCase() + '</span><button id="mgClose" class="pk-close" type="button">✕</button></div>' +
+					'<div class="pk-modal-body"><div style="font-size:9px;color:var(--pk-green);margin-bottom:16px">✅ Already claimed today!</div>' +
+					'<button id="mgClose2" class="pk-btn pk-btn-dark pk-btn-sm" type="button">Close</button></div>';
 			} else {
-				inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">🎁 ' + gift.label.toUpperCase() + '</div>' +
-					'<div style="font-size:48px;margin:12px 0">🎁</div>' +
-					'<div style="font-size:9px;color:#e8eaf0;margin-bottom:16px">A special gift awaits!</div>' +
-					'<button id="mgClaim" type="button" style="font-family:inherit;font-size:9px;padding:10px 24px;background:linear-gradient(180deg,#ffd968,#f6c84c);color:#2a1e08;border:0;border-radius:8px;cursor:pointer;margin-bottom:8px">Open Gift!</button><br>' +
-					'<button id="mgClose" type="button" style="font-family:inherit;font-size:8px;background:none;border:none;color:#a8c8e8;cursor:pointer;margin-top:4px">Later</button>';
+				inner.innerHTML = '<div class="pk-modal-head"><span class="pk-modal-title">🎁 ' + gift.label.toUpperCase() + '</span><button id="mgClose" class="pk-close" type="button">✕</button></div>' +
+					'<div class="pk-modal-body" style="padding-top:8px"><div style="font-size:48px;margin:8px 0 12px">🎁</div>' +
+					'<div style="font-size:9px;color:var(--pk-text);margin-bottom:20px">A special gift awaits!</div>' +
+					'<button id="mgClaim" class="pk-btn pk-btn-gold pk-btn-full" type="button">Open Gift!</button>' +
+					'<button id="mgClose2" class="pk-btn pk-btn-ghost pk-btn-sm pk-btn-full" style="margin-top:8px" type="button">Later</button></div>';
 			}
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.getElementById('mgClose')?.addEventListener('click', () => { panel.hidden = true; });
+			document.getElementById('mgClose2')?.addEventListener('click', () => { panel.hidden = true; });
 			document.getElementById('mgClaim')?.addEventListener('click', () => { claim(); panel.hidden = true; });
 		}
 		function autoCheck() {
@@ -7103,10 +7236,21 @@
 				defs.forEach(d => {
 					const got = !!unlocked[d.id];
 					const row = document.createElement('div');
-					row.style.cssText = 'padding:8px;border-radius:8px;border:1px solid ' + (got ? 'rgba(246,200,76,0.5)' : 'rgba(255,255,255,0.08)') + ';opacity:' + (got ? '1' : '0.4');
-					row.innerHTML = '<div style="font-size:9px;color:' + (got ? '#f6c84c' : '#e8eaf0') + '">' + d.label + '</div>' +
-						'<div style="font-size:7px;color:#a8c8e8;margin-top:4px">' + d.desc + '</div>' +
-						(got ? '<div style="font-size:6px;color:#88ee88;margin-top:2px">✅ Unlocked ' + new Date(unlocked[d.id]).toLocaleDateString() + '</div>' : '');
+					row.className = 'pk-achieve-row' + (got ? ' is-unlocked' : '');
+					const name = document.createElement('div');
+					name.className = 'pk-achieve-name' + (got ? ' is-unlocked' : '');
+					name.textContent = d.label;
+					const desc = document.createElement('div');
+					desc.className = 'pk-achieve-desc';
+					desc.textContent = d.desc;
+					row.appendChild(name);
+					row.appendChild(desc);
+					if (got) {
+						const dt = document.createElement('div');
+						dt.className = 'pk-achieve-date';
+						dt.textContent = '✅ ' + new Date(unlocked[d.id]).toLocaleDateString();
+						row.appendChild(dt);
+					}
 					list.appendChild(row);
 				});
 			}
