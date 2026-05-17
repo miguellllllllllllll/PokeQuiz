@@ -1869,18 +1869,47 @@ body.camp-body {
 
 /* ── Achievement row ───────────────────────────────────────────────────── */
 .pk-achieve-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   padding: 10px 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid rgba(255,255,255,0.1);
   border-radius: var(--pk-radius-sm);
-  opacity: 0.4;
-  transition: border-color 0.2s, opacity 0.2s;
+  opacity: 0.55;
+  transition: border-color 0.2s, opacity 0.2s, background 0.2s;
 }
-.pk-achieve-row.is-unlocked { border-color: rgba(246,200,76,0.35); opacity: 1; }
-.pk-achieve-name { font-size: 9px; color: var(--pk-text); margin-bottom: 4px; }
+.pk-achieve-row.is-unlocked {
+  background: rgba(246,200,76,0.06);
+  border-color: rgba(246,200,76,0.2);
+  border-left-color: var(--pk-gold);
+  opacity: 1;
+}
+/* Icon badge on the left */
+.pk-achieve-ico {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--pk-muted);
+  margin-top: 1px;
+}
+.pk-achieve-row.is-unlocked .pk-achieve-ico {
+  background: rgba(246,200,76,0.15);
+  color: var(--pk-gold);
+}
+/* Text block */
+.pk-achieve-body { flex: 1; min-width: 0; }
+.pk-achieve-name { font-size: 8px; color: var(--pk-text); margin-bottom: 3px; line-height: 1.4; }
 .pk-achieve-name.is-unlocked { color: var(--pk-gold); }
-.pk-achieve-desc { font-size: 7px; color: var(--pk-muted); }
-.pk-achieve-date { font-size: 6px; color: var(--pk-green); margin-top: 3px; }
+.pk-achieve-desc { font-size: 7px; color: var(--pk-muted); line-height: 1.4; }
+.pk-achieve-date { font-size: 6px; color: var(--pk-green); margin-top: 4px; }
 
 /* ── Mart tabs ──────────────────────────────────────────────────────────── */
 .cm-tabs {

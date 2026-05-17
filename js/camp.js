@@ -8097,21 +8097,36 @@
 					const got = !!unlocked[d.id];
 					const row = document.createElement('div');
 					row.className = 'pk-achieve-row' + (got ? ' is-unlocked' : '');
+
+					// Left icon badge
+					const icoEl = document.createElement('div');
+					icoEl.className = 'pk-achieve-ico';
+					icoEl.innerHTML = d.icoKey ? ico(ICO[d.icoKey] || d.icoKey) : ico('question-circle');
+
+					// Right text block
+					const body = document.createElement('div');
+					body.className = 'pk-achieve-body';
+
 					const name = document.createElement('div');
 					name.className = 'pk-achieve-name' + (got ? ' is-unlocked' : '');
-					const icoHtml = d.icoKey ? ico(ICO[d.icoKey] || d.icoKey, 'achieve-ico') + ' ' : '';
-					name.innerHTML = icoHtml + d.label;
+					name.textContent = d.label;
+
 					const desc = document.createElement('div');
 					desc.className = 'pk-achieve-desc';
 					desc.textContent = d.desc;
-					row.appendChild(name);
-					row.appendChild(desc);
+
+					body.appendChild(name);
+					body.appendChild(desc);
+
 					if (got) {
 						const dt = document.createElement('div');
 						dt.className = 'pk-achieve-date';
 						dt.innerHTML = ico(ICO.check) + ' ' + new Date(unlocked[d.id]).toLocaleDateString();
-						row.appendChild(dt);
+						body.appendChild(dt);
 					}
+
+					row.appendChild(icoEl);
+					row.appendChild(body);
 					list.appendChild(row);
 				});
 			}
