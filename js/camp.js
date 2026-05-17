@@ -2834,7 +2834,7 @@
 		'16,7':  "Boutique — wallpapers and camp accent colors.",
 		'16,22': "Stone Vendor — evolution stones for the worthy.",
 		'10,31': "Pokémon Center — free healing and a complimentary berry!",
-		'2,43':  "Jolteon's Café — energizing beverages and treats!",
+		'12,39': "Jolteon's Café — energizing beverages and treats!",
 	};
 	function buildMarketMap() {
 		const map = Array.from({ length: MARKET_H }, () => new Array(MARKET_W).fill(TG));
@@ -2896,14 +2896,14 @@
 		[[9,7],[9,22],[16,7],[16,22]].forEach(([r,c]) => set(r,c,TSG));
 
 		// ── Pokémon Center (cols 30–37, rows 3–9) ─────────────────────────────
-		// Outer walls
+		// Interior floor first — walls are stamped on top so they win
+		fill(3, 30, 9, 37, TIF);
+		// Outer walls (overwrite floor edges)
 		fill(3, 30, 3, 37, TIW);              // top wall
-		fill(4, 30, 9, 30, TIW);              // left wall
-		fill(4, 37, 9, 37, TIW);              // right wall
+		fill(3, 30, 9, 30, TIW);              // left wall
+		fill(3, 37, 9, 37, TIW);              // right wall
 		fill(9, 30, 9, 32, TIW);              // south wall left of entrance
 		fill(9, 35, 9, 37, TIW);              // south wall right of entrance
-		// Interior floor
-		fill(4, 31, 9, 36, TIF);
 		// Reception counter
 		fill(4, 31, 4, 36, TBKS);
 		// Healing machine (centre of room)
@@ -2913,7 +2913,7 @@
 		// Decorative flowers flanking the entrance
 		set(2, 30, TFR); set(2, 37, TFY);
 		set(3, 29, TFY); set(3, 38, TFR);
-		// Sign south of entrance
+		// Sign south of entrance (on the grass, reachable from the main path)
 		set(10, 31, TSG);
 
 		// ── Big Café (cols 40–47, rows 3–18) ──────────────────────────────────
@@ -2937,8 +2937,8 @@
 		set(17, 41, TFR); set(17, 44, TFY);
 		// Windows: small flower accents on the right wall side
 		set(7,  46, TFY); set(10, 46, TFR); set(13, 46, TFY); set(16, 46, TFR);
-		// Sign above the café (row 2, in the open grass above top wall)
-		set(2, 43, TSG);
+		// Sign just outside the café entrance on the south side of the path
+		set(12, 39, TSG);
 
 		return map;
 	}
