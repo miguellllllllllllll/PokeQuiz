@@ -5776,9 +5776,24 @@
 			_ensureFollowerSprite(form, onReady) {
 				if (this.textures.exists(form.sheet)) { onReady(); return; }
 				if (!form.url) { onReady(); return; }
-				this.load.spritesheet(form.sheet, form.url, { frameWidth: form.frameW, frameHeight: form.frameH });
-				this.load.once('complete', onReady);
-				this.load.start();
+				// Load via native Image so the browser fetches it off the render loop —
+				// avoids the mid-scene this.load.start() stutter.
+				const img = new window.Image();
+				img.crossOrigin = 'anonymous';
+				img.onload = () => {
+					if (!this.textures.exists(form.sheet)) {
+						this.textures.addSpriteSheet(form.sheet, img, {
+							frameWidth: form.frameW,
+							frameHeight: form.frameH,
+						});
+					}
+					onReady();
+				};
+				img.onerror = () => {
+					console.warn('[Camp] Failed to load PMD sprite:', form.url);
+					onReady(); // fall back gracefully (keeps current follower)
+				};
+				img.src = form.url;
 			}
 
 			_switchFollower(formKey) {
