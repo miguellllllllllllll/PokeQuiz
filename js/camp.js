@@ -1916,6 +1916,59 @@
 				setStatus('You give your partner a good pet.   (≧◡≦)', 'good');
 			}
 		}
+		function openPartnerPicker() {
+			const existing = document.getElementById('partnerPickerModal');
+			if (existing) { existing.remove(); return; }
+
+			// Build list of caught dex IDs using the exported isCaught check
+			const caught = [];
+			for (let _d = 1; _d <= 151; _d++) { if (Pokedex.isCaught(_d)) caught.push(_d); }
+			if (!caught.length) { showToast('No Pokémon caught yet! Fish or battle to catch some.'); return; }
+
+			// Outer backdrop (fixed overlay) + inner pk-modal box — same pattern as Pokédex/PCBox
+			const backdrop = document.createElement('div');
+			backdrop.id = 'partnerPickerModal';
+			backdrop.className = 'pk-backdrop';
+			backdrop.style.zIndex = '200';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal';
+			inner.style.cssText = 'max-width:360px;width:min(360px,94vw)';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">' + ico(ICO.npc) + ' Choose Partner</span>' +
+				'<button class="pk-close" id="partnerPickerClose" type="button">' + ico(ICO.close) + '</button>' +
+				'</div>' +
+				'<div class="pk-modal-body" style="padding-top:8px">' +
+				'<div id="partnerPickerGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:320px;overflow-y:auto;padding:4px 2px"></div>' +
+				'</div>';
+			backdrop.appendChild(inner);
+			// Click outside inner box closes
+			backdrop.addEventListener('pointerdown', e => { if (e.target === backdrop) backdrop.remove(); });
+			document.body.appendChild(backdrop);
+
+			const grid = document.getElementById('partnerPickerGrid');
+			const inv = Inventory.load();
+			const current = inv.companionForm;
+
+			caught.forEach(dexId => {
+				const form = FOLLOWER_FORMS[dexId];
+				if (!form) return;
+				const isActive = current == dexId;
+				const cell = document.createElement('button');
+				cell.type = 'button';
+				cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '');
+				// Show first frame (40×40 top-left of sprite sheet) via CSS clip
+				cell.innerHTML = '<div class="partner-pick-sprite" style="background-image:url(' + form.url + ')"></div>' +
+					'<div class="partner-pick-name">' + form.displayName + '</div>';
+				cell.addEventListener('click', () => {
+					window.__campScene?._switchFollower(dexId);
+					backdrop.remove();
+				});
+				grid.appendChild(cell);
+			});
+
+			document.getElementById('partnerPickerClose').addEventListener('click', () => backdrop.remove());
+		}
+
 		function wire(scene) {
 			const root = $('campPartner');
 			if (!root || root.dataset.wired) { return; }
@@ -1924,6 +1977,7 @@
 			$('cpFeed') && $('cpFeed').addEventListener('click', () => feed(scene));
 			$('cpPet') && $('cpPet').addEventListener('click', () => { Amie.open(); });
 			$('cpPC') && $('cpPC').addEventListener('click', () => PCBox.open());
+			$('cpChoosePartner') && $('cpChoosePartner').addEventListener('click', () => openPartnerPicker());
 			// Nickname — save on input, notify scene to update label.
 			const ni = $('cpNickname');
 			if (ni) ni.addEventListener('input', () => {
@@ -2003,6 +2057,48 @@
 		glaceon:  { sheet: 'glaceon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Glaceon' },
 		sylveon:  { sheet: 'sylveon',  cols: 4, originY: 30/48, scale: 0.60, frameW: 32, frameH: 48, displayName: 'Sylveon' },
 	};
+	// ── PMD SpriteCollab — all 151 Pokémon via CDN ────────────────────────────
+	const PMD_CDN = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/';
+	const PMD_NAMES = [null,
+		'Bulbasaur','Ivysaur','Venusaur','Charmander','Charmeleon','Charizard',
+		'Squirtle','Wartortle','Blastoise','Caterpie','Metapod','Butterfree',
+		'Weedle','Kakuna','Beedrill','Pidgey','Pidgeotto','Pidgeot',
+		'Rattata','Raticate','Spearow','Fearow','Ekans','Arbok',
+		'Pikachu','Raichu','Sandshrew','Sandslash','Nidoran F','Nidorina',
+		'Nidoqueen','Nidoran M','Nidorino','Nidoking','Clefairy','Clefable',
+		'Vulpix','Ninetales','Jigglypuff','Wigglytuff','Zubat','Golbat',
+		'Oddish','Gloom','Vileplume','Paras','Parasect','Venonat','Venomoth',
+		'Diglett','Dugtrio','Meowth','Persian','Psyduck','Golduck',
+		'Mankey','Primeape','Growlithe','Arcanine','Poliwag','Poliwhirl',
+		'Poliwrath','Abra','Kadabra','Alakazam','Machop','Machoke','Machamp',
+		'Bellsprout','Weepinbell','Victreebel','Tentacool','Tentacruel',
+		'Geodude','Graveler','Golem','Ponyta','Rapidash','Slowpoke','Slowbro',
+		'Magnemite','Magneton',"Farfetch'd",'Doduo','Dodrio','Seel','Dewgong',
+		'Grimer','Muk','Shellder','Cloyster','Gastly','Haunter','Gengar',
+		'Onix','Drowzee','Hypno','Krabby','Kingler','Voltorb','Electrode',
+		'Exeggcute','Exeggutor','Cubone','Marowak','Hitmonlee','Hitmonchan',
+		'Lickitung','Koffing','Weezing','Rhyhorn','Rhydon','Chansey',
+		'Tangela','Kangaskhan','Horsea','Seadra','Goldeen','Seaking',
+		'Staryu','Starmie','Mr. Mime','Scyther','Jynx','Electabuzz','Magmar',
+		'Pinsir','Tauros','Magikarp','Gyarados','Lapras','Ditto',
+		'Eevee','Vaporeon','Jolteon','Flareon','Porygon','Omanyte','Omastar',
+		'Kabuto','Kabutops','Aerodactyl','Snorlax','Articuno','Zapdos',
+		'Moltres','Dratini','Dragonair','Dragonite','Mewtwo','Mew'
+	];
+	// Per-dex scale overrides (larger Pokémon get smaller scale so they fit visually)
+	const PMD_SCALE = {
+		6:0.68,9:0.68,31:0.65,34:0.65,59:0.65,62:0.65,65:0.65,68:0.65,
+		71:0.65,73:0.65,76:0.65,89:0.65,91:0.65,94:0.70,103:0.65,149:0.65,
+		143:0.60,150:0.65,131:0.65,130:0.65
+	};
+	for (let _i = 1; _i <= 151; _i++) {
+		FOLLOWER_FORMS[_i] = {
+			sheet: 'pmd-' + _i,
+			url: PMD_CDN + String(_i).padStart(4,'0') + '/Walk-Anim.png',
+			cols: 6, originY: 0.75, scale: PMD_SCALE[_i] || 0.72,
+			frameW: 40, frameH: 40, displayName: PMD_NAMES[_i], dex: _i
+		};
+	}
 	// ── Cosmetic lookup tables ────────────────────────────────────────────────────
 	const WALLPAPER_BG = {
 		default: { house: '#1a0e08', upstairs: '#140a18' },
@@ -5016,6 +5112,14 @@
 				// NPC sprite sheets (PMD walk; row 0 frame 0 used as the static idle).
 				this.load.spritesheet('npc-pikachu',   'Pictures/sprites/pikachu.png',   { frameWidth: 32, frameHeight: 40 });
 				this.load.spritesheet('npc-bulbasaur', 'Pictures/sprites/bulbasaur.png', { frameWidth: 40, frameHeight: 40 });
+				// Pre-load companion sprite if player has chosen one
+				const _preInv = Inventory.load();
+				if (_preInv.companionForm != null && _preInv.companionForm !== _preInv.eeveeForm) {
+					const _pf = FOLLOWER_FORMS[_preInv.companionForm];
+					if (_pf?.url) {
+						this.load.spritesheet(_pf.sheet, _pf.url, { frameWidth: _pf.frameW, frameHeight: _pf.frameH });
+					}
+				}
 			}
 
 			create() {
@@ -5234,7 +5338,8 @@
 				// Follower (Eevee or an evolved form) — trails behind the player via a
 				// position-history buffer. Each PMD walk sheet has its own column count;
 				// frame indices are computed from that.
-				const formKey = (Inventory.load().eeveeForm) || 'eevee';
+				const _inv0 = Inventory.load();
+				const formKey = _inv0.companionForm != null ? _inv0.companionForm : (_inv0.eeveeForm || 'eevee');
 				const form = FOLLOWER_FORMS[formKey] || FOLLOWER_FORMS.eevee;
 				const cols = form.cols;
 				const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
@@ -5666,6 +5771,48 @@
 				const extra = replanted > 0 ? ' (' + replanted + ' replanted)' : '';
 				Dialog.open('Scythe sweep! Harvested ' + ripe.length + ' berries' + extra + '.');
 				return true;
+			}
+
+			_ensureFollowerSprite(form, onReady) {
+				if (this.textures.exists(form.sheet)) { onReady(); return; }
+				if (!form.url) { onReady(); return; }
+				this.load.spritesheet(form.sheet, form.url, { frameWidth: form.frameW, frameHeight: form.frameH });
+				this.load.once('complete', onReady);
+				this.load.start();
+			}
+
+			_switchFollower(formKey) {
+				const form = FOLLOWER_FORMS[formKey] || FOLLOWER_FORMS.eevee;
+				const cols = form.cols;
+				const rowFrames = (row) => Array.from({ length: cols }, (_, i) => row * cols + i);
+				const animDefs = [
+					[formKey + '-walk-south', rowFrames(0), 0],
+					[formKey + '-walk-west',  rowFrames(6), 6 * cols],
+					[formKey + '-walk-north', rowFrames(4), 4 * cols],
+					[formKey + '-walk-east',  rowFrames(2), 2 * cols],
+				];
+				this._ensureFollowerSprite(form, () => {
+					for (const [key, frames] of animDefs) {
+						if (!this.anims.exists(key)) {
+							this.anims.create({ key, frameRate: 10, repeat: -1,
+								frames: this.anims.generateFrameNumbers(form.sheet, { frames }) });
+						}
+					}
+					this.eeveeAnimKeys = animDefs.map(([k]) => k);
+					this.eeveeIdleFrame = animDefs.map(([,,idle]) => idle);
+					this.followerForm = formKey;
+					if (this.follower) {
+						this.follower.anims.stop();
+						this.follower.setTexture(form.sheet, this.eeveeIdleFrame[this.followerDir || 0]);
+						this.follower.setOrigin(0.5, form.originY);
+						this.follower.setScale(form.scale * (this._followerScaleMult || 1));
+					}
+					// Persist companion choice
+					const inv = Inventory.load();
+					inv.companionForm = formKey;
+					Inventory.save(inv);
+					showToast(ico(ICO.npc) + ' ' + form.displayName + ' is walking with you!');
+				});
 			}
 
 			_updateInventoryHud() {
