@@ -76,6 +76,21 @@
 	const STONE_PRICE      = (window.CAMP_DATA || {}).STONE_PRICE;
 	const FRIENDSHIP_PER_BERRY = (window.CAMP_DATA || {}).FRIENDSHIP_PER_BERRY;
 
+	// ── PMD SpriteCollab — fill FOLLOWER_FORMS entries 1..151 ────────────────────
+	// Runs here (not in camp.js) so all scene classes that reference FOLLOWER_FORMS
+	// have the PMD entries available without relying on camp.js's load order.
+	if (FOLLOWER_FORMS) {
+		for (let _i = 1; _i <= 151; _i++) {
+			FOLLOWER_FORMS[_i] = {
+				sheet: 'pmd-' + _i,
+				url: PMD_CDN + String(_i).padStart(4, '0') + '/Walk-Anim.png',
+				cols: 6, originY: 0.75,
+				scale: 0.72,
+				frameW: 40, frameH: 40, displayName: (PMD_NAMES || {})[_i], dex: _i,
+			};
+		}
+	}
+
 	// ── applyCampAccent ───────────────────────────────────────────────────────────
 	// Applies the chosen accent colour as a CSS custom property on #campWrap.
 	// Defined here (not only in camp.js) because scene classes call it directly.
