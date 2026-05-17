@@ -3105,7 +3105,7 @@
 		{
 			key: 'mart-keeper', species: 'youngster', r: 14, c: 13,
 			label: 'Shop',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			kind: 'mart',
 			dialog: [
 				"Welcome to my shop! I buy berries and sell seeds — opening the mart now.",
@@ -3117,7 +3117,7 @@
 		{
 			key: 'farmer', species: 'camper', r: 19, c: 19,
 			label: 'Talk',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: [
 				"These plots love a good seed! Plant one on any soil tile and check back in a bit for a Friendship Berry.",
 				"Rain makes the berries grow faster — or so they say.",
@@ -3129,7 +3129,7 @@
 			key: 'quest-board', species: 'cooltrainer-m', r: 8, c: 28,
 			label: 'Quests',
 			kind: 'quests',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: [
 				"Daily quest board! Check your tasks for today.",
 				"New quests reset at midnight. Have you done yours?",
@@ -3140,7 +3140,7 @@
 			key: 'visiting-camper', species: 'picnicker', r: 16, c: 8,
 			label: 'Talk',
 			kind: 'camper',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: ["..."],  // overridden by NpcCampers.openDialog
 		},
 	];
@@ -3997,7 +3997,7 @@
 		{
 			key: 'm-pikachu', species: 'youngster', r: 7, c: 7,
 			label: 'Shop', shopKind: 'general',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: [
 				"Seeds and berries at the trainer's mart.",
 				"Berry prices looking good today!",
@@ -4007,7 +4007,7 @@
 		{
 			key: 'm-bulbasaur', species: 'camper', r: 7, c: 22,
 			label: 'Shop', shopKind: 'berries',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: [
 				"Fresh-picked berries straight from my patch.",
 				"The soil looks extra fertile today — good planting weather!",
@@ -4017,31 +4017,31 @@
 		{
 			key: 'm-vaporeon', species: 'lady', r: 14, c: 7,
 			label: 'Shop', shopKind: 'cosmetics',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Wallpapers and accents to spruce up your camp.",
 		},
 		{
 			key: 'm-umbreon', species: 'gentleman', r: 14, c: 22,
 			label: 'Shop', shopKind: 'stones',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Evolution stones, if you've got the tokens.",
 		},
 		{
 			key: 'm-espeon', species: 'old-lady', r: 5, c: 34,
 			label: 'Heal', shopKind: 'pokecenter',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Welcome to the Pokémon Center. We restore your Pokémon to full health — free of charge!",
 		},
 		{
 			key: 'm-jolteon', species: 'scientist', r: 5, c: 43,
 			label: 'Café', shopKind: 'cafe',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Welcome to my café — grab something energizing before your next quiz!",
 		},
 		{
 			key: 'm-contest', species: 'cooltrainer-f', r: 14, c: 18,
 			label: 'Contest', shopKind: null, kind: 'contest',
-			spriteScale: 1.5, frameHeight: 32,
+			spriteScale: 0.89, frameHeight: 32,
 			dialog: ['Welcome to the Contest Hall! Show off your partner\'s talents!', 'Ribbons are forever — come compete!'],
 		},
 	];
