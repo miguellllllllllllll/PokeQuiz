@@ -186,7 +186,38 @@
 			<button class="camp-quick-btn" id="campDexBtn" title="Pokédex (D)" aria-label="Pokédex" type="button"><i class="bi bi-book-fill"></i></button>
 			<button class="camp-quick-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements" type="button"><i class="bi bi-award-fill"></i></button>
 			<button class="camp-quick-btn" id="campPostcardBtn" title="Postcards" aria-label="Postcards" type="button"><i class="bi bi-envelope-fill"></i></button>
+			<button class="camp-quick-btn" id="campPhotoBtn" title="Photo Mode (F)" aria-label="Take Photo" type="button"><i class="bi bi-camera-fill"></i></button>
 		</div>
+
+		<!-- Shiny encounter modal -->
+		<div id="shinyModal" class="shiny-modal" hidden aria-modal="true" role="dialog" aria-label="Shiny Pokémon Encounter">
+			<div class="shiny-modal-inner">
+				<div class="shiny-sparkle" aria-hidden="true">✨</div>
+				<h2 class="shiny-title">A Wild Shiny Appeared!</h2>
+				<div class="shiny-pokemon-display" id="shinyPokemonDisplay"></div>
+				<p class="shiny-name" id="shinyPokemonName">???</p>
+				<div class="shiny-flee-bar-wrap">
+					<div class="shiny-flee-bar" id="shinyFleeBar"></div>
+				</div>
+				<p class="shiny-hint">Answer <strong>5 hard questions</strong> correctly to catch it!<br>Any wrong answer and it flees!</p>
+				<div class="shiny-quiz-area" id="shinyQuizArea" hidden>
+					<div class="shiny-q-counter">Question <span id="shinyQNum">1</span> / 5</div>
+					<div class="shiny-timer-bar-wrap">
+						<div class="shiny-timer-bar" id="shinyTimerBar"></div>
+					</div>
+					<p class="shiny-question" id="shinyQuestion"></p>
+					<div class="shiny-answers" id="shinyAnswers"></div>
+				</div>
+				<div class="shiny-actions" id="shinyActions">
+					<button class="shiny-btn-catch" id="shinyStartCatch" type="button">⚔️ Attempt to Catch!</button>
+					<button class="shiny-btn-flee" id="shinyRunAway" type="button">🏃 Run Away</button>
+				</div>
+				<div class="shiny-result" id="shinyResult" hidden></div>
+			</div>
+		</div>
+
+		<!-- Mood indicator (floating near partner) -->
+		<div id="campMoodBadge" class="camp-mood-badge" hidden title="Partner Mood" aria-live="polite"></div>
 
 		<!-- Achievements panel -->
 		<div id="achievePanel" class="pk-drawer" hidden role="dialog" aria-label="Achievements">

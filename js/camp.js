@@ -248,153 +248,306 @@
 
 	// ── PC Box ────────────────────────────────────────────────────────────────────
 	const PCBox = (() => {
-		const MAX_SLOTS = 6;
+		const PARTY_MAX = 6;
+
+		// Resolve a display name from a form value (string eeveelution or numeric dex ID).
+		function formName(form) {
+			const EEV = {eevee:'Eevee',vaporeon:'Vaporeon',espeon:'Espeon',umbreon:'Umbreon',
+				flareon:'Flareon',jolteon:'Jolteon',leafeon:'Leafeon',glaceon:'Glaceon',sylveon:'Sylveon'};
+			if (typeof form === 'string') return EEV[form] || form;
+			if (typeof form === 'number') return (typeof PMD_NAMES !== 'undefined' && PMD_NAMES[form]) || ('#' + form);
+			return String(form);
+		}
+
+		// Initialise / migrate save data and return inventory.
 		function load() {
 			const inv = Inventory.load();
-			if (!inv.pcBox) {
-				inv.pcBox = [{ form: inv.eeveeForm || 'eevee', nickname: '', friendship: inv.friendship || 0, since: inv.partnerSince || Date.now() }];
-				inv.pcBoxActive = 0;
-				Inventory.save(inv);
+			// Migrate legacy pcBox → party + pcStorage
+			if (inv.pcBox && !inv.party) {
+				inv.party = inv.pcBox.slice();
+				inv.partyActive = inv.pcBoxActive || 0;
+				delete inv.pcBox;
+				delete inv.pcBoxActive;
 			}
+			if (!inv.party) {
+				inv.party = [{
+					form: inv.eeveeForm || 'eevee',
+					name: formName(inv.eeveeForm || 'eevee'),
+					nickname: '',
+					friendship: inv.friendship || 0,
+					since: inv.partnerSince || Date.now(),
+				}];
+			}
+			if (!inv.pcStorage) inv.pcStorage = [];
+			if (inv.partyActive == null) inv.partyActive = 0;
+			const filled = inv.party.filter(Boolean).length;
+			if (inv.partyActive >= filled) inv.partyActive = Math.max(0, filled - 1);
+			Inventory.save(inv);
 			return inv;
 		}
+
 		function open() {
 			const inv = load();
 			let panel = document.getElementById('pcBoxPanel');
 			if (!panel) {
 				panel = document.createElement('div');
 				panel.id = 'pcBoxPanel';
-				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
 				document.body.appendChild(panel);
-				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+				panel.addEventListener('pointerdown', e => { if (e.target === panel) panel.hidden = true; });
 			}
 			panel.hidden = false;
 			render(panel, inv);
 		}
+
 		function render(panel, inv) {
-			const activeIdx = inv.pcBoxActive || 0;
-			const box = inv.pcBox || [];
-			const FORMS = { eevee:'Eevee',vaporeon:'Vaporeon',espeon:'Espeon',umbreon:'Umbreon',flareon:'Flareon',jolteon:'Jolteon',leafeon:'Leafeon',glaceon:'Glaceon',sylveon:'Sylveon' };
-			panel.className = 'pk-backdrop';
-			panel.innerHTML = '';
+			const party      = inv.party || [];
+			const pc         = inv.pcStorage || [];
+			const activeIdx  = inv.partyActive || 0;
+			panel.className  = 'pk-backdrop';
+			panel.innerHTML  = '';
 			const inner = document.createElement('div');
-			inner.className = 'pk-modal pk-modal-sm';
-			inner.innerHTML = '<div class="pk-modal-head">' +
-				'<span class="pk-modal-title">' + ico(ICO.pc) + ' PC BOX</span>' +
+			inner.className  = 'pk-modal';
+			inner.style.cssText = 'max-width:460px;width:min(460px,94vw)';
+			inner.innerHTML  =
+				'<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">' + ico(ICO.pc) + ' PARTY &amp; PC</span>' +
 				'<button id="pcBoxClose" class="pk-close" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
 			const body = document.createElement('div');
 			body.className = 'pk-modal-body';
-			const grid = document.createElement('div');
-			grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px';
-			for (let i = 0; i < MAX_SLOTS; i++) {
-				const slot = box[i];
+
+			// ── Party ──────────────────────────────────────────────
+			const partyHead = document.createElement('div');
+			partyHead.style.cssText = 'font-size:8px;color:var(--pk-gold);margin-bottom:8px;letter-spacing:1px';
+			partyHead.innerHTML = ico(ICO.npc) + ' PARTY &nbsp;<span style="color:var(--pk-muted);font-size:7px">' +
+				party.filter(Boolean).length + ' / ' + PARTY_MAX + '</span>';
+			body.appendChild(partyHead);
+
+			const partyGrid = document.createElement('div');
+			partyGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px';
+			for (let i = 0; i < PARTY_MAX; i++) {
+				const slot = party[i];
 				const card = document.createElement('div');
-				card.className = 'pk-box-slot' + (i === activeIdx ? ' is-active' : '');
+				card.className = 'pk-box-slot' + (slot && i === activeIdx ? ' is-active' : '');
+				card.style.minHeight = '60px';
 				if (slot) {
-					const formName = FORMS[slot.form] || slot.form;
-					const name = document.createElement('div');
-					name.className = 'pk-box-slot-name';
-					name.innerHTML = (i === activeIdx ? ico(ICO.star) + ' ' : '') + (slot.nickname || formName);
-					const sub = document.createElement('div');
-					sub.className = 'pk-box-slot-sub';
-					sub.textContent = 'Friendship: ' + (slot.friendship||0);
-					card.appendChild(name);
-					card.appendChild(sub);
-					if (i !== activeIdx) {
-						const btn = document.createElement('button');
-						btn.dataset.slot = i;
-						btn.type = 'button';
-						btn.className = 'pk-btn pk-btn-gold pk-btn-xs';
-						btn.style.marginTop = '6px';
-						btn.textContent = 'Set Active';
-						card.appendChild(btn);
+					const dn = formName(slot.form);
+					const shown = slot.nickname || dn;
+					card.innerHTML =
+						'<div class="pk-box-slot-name">' + (i === activeIdx ? ico(ICO.star) + ' ' : '') + shown + '</div>' +
+						'<div class="pk-box-slot-sub" style="font-size:6px;color:var(--pk-muted)">' +
+							(slot.nickname ? dn + ' · ' : '') + '&#9829; ' + (slot.friendship || 0) +
+						'</div>';
+					if (i === activeIdx) {
+						card.innerHTML += '<div style="font-size:7px;color:var(--pk-green);margin-top:4px">Walking partner</div>';
 					} else {
-						const lbl = document.createElement('div');
-						lbl.style.cssText = 'font-size:7px;color:var(--pk-green);margin-top:4px';
-						lbl.textContent = 'Active Partner';
-						card.appendChild(lbl);
+						const btnRow = document.createElement('div');
+						btnRow.style.cssText = 'display:flex;gap:4px;margin-top:6px;flex-wrap:wrap';
+						const walkBtn = document.createElement('button');
+						walkBtn.type = 'button'; walkBtn.className = 'pk-btn pk-btn-gold pk-btn-xs';
+						walkBtn.textContent = 'Walk'; walkBtn.dataset.action = 'walk'; walkBtn.dataset.idx = i;
+						btnRow.appendChild(walkBtn);
+						if (party.filter(Boolean).length > 1) {
+							const pcBtn = document.createElement('button');
+							pcBtn.type = 'button'; pcBtn.className = 'pk-btn pk-btn-xs';
+							pcBtn.style.cssText = 'background:rgba(255,255,255,0.06);color:var(--pk-muted)';
+							pcBtn.textContent = '→ PC'; pcBtn.dataset.action = 'toPC'; pcBtn.dataset.idx = i;
+							btnRow.appendChild(pcBtn);
+						}
+						card.appendChild(btnRow);
 					}
 				} else {
-					card.innerHTML = '<div style="font-size:8px;color:var(--pk-faint);text-align:center;padding:12px 0">Empty</div>';
+					card.innerHTML = '<div style="font-size:7px;color:var(--pk-faint);text-align:center;padding:16px 0">—</div>';
 				}
-				grid.appendChild(card);
+				partyGrid.appendChild(card);
 			}
+			body.appendChild(partyGrid);
+
+			// ── PC Storage ─────────────────────────────────────────
+			const pcHead = document.createElement('div');
+			pcHead.style.cssText = 'font-size:8px;color:var(--pk-muted);margin-bottom:8px;letter-spacing:1px;' +
+				'border-top:1px solid var(--pk-border);padding-top:12px';
+			pcHead.innerHTML = ico(ICO.pc) + ' PC STORAGE &nbsp;<span style="font-size:7px">(' + pc.length + ')</span>';
+			body.appendChild(pcHead);
+
+			if (!pc.length) {
+				const emp = document.createElement('div');
+				emp.style.cssText = 'font-size:7px;color:var(--pk-faint);text-align:center;padding:8px 0';
+				emp.textContent = 'PC is empty';
+				body.appendChild(emp);
+			} else {
+				const pcList = document.createElement('div');
+				pcList.style.cssText = 'display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto';
+				pc.forEach((slot, pcIdx) => {
+					if (!slot) return;
+					const row = document.createElement('div');
+					row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;' +
+						'padding:6px 8px;border:1px solid var(--pk-border);border-radius:var(--pk-radius-sm);' +
+						'background:rgba(255,255,255,0.02)';
+					const dn = formName(slot.form);
+					row.innerHTML =
+						'<div>' +
+						'<div style="font-size:7px;color:var(--pk-text)">' + (slot.nickname || dn) +
+							(slot.nickname ? ' <span style="color:var(--pk-faint);font-size:6px">(' + dn + ')</span>' : '') + '</div>' +
+						'<div style="font-size:6px;color:var(--pk-muted)">&#9829; ' + (slot.friendship || 0) + '</div>' +
+						'</div>';
+					const partyFull = party.filter(Boolean).length >= PARTY_MAX;
+					const ab = document.createElement('button');
+					ab.type = 'button'; ab.className = 'pk-btn pk-btn-gold pk-btn-xs';
+					ab.textContent = partyFull ? '⇄ Swap' : '→ Party';
+					ab.dataset.action = partyFull ? 'swap' : 'toParty';
+					ab.dataset.pcIdx = pcIdx;
+					row.appendChild(ab);
+					pcList.appendChild(row);
+				});
+				body.appendChild(pcList);
+			}
+
+			// Wonder Trade
 			const wt = document.createElement('button');
-			wt.type = 'button';
-			wt.className = 'pk-btn pk-btn-blue pk-btn-full pk-btn-sm';
-			wt.style.marginTop = '4px';
+			wt.type = 'button'; wt.className = 'pk-btn pk-btn-blue pk-btn-full pk-btn-sm';
+			wt.style.marginTop = '12px';
 			wt.innerHTML = ico(ICO.trade) + ' Wonder Trade';
 			wt.addEventListener('click', () => WonderTrade.open());
-			body.appendChild(grid);
 			body.appendChild(wt);
+
 			inner.appendChild(body);
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.getElementById('pcBoxClose').addEventListener('click', () => { panel.hidden = true; });
-			grid.querySelectorAll('[data-slot]').forEach(btn => {
-				btn.addEventListener('click', () => {
-					const idx = parseInt(btn.dataset.slot);
-					const inv2 = Inventory.load();
-					const slot = (inv2.pcBox||[])[idx];
-					if (!slot) return;
-					const prev = inv2.pcBox[inv2.pcBoxActive||0];
-					if (prev) {
-						prev.friendship = inv2.friendship || 0;
-						prev.form = inv2.eeveeForm || 'eevee';
+
+			// Party button delegation
+			partyGrid.addEventListener('click', e => {
+				const btn = e.target.closest('[data-action]');
+				if (!btn) return;
+				const inv2 = load();
+				const action = btn.dataset.action;
+				const idx = parseInt(btn.dataset.idx);
+				if (action === 'walk') {
+					const prev = inv2.party[inv2.partyActive || 0];
+					if (prev) prev.friendship = inv2.friendship || 0;
+					inv2.partyActive = idx;
+					const ns = inv2.party[idx];
+					if (ns) {
+						inv2.companionForm = ns.form;
+						inv2.eeveeForm = typeof ns.form === 'string' ? ns.form : (inv2.eeveeForm || 'eevee');
+						inv2.friendship = ns.friendship || 0;
+						inv2.partnerSince = ns.since || Date.now();
 					}
-					inv2.pcBoxActive = idx;
-					inv2.eeveeForm = slot.form;
-					inv2.friendship = slot.friendship || 0;
-					inv2.partnerSince = slot.since || Date.now();
 					Inventory.save(inv2);
-					showToast('Partner switched to ' + (FORMS[slot.form]||slot.form) + '!');
-					render(panel, Inventory.load());
-				});
+					window.__campScene?._switchFollower(ns?.form ?? 'eevee', { silent: true });
+					showToast(ico(ICO.npc) + ' ' + (ns?.nickname || formName(ns?.form)) + ' is walking with you!');
+				} else if (action === 'toPC') {
+					if (inv2.party.filter(Boolean).length <= 1) { showToast('Cannot remove last party member!'); return; }
+					const [moved] = inv2.party.splice(idx, 1);
+					if ((inv2.partyActive || 0) >= idx && inv2.partyActive > 0) inv2.partyActive--;
+					const active = inv2.party[inv2.partyActive || 0];
+					if (active) {
+						inv2.companionForm = active.form;
+						inv2.eeveeForm = typeof active.form === 'string' ? active.form : (inv2.eeveeForm || 'eevee');
+					}
+					inv2.pcStorage = inv2.pcStorage || [];
+					inv2.pcStorage.push(moved);
+					Inventory.save(inv2);
+					showToast(ico(ICO.pc) + ' ' + (moved?.nickname || formName(moved?.form)) + ' moved to PC.');
+					if (idx === activeIdx) window.__campScene?._switchFollower(active?.form ?? 'eevee', { silent: true });
+				}
+				render(panel, Inventory.load());
+			});
+
+			// PC button delegation
+			body.addEventListener('click', e => {
+				const btn = e.target.closest('[data-action][data-pc-idx]');
+				if (!btn) return;
+				const inv2 = load();
+				const pcIdx2 = parseInt(btn.dataset.pcIdx);
+				const action = btn.dataset.action;
+				const pcSlot = (inv2.pcStorage || [])[pcIdx2];
+				if (!pcSlot) return;
+				if (action === 'toParty') {
+					if ((inv2.party || []).filter(Boolean).length >= PARTY_MAX) { showToast('Party full! Swap first.'); return; }
+					inv2.pcStorage.splice(pcIdx2, 1);
+					inv2.party.push(pcSlot);
+					Inventory.save(inv2);
+					showToast(ico(ICO.npc) + ' ' + (pcSlot.nickname || formName(pcSlot.form)) + ' added to party!');
+				} else if (action === 'swap') {
+					const ai = inv2.partyActive || 0;
+					const cur = inv2.party[ai];
+					if (cur) cur.friendship = inv2.friendship || 0;
+					inv2.pcStorage[pcIdx2] = cur;
+					inv2.party[ai] = pcSlot;
+					inv2.companionForm = pcSlot.form;
+					inv2.eeveeForm = typeof pcSlot.form === 'string' ? pcSlot.form : (inv2.eeveeForm || 'eevee');
+					inv2.friendship = pcSlot.friendship || 0;
+					inv2.partnerSince = pcSlot.since || Date.now();
+					Inventory.save(inv2);
+					window.__campScene?._switchFollower(pcSlot.form, { silent: true });
+					showToast(ico(ICO.trade) + ' ' + (pcSlot.nickname || formName(pcSlot.form)) + ' swapped into party!');
+				}
+				render(panel, Inventory.load());
 			});
 		}
+
+		// Called after catching — routes to party (if room) or PC (overflow).
 		function addToBox(pkmnData) {
-			const inv = Inventory.load();
-			if (!inv.pcBox) inv.pcBox = [];
-			if (inv.pcBox.length >= MAX_SLOTS) { showToast('PC Box is full! (6/6)'); return false; }
-			inv.pcBox.push(pkmnData);
-			Inventory.save(inv);
+			const inv = load();
+			const party = inv.party || [];
+			if (party.filter(Boolean).length < PARTY_MAX) {
+				party.push(pkmnData);
+				inv.party = party;
+				Inventory.save(inv);
+				showToast(ico(ICO.npc) + ' ' + (pkmnData.nickname || formName(pkmnData.form)) + ' joined your party!');
+			} else {
+				inv.pcStorage = inv.pcStorage || [];
+				inv.pcStorage.push(pkmnData);
+				Inventory.save(inv);
+				showToast(ico(ICO.pc) + ' Party full! ' + (pkmnData.nickname || formName(pkmnData.form)) + ' sent to PC.');
+			}
 			return true;
 		}
-		return { open, addToBox };
+
+		return { open, addToBox, load, formName };
 	})();
 
 	// ── Wonder Trade ──────────────────────────────────────────────────────────────
 	const WonderTrade = (() => {
 		const TRADE_POOL = [
-			{ form:'eevee', name:'Pikachu', friendship:30 },
-			{ form:'vaporeon', name:'Vaporeon', friendship:50 },
-			{ form:'flareon', name:'Flareon', friendship:50 },
-			{ form:'jolteon', name:'Jolteon', friendship:50 },
-			{ form:'leafeon', name:'Leafeon', friendship:50 },
-			{ form:'espeon', name:'Espeon', friendship:50 },
-			{ form:'umbreon', name:'Umbreon', friendship:50 },
-			{ form:'eevee', name:'Eevee', friendship:20 },
-			{ form:'eevee', name:'Mystery Eevee', friendship:80 },
+			{ form:'eevee',    name:'Eevee',         friendship:20 },
+			{ form:'vaporeon', name:'Vaporeon',       friendship:50 },
+			{ form:'flareon',  name:'Flareon',        friendship:50 },
+			{ form:'jolteon',  name:'Jolteon',        friendship:50 },
+			{ form:'leafeon',  name:'Leafeon',        friendship:50 },
+			{ form:'espeon',   name:'Espeon',         friendship:50 },
+			{ form:'umbreon',  name:'Umbreon',        friendship:50 },
+			{ form:'eevee',    name:'Mystery Eevee',  friendship:80 },
 		];
 		function open() {
-			const inv = Inventory.load();
-			const box = inv.pcBox || [];
-			if (box.length === 0) { showToast('PC Box is empty! Nothing to trade.'); return; }
+			// Build trade list from PC storage + non-active party slots.
+			const inv = PCBox.load();
+			const party     = inv.party || [];
+			const pc        = inv.pcStorage || [];
+			const activeIdx = inv.partyActive || 0;
+			// Tradeable = PC entries + non-active party slots
+			const tradeable = [
+				...pc.map((s, i)    => ({ source:'pc',    idx: i, slot: s })),
+				...party.map((s, i) => s && i !== activeIdx ? { source:'party', idx: i, slot: s } : null)
+					.filter(Boolean),
+			];
+			if (!tradeable.length) { showToast('Nothing to trade! Put a Pokémon in the PC first.'); return; }
 			let panel = document.getElementById('wonderTradePanel');
 			if (!panel) {
 				panel = document.createElement('div');
 				panel.id = 'wonderTradePanel';
 				document.body.appendChild(panel);
-				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+				panel.addEventListener('pointerdown', e => { if (e.target === panel) panel.hidden = true; });
 			}
 			panel.hidden = false;
 			panel.className = 'pk-backdrop';
 			panel.innerHTML = '';
-			const FORMS = {eevee:'Eevee',vaporeon:'Vaporeon',espeon:'Espeon',umbreon:'Umbreon',flareon:'Flareon',jolteon:'Jolteon',leafeon:'Leafeon',glaceon:'Glaceon',sylveon:'Sylveon'};
 			const inner = document.createElement('div');
 			inner.className = 'pk-modal pk-modal-sm';
-			inner.innerHTML = '<div class="pk-modal-head">' +
+			inner.innerHTML =
+				'<div class="pk-modal-head">' +
 				'<span class="pk-modal-title" style="color:#88aaff">' + ico(ICO.trade) + ' WONDER TRADE</span>' +
 				'<button id="wtClose" class="pk-close" style="color:#88aaff" type="button">' + ico(ICO.close) + '</button>' +
 				'</div>';
@@ -402,28 +555,29 @@
 			body.className = 'pk-modal-body';
 			const intro = document.createElement('div');
 			intro.style.cssText = 'font-size:8px;color:var(--pk-muted);margin-bottom:14px';
-			intro.textContent = 'Select a Pokémon to trade away for a mystery partner!';
+			intro.textContent = 'Trade a Pokémon for a mystery partner!';
 			body.appendChild(intro);
 			const list = document.createElement('div');
 			list.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-			const activeIdx = inv.pcBoxActive || 0;
-			box.forEach((slot, i) => {
-				if (!slot) return;
+			tradeable.forEach((entry, ti) => {
+				const { slot } = entry;
 				const row = document.createElement('div');
-				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--pk-border);border-radius:var(--pk-radius-sm);background:rgba(255,255,255,0.03)';
-				const formName = FORMS[slot.form] || slot.form;
-				row.innerHTML = '<div><div style="font-size:8px;color:var(--pk-text)">' + (slot.nickname||formName) + ' <span style="color:var(--pk-faint);font-size:7px">(' + formName + ')</span></div>' +
-					'<div style="font-size:7px;color:var(--pk-muted)">Friendship: ' + (slot.friendship||0) + '</div></div>';
-				if (i !== activeIdx) {
-					const tradeBtn = document.createElement('button');
-					tradeBtn.dataset.slot = i;
-					tradeBtn.type = 'button';
-					tradeBtn.className = 'pk-btn pk-btn-blue pk-btn-xs';
-					tradeBtn.textContent = 'Trade';
-					row.appendChild(tradeBtn);
-				} else {
-					row.innerHTML += '<span style="font-size:7px;color:var(--pk-gold)">Active</span>';
-				}
+				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;' +
+					'padding:8px 10px;border:1px solid var(--pk-border);border-radius:var(--pk-radius-sm);background:rgba(255,255,255,0.03)';
+				const dn = PCBox.formName(slot.form);
+				row.innerHTML =
+					'<div>' +
+					'<div style="font-size:8px;color:var(--pk-text)">' + (slot.nickname || dn) +
+					'<span style="color:var(--pk-faint);font-size:7px"> (' + dn + ')</span></div>' +
+					'<div style="font-size:7px;color:var(--pk-muted)">&#9829; ' + (slot.friendship || 0) +
+					(entry.source === 'party' ? ' &nbsp;<span style="color:var(--pk-muted)">party</span>' : '') + '</div>' +
+					'</div>';
+				const tradeBtn = document.createElement('button');
+				tradeBtn.dataset.ti = ti;
+				tradeBtn.type = 'button';
+				tradeBtn.className = 'pk-btn pk-btn-blue pk-btn-xs';
+				tradeBtn.textContent = 'Trade';
+				row.appendChild(tradeBtn);
 				list.appendChild(row);
 			});
 			body.appendChild(list);
@@ -431,19 +585,24 @@
 			panel.appendChild(inner);
 			inner.addEventListener('pointerdown', e => e.stopPropagation());
 			document.getElementById('wtClose').addEventListener('click', () => { panel.hidden = true; });
-			list.querySelectorAll('[data-slot]').forEach(btn => {
+			list.querySelectorAll('[data-ti]').forEach(btn => {
 				btn.addEventListener('click', () => {
-					const slotIdx = parseInt(btn.dataset.slot);
-					const inv2 = Inventory.load();
-					const traded = inv2.pcBox[slotIdx];
-					if (!traded) return;
-					inv2.pcBox.splice(slotIdx, 1);
-					if ((inv2.pcBoxActive||0) > slotIdx) inv2.pcBoxActive--;
+					const ti = parseInt(btn.dataset.ti);
+					const entry = tradeable[ti];
+					const inv2 = PCBox.load();
 					const received = TRADE_POOL[Math.floor(Math.random() * TRADE_POOL.length)];
-					inv2.pcBox.push({ form: received.form, nickname: received.name, friendship: received.friendship, since: Date.now() });
+					const receivedEntry = { form: received.form, name: received.name, nickname: received.name, friendship: received.friendship, since: Date.now() };
+					if (entry.source === 'pc') {
+						inv2.pcStorage.splice(entry.idx, 1);
+						inv2.pcStorage.push(receivedEntry);
+					} else {
+						inv2.party.splice(entry.idx, 1);
+						if ((inv2.partyActive || 0) > entry.idx) inv2.partyActive--;
+						inv2.party.push(receivedEntry);
+					}
 					Inventory.save(inv2);
 					panel.hidden = true;
-					showToast(ico(ICO.trade) + ' Traded ' + (traded.nickname||traded.form) + ' for ' + received.name + '!');
+					showToast(ico(ICO.trade) + ' Got ' + received.name + ' in return!');
 					Achievements.unlock('wonderTrade');
 				});
 			});
@@ -1129,20 +1288,17 @@
 				catchBtn.className = 'cb-btn';
 				catchBtn.type = 'button';
 				catchBtn.style.cssText = 'margin-top:8px;font-size:9px';
-				const alreadyCaught = Pokedex.isCaught(_currentEncounter.id);
-				catchBtn.innerHTML = alreadyCaught ? ico(ICO.check) + ' Already Caught' : ico(ICO.bolt) + ' Throw Ball (5 ' + ico(ICO.token) + ')';
-				catchBtn.disabled = alreadyCaught;
+				catchBtn.innerHTML = ico(ICO.bolt) + ' Throw Ball (5 ' + ico(ICO.token) + ')';
 				catchBtn.addEventListener('click', () => {
-					if (alreadyCaught) return;
 					const inv = Inventory.load();
 					if ((inv.tokens || 0) < 5) { showToast('Not enough tokens!'); return; }
 					inv.tokens -= 5;
 					Inventory.save(inv);
 					Pokedex.markCaught(_currentEncounter.id);
+					PCBox.addToBox({ form: _currentEncounter.id, name: _currentEncounter.name, nickname: '', friendship: 0, since: Date.now() });
 					catchBtn.innerHTML = ico(ICO.check) + ' Caught ' + _currentEncounter.name + '!';
 					catchBtn.disabled = true;
 					Achievements.unlock('firstCatch');
-					showToast(ico(ICO.check) + ' ' + _currentEncounter.name + ' caught and added to Pokédex!');
 				}, { once: true });
 				const endBody = $('cbEndBody');
 				if (endBody && endBody.parentElement) {
@@ -1837,10 +1993,15 @@
 				portrait.style.width  = (form.frameW  * PS) + 'px';
 				portrait.style.height = (form.frameH * PS) + 'px';
 			}
+			// Read per-slot data from the active party slot (with fallback to global inv fields).
+			const _activeSlot = (inv.party || [])[inv.partyActive || 0] || null;
+			const _slotNickname   = _activeSlot ? (_activeSlot.nickname || '') : loadNickname();
+			const _slotFriendship = _activeSlot ? (_activeSlot.friendship || 0) : (inv.friendship || 0);
+			const _slotSince      = _activeSlot ? (_activeSlot.since || inv.partnerSince || Date.now()) : (inv.partnerSince || Date.now());
 			// Re-sync the nickname input from storage — keeps it correct after a
 			// partner switch (which clears NICKNAME_KEY) without needing a full open().
 			const niEl = $('cpNickname');
-			if (niEl) niEl.value = loadNickname();
+			if (niEl) niEl.value = _slotNickname;
 			$('cpName') && ($('cpName').textContent = form.displayName);
 			// Stage/form label — only meaningful for eeveelutions.
 			const isEeveelution = typeof formLookup === 'string'; // eeveelutions have string keys
@@ -1848,20 +2009,19 @@
 			$('cpForm') && ($('cpForm').textContent = isEeveelution
 				? (inv.eeveeForm === 'eevee' ? 'Stage 1 — can evolve' : 'Stage 2 — terminal evolution')
 				: 'Walking partner · #' + String(dexNum).padStart(3, '0'));
-			const fpct = Math.min(100, Math.round(((inv.friendship || 0) / FRIENDSHIP_MAX) * 100));
+			const fpct = Math.min(100, Math.round((_slotFriendship / FRIENDSHIP_MAX) * 100));
 			const bar = $('cpFriendshipBar');
 			if (bar) bar.style.width = fpct + '%';
-			$('cpFriendshipText') && ($('cpFriendshipText').textContent = (inv.friendship || 0) + ' / ' + FRIENDSHIP_MAX + (inv.eeveeForm !== 'eevee' ? ' (maxed)' : ''));
+			$('cpFriendshipText') && ($('cpFriendshipText').textContent = _slotFriendship + ' / ' + FRIENDSHIP_MAX + (inv.eeveeForm !== 'eevee' ? ' (maxed)' : ''));
 			$('cpBerries') && ($('cpBerries').textContent = inv.friendshipBerries || 0);
 			const feedBtn = $('cpFeed');
 			if (feedBtn) feedBtn.disabled = (inv.friendshipBerries || 0) <= 0 || (inv.eeveeForm && inv.eeveeForm !== 'eevee');
 			const petBtn = $('cpPet');
 			if (petBtn) petBtn.disabled = false;
 			// Feature 8: Extra info
-			if (!inv.partnerSince) { inv.partnerSince = Date.now(); Inventory.save(inv); }
 			const extraEl = $('cpInfoExtra');
 			if (extraEl) {
-				const days = Math.floor((Date.now() - inv.partnerSince) / 86400000);
+				const days = Math.floor((Date.now() - _slotSince) / 86400000);
 				const infoLines = [ico('clock-history') + ' ' + days + ' day' + (days !== 1 ? 's' : '') + ' together'];
 				if (inv.friendship >= FRIENDSHIP_MAX && inv.eeveeForm === 'eevee' && inv.stone) infoLines.push(ico(ICO.bolt) + ' Ready to evolve! Feed a berry.');
 				if (inv.boosts) {
@@ -2062,10 +2222,15 @@
 			$('cpPet') && $('cpPet').addEventListener('click', () => { Amie.open(); });
 			$('cpPC') && $('cpPC').addEventListener('click', () => PCBox.open());
 			$('cpChoosePartner') && $('cpChoosePartner').addEventListener('click', () => openPartnerPicker());
-			// Nickname — save on input, notify scene to update label.
+			// Nickname — save on input to both legacy NICKNAME_KEY and active party slot.
 			const ni = $('cpNickname');
 			if (ni) ni.addEventListener('input', () => {
-				saveNickname(ni.value.trim());
+				const trimmed = ni.value.trim();
+				saveNickname(trimmed);
+				// Also persist nickname into the active party slot so PCBox can display it.
+				const _nInv = Inventory.load();
+				const _nSlot = (_nInv.party || [])[_nInv.partyActive || 0];
+				if (_nSlot) { _nSlot.nickname = trimmed; Inventory.save(_nInv); }
 				if (scene && scene._updateFollowerLabel) scene._updateFollowerLabel();
 			});
 			// Shiny toggle — save and notify scene to retint follower.
@@ -5489,7 +5654,10 @@
 				this._updateFollowerLabel = () => {
 					const el = this._followerNameEl;
 					if (!el) return;
-					const nick = Partner.loadNickname();
+					// Prefer nickname stored in active party slot; fall back to legacy NICKNAME_KEY.
+					const _lInv = Inventory.load();
+					const _lSlot = (_lInv.party || [])[_lInv.partyActive || 0];
+					const nick = (_lSlot && _lSlot.nickname) || Partner.loadNickname();
 					if (nick) {
 						el.textContent = nick;
 						el.hidden = false;
