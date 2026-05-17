@@ -1,0 +1,49 @@
+{
+  "name": "PokeQuiz",
+  "short_name": "PokeQuiz",
+  "description": "Pokémon trivia quizzes, puzzles, and your very own trainer camp.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ee1515",
+  "theme_color": "#ee1515",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "Pictures/pokeball.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "Pictures/pokeball.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "education", "entertainment"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Play Quiz",
+      "short_name": "Quiz",
+      "description": "Jump straight into a Pokémon trivia quiz",
+      "url": "/play.html",
+      "icons": [{ "src": "Pictures/pokeball.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Puzzles",
+      "short_name": "Puzzles",
+      "description": "Choose a Pokémon puzzle game",
+      "url": "/puzzle.html",
+      "icons": [{ "src": "Pictures/pokeball.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Camp",
+      "short_name": "Camp",
+      "description": "Visit your trainer camp",
+      "url": "/camp.html",
+      "icons": [{ "src": "Pictures/pokeball.png", "sizes": "96x96" }]
+    }
+  ]
+}

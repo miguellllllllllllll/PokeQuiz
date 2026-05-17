@@ -531,7 +531,7 @@ input[type="text"]:focus, input[type="number"]:focus, input[type="email"]:focus 
 }
 
 input.valid { border-color: #22c55e; background: #fff; }
-input.invalid { border-color: var(--poke-yellow); background: #fffbeb; }
+input.invalid { border-color: var(--poke-red); background: #fef2f2; }
 
 .field > label,
 .field-label {

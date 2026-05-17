@@ -260,9 +260,38 @@
 	box-shadow: 0 3px 0 var(--poke-black);
 }
 
-.results p {
+.results-rank {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	font-weight: 800;
+	font-size: 13px;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	margin-bottom: 6px;
+}
+.results-rank-emoji { font-size: 22px; }
+.results-rank-label { font-size: 12px; letter-spacing: 0.12em; }
+
+.results-token-grant {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 18px;
+	background: rgba(234, 179, 8, 0.12);
+	border: 1.5px solid rgba(234, 179, 8, 0.45);
+	border-radius: 10px;
+	font-size: 13px;
+	font-weight: 700;
+	color: #92400e;
+	margin-bottom: 10px;
+}
+.rtg-icon { font-size: 18px; }
+
+.results p, .results-msg {
 	color: #444;
-	margin: 14px 0 18px;
+	margin: 10px 0 16px;
 }
 
 .results-actions {

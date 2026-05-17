@@ -6,6 +6,8 @@
 	<title>Leaderboard &middot; PokeQuiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#ee1515">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/ranking.css">
 </head>
@@ -15,6 +17,7 @@
 		<nav>
 			<a href="index.html">Home</a>
 			<a href="play.html">Play</a>
+			<a href="quizzes.html">Quizzes</a>
 			<a href="puzzle.html">Puzzles</a>
 			<a href="ranking.html" class="active">Leaderboard</a>
 			<a href="camp.html">Camp</a>
@@ -277,6 +280,21 @@
 				return mode;
 			}
 
+			let myName = '';
+			try { myName = localStorage.getItem('playerName') || sessionStorage.getItem('playerName') || ''; } catch {}
+
+			function getMyEeveeForm() {
+				try {
+					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+					const form = inv?.partner?.form || inv?.cosmetics?.eeveeForm || '';
+					const FORM_EMOJI = {
+						vaporeon: '💧', jolteon: '⚡', flareon: '🔥', espeon: '🔮',
+						umbreon: '🌙', leafeon: '🍃', glaceon: '❄️', sylveon: '🎀', eevee: '🦊'
+					};
+					return FORM_EMOJI[form] || '';
+				} catch { return ''; }
+			}
+
 			function renderRows(entries) {
 				const cfg = GAMES[activeGame];
 				colScoreLabel.textContent = cfg.scoreLabel;
@@ -292,6 +310,7 @@
 				}
 				table.hidden = false;
 				emptyState.hidden = true;
+				const eeveeEmoji = getMyEeveeForm();
 				body.innerHTML = entries.map((e, i) => {
 					const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
 					let scoreDisplay;
@@ -304,10 +323,14 @@
 					}
 					// Mode column is always hidden — every board is mode-specific now.
 					const modeDisplay = '';
+					const isMe = myName && e.name === myName;
+					const nameDisplay = isMe
+						? `${escapeHtml(e.name)} ${eeveeEmoji ? eeveeEmoji + ' ' : ''}<span class="lb-you-badge">You</span>`
+						: escapeHtml(e.name);
 					return `
-						<tr class="rank-${Math.min(i + 1, 4)}">
+						<tr class="rank-${Math.min(i + 1, 4)}${isMe ? ' lb-my-row' : ''}">
 							<td class="col-rank">${medal}</td>
-							<td class="col-name">${escapeHtml(e.name)}</td>
+							<td class="col-name">${nameDisplay}</td>
 							<td class="col-score">${scoreDisplay}</td>
 							<td class="col-mode">${modeDisplay}</td>
 							<td class="col-date">${formatDate(e.at)}</td>

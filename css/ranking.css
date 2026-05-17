@@ -309,6 +309,28 @@
 	flex-wrap: wrap;
 }
 
+/* ─── Trainer identity ────────────────────────────────────── */
+.lb-my-row {
+	background: rgba(238, 21, 21, 0.04);
+	outline: 2px solid rgba(238, 21, 21, 0.15);
+	outline-offset: -2px;
+}
+.lb-my-row td { font-weight: 700; }
+
+.lb-you-badge {
+	display: inline-block;
+	padding: 1px 7px;
+	background: var(--poke-red);
+	color: #fff;
+	border-radius: 999px;
+	font-size: 9px;
+	font-weight: 800;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	vertical-align: middle;
+	margin-left: 4px;
+}
+
 @media (max-width: 520px) {
 	.leaderboard { font-size: 14px; }
 	.leaderboard .col-date { display: none; }

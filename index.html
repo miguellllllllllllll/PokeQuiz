@@ -7,6 +7,8 @@
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<meta name="keywords" content="Pokemon, Pokemon Quiz, Trivia">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#ee1515">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/index.css">
 </head>
@@ -16,6 +18,7 @@
 		<nav>
 			<a href="index.html" class="active">Home</a>
 			<a href="play.html">Play</a>
+			<a href="quizzes.html">Quizzes</a>
 			<a href="puzzle.html">Puzzles</a>
 			<a href="ranking.html">Leaderboard</a>
 			<a href="camp.html">Camp</a>
@@ -47,6 +50,17 @@
 			</div>
 		</div>
 	</header>
+
+	<!-- Returning trainer welcome banner (shown by JS when a saved trainer is detected) -->
+	<div class="trainer-welcome" id="trainerWelcome" hidden>
+		<div class="container">
+			<div class="tw-inner">
+				<span class="tw-greet" id="twGreet">Welcome back, Trainer!</span>
+				<div class="tw-stats" id="twStats"></div>
+				<a class="tw-camp-link" href="camp.html">Open Camp 🏕️</a>
+			</div>
+		</div>
+	</div>
 
 	<main class="container">
 		<section class="hero">
@@ -215,6 +229,40 @@
 	</audio>
 
 	<script src="js/profile.js" defer></script>
+	<script>
+		(function() {
+			// Returning trainer welcome banner
+			try {
+				const name = localStorage.getItem('playerName') || sessionStorage.getItem('playerName');
+				if (name && name !== 'Trainer') {
+					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+					const tokens = typeof inv.tokens === 'number' ? inv.tokens : 0;
+					const streak = typeof inv.streak === 'number' ? inv.streak : 0;
+
+					const banner = document.getElementById('trainerWelcome');
+					const greet = document.getElementById('twGreet');
+					const stats = document.getElementById('twStats');
+
+					greet.textContent = `Welcome back, ${name}!`;
+
+					const chips = [];
+					if (tokens > 0) chips.push(`💰 ${tokens} Tokens`);
+					if (streak > 1) chips.push(`🔥 ${streak}-day streak`);
+
+					// Best leaderboard score
+					const lb = JSON.parse(localStorage.getItem('pokequiz_leaderboard') || '[]');
+					const myBest = lb.filter(e => e.name === name).sort((a,b) => b.score - a.score)[0];
+					if (myBest) chips.push(`⭐ Best: ${myBest.score}/${myBest.total || 21}`);
+
+					if (chips.length) {
+						stats.innerHTML = chips.map(c => `<span class="tw-chip">${c}</span>`).join('');
+					}
+
+					banner.hidden = false;
+				}
+			} catch {}
+		})();
+	</script>
 	<script>
 		(function() {
 			const btn = document.getElementById('musicToggle');

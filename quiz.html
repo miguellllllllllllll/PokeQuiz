@@ -6,6 +6,8 @@
 	<title id="pageTitle">PokeQuiz &middot; Quiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#ee1515">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/quiz.css">
 </head>
@@ -69,7 +71,7 @@
 			</div>
 
 			<div class="quiz-stage">
-				<div id="quiz" class="quiz-slides"></div>
+				<div id="quiz" class="quiz-slides" aria-live="polite"></div>
 			</div>
 
 			<div class="quiz-controls">
@@ -132,15 +134,15 @@
 				const out = myQuestions.map((q, qi) => {
 					const answers = Object.entries(q.answers).map(([letter, text]) => `
 						<label class="answer">
-							<input type="radio" name="question${qi}" value="${letter}">
-							<span class="answer-letter">${letter.toUpperCase()}</span>
-							<span class="answer-text">${text}</span>
+							<input type="radio" name="question${qi}" value="${escapeHtml(letter)}">
+							<span class="answer-letter">${escapeHtml(letter.toUpperCase())}</span>
+							<span class="answer-text">${escapeHtml(text)}</span>
 						</label>
 					`).join('');
 					return `
-						<div class="slide" data-index="${qi}">
+						<div class="slide" data-index="${qi}" role="group" aria-label="Question ${qi + 1} of ${myQuestions.length}">
 							<div class="question-num">Question ${qi + 1} of ${myQuestions.length}</div>
-							<div class="question">${q.question}</div>
+							<div class="question" tabindex="-1">${escapeHtml(q.question)}</div>
 							<div class="answers">${answers}</div>
 						</div>
 					`;
@@ -168,6 +170,33 @@
 				}
 				updateProgress();
 				quizContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				// Move focus to the new question so screen-reader and keyboard
+				// users land on the fresh content after navigating.
+				const heading = slides[n].querySelector('.question');
+				if (heading) heading.focus({ preventScroll: true });
+			}
+
+			function grantQuizTokens(pct) {
+				let tokens = 5;
+				if (pct === 100) tokens = 15;
+				else if (pct >= 80) tokens = 12;
+				else if (pct >= 60) tokens = 10;
+				else if (pct >= 40) tokens = 7;
+				try {
+					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+					if (typeof inv.tokens !== 'number') inv.tokens = 0;
+					inv.tokens += tokens;
+					localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+				} catch {}
+				return tokens;
+			}
+
+			function getRank(pct) {
+				if (pct === 100) return { label: 'Perfect!', emoji: '🏆', color: '#f59e0b' };
+				if (pct >= 80)  return { label: 'Champion', emoji: '⭐', color: '#6366f1' };
+				if (pct >= 60)  return { label: 'Ace Trainer', emoji: '🎯', color: '#10b981' };
+				if (pct >= 40)  return { label: 'Rookie', emoji: '🌱', color: '#3b82f6' };
+				return { label: 'Try Again', emoji: '💪', color: '#ef4444' };
 			}
 
 			function showResults() {
@@ -190,18 +219,36 @@
 				});
 
 				const pct = Math.round((numCorrect / myQuestions.length) * 100);
+				const tokensEarned = grantQuizTokens(pct);
+				const rank = getRank(pct);
+
+				let totalTokens = 0;
+				try {
+					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+					totalTokens = typeof inv.tokens === 'number' ? inv.tokens : 0;
+				} catch {}
+
 				resultsContainer.hidden = false;
 				resultsContainer.innerHTML = `
+					<div class="results-rank" style="color:${rank.color}">
+						<span class="results-rank-emoji">${rank.emoji}</span>
+						<span class="results-rank-label">${rank.label}</span>
+					</div>
 					<h2>Quiz Complete!</h2>
 					<div class="score">
 						<span class="score-num">${numCorrect}</span>
 						<span class="score-denom"> / ${myQuestions.length}</span>
 					</div>
 					<div class="score-pct">${pct}% Correct</div>
-					<p>Nice run, ${escapeHtml(playerName)}. Your score has been saved to the leaderboard.</p>
+					<div class="results-token-grant">
+						<span class="rtg-icon">💰</span>
+						<span class="rtg-text">+${tokensEarned} Tokens earned &mdash; Balance: ${totalTokens}</span>
+					</div>
+					<p class="results-msg" id="resultsMsg" aria-live="polite">Nice run, ${escapeHtml(playerName)}! Saving your score&hellip;</p>
 					<div class="results-actions">
 						<a href="ranking.html" class="btn">View Leaderboard &rarr;</a>
-						<a href="quizzes.html" class="btn btn-secondary">Pick Another Quiz</a>
+						<a href="camp.html" class="btn btn-secondary">Spend Tokens at Camp 🏕️</a>
+						<a href="quizzes.html" class="btn btn-ghost">Pick Another Quiz</a>
 					</div>
 				`;
 
@@ -232,11 +279,26 @@
 					try { localStorage.setItem('pokequiz_player_id', playerId); } catch {}
 				}
 
+				function setMsg(text) {
+					const el = document.getElementById('resultsMsg');
+					if (el) el.textContent = text;
+				}
+
 				fetch('/api/leaderboard', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify({ game: 'quiz', name, score, total: myQuestions.length, playerId }),
-				}).catch(() => { /* offline or backend unavailable */ });
+				})
+					.then((res) => {
+						if (res.ok) {
+							setMsg(`Nice run, ${name}! Your score is on the global leaderboard.`);
+						} else {
+							setMsg(`Nice run, ${name}! Score saved on this device — the leaderboard rejected it.`);
+						}
+					})
+					.catch(() => {
+						setMsg(`Nice run, ${name}! Score saved on this device — couldn't reach the leaderboard.`);
+					});
 			}
 
 			buildQuiz();
@@ -244,7 +306,21 @@
 			let currentSlide = 0;
 			showSlide(0);
 
-			submitButton.addEventListener('click', showResults);
+			submitButton.addEventListener('click', () => {
+				// Warn before submitting with unanswered questions.
+				let unanswered = 0;
+				myQuestions.forEach((q, qi) => {
+					if (!quizContainer.querySelector(`input[name=question${qi}]:checked`)) unanswered++;
+				});
+				if (unanswered > 0) {
+					const ok = confirm(
+						`You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}. ` +
+						`They will be marked wrong. Submit anyway?`
+					);
+					if (!ok) return;
+				}
+				showResults();
+			});
 			previousButton.addEventListener('click', () => showSlide(currentSlide - 1));
 			nextButton.addEventListener('click', () => showSlide(currentSlide + 1));
 		})();

@@ -248,6 +248,12 @@
 	line-height: 1;
 }
 
+.game-chip--reward {
+	background: rgba(234, 179, 8, 0.1);
+	border-color: rgba(234, 179, 8, 0.4);
+	color: #92400e;
+}
+
 .game-footer {
 	display: flex;
 	flex-direction: column;

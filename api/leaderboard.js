@@ -107,7 +107,10 @@ function clientIp(req) {
 
 function sanitizeName(raw) {
 	if (typeof raw !== 'string') return '';
-	const trimmed = raw.trim().replace(/[ -<>]/g, '');
+	// Strip only angle brackets (XSS-sensitive) — keep digits, spaces, and
+	// punctuation. The previous range /[ -<>]/ accidentally stripped 0x20-0x3C,
+	// removing all digits from names.
+	const trimmed = raw.trim().replace(/[<>]/g, '');
 	return trimmed.slice(0, MAX_NAME);
 }
 
