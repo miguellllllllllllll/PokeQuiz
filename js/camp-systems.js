@@ -717,12 +717,12 @@
 	
 			function setEnabled(flag) {
 				on = !!flag;
-				try { localStorage.setItem('pokequiz_music_on', on ? '1' : '0'); } catch {}
+				try { localStorage.setItem('pokequiz_music_on_v2', on ? '1' : '0'); } catch {}
 				if (!on) { stop(); return; }
 			}
 			function isEnabled() { return on; }
 			try {
-				const saved = localStorage.getItem('pokequiz_music_on');
+				const saved = localStorage.getItem('pokequiz_music_on_v2');
 				if (saved === '1') on = true;
 				else if (saved === '0') on = false;
 				// if null (never set), keep the default (false)
