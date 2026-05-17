@@ -351,6 +351,7 @@ body.camp-body {
 	.camp-minimap { width: 88px; height: 66px; right: 6px; top: 6px; }
 }
 /* ── Inventory HUD — corner readout for seeds + berries ──────────────── */
+/* ── Inventory bar ─────────────────────────────────────────────────────── */
 .camp-inventory {
 	position: absolute;
 	bottom: 14px;
@@ -358,20 +359,89 @@ body.camp-body {
 	transform: translateX(-50%);
 	display: flex;
 	align-items: center;
-	gap: 0;
-	padding: 6px 18px;
-	background: rgba(10, 14, 28, 0.92);
-	border: 1.5px solid rgba(246,200,76,0.22);
-	border-top: 1.5px solid rgba(246,200,76,0.35);
-	border-radius: 8px;
-	color: #e0e4f0;
-	font-family: 'Press Start 2P', monospace;
-	font-size: 9px;
-	letter-spacing: 0.5px;
+	gap: 2px;
+	padding: 5px 8px;
+	background: rgba(8, 12, 24, 0.94);
+	border: 1.5px solid rgba(246,200,76,0.18);
+	border-top: 1.5px solid rgba(246,200,76,0.32);
+	border-radius: 10px;
 	z-index: 8;
 	pointer-events: none;
-	box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0 1px rgba(246,200,76,0.06);
+	box-shadow: 0 4px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
 	white-space: nowrap;
+}
+
+/* Individual stat chip */
+.hud-item {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 9px;
+	border-radius: 6px;
+}
+.hud-item:first-child { padding-left: 6px; }
+.hud-item:last-child  { padding-right: 6px; }
+
+/* Icon tints */
+.hud-ico            { line-height: 1; vertical-align: -0.1em; font-size: 13px; }
+.hud-ico--seed      { color: #66dd88; }
+.hud-ico--berry     { color: #ff88bb; }
+.hud-ico--token     { color: #f6c84c; }
+.hud-ico--heart     { color: #ff6688; }
+.hud-ico--egg       { color: #88bbff; }
+.hud-ico--scythe    { color: #99cc77; }
+
+/* Value text */
+.hud-val {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: #e8eeff;
+	line-height: 1;
+	letter-spacing: 0.3px;
+}
+
+/* Divider between chips */
+.hud-divider {
+	width: 1px;
+	height: 18px;
+	background: rgba(246,200,76,0.12);
+	flex-shrink: 0;
+	margin: 0 2px;
+}
+
+/* Mini friendship progress bar */
+.hud-friend {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+.hud-friend-track {
+	width: 40px;
+	height: 4px;
+	background: rgba(255,255,255,0.1);
+	border-radius: 3px;
+	overflow: hidden;
+}
+.hud-friend-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #ff6688, #ffaacc);
+	border-radius: 3px;
+	transition: width 0.4s ease;
+}
+
+/* Mini egg progress bar */
+.hud-egg-track {
+	width: 32px;
+	height: 4px;
+	background: rgba(255,255,255,0.1);
+	border-radius: 3px;
+	overflow: hidden;
+}
+.hud-egg-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #6699ff, #aaccff);
+	border-radius: 3px;
+	transition: width 0.4s ease;
 }
 
 /* Bootstrap Icons sizing helpers inside game UI */
@@ -388,8 +458,8 @@ body.camp-body {
 .achieve-ico         { font-size: 13px; }
 .gift-large          { font-size: 40px; display: block; margin: 8px auto; }
 
-/* HUD separator */
-.hud-sep { display: inline-block; width: 1px; height: 14px; background: rgba(246,200,76,0.2); margin: 0 12px; vertical-align: middle; }
+/* Legacy — kept for any inline usage still referencing hud-sep */
+.hud-sep { display: inline-block; width: 1px; height: 14px; background: rgba(246,200,76,0.2); margin: 0 10px; vertical-align: middle; }
 
 /* Trainer level badge — upper left */
 .camp-level-badge {

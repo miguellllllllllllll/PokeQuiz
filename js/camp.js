@@ -5672,20 +5672,55 @@
 				const el = document.getElementById('campInventory');
 				if (!el) return;
 				const inv = Inventory.load();
+
+				// Helper: one stat chip
+				function chip(icoKey, colorKey, val) {
+					return '<div class="hud-item">' +
+						'<i class="bi bi-' + icoKey + ' hud-ico hud-ico--' + colorKey + '" aria-hidden="true"></i>' +
+						'<span class="hud-val">' + val + '</span>' +
+						'</div>';
+				}
+				function div() { return '<div class="hud-divider"></div>'; }
+
+				let html = chip(ICO.seed, 'seed', inv.seeds || 0) +
+					div() +
+					chip(ICO.berry, 'berry', inv.friendshipBerries || 0) +
+					div() +
+					chip(ICO.token, 'token', inv.tokens || 0);
+
+				// Friendship bar (only while still Eevee)
 				const form = inv.eeveeForm || 'eevee';
-				const heart = form === 'eevee' && (inv.friendship || 0) < FRIENDSHIP_MAX
-					? '<span class="hud-sep"></span>' + ico(ICO.heart) + ' ' + (inv.friendship || 0) + '/' + FRIENDSHIP_MAX
-					: '';
-				const scythe = inv.hasScythe
-					? '<span class="hud-sep"></span>' + ico(ICO.scythe) + (inv.scytheEquipped ? ' on' : ' (Q)')
-					: '';
+				if (form === 'eevee') {
+					const pct = Math.round(((inv.friendship || 0) / FRIENDSHIP_MAX) * 100);
+					html += div() +
+						'<div class="hud-item hud-friend">' +
+							'<i class="bi bi-' + ICO.heart + ' hud-ico hud-ico--heart" aria-hidden="true"></i>' +
+							'<div class="hud-friend-track" title="' + (inv.friendship||0) + ' / ' + FRIENDSHIP_MAX + '">' +
+								'<div class="hud-friend-fill" style="width:' + pct + '%"></div>' +
+							'</div>' +
+						'</div>';
+				}
+
+				// Scythe indicator
+				if (inv.hasScythe) {
+					html += div() +
+						chip(ICO.scythe, 'scythe', inv.scytheEquipped ? 'ON' : 'Q');
+				}
+
+				// Egg hatch progress
 				const egg = EggSystem.status();
-				const eggStr = egg ? '<span class="hud-sep"></span>' + ico(ICO.egg) + ' ' + egg.steps + '/' + EggSystem.HATCH_STEPS : '';
-				el.innerHTML =
-					ico(ICO.seed) + ' ' + (inv.seeds || 0) +
-					'<span class="hud-sep"></span>' + ico(ICO.berry) + ' ' + (inv.friendshipBerries || 0) +
-					'<span class="hud-sep"></span>' + ico(ICO.token) + ' ' + (inv.tokens || 0) +
-					heart + scythe + eggStr;
+				if (egg) {
+					const ePct = Math.round((egg.steps / EggSystem.HATCH_STEPS) * 100);
+					html += div() +
+						'<div class="hud-item hud-friend">' +
+							'<i class="bi bi-' + ICO.egg + ' hud-ico hud-ico--egg" aria-hidden="true"></i>' +
+							'<div class="hud-egg-track" title="' + egg.steps + ' / ' + EggSystem.HATCH_STEPS + ' steps">' +
+								'<div class="hud-egg-fill" style="width:' + ePct + '%"></div>' +
+							'</div>' +
+						'</div>';
+				}
+
+				el.innerHTML = html;
 			}
 
 			_handleFeed() {
