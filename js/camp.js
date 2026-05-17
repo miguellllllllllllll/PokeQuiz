@@ -1258,9 +1258,9 @@
 				// Furniture desk bonus
 				const fb = getFurnitureBonuses ? getFurnitureBonuses() : null;
 				if (fb && rawBonus > 1) tokenBonus += fb.rhythmTokenBonus; // desk gives +1 on rhythm
-				// Partner passive: Flareon gives +1 token on rhythm
-				const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { rhythmTokenBonus: 0 };
-				if (rawBonus > 1) tokenBonus += pp.rhythmTokenBonus;
+				// Partner passive: Flareon gives +1 token on rhythm; Rhythm Ear tutor skill gives +2
+				const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { rhythmTokenBonus: 0, tutorRhythmBonus: 0 };
+				if (rawBonus > 1) tokenBonus += pp.rhythmTokenBonus + (pp.tutorRhythmBonus || 0);
 				// Rhythm difficulty multiplier
 				if (rawBonus > 1 && window.__rhythmMult) tokenBonus = Math.round(tokenBonus * window.__rhythmMult);
 				if (tokenBonus > 0) {
@@ -2090,8 +2090,10 @@
 				setStatus('You have no Friendship Berries.', 'warn');
 				return;
 			}
+			const ppFeed = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { tutorBerryBonus: 0 };
+			const feedAmt = FRIENDSHIP_PER_BERRY + (ppFeed.tutorBerryBonus || 0);
 			inv.friendshipBerries -= 1;
-			inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship || 0) + FRIENDSHIP_PER_BERRY);
+			inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship || 0) + feedAmt);
 			Inventory.save(inv);
 			DailyQuests.increment('feed');
 			if (inv.friendship >= FRIENDSHIP_MAX) Achievements.unlock('fullFriend');
@@ -2099,7 +2101,7 @@
 				close();
 				sceneRef._triggerEvolution();
 			} else {
-				setStatus('Eevee gobbled a berry. +' + FRIENDSHIP_PER_BERRY + ' Friendship!', 'good');
+				setStatus('Eevee gobbled a berry. +' + feedAmt + ' Friendship!', 'good');
 				refresh();
 			}
 		}
@@ -2219,9 +2221,19 @@
 			root.dataset.wired = '1';
 			$('cpClose') && $('cpClose').addEventListener('click', close);
 			$('cpFeed') && $('cpFeed').addEventListener('click', () => feed(scene));
+			$('cpBerryLab') && $('cpBerryLab').addEventListener('click', () => BerryBreeding.open());
 			$('cpPet') && $('cpPet').addEventListener('click', () => { Amie.open(); });
 			$('cpPC') && $('cpPC').addEventListener('click', () => PCBox.open());
 			$('cpChoosePartner') && $('cpChoosePartner').addEventListener('click', () => openPartnerPicker());
+			$('cpInfoBtn') && $('cpInfoBtn').addEventListener('click', () => {
+				const _pinv = Inventory.load();
+				const _pkey = _pinv.companionForm != null ? _pinv.companionForm : (_pinv.eeveeForm || 'eevee');
+				const _pdex = dexFromKey(_pkey);
+				const EEVEE_DEX = { eevee:133,vaporeon:134,jolteon:135,flareon:136,espeon:196,umbreon:197,leafeon:470,glaceon:471,sylveon:700 };
+				const dexId = typeof _pdex === 'number' ? _pdex : (EEVEE_DEX[_pdex] || 133);
+				const displayName = FOLLOWER_FORMS[_pdex]?.displayName || FOLLOWER_FORMS[_pinv.eeveeForm || 'eevee']?.displayName || 'Eevee';
+				PokeEncyclopedia.open(dexId, displayName);
+			});
 			// Nickname — save on input to both legacy NICKNAME_KEY and active party slot.
 			const ni = $('cpNickname');
 			if (ni) ni.addEventListener('input', () => {
@@ -2271,9 +2283,10 @@
 		// Furniture grow speed bonus: 20% faster
 		const fb = getFurnitureBonuses ? getFurnitureBonuses() : { growSpeedBonus: 0 };
 		if (fb.growSpeedBonus > 0) ms = Math.floor(ms * (1 - fb.growSpeedBonus));
-		// Partner passive: Leafeon gives +30% grow speed
-		const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { growSpeedBonus: 0 };
+		// Partner passive: Leafeon gives +30% grow speed; Growth Boost tutor skill gives +50%
+		const pp = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { growSpeedBonus: 0, tutorGrowBonus: 0 };
 		if (pp.growSpeedBonus > 0) ms = Math.floor(ms * (1 - pp.growSpeedBonus));
+		if ((pp.tutorGrowBonus || 0) > 0) ms = Math.floor(ms * (1 - pp.tutorGrowBonus));
 		return Math.max(1000, ms);
 	}
 	const SEED_PRICE = 5;
@@ -2440,6 +2453,7 @@
 		plush:      { label: 'Plush Cat',     price: 25, icoKey: 'heart', r: 7, c: 12, cat: 'decor' },
 		barrel:     { label: 'Barrel',        price: 20, icoKey: 'house',   r: 9, c: 7,  cat: 'decor' },
 		chest:      { label: 'Treasure Chest',price: 30, icoKey: 'gift', r: 9, c: 13, cat: 'decor' },
+		pond:       { label: 'Mini Pond',     price: 60, icoKey: 'fish',   r: 7, c: 3,  cat: 'decor' },
 	};
 
 	// ── Furniture pixel-art sprites ──────────────────────────────────────────────
@@ -2845,6 +2859,24 @@
 			"..2222222222....",
 			"...2222222 2....",
 			"...22222222.....",
+			"................",
+		]},
+		pond: { palette:{G:'#3a7020',D:'#285010',W:'#3a8adf',B:'#1a5aaf',L:'#88ccff',S:'#205a08'}, rows:[
+			"................",
+			"....GGGGGGGG....",
+			"...GWWWWWWWWG...",
+			"..GWWLLLLLWWWG..",
+			"..GWWLBBBLLWWG..",
+			"..GWWWBBBBWWWG..",
+			"..GWWLBBBLWWWG..",
+			"..GWWWLLLWWWWG..",
+			"..GWWWWWWWWWWG..",
+			"...GGWWWWWWGG...",
+			"....SGGGGGGS....",
+			"....GGGGGGGG....",
+			"................",
+			"................",
+			"................",
 			"................",
 		]},
 	};
@@ -3366,6 +3398,13 @@
 			kind: 'camper',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: ["..."],  // overridden by NpcCampers.openDialog
+		},
+		{
+			key: 'move-tutor', species: 'camper', r: 18, c: 6,
+			label: 'Tutor',
+			kind: 'tutor',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: ["I can teach your partner special skills! Come talk to me."],
 		},
 	];
 
@@ -4527,10 +4566,10 @@
 			const castBtn = document.getElementById('fishCast');
 			const status = document.getElementById('fishStatus');
 			const hasBait = (Inventory.load().fishingBait || 0) > 0;
-			const ppCast = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { fishingBonus: false };
+			const ppCast = typeof getPartnerPassive === 'function' ? getPartnerPassive() : { fishingBonus: false, tutorFishBonus: false };
 			const zone = document.getElementById('fishZone');
 			if (zone) {
-				if (ppCast.fishingBonus) { zone.style.width = '50%'; zone.style.left = '25%'; }
+				if (ppCast.fishingBonus || ppCast.tutorFishBonus) { zone.style.width = '50%'; zone.style.left = '25%'; }
 				else if (hasBait) { zone.style.width = '42%'; zone.style.left = '29%'; }
 				else { zone.style.width = '30%'; zone.style.left = '35%'; }
 			}
@@ -5346,7 +5385,9 @@
 	}
 
 	function getPartnerPassive() {
-		const form = (Inventory.load().eeveeForm) || 'eevee';
+		const inv = Inventory.load();
+		const form = inv.eeveeForm || 'eevee';
+		const ts = inv.tutorSkills || [];
 		return {
 			fishingBonus:       form === 'vaporeon',
 			rhythmTokenBonus:   form === 'flareon' ? 1 : 0,
@@ -5354,6 +5395,10 @@
 			growSpeedBonus:     form === 'leafeon' ? 0.3 : 0,
 			questRewardBonus:   form === 'espeon' ? 3 : 0,
 			dailyCooldownMult:  form === 'umbreon' ? 0.85 : 1.0,
+			tutorBerryBonus:    ts.includes('powerHerb') ? 5 : 0,
+			tutorFishBonus:     ts.includes('lureExpert'),
+			tutorRhythmBonus:   ts.includes('rhythmEar') ? 2 : 0,
+			tutorGrowBonus:     ts.includes('growthBoost') ? 0.5 : 0,
 		};
 	}
 
@@ -5988,6 +6033,10 @@
 				this.follower.setScale(_bootF.scale * _scaleMult);
 				this._followerScaleMult = _scaleMult;
 				this.follower.setDepth(3.5);
+
+				// Idle tracking
+				this._idleTicks = 0;
+				this._idleEmoji = document.getElementById('followerIdleEmoji');
 
 				// Nickname label — HTML overlay for crisp rendering at any DPR.
 				this._followerNameEl = document.getElementById('campFollowerName');
@@ -7104,6 +7153,9 @@
 						const camper = NpcCampers.getTodayCamper();
 						NpcCampers.openDialog(camper.name);
 					}
+					else if (target && target.kind === 'npc' && target.npcKind === 'tutor') {
+						MoveTutor.open();
+					}
 					else if (target && target.kind === 'fire') {
 						// Campfire: offer Cook vs Story choice
 						this._showCampfireMenu();
@@ -7318,6 +7370,8 @@
 					const fdy = this.follower.y - prevY;
 					const fspeed = Math.hypot(fdx, fdy);
 					if (fspeed > 0.15) {
+						this._idleTicks = 0;
+						if (this._idleEmoji) this._idleEmoji.hidden = true;
 						const dir = Math.abs(fdx) > Math.abs(fdy)
 							? (fdx > 0 ? 3 : 1)
 							: (fdy > 0 ? 0 : 2);
@@ -7329,7 +7383,40 @@
 						// Arrived at the side waypoint — advance to the final face-off tile.
 						this.followerTarget = this.followerPath.shift();
 					} else {
-						if (this.follower.anims.isPlaying) this.follower.anims.stop();
+						// Follower is idle — increment idle counter and handle breathe/sleep
+						this._idleTicks = (this._idleTicks || 0) + 1;
+						if (this._idleTicks === 180) {
+							// 3s idle: subtle breathe animation using south frames 0,1
+							const breatheKey = 'idle-breathe-' + this.followerForm;
+							if (!this.anims.exists(breatheKey)) {
+								const fc2 = FOLLOWER_FORMS[this.followerForm] || FOLLOWER_FORMS.eevee;
+								this.anims.create({
+									key: breatheKey,
+									frames: [
+										{ key: 'npc-camper', frame: 0 }, // placeholder safe default
+										{ key: 'npc-camper', frame: 1 },
+									],
+									frameRate: 1,
+									repeat: -1,
+								});
+								// Overwrite with real frames if sprite key is available
+								const texKey = 'eevee-' + this.followerForm;
+								if (this.textures.exists(texKey)) {
+									this.anims.remove(breatheKey);
+									this.anims.create({
+										key: breatheKey,
+										frames: this.anims.generateFrameNumbers(texKey, { frames: [0, 1] }),
+										frameRate: 1,
+										repeat: -1,
+									});
+								}
+							}
+							try { this.follower.anims.play(breatheKey, true); } catch(_) {}
+						}
+						if (this._idleTicks >= 480 && this._idleEmoji) {
+							this._idleEmoji.hidden = false;
+						}
+						if (this.follower.anims.isPlaying && this._idleTicks < 180) this.follower.anims.stop();
 						// Settled — face the player. In face-off mode that's the opposite of the
 						// player's facing; in trail mode (rare: paused mid-trail) just orient at them.
 						let faceDir;
@@ -7344,10 +7431,21 @@
 						}
 						if (faceDir !== this.followerDir) {
 							this.followerDir = faceDir;
-							this.follower.setFrame(this.eeveeIdleFrame[faceDir]);
+							if (this._idleTicks < 180) this.follower.setFrame(this.eeveeIdleFrame[faceDir]);
 						}
 					}
 					this.follower.setDepth(this.follower.y > this.player.y ? 3.5 : 2.5);
+				}
+				// Position the idle emoji above the follower (same way as nickname label)
+				if (this.follower && this._idleEmoji && !this._idleEmoji.hidden) {
+					const cam = this.cameras.main;
+					const fc = FOLLOWER_FORMS[this.followerForm] || FOLLOWER_FORMS.eevee;
+					const effectiveScale = fc.scale * (this._followerScaleMult ?? 1);
+					const worldTop = this.follower.y - fc.originY * fc.frameH * effectiveScale;
+					const fx = (this.follower.x - cam.worldView.x) * cam.zoom;
+					const fy = (worldTop - cam.worldView.y) * cam.zoom - 20;
+					this._idleEmoji.style.left = fx + 'px';
+					this._idleEmoji.style.top  = fy + 'px';
 				}
 				// Position the HTML nickname label every frame so it tracks the
 				// follower even when it's standing still (followTarget may be null).
@@ -7864,6 +7962,16 @@
 				}
 
 				const ePressed = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
+
+				// Pond fishing: if player stands on a tile where a pond is placed, E opens fishing
+				if (ePressed && !dialogOpen) {
+					const _pondInv = Inventory.load();
+					const _pondPos = _pondInv.cosmetics?.housePlacements?.pond;
+					if (_pondPos && _pondPos.r === tr && _pondPos.c === tc) {
+						Fishing.start();
+					}
+				}
+
 				const triggerExit = !this.didTransition && this.armedForExit && (
 					onDoor || (ePressed && nearDoor)
 				);
@@ -9124,4 +9232,405 @@
 		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireShinyBtn);
 		else wireShinyBtn();
 	}
+
+	// ── Feature 1: Move Tutor ─────────────────────────────────────────────────────
+	const MoveTutor = (() => {
+		const SKILLS = [
+			{ key: 'powerHerb',   label: 'Power Herb',   desc: '+5 friendship per berry feed', cost: 35 },
+			{ key: 'lureExpert',  label: 'Lure Expert',  desc: 'Fishing zone always enlarged',  cost: 40 },
+			{ key: 'rhythmEar',   label: 'Rhythm Ear',   desc: '+2 rhythm tokens per win',       cost: 45 },
+			{ key: 'growthBoost', label: 'Growth Boost', desc: '+0.5 berry grow speed',          cost: 40 },
+		];
+		function open() {
+			const existing = document.getElementById('moveTutorPanel');
+			if (existing) { existing.remove(); return; }
+			const panel = document.createElement('div');
+			panel.id = 'moveTutorPanel';
+			panel.className = 'pk-backdrop';
+			panel.style.zIndex = '120';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal';
+			inner.style.cssText = 'max-width:360px;width:min(360px,94vw)';
+			const inv = Inventory.load();
+			const learned = inv.tutorSkills || [];
+			const tokens = inv.tokens || 0;
+			let rows = '';
+			SKILLS.forEach(sk => {
+				const done = learned.includes(sk.key);
+				rows += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08)">' +
+					'<div style="flex:1">' +
+						'<div style="font-size:8px;color:var(--pk-gold);margin-bottom:2px">' + sk.label + (done ? ' <span style="color:#50dd88">&#10003;</span>' : '') + '</div>' +
+						'<div style="font-size:7px;color:var(--pk-muted)">' + sk.desc + '</div>' +
+					'</div>' +
+					(done
+						? '<span style="font-size:7px;color:#50dd88;white-space:nowrap">Learned</span>'
+						: '<button class="pk-btn pk-btn-gold pk-btn-sm" data-tutor-key="' + sk.key + '" type="button">' + sk.cost + ' ' + ico(ICO.token) + '</button>'
+					) +
+				'</div>';
+			});
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">' + ico(ICO.star) + ' MOVE TUTOR</span>' +
+				'<button class="pk-close" id="moveTutorClose" type="button">' + ico(ICO.close) + '</button>' +
+				'</div>' +
+				'<div class="pk-modal-body">' +
+					'<div style="font-size:7px;color:var(--pk-muted);margin-bottom:12px">Teach your partner powerful new skills! Permanent — applies to all partners.</div>' +
+					'<div style="font-size:7px;color:var(--pk-gold);margin-bottom:10px">' + ico(ICO.token) + ' ' + tokens + ' tokens</div>' +
+					'<div id="tutorSkillList">' + rows + '</div>' +
+				'</div>';
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.body.appendChild(panel);
+			document.getElementById('moveTutorClose').addEventListener('click', () => panel.remove());
+			panel.addEventListener('click', e => { if (e.target === panel) panel.remove(); });
+			panel.querySelectorAll('[data-tutor-key]').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const sk = SKILLS.find(s => s.key === btn.dataset.tutorKey);
+					if (!sk) return;
+					const inv2 = Inventory.load();
+					if ((inv2.tokens || 0) < sk.cost) { showToast(ico(ICO.token) + ' Not enough tokens!'); return; }
+					if ((inv2.tutorSkills || []).includes(sk.key)) return;
+					inv2.tokens -= sk.cost;
+					inv2.tutorSkills = [...(inv2.tutorSkills || []), sk.key];
+					Inventory.save(inv2);
+					showToast(ico(ICO.star) + ' Learned ' + sk.label + '!');
+					panel.remove();
+					open();
+				});
+			});
+		}
+		return { open };
+	})();
+
+	// ── Feature 4: Pokémon Encyclopedia ──────────────────────────────────────────
+	const PokeEncyclopedia = (() => {
+		function open(dexId, displayName) {
+			const existing = document.getElementById('encyclopediaPanel');
+			if (existing) { existing.remove(); return; }
+			const panel = document.createElement('div');
+			panel.id = 'encyclopediaPanel';
+			panel.className = 'pk-backdrop';
+			panel.style.zIndex = '150';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal';
+			inner.style.cssText = 'max-width:400px;width:min(400px,94vw)';
+			inner.innerHTML = '<div class="pk-modal-head">' +
+				'<span class="pk-modal-title">' + ico(ICO.book) + ' ENCYCLOPEDIA</span>' +
+				'<button class="pk-close" id="encyclopediaClose" type="button">' + ico(ICO.close) + '</button>' +
+				'</div>' +
+				'<div class="pk-modal-body" id="encyclopediaBody">' +
+					'<div style="text-align:center;padding:24px;font-size:8px;color:var(--pk-muted)">Loading...</div>' +
+				'</div>';
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.body.appendChild(panel);
+			document.getElementById('encyclopediaClose').addEventListener('click', () => panel.remove());
+			panel.addEventListener('click', e => { if (e.target === panel) panel.remove(); });
+
+			const cacheKey = 'pokequiz_pokeapi_' + dexId;
+			const cached = (() => { try { const v = sessionStorage.getItem(cacheKey); return v ? JSON.parse(v) : null; } catch(e) { return null; } })();
+			if (cached) { _render(dexId, displayName, cached.poke, cached.species, panel); return; }
+
+			Promise.all([
+				fetch('https://pokeapi.co/api/v2/pokemon/' + dexId).then(r => r.json()),
+				fetch('https://pokeapi.co/api/v2/pokemon-species/' + dexId).then(r => r.json()),
+			]).then(([poke, species]) => {
+				try { sessionStorage.setItem(cacheKey, JSON.stringify({ poke, species })); } catch(_) {}
+				if (document.getElementById('encyclopediaPanel')) _render(dexId, displayName, poke, species, panel);
+			}).catch(() => {
+				const body = document.getElementById('encyclopediaBody');
+				if (body) body.innerHTML = '<div style="text-align:center;padding:16px;font-size:8px;color:var(--pk-red)">Failed to load data. Check your connection.</div>';
+			});
+		}
+		function _render(dexId, displayName, poke, species, panel) {
+			const body = document.getElementById('encyclopediaBody');
+			if (!body) return;
+			const sprite = poke.sprites?.other?.['official-artwork']?.front_default || poke.sprites?.front_default || '';
+			const types = (poke.types || []).map(t => {
+				const TYPE_COLORS = { fire:'#f08030',water:'#6890f0',grass:'#78c850',electric:'#f8d030',psychic:'#f85888',ice:'#98d8d8',dragon:'#7038f8',dark:'#705848',fairy:'#ee99ac',normal:'#a8a878',fighting:'#c03028',poison:'#a040a0',ground:'#e0c068',rock:'#b8a038',bug:'#a8b820',ghost:'#705898',steel:'#b8b8d0',flying:'#a890f0' };
+				const c = TYPE_COLORS[t.type.name] || '#888';
+				return '<span style="background:' + c + ';color:#fff;padding:2px 7px;border-radius:4px;font-size:7px;text-transform:capitalize">' + t.type.name + '</span>';
+			}).join(' ');
+			const stats = (poke.stats || []).map(s => {
+				const n = s.base_stat;
+				const pct = Math.round((n / 255) * 100);
+				const col = n >= 100 ? '#50dd88' : n >= 60 ? '#f6c84c' : '#f06868';
+				const STAT_LABELS = { hp:'HP', attack:'Atk', defense:'Def', 'special-attack':'SpAtk', 'special-defense':'SpDef', speed:'Speed' };
+				const lbl = STAT_LABELS[s.stat.name] || s.stat.name;
+				return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
+					'<span style="font-size:6px;color:var(--pk-muted);width:38px;flex-shrink:0">' + lbl + '</span>' +
+					'<div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden">' +
+						'<div style="width:' + pct + '%;height:100%;background:' + col + ';border-radius:3px"></div>' +
+					'</div>' +
+					'<span style="font-size:7px;color:#e8eaf0;width:22px;text-align:right">' + n + '</span>' +
+				'</div>';
+			}).join('');
+			const flavor = ((species.flavor_text_entries || []).find(e => e.language.name === 'en')?.flavor_text || '').replace(/\f/g, ' ').replace(/\n/g, ' ');
+			const h = ((poke.height || 0) / 10).toFixed(1) + ' m';
+			const w = ((poke.weight || 0) / 10).toFixed(1) + ' kg';
+			body.innerHTML =
+				(sprite ? '<div style="text-align:center;margin-bottom:12px"><img src="' + sprite + '" alt="' + displayName + '" style="width:120px;height:120px;object-fit:contain;image-rendering:auto"></div>' : '') +
+				'<div style="text-align:center;margin-bottom:8px">' +
+					'<span style="font-size:10px;color:var(--pk-gold)">' + displayName + '</span> ' +
+					'<span style="font-size:7px;color:var(--pk-muted)">#' + String(dexId).padStart(3,'0') + '</span>' +
+				'</div>' +
+				'<div style="text-align:center;margin-bottom:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">' + types + '</div>' +
+				'<div style="display:flex;gap:16px;justify-content:center;margin-bottom:10px;font-size:7px;color:var(--pk-muted)">' +
+					'<span>' + ico(ICO.level) + ' ' + h + '</span><span>' + ico(ICO.cart) + ' ' + w + '</span>' +
+				'</div>' +
+				'<div style="margin-bottom:10px">' + stats + '</div>' +
+				(flavor ? '<div style="font-size:7px;color:var(--pk-muted);font-style:italic;line-height:1.6;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">' + flavor + '</div>' : '');
+		}
+		return { open };
+	})();
+
+	// ── Feature 5: Notification Bell ──────────────────────────────────────────────
+	const NotifBell = (() => {
+		function check() {
+			const msgs = [];
+			const inv = Inventory.load();
+			// 1. Ripe berries
+			try {
+				const plantsRaw = localStorage.getItem('pokequiz_camp_plants');
+				if (plantsRaw) {
+					const _plants = JSON.parse(plantsRaw);
+					const effMs = typeof getEffectiveGrowMs === 'function' ? getEffectiveGrowMs() : 30000;
+					const ripe = _plants.filter(p => p && (Date.now() - (p.plantedAt||0)) >= effMs);
+					if (ripe.length > 0) msgs.push(ico(ICO.berry) + ' ' + ripe.length + ' ripe berr' + (ripe.length === 1 ? 'y' : 'ies') + ' ready!');
+				}
+			} catch(_) {}
+			// 2. Daily quests incomplete
+			try {
+				const dq = inv.dailyQuests;
+				const today = new Date().toISOString().slice(0,10);
+				if (!dq || dq.date !== today || !dq.claimed) {
+					const QUEST_IDS = ['feed','harvest','market','rhythm','fish','minigame'];
+					const progress = (dq && dq.date === today) ? (dq.progress || {}) : {};
+					const incomplete = QUEST_IDS.filter(id => (progress[id] || 0) < 1).length;
+					if (incomplete > 0) msgs.push(ico(ICO.quest) + ' ' + incomplete + ' daily quest' + (incomplete === 1 ? '' : 's') + ' remaining');
+				}
+			} catch(_) {}
+			// 3. Egg hatching >80%
+			try {
+				if (inv.egg && inv.egg.steps != null) {
+					const pct = Math.min(100, Math.round((inv.egg.steps / 256) * 100));
+					if (pct >= 80) msgs.push(ico(ICO.egg) + ' Egg almost ready! (' + pct + '%)');
+				}
+			} catch(_) {}
+			// 4. Mystery gift available
+			try {
+				const today2 = new Date().toISOString().slice(0,10);
+				const mgKey = 'pokequiz_mystery_gift_' + today2;
+				if (!localStorage.getItem(mgKey)) msgs.push(ico(ICO.gift) + ' Mystery Gift available!');
+			} catch(_) {}
+			// 5. Daily bonus not claimed
+			try {
+				if (typeof Daily !== 'undefined' && Daily.ready()) msgs.push(ico(ICO.star) + ' Daily bonus ready!');
+			} catch(_) {}
+			return msgs;
+		}
+		function updateBadge() {
+			const badge = document.getElementById('campNotifBadge');
+			if (!badge) return;
+			const msgs = check();
+			if (msgs.length > 0) {
+				badge.textContent = msgs.length;
+				badge.hidden = false;
+			} else {
+				badge.hidden = true;
+			}
+		}
+		function open() {
+			const existing = document.getElementById('notifDropdown');
+			if (existing) { existing.remove(); return; }
+			const msgs = check();
+			const btn = document.getElementById('campNotifBtn');
+			const dropdown = document.createElement('div');
+			dropdown.id = 'notifDropdown';
+			dropdown.style.cssText = 'position:absolute;top:44px;right:8px;z-index:200;background:rgba(10,14,28,0.97);border:1px solid rgba(246,200,76,0.28);border-radius:8px;padding:8px 12px;min-width:220px;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,0.5)';
+			if (msgs.length === 0) {
+				dropdown.innerHTML = '<div style="font-size:7px;color:var(--pk-muted);padding:4px 0">No notifications right now!</div>';
+			} else {
+				dropdown.innerHTML = msgs.map(m => '<div style="font-size:7px;color:#e8eaf0;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' + m + '</div>').join('');
+			}
+			const campWrap = document.getElementById('campWrap') || document.body;
+			campWrap.appendChild(dropdown);
+			function dismiss(e) {
+				if (!dropdown.contains(e.target) && e.target !== btn) {
+					dropdown.remove();
+					document.removeEventListener('click', dismiss, true);
+				}
+			}
+			setTimeout(() => document.addEventListener('click', dismiss, true), 0);
+		}
+		function init() {
+			const btn = document.getElementById('campNotifBtn');
+			if (btn) btn.addEventListener('click', () => open());
+			updateBadge();
+			setInterval(updateBadge, 30000);
+		}
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+		else init();
+		return { check, updateBadge, open };
+	})();
+
+	// ── Feature 6: Berry Breeding ─────────────────────────────────────────────────
+	const BerryBreeding = (() => {
+		const BREED_RECIPES = {
+			'pecha+pecha':  { name: 'Gold Pecha',  friendship: 30, effect: 'rhythm-boost-5min',  cost: 2, icon: '🍬', key: 'goldPecha'  },
+			'oran+oran':    { name: 'Gold Oran',   friendship: 50, effect: null,                  cost: 2, icon: '🫐', key: 'goldOran'   },
+			'sitrus+sitrus':{ name: 'Gold Sitrus', friendship: 70, effect: 'fast-grow-20min',     cost: 2, icon: '🍋', key: 'goldSitrus' },
+			'pecha+oran':   { name: 'Mago Berry',  friendship: 35, effect: null,                  cost: 1, icon: '🍑', key: 'magoBerry'  },
+			'oran+sitrus':  { name: 'Lum Berry',   friendship: 45, effect: 'fast-grow-10min',     cost: 1, icon: '🍈', key: 'lumBerry'   },
+			'pecha+sitrus': { name: 'Salac Berry', friendship: 40, effect: 'rhythm-boost-10min',  cost: 1, icon: '🍓', key: 'salacBerry' },
+		};
+		const BERRY_LABELS = { pecha: 'Pecha', oran: 'Oran', sitrus: 'Sitrus' };
+		const BERRY_KEYS = ['pecha', 'oran', 'sitrus'];
+
+		function getBerryCount(inv, type) {
+			if (type === 'pecha') return inv.friendshipBerries || 0;
+			if (type === 'oran') return inv.oranBerries || 0;
+			if (type === 'sitrus') return inv.sitrusBerries || 0;
+			return 0;
+		}
+		function deductBerry(inv, type, amount) {
+			if (type === 'pecha') inv.friendshipBerries = Math.max(0, (inv.friendshipBerries || 0) - amount);
+			else if (type === 'oran') inv.oranBerries = Math.max(0, (inv.oranBerries || 0) - amount);
+			else if (type === 'sitrus') inv.sitrusBerries = Math.max(0, (inv.sitrusBerries || 0) - amount);
+		}
+
+		function open() {
+			const existing = document.getElementById('berryBreedPanel');
+			if (existing) { existing.remove(); return; }
+			const panel = document.createElement('div');
+			panel.id = 'berryBreedPanel';
+			panel.className = 'pk-backdrop';
+			panel.style.zIndex = '130';
+			const inner = document.createElement('div');
+			inner.className = 'pk-modal';
+			inner.style.cssText = 'max-width:380px;width:min(380px,94vw)';
+
+			function buildPanel() {
+				const inv = Inventory.load();
+				const gb = inv.goldBerries || {};
+				let leftSel = 'pecha', rightSel = 'pecha';
+
+				function getRecipe(l, r) {
+					return BREED_RECIPES[l + '+' + r] || BREED_RECIPES[r + '+' + l] || null;
+				}
+
+				function renderHTML() {
+					const recipe = getRecipe(leftSel, rightSel);
+					const inv2 = Inventory.load();
+					const lCount = getBerryCount(inv2, leftSel);
+					const rCount = getBerryCount(inv2, rightSel);
+					let canBrew = false;
+					let previewHTML = '<div style="font-size:8px;color:var(--pk-muted);padding:8px 0">No recipe for this combination.</div>';
+					if (recipe) {
+						const needLeft = leftSel === rightSel ? recipe.cost : 1;
+						const needRight = leftSel === rightSel ? 0 : 1;
+						canBrew = lCount >= needLeft && (leftSel === rightSel || rCount >= needRight);
+						const effectLabel = recipe.effect ? ('<br><span style="font-size:6px;color:#88ccff">' + recipe.effect.replace(/-/g,' ') + '</span>') : '';
+						previewHTML = '<div style="text-align:center;padding:6px 0">' +
+							'<div style="font-size:20px;margin-bottom:4px">' + recipe.icon + '</div>' +
+							'<div style="font-size:8px;color:var(--pk-gold)">' + recipe.name + '</div>' +
+							'<div style="font-size:7px;color:#50dd88">+' + recipe.friendship + ' friendship' + effectLabel + '</div>' +
+							'<div style="font-size:6px;color:var(--pk-muted);margin-top:2px">Cost: ' + needLeft + ' ' + BERRY_LABELS[leftSel] + (leftSel !== rightSel ? ' + 1 ' + BERRY_LABELS[rightSel] : '') + '</div>' +
+						'</div>';
+					}
+					const storedHTML = Object.keys(gb).length > 0
+						? '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px"><div style="font-size:7px;color:var(--pk-muted);margin-bottom:4px">Stored Gold Berries:</div>' +
+							Object.entries(gb).filter(([,v]) => v > 0).map(([k,v]) => {
+								const rec = Object.values(BREED_RECIPES).find(r => r.key === k);
+								return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0">' +
+									'<span style="font-size:12px">' + (rec?.icon || '🍓') + '</span>' +
+									'<span style="font-size:7px;color:#e8eaf0">' + (rec?.name || k) + ' ×' + v + '</span>' +
+									'<button class="pk-btn pk-btn-gold pk-btn-sm" data-use-berry="' + k + '" style="margin-left:auto" type="button">Use</button>' +
+								'</div>';
+							}).join('') + '</div>'
+						: '';
+					return '<div class="pk-modal-head">' +
+						'<span class="pk-modal-title">🌿 BERRY LAB</span>' +
+						'<button class="pk-close" id="berryBreedClose" type="button">' + ico(ICO.close) + '</button>' +
+						'</div>' +
+						'<div class="pk-modal-body">' +
+							'<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:10px">' +
+								'<div>' +
+									'<div style="font-size:7px;color:var(--pk-muted);margin-bottom:4px">Left Berry</div>' +
+									'<select id="breedLeft" style="width:100%;padding:4px;background:#1a2848;color:#e8eaf0;border:1px solid rgba(246,200,76,0.3);border-radius:6px;font-size:7px">' +
+										BERRY_KEYS.map(b => '<option value="' + b + '"' + (b === leftSel ? ' selected' : '') + '>' + BERRY_LABELS[b] + ' (×' + getBerryCount(inv2, b) + ')</option>').join('') +
+									'</select>' +
+								'</div>' +
+								'<div style="font-size:16px;color:var(--pk-muted)">+</div>' +
+								'<div>' +
+									'<div style="font-size:7px;color:var(--pk-muted);margin-bottom:4px">Right Berry</div>' +
+									'<select id="breedRight" style="width:100%;padding:4px;background:#1a2848;color:#e8eaf0;border:1px solid rgba(246,200,76,0.3);border-radius:6px;font-size:7px">' +
+										BERRY_KEYS.map(b => '<option value="' + b + '"' + (b === rightSel ? ' selected' : '') + '>' + BERRY_LABELS[b] + ' (×' + getBerryCount(inv2, b) + ')</option>').join('') +
+									'</select>' +
+								'</div>' +
+							'</div>' +
+							'<div id="breedPreview" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:6px;margin-bottom:10px">' + previewHTML + '</div>' +
+							'<button id="breedBtn" class="pk-btn pk-btn-gold pk-btn-full"' + (canBrew ? '' : ' disabled') + ' type="button">🧪 Brew!</button>' +
+							storedHTML +
+						'</div>';
+				}
+
+				inner.innerHTML = renderHTML();
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				document.getElementById('berryBreedClose')?.addEventListener('click', () => panel.remove());
+
+				function rewire() {
+					const lEl = document.getElementById('breedLeft');
+					const rEl = document.getElementById('breedRight');
+					const brewBtn = document.getElementById('breedBtn');
+					if (lEl) lEl.addEventListener('change', () => { leftSel = lEl.value; inner.innerHTML = renderHTML(); rewire(); });
+					if (rEl) rEl.addEventListener('change', () => { rightSel = rEl.value; inner.innerHTML = renderHTML(); rewire(); });
+					if (brewBtn) brewBtn.addEventListener('click', () => {
+						const recipe = getRecipe(leftSel, rightSel);
+						if (!recipe) return;
+						const inv3 = Inventory.load();
+						const needLeft = leftSel === rightSel ? recipe.cost : 1;
+						if (getBerryCount(inv3, leftSel) < needLeft) { showToast('Not enough ' + BERRY_LABELS[leftSel] + '!'); return; }
+						if (leftSel !== rightSel && getBerryCount(inv3, rightSel) < 1) { showToast('Not enough ' + BERRY_LABELS[rightSel] + '!'); return; }
+						deductBerry(inv3, leftSel, needLeft);
+						if (leftSel !== rightSel) deductBerry(inv3, rightSel, 1);
+						if (!inv3.goldBerries) inv3.goldBerries = {};
+						inv3.goldBerries[recipe.key] = (inv3.goldBerries[recipe.key] || 0) + 1;
+						Inventory.save(inv3);
+						showToast(recipe.icon + ' Brewed ' + recipe.name + '!');
+						inner.innerHTML = renderHTML();
+						rewire();
+					});
+					inner.querySelectorAll('[data-use-berry]').forEach(btn2 => {
+						btn2.addEventListener('click', () => {
+							const bkey = btn2.dataset.useBerry;
+							const rec2 = Object.values(BREED_RECIPES).find(r => r.key === bkey);
+							if (!rec2) return;
+							const inv4 = Inventory.load();
+							if (!inv4.goldBerries || !(inv4.goldBerries[bkey] > 0)) { showToast('None left!'); return; }
+							inv4.goldBerries[bkey] -= 1;
+							inv4.friendship = Math.min(FRIENDSHIP_MAX, (inv4.friendship || 0) + rec2.friendship);
+							if (!inv4.boosts) inv4.boosts = {};
+							if (rec2.effect === 'rhythm-boost-5min') inv4.boosts.rhythmBoost = Math.max(inv4.boosts.rhythmBoost || 0, Date.now() + 5*60*1000);
+							else if (rec2.effect === 'rhythm-boost-10min') inv4.boosts.rhythmBoost = Math.max(inv4.boosts.rhythmBoost || 0, Date.now() + 10*60*1000);
+							else if (rec2.effect === 'fast-grow-10min') inv4.boosts.fastGrow = Math.max(inv4.boosts.fastGrow || 0, Date.now() + 10*60*1000);
+							else if (rec2.effect === 'fast-grow-20min') inv4.boosts.fastGrow = Math.max(inv4.boosts.fastGrow || 0, Date.now() + 20*60*1000);
+							Inventory.save(inv4);
+							showToast(rec2.icon + ' Used ' + rec2.name + '! +' + rec2.friendship + ' friendship');
+							inner.innerHTML = renderHTML();
+							rewire();
+						});
+					});
+					document.getElementById('berryBreedClose')?.addEventListener('click', () => panel.remove());
+				}
+				rewire();
+			}
+
+			panel.appendChild(inner);
+			document.body.appendChild(panel);
+			panel.addEventListener('click', e => { if (e.target === panel) panel.remove(); });
+			buildPanel();
+		}
+		return { open };
+	})();
+
 })();

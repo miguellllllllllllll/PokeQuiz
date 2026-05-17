@@ -6,6 +6,7 @@
 	<title>Pok&eacute;dle &middot; PokeQuiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<link rel="manifest" href="manifest.json">
 	<meta name="description" content="Guess the daily mystery Pokémon in 6 attempts with attribute hints.">
 	<meta property="og:type" content="website">
 	<meta property="og:site_name" content="PokeQuiz">
@@ -21,6 +22,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/puzzle-shared.css">
 	<link rel="stylesheet" href="css/puzzle-wordle.css">
 </head>
 <body>
@@ -29,7 +31,7 @@
 		<nav>
 			<a href="index.html">Home</a>
 			<a href="play.html">Play</a>
-			<a href="quiz.html">Quizzes</a>
+			<a href="quizzes.html">Quizzes</a>
 			<a href="puzzle.html" class="active">Puzzles</a>
 			<a href="ranking.html">Leaderboard</a>
 			<a href="camp.html">Camp</a>
@@ -64,41 +66,48 @@
 
 	<main class="container">
 		<section class="card">
-			<div class="wordle-wrap">
+			<div class="pz-wrap wordle-wrap">
 
 				<!-- Game section -->
 				<div id="wordleGame">
-					<div class="wordle-head">
-						<a class="back-link" href="puzzle.html" style="display:inline-block;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--poke-red);text-decoration:none;">&larr; Puzzle Hub</a>
-						<div class="eyebrow" style="justify-content:center;">
-							<span class="dot"></span>
+					<div class="pz-head">
+						<a class="pz-back" href="puzzle.html">&larr; Puzzle Hub</a>
+						<div class="pz-eyebrow">
+							<span class="pz-eyebrow-dot"></span>
 							<span>Daily Puzzle</span>
 						</div>
-						<h1>Pok&eacute;dle</h1>
-						<p class="lede">Guess the mystery Pok&eacute;mon in 6 attempts. Hints reveal after each guess!</p>
+						<h1 class="pz-title">Pok&eacute;dle</h1>
+						<p class="pz-lede">Guess the mystery Pok&eacute;mon in 6 attempts. Hints reveal after each guess!</p>
 					</div>
 
 					<!-- Stats -->
-					<div class="wordle-stats">
-						<div class="wordle-stat">
-							<span class="ws-num" id="wordleStatStreak">0</span>
-							<span class="ws-label">Win Streak</span>
+					<div class="pz-stats">
+						<div class="pz-stat">
+							<span class="pz-stat-num" id="wordleStatStreak">0</span>
+							<span class="pz-stat-label">Win Streak</span>
 						</div>
-						<div class="wordle-stat">
-							<span class="ws-num">6</span>
-							<span class="ws-label">Max Guesses</span>
+						<div class="pz-stat">
+							<span class="pz-stat-num">6</span>
+							<span class="pz-stat-label">Max Guesses</span>
 						</div>
 					</div>
 
+					<!-- Silhouette -->
+					<div class="pzw-silhouette-wrap">
+						<img id="pzwSilhouette" class="pzw-silhouette" src="" alt="Mystery Pokémon">
+						<div class="pzw-silhouette-label" id="pzwSilhouetteLabel">???</div>
+					</div>
+
 					<!-- Legend -->
-					<div class="wordle-legend">
-						<span class="wl-item"><span class="wl-dot correct"></span> Correct</span>
-						<span class="wl-item"><span class="wl-dot close"></span> Close / Partial</span>
-						<span class="wl-item"><span class="wl-dot wrong"></span> Wrong</span>
+					<div class="pz-legend">
+						<span class="pz-legend-item"><span class="pz-legend-dot" style="background:#22c55e;"></span> Correct</span>
+						<span class="pz-legend-item"><span class="pz-legend-dot" style="background:#facc15;"></span> Close / Partial</span>
+						<span class="pz-legend-item"><span class="pz-legend-dot" style="background:#ef4444;"></span> Wrong</span>
 					</div>
 
 					<!-- Input area -->
 					<div class="wordle-input-wrap">
+						<span class="wordle-input-icon">🔍</span>
 						<input
 							id="wordleInput"
 							class="wordle-input"
@@ -115,7 +124,7 @@
 					</div>
 
 					<!-- Feedback -->
-					<div id="wordleFeedback" class="wordle-feedback" aria-live="polite"></div>
+					<div id="wordleFeedback" class="pz-feedback" aria-live="polite"></div>
 
 					<!-- Remaining -->
 					<div id="wordleRemaining" class="wordle-remaining"></div>
@@ -140,35 +149,37 @@
 					</div>
 
 					<!-- Hint key -->
-					<div style="margin-top:12px;background:rgba(255,203,5,0.10);border:1px solid rgba(255,203,5,0.35);border-radius:10px;padding:12px 16px;font-size:12px;color:#7a5700;">
-						<strong>Height:</strong> Tiny &lt;0.5m &bull; Small 0.5–1m &bull; Medium 1–2m &bull; Large 2–4m &bull; Huge &gt;4m
+					<div class="pz-tip">
+						<span class="pz-tip-icon">📏</span>
+						<span><strong>Height:</strong> Tiny &lt;0.5m &bull; Small 0.5–1m &bull; Medium 1–2m &bull; Large 2–4m &bull; Huge &gt;4m</span>
 					</div>
 				</div>
 
 				<!-- Result section -->
-				<div id="wordleResult" class="wordle-result" hidden>
-					<div class="eyebrow" style="justify-content:center;margin-bottom:16px;">
-						<span class="dot"></span>
-						<span>Puzzle Complete</span>
+				<div id="wordleResult" class="pz-result" hidden>
+					<span class="pz-result-emoji" id="wordleResultEmoji">🎉</span>
+					<h2 class="pz-result-title" id="wordleResultTitle">Got it!</h2>
+
+					<div class="pzw-result-sprite-wrap">
+						<img id="pzwResultSprite" class="pzw-result-sprite" src="" alt="">
 					</div>
-					<h2 id="wordleResultTitle">Got it!</h2>
 
-					<p id="wordleResultAnswer" class="wordle-result-answer"></p>
+					<p id="wordleResultAnswer" class="pz-result-subtitle"></p>
 
-					<div class="wordle-result-stats">
-						<div class="wordle-result-stat">
-							<span class="wrs-num" id="wordleResultStreak">0</span>
-							<span class="wrs-label">Win Streak</span>
+					<div class="pz-result-stats">
+						<div class="pz-result-stat">
+							<span class="pz-rs-num" id="wordleResultStreak">0</span>
+							<span class="pz-rs-label">Win Streak</span>
 						</div>
-						<div class="wordle-result-stat">
-							<span class="wrs-num" id="wordleResultGuesses">—</span>
-							<span class="wrs-label">Guesses Used</span>
+						<div class="pz-result-stat">
+							<span class="pz-rs-num" id="wordleResultGuesses">&mdash;</span>
+							<span class="pz-rs-label">Guesses Used</span>
 						</div>
 					</div>
 
 					<div id="wordleResultTokens"></div>
 
-					<div class="wordle-result-actions">
+					<div class="pz-result-actions">
 						<button id="wordlePlayAgain" class="btn" type="button">Back to Puzzle Hub</button>
 						<a href="puzzle-connections.html" class="btn btn-secondary">Try Connections &rarr;</a>
 					</div>

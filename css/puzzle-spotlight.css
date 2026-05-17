@@ -1,0 +1,476 @@
+/*
+ * puzzle-spotlight.css — Daily Spotlight
+ * Loads after base.css + puzzle-shared.css
+ */
+
+/* ── Card layout ─────────────────────────────────────────────────────────── */
+
+.sp-card {
+	max-width: 600px;
+	margin: 0 auto;
+	padding: 32px;
+	position: relative;
+}
+
+/* ── Page header ─────────────────────────────────────────────────────────── */
+
+.sp-header {
+	text-align: center;
+	margin-bottom: 26px;
+}
+
+.sp-eyebrow {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: var(--poke-red);
+	letter-spacing: 1.5px;
+	margin-bottom: 10px;
+	display: block;
+}
+
+.sp-title {
+	font-size: 22px;
+	font-weight: 800;
+	margin: 0 0 6px;
+	color: var(--poke-black);
+}
+
+.sp-date {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+/* ── Progress dots ───────────────────────────────────────────────────────── */
+
+.sp-dots {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+	margin-bottom: 26px;
+}
+
+.sp-dot {
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	border: 2.5px solid #ccc;
+	background: #fff;
+	transition: background 0.25s, border-color 0.25s, transform 0.2s;
+}
+
+.sp-dot.done {
+	background: #22c55e;
+	border-color: #16a34a;
+	box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
+}
+
+.sp-dot.wrong {
+	background: #ef4444;
+	border-color: #dc2626;
+}
+
+.sp-dot.active {
+	border-color: var(--poke-red);
+	background: rgba(238,21,21,0.08);
+	transform: scale(1.2);
+	box-shadow: 0 0 0 3px rgba(238,21,21,0.15);
+}
+
+/* ── Round card ──────────────────────────────────────────────────────────── */
+
+.sp-round {
+	background: linear-gradient(135deg, #fffbea 0%, #ffeaea 100%);
+	border: 2px solid var(--poke-yellow);
+	border-radius: 18px;
+	padding: 28px;
+	text-align: center;
+	margin-bottom: 18px;
+	box-shadow: 0 8px 24px rgba(180,10,10,0.08);
+}
+
+.sp-round-label {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	color: var(--muted);
+	letter-spacing: 1px;
+	margin-bottom: 8px;
+	text-transform: uppercase;
+}
+
+.sp-round-title {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 13px;
+	color: var(--poke-red);
+	text-shadow: 1px 1px 0 var(--poke-black);
+	margin-bottom: 18px;
+	line-height: 1.4;
+}
+
+/* ── Pokémon sprite ──────────────────────────────────────────────────────── */
+
+.sp-sprite-wrap {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 18px;
+}
+
+.sp-sprite {
+	width: 160px;
+	height: 160px;
+	image-rendering: pixelated;
+	transition: filter 0.6s ease;
+}
+
+.sp-sprite.silhouette {
+	filter: brightness(0) contrast(1);
+}
+
+/* ── Round timer ─────────────────────────────────────────────────────────── */
+
+.sp-timer-wrap {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 18px;
+}
+
+.sp-timer-track {
+	flex: 1;
+	height: 10px;
+	background: #f5e7e7;
+	border-radius: 999px;
+	overflow: hidden;
+	border: 1.5px solid rgba(0,0,0,0.08);
+}
+
+.sp-timer-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #ef4444, #dc2626);
+	width: 100%;
+	border-radius: 999px;
+	transition: width linear;
+}
+
+.sp-timer-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 13px;
+	color: var(--poke-red);
+	min-width: 24px;
+	text-align: right;
+}
+
+/* ── Question text ───────────────────────────────────────────────────────── */
+
+.sp-q {
+	font-size: 17px;
+	font-weight: 700;
+	margin-bottom: 18px;
+	color: var(--poke-black);
+	line-height: 1.45;
+}
+
+/* ── Dex flavor text ─────────────────────────────────────────────────────── */
+
+.sp-dex-entry {
+	font-size: 15px;
+	background: #fff;
+	border: 1.5px solid #ede5e5;
+	border-radius: 12px;
+	padding: 14px 18px;
+	margin-bottom: 16px;
+	font-style: italic;
+	color: #333;
+	line-height: 1.6;
+	text-align: left;
+}
+
+/* ── Multiple choice grid ────────────────────────────────────────────────── */
+
+.sp-choices {
+	display: grid;
+	gap: 10px;
+}
+
+.sp-choice {
+	display: grid;
+	grid-template-columns: 36px 1fr;
+	align-items: center;
+	gap: 14px;
+	padding: 13px 16px;
+	background: #fff;
+	border: 2px solid #ede5e5;
+	border-radius: 13px;
+	cursor: pointer;
+	transition: border-color 0.15s, background 0.15s, transform 0.05s, box-shadow 0.15s;
+	font-size: 14px;
+	font-weight: 600;
+	text-align: left;
+	font-family: inherit;
+	color: var(--ink);
+}
+
+.sp-choice:hover:not(.locked) {
+	border-color: var(--poke-red);
+	background: #fffafa;
+	transform: translateX(2px);
+	box-shadow: 0 2px 8px rgba(238,21,21,0.10);
+}
+
+.sp-choice.locked {
+	cursor: default;
+}
+
+.sp-choice.correct {
+	border-color: #22c55e;
+	background: rgba(34,197,94,0.10);
+}
+
+.sp-choice.wrong {
+	border-color: #ef4444;
+	background: rgba(239,68,68,0.08);
+}
+
+.sp-choice-letter {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: linear-gradient(180deg, #2a2a2a, #000);
+	color: var(--poke-yellow);
+	font-weight: 700;
+	font-size: 11px;
+	font-family: 'Press Start 2P', monospace;
+	border: 2px solid var(--poke-yellow);
+	flex-shrink: 0;
+	pointer-events: none;
+}
+
+.sp-choice.correct .sp-choice-letter {
+	background: linear-gradient(180deg, #22c55e, #16a34a);
+	border-color: #14532d;
+	color: #fff;
+}
+
+.sp-choice.wrong .sp-choice-letter {
+	background: linear-gradient(180deg, #ef4444, #dc2626);
+	border-color: #7f1d1d;
+	color: #fff;
+}
+
+/* ── Cry round: text input ───────────────────────────────────────────────── */
+
+.sp-text-input-wrap {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+
+.sp-text-input {
+	flex: 1;
+	padding: 12px 16px;
+	border: 2px solid #ede5e5;
+	border-radius: 12px;
+	font-size: 15px;
+	font-family: 'Inter', sans-serif;
+	font-weight: 600;
+	outline: none;
+	transition: border-color 0.15s, box-shadow 0.15s;
+	background: #fff;
+}
+
+.sp-text-input:focus {
+	border-color: var(--poke-red);
+	box-shadow: 0 0 0 3px rgba(238,21,21,0.08);
+}
+
+.sp-text-submit {
+	padding: 12px 22px;
+	background: var(--poke-red);
+	color: #fff;
+	border: none;
+	border-radius: 12px;
+	font-weight: 700;
+	font-size: 14px;
+	cursor: pointer;
+	font-family: 'Inter', sans-serif;
+	transition: background 0.15s, transform 0.1s;
+}
+
+.sp-text-submit:hover {
+	background: var(--poke-red-dark);
+	transform: translateY(-1px);
+}
+
+/* ── Cry play button ─────────────────────────────────────────────────────── */
+
+.sp-cry-btn {
+	padding: 10px 22px;
+	background: linear-gradient(180deg, #2a2a2a, #000);
+	color: var(--poke-yellow);
+	border: 2px solid var(--poke-yellow);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	cursor: pointer;
+	margin-bottom: 16px;
+	transition: opacity 0.15s, box-shadow 0.15s;
+	box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+}
+
+.sp-cry-btn:hover {
+	opacity: 0.88;
+	box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+/* ── Round feedback ──────────────────────────────────────────────────────── */
+
+.sp-feedback {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	min-height: 22px;
+	margin-top: 10px;
+	color: #22c55e;
+	line-height: 1.6;
+}
+
+.sp-feedback.bad {
+	color: #ef4444;
+}
+
+/* ── Results screen ──────────────────────────────────────────────────────── */
+
+.sp-results {
+	text-align: center;
+	padding: 36px 24px 28px;
+	background:
+		radial-gradient(circle at 50% 0%, rgba(255,203,5,0.25), transparent 60%),
+		linear-gradient(135deg, #fffbea, #ffeaea);
+	border: 2px solid var(--poke-yellow);
+	border-radius: 18px;
+	box-shadow: var(--shadow-md);
+	display: none;
+}
+
+.sp-results-sprite {
+	width: 160px;
+	height: 160px;
+	image-rendering: pixelated;
+	margin: 0 auto 14px;
+}
+
+.sp-results-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 16px;
+	color: var(--poke-red);
+	text-shadow: 2px 2px 0 var(--poke-black);
+	margin-bottom: 10px;
+}
+
+.sp-score-label {
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	margin-bottom: 6px;
+}
+
+.sp-score-display {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 44px;
+	color: var(--poke-red);
+	text-shadow: 3px 3px 0 var(--poke-black);
+	line-height: 1;
+	margin: 10px 0 16px;
+}
+
+.sp-score-denom {
+	font-size: 20px;
+	color: var(--muted);
+	text-shadow: none;
+}
+
+/* ── Round result emoji dots in results ──────────────────────────────────── */
+
+.sp-result-dots {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+	margin-bottom: 16px;
+}
+
+.sp-result-dot {
+	font-size: 28px;
+	line-height: 1;
+}
+
+/* ── Token grant ─────────────────────────────────────────────────────────── */
+
+.sp-token-grant {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 20px;
+	background: linear-gradient(180deg, var(--poke-yellow) 0%, #f0b800 100%);
+	border: 2px solid var(--poke-black);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	color: var(--poke-black);
+	box-shadow: 0 3px 0 var(--poke-black);
+	margin: 12px 0;
+	animation: tokenPop 0.45s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes tokenPop {
+	from { opacity: 0; transform: scale(0.5) rotate(-5deg); }
+	to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.sp-tomorrow {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	color: var(--muted);
+	margin-top: 14px;
+	line-height: 2;
+}
+
+.sp-results-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-top: 18px;
+}
+
+/* ── Already done banner ─────────────────────────────────────────────────── */
+
+.sp-done-banner {
+	text-align: center;
+	padding: 40px 28px;
+	background:
+		radial-gradient(circle at 50% 0%, rgba(255,203,5,0.2), transparent 60%),
+		linear-gradient(135deg, #fffbea, #ffeaea);
+	border: 2px solid var(--poke-yellow);
+	border-radius: 18px;
+	box-shadow: var(--shadow-md);
+}
+
+.sp-done-banner h2 {
+	font-size: 18px;
+	font-weight: 800;
+	margin: 0 0 10px;
+	color: var(--poke-black);
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+	.sp-card { padding: 20px 16px; }
+	.sp-sprite { width: 120px; height: 120px; }
+	.sp-results-sprite { width: 120px; height: 120px; }
+	.sp-score-display { font-size: 36px; }
+	.sp-round { padding: 20px 16px; }
+}

@@ -115,6 +115,9 @@
 		<!-- Follower nickname label — floats above the partner sprite, crisp HTML text -->
 		<div class="camp-follower-name" id="campFollowerName" hidden aria-hidden="true"></div>
 
+		<!-- Follower idle emoji — floats above partner when idle -->
+		<div id="followerIdleEmoji" class="follower-idle-emoji" hidden aria-hidden="true">💤</div>
+
 		<!-- Room edit button — only visible while in the upstairs scene -->
 		<button class="camp-room-edit-btn" id="campRoomEditBtn" hidden type="button" aria-label="Edit Room">✏️ Edit Room</button>
 
@@ -188,6 +191,10 @@
 			<button class="camp-quick-btn" id="campPostcardBtn" title="Postcards" aria-label="Postcards" type="button"><i class="bi bi-envelope-fill"></i></button>
 			<button class="camp-quick-btn" id="campPhotoBtn" title="Photo Mode (F)" aria-label="Take Photo" type="button"><i class="bi bi-camera-fill"></i></button>
 			<button class="camp-quick-btn" id="campShinyBtn" title="Shiny Collection" aria-label="Shiny Collection" type="button">✨</button>
+			<button class="camp-quick-btn camp-notif-btn" id="campNotifBtn" title="Notifications" aria-label="Notifications" type="button">
+				<i class="bi bi-bell-fill"></i>
+				<span class="camp-notif-badge" id="campNotifBadge" hidden>0</span>
+			</button>
 		</div>
 
 		<!-- Shiny encounter modal -->
@@ -265,10 +272,12 @@
 				</div>
 				<div class="cp-actions">
 					<button class="cb-btn" id="cpFeed" type="button"><i class="bi bi-flower1" aria-hidden="true"></i> Feed ×<span id="cpBerries">0</span></button>
+					<button class="cb-btn cp-btn-alt" id="cpBerryLab" type="button">🧪 Berry Lab</button>
 					<button class="cb-btn cp-btn-alt" id="cpPet" type="button"><i class="bi bi-suit-heart-fill" aria-hidden="true"></i> Play</button>
 					<button class="cb-btn cp-btn-alt" id="cpPC" type="button"><i class="bi bi-pc-display-horizontal" aria-hidden="true"></i> PC Box</button>
 					<button class="cb-btn cp-btn-shiny" id="cpShiny" type="button"><i class="bi bi-stars" aria-hidden="true"></i> Shiny</button>
 					<button class="cb-btn cp-btn-alt" id="cpChoosePartner" type="button"><i class="bi bi-people-fill" aria-hidden="true"></i> Partner</button>
+					<button class="cb-btn cp-btn-alt" id="cpInfoBtn" type="button"><i class="bi bi-info-circle-fill" aria-hidden="true"></i> Info</button>
 				</div>
 				<div class="cp-status" id="cpStatus"></div>
 				<div class="cp-status" id="cpInfoExtra" style="font-size:8px;color:#a8c8e8;margin-top:6px;min-height:14px"></div>
@@ -522,6 +531,6 @@
 	<script src="js/profile.js" defer></script>
 	<script src="js/trainer-palette.js" defer></script>
 	<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js" defer></script>
-	<script src="js/camp.js?v=18" defer></script>
+	<script src="js/camp.js?v=19" defer></script>
 </body>
 </html>

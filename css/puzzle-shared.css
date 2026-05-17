@@ -1,0 +1,610 @@
+/*
+ * puzzle-shared.css — Common styles for all PokeQuiz puzzle pages
+ * All puzzle pages should link to base.css + puzzle-shared.css + their own CSS
+ */
+
+/* ── Page wrapper ─────────────────────────────────────────────────────────── */
+
+.pz-wrap {
+	max-width: 680px;
+	margin: 0 auto;
+}
+
+/* ── Back link ────────────────────────────────────────────────────────────── */
+
+.pz-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--muted);
+	text-decoration: none;
+	margin-bottom: 22px;
+	letter-spacing: 0.3px;
+	transition: color 0.15s;
+}
+
+.pz-back:hover { color: var(--poke-red); }
+
+/* ── Game header ──────────────────────────────────────────────────────────── */
+
+.pz-head {
+	text-align: center;
+	margin-bottom: 24px;
+}
+
+.pz-eyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	color: var(--muted);
+	margin-bottom: 10px;
+}
+
+.pz-eyebrow-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--poke-red);
+	flex-shrink: 0;
+}
+
+.pz-title {
+	font-size: clamp(20px, 5vw, 28px);
+	font-weight: 800;
+	margin: 0 0 8px;
+	color: var(--poke-black);
+	line-height: 1.2;
+}
+
+.pz-lede {
+	font-size: 14px;
+	color: var(--muted);
+	margin: 0;
+	line-height: 1.5;
+}
+
+/* ── Stats row ────────────────────────────────────────────────────────────── */
+
+.pz-stats {
+	display: flex;
+	justify-content: center;
+	gap: 32px;
+	margin-bottom: 22px;
+	padding: 16px 0;
+	border-top: 1px dashed rgba(0,0,0,0.08);
+	border-bottom: 1px dashed rgba(0,0,0,0.08);
+	flex-wrap: wrap;
+}
+
+.pz-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.pz-stat-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 20px;
+	color: var(--poke-red);
+	text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
+	line-height: 1;
+}
+
+.pz-stat-label {
+	font-size: 9px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 1.2px;
+	color: var(--muted);
+}
+
+/* ── Daily badge ──────────────────────────────────────────────────────────── */
+
+.pz-daily-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	background: linear-gradient(180deg, var(--poke-yellow) 0%, #f0b800 100%);
+	border: 2px solid var(--poke-black);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 8px;
+	color: var(--poke-black);
+	box-shadow: 0 2px 0 var(--poke-black);
+	margin-bottom: 14px;
+}
+
+/* ── Question block ───────────────────────────────────────────────────────── */
+
+.pz-q-label {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	letter-spacing: 1.5px;
+	color: var(--poke-red);
+	margin-bottom: 10px;
+	text-shadow: 1px 1px 0 rgba(0,0,0,0.08);
+}
+
+.pz-question {
+	font-size: 19px;
+	font-weight: 700;
+	line-height: 1.45;
+	margin: 0 0 22px;
+	color: var(--poke-black);
+}
+
+/* ── Answer grid ──────────────────────────────────────────────────────────── */
+
+.pz-answers {
+	display: grid;
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.pz-answer {
+	display: grid;
+	grid-template-columns: 36px 1fr;
+	align-items: center;
+	gap: 14px;
+	padding: 14px 18px;
+	background: #fff;
+	border: 2px solid #ede5e5;
+	border-radius: 14px;
+	cursor: pointer;
+	transition: border-color 0.15s, background 0.15s, transform 0.05s, box-shadow 0.15s;
+	font-size: 15px;
+	font-weight: 500;
+	text-align: left;
+	font-family: inherit;
+	color: var(--ink);
+}
+
+.pz-answer:hover {
+	border-color: var(--poke-red);
+	background: #fffafa;
+	transform: translateX(2px);
+}
+
+.pz-answer-letter {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: linear-gradient(180deg, #2a2a2a, #000);
+	color: var(--poke-yellow);
+	font-weight: 700;
+	font-size: 12px;
+	font-family: 'Press Start 2P', monospace;
+	border: 2px solid var(--poke-yellow);
+	flex-shrink: 0;
+	pointer-events: none;
+}
+
+.pz-answer.is-selected {
+	border-color: var(--poke-red);
+	background: rgba(238, 21, 21, 0.07);
+	box-shadow: 0 3px 0 var(--poke-red-deep);
+}
+
+.pz-answer.is-selected .pz-answer-letter {
+	background: linear-gradient(180deg, var(--poke-red), var(--poke-red-dark));
+	color: #fff;
+	border-color: var(--poke-black);
+}
+
+.pz-answer.is-correct {
+	border-color: #22c55e;
+	background: rgba(34, 197, 94, 0.10);
+	pointer-events: none;
+}
+
+.pz-answer.is-correct .pz-answer-letter {
+	background: linear-gradient(180deg, #22c55e, #16a34a);
+	color: #fff;
+	border-color: #14532d;
+}
+
+.pz-answer.is-wrong {
+	border-color: #ef4444;
+	background: rgba(239, 68, 68, 0.08);
+	pointer-events: none;
+}
+
+.pz-answer.is-wrong .pz-answer-letter {
+	background: linear-gradient(180deg, #ef4444, #dc2626);
+	color: #fff;
+	border-color: #7f1d1d;
+}
+
+/* ── Feedback message ─────────────────────────────────────────────────────── */
+
+.pz-feedback {
+	text-align: center;
+	font-size: 14px;
+	font-weight: 700;
+	min-height: 22px;
+	margin-bottom: 14px;
+	color: var(--poke-red);
+	transition: opacity 0.2s;
+}
+
+/* ── Controls row ─────────────────────────────────────────────────────────── */
+
+.pz-controls {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	margin-top: 20px;
+}
+
+/* ── Progress bar ─────────────────────────────────────────────────────────── */
+
+.pz-progress-wrap {
+	margin-bottom: 20px;
+}
+
+.pz-progress-label {
+	display: flex;
+	justify-content: space-between;
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--muted);
+	margin-bottom: 6px;
+}
+
+.pz-progress-track {
+	height: 8px;
+	background: #f0e8e8;
+	border-radius: 999px;
+	overflow: hidden;
+	border: 1px solid rgba(0,0,0,0.06);
+}
+
+.pz-progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--poke-yellow) 0%, var(--poke-red) 100%);
+	border-radius: 999px;
+	transition: width 0.4s cubic-bezier(.34,1.2,.64,1);
+	box-shadow: 0 0 8px rgba(238,21,21,0.4);
+}
+
+/* ── Result / completion screen ──────────────────────────────────────────── */
+
+.pz-result {
+	text-align: center;
+	padding: 36px 24px 28px;
+	background:
+		radial-gradient(circle at 50% 0%, rgba(255,203,5,0.22), transparent 55%),
+		linear-gradient(135deg, #fffbea 0%, #ffeaea 100%);
+	border-radius: 18px;
+	border: 2px solid var(--poke-yellow);
+	box-shadow: var(--shadow-md);
+}
+
+.pz-result-emoji {
+	font-size: 56px;
+	line-height: 1;
+	margin-bottom: 8px;
+	display: block;
+	animation: resultBounce 0.5s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes resultBounce {
+	from { transform: scale(0.4) rotate(-10deg); opacity: 0; }
+	to   { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.pz-result-title {
+	font-size: 20px;
+	font-weight: 800;
+	margin: 0 0 10px;
+	color: var(--poke-black);
+}
+
+.pz-result-subtitle {
+	font-size: 14px;
+	color: #555;
+	margin: 0 0 20px;
+	line-height: 1.5;
+}
+
+.pz-result-score {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 52px;
+	color: var(--poke-red);
+	text-shadow: 4px 4px 0 var(--poke-black);
+	line-height: 1;
+	margin: 14px 0;
+}
+
+.pz-result-score-denom {
+	font-size: 22px;
+	color: var(--muted);
+	text-shadow: none;
+}
+
+.pz-result-stats {
+	display: flex;
+	justify-content: center;
+	gap: 24px;
+	margin: 20px 0;
+	flex-wrap: wrap;
+}
+
+.pz-result-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+
+.pz-rs-num {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 26px;
+	color: var(--poke-red);
+	text-shadow: 2px 2px 0 var(--poke-black);
+}
+
+.pz-rs-label {
+	font-size: 9px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 1.2px;
+	color: var(--muted);
+}
+
+.pz-result-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-top: 22px;
+}
+
+/* ── Token reward chip ────────────────────────────────────────────────────── */
+
+.pz-token-grant {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 20px;
+	background: linear-gradient(180deg, var(--poke-yellow) 0%, #f0b800 100%);
+	border: 2px solid var(--poke-black);
+	border-radius: 999px;
+	font-family: 'Press Start 2P', monospace;
+	font-size: 11px;
+	color: var(--poke-black);
+	box-shadow: 0 3px 0 var(--poke-black);
+	animation: tokenPop 0.45s cubic-bezier(.34,1.56,.64,1);
+	margin: 10px 0;
+}
+
+@keyframes tokenPop {
+	from { opacity: 0; transform: scale(0.5) rotate(-5deg); }
+	to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ── Hint/tip box ─────────────────────────────────────────────────────────── */
+
+.pz-tip {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 16px;
+	background: rgba(255,203,5,0.10);
+	border: 1px solid rgba(255,203,5,0.4);
+	border-radius: 12px;
+	font-size: 12px;
+	color: #6b5500;
+	margin-bottom: 16px;
+	line-height: 1.5;
+}
+
+.pz-tip-icon {
+	font-size: 16px;
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+/* ── Difficulty pill ──────────────────────────────────────────────────────── */
+
+.pz-diff-pill {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.6px;
+}
+
+.pz-diff-easy   { background: rgba(34,197,94,0.12);  color: #15803d; border: 1px solid rgba(34,197,94,0.3); }
+.pz-diff-medium { background: rgba(234,179,8,0.12);  color: #92400e; border: 1px solid rgba(234,179,8,0.35); }
+.pz-diff-hard   { background: rgba(239,68,68,0.10);  color: #b91c1c; border: 1px solid rgba(239,68,68,0.3); }
+
+/* ── Mode select card ─────────────────────────────────────────────────────── */
+
+.pz-mode-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 14px;
+	margin-bottom: 24px;
+}
+
+.pz-mode-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: 24px 16px;
+	background: #fff;
+	border: 2px solid rgba(0,0,0,0.09);
+	border-radius: 16px;
+	cursor: pointer;
+	font-family: inherit;
+	transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+	text-align: center;
+}
+
+.pz-mode-card:hover {
+	border-color: var(--poke-red);
+	transform: translateY(-3px);
+	box-shadow: var(--shadow-md);
+}
+
+.pz-mode-icon { font-size: 36px; line-height: 1; }
+
+.pz-mode-name {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 10px;
+	color: var(--poke-red);
+	text-shadow: 1px 1px 0 var(--poke-black);
+	line-height: 1.4;
+}
+
+.pz-mode-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+.pz-mode-best {
+	font-size: 11px;
+	color: var(--muted);
+	margin-top: 4px;
+}
+
+.pz-mode-best strong {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 10px;
+	color: var(--poke-red);
+}
+
+/* ── Divider ──────────────────────────────────────────────────────────────── */
+
+.pz-divider {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 24px 0;
+}
+
+.pz-divider::before, .pz-divider::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: rgba(0,0,0,0.08);
+}
+
+.pz-divider-label {
+	font-size: 10px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 1.5px;
+	color: var(--muted);
+	white-space: nowrap;
+}
+
+/* ── Streak counter ───────────────────────────────────────────────────────── */
+
+.pz-streak-display {
+	font-family: 'Press Start 2P', monospace;
+	font-size: 40px;
+	color: var(--poke-red);
+	text-shadow: 3px 3px 0 var(--poke-black);
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.pz-streak-bump {
+	animation: streakBump 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes streakBump {
+	from { transform: scale(1.4); color: var(--poke-yellow); }
+	to   { transform: scale(1); color: var(--poke-red); }
+}
+
+/* ── Legend ───────────────────────────────────────────────────────────────── */
+
+.pz-legend {
+	display: flex;
+	gap: 14px;
+	flex-wrap: wrap;
+	justify-content: center;
+	padding: 10px 14px;
+	background: rgba(0,0,0,0.025);
+	border-radius: 10px;
+	border: 1px solid rgba(0,0,0,0.06);
+	margin-bottom: 16px;
+}
+
+.pz-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	font-weight: 700;
+	color: #555;
+}
+
+.pz-legend-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 3px;
+	flex-shrink: 0;
+}
+
+/* ── Toast notification ───────────────────────────────────────────────────── */
+
+.pz-toast {
+	position: fixed;
+	bottom: 28px;
+	left: 50%;
+	transform: translateX(-50%) translateY(80px);
+	background: #111;
+	color: var(--poke-yellow);
+	padding: 12px 24px;
+	border-radius: 12px;
+	border: 2px solid var(--poke-yellow);
+	font-family: 'Press Start 2P', monospace;
+	font-size: 9px;
+	line-height: 1.7;
+	text-align: center;
+	z-index: 9999;
+	box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+	opacity: 0;
+	transition: transform 0.3s cubic-bezier(.34,1.2,.64,1), opacity 0.3s ease;
+	max-width: 320px;
+	pointer-events: none;
+}
+
+.pz-toast.is-visible {
+	opacity: 1;
+	transform: translateX(-50%) translateY(0);
+}
+
+/* ── Mobile ───────────────────────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+	.pz-title { font-size: 18px; }
+	.pz-question { font-size: 16px; }
+	.pz-answer { font-size: 14px; padding: 12px 14px; gap: 10px; }
+	.pz-answer-letter { width: 28px; height: 28px; font-size: 10px; }
+	.pz-stats { gap: 20px; }
+	.pz-stat-num { font-size: 16px; }
+	.pz-result { padding: 28px 16px 22px; }
+	.pz-result-score { font-size: 40px; }
+	.pz-rs-num { font-size: 22px; }
+	.pz-streak-display { font-size: 32px; }
+	.pz-mode-grid { grid-template-columns: 1fr 1fr; }
+}

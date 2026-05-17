@@ -1,59 +1,10 @@
-/* ── Connections Layout ────────────────────────────────────────────────── */
+/* ── Connections Layout ─────────────────────────────────────────────────── */
 
 .connections-wrap {
 	max-width: 680px;
-	margin: 0 auto;
 }
 
-.connections-head {
-	text-align: center;
-	margin-bottom: 28px;
-}
-
-.connections-head h1 {
-	font-size: 22px;
-	margin: 8px 0 6px;
-}
-
-.connections-head .lede {
-	color: var(--muted);
-	font-size: 13.5px;
-	margin: 0;
-}
-
-/* ── Stats bar ─────────────────────────────────────────────────────────── */
-
-.conn-stats {
-	display: flex;
-	justify-content: center;
-	gap: 28px;
-	margin-bottom: 20px;
-}
-
-.conn-stat {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 4px;
-}
-
-.conn-stat-num {
-	font-family: 'Press Start 2P', monospace;
-	font-size: 18px;
-	color: var(--poke-red);
-	text-shadow: 1px 1px 0 var(--poke-black);
-	line-height: 1;
-}
-
-.conn-stat-label {
-	font-size: 10px;
-	font-weight: 800;
-	text-transform: uppercase;
-	letter-spacing: 1px;
-	color: var(--muted);
-}
-
-/* ── Strikes ───────────────────────────────────────────────────────────── */
+/* ── Strikes ────────────────────────────────────────────────────────────── */
 
 .conn-strikes {
 	display: flex;
@@ -108,7 +59,29 @@
 	transform: scale(0.85);
 }
 
-/* ── Grid ──────────────────────────────────────────────────────────────── */
+/* ── Legend dots (CSS classes instead of inline) ────────────────────────── */
+
+.conn-legend-yellow {
+	background: #f9e400;
+	border: 1px solid #c9b800;
+}
+
+.conn-legend-green {
+	background: #68b35d;
+	border: 1px solid #4a8540;
+}
+
+.conn-legend-blue {
+	background: #4e6fce;
+	border: 1px solid #2e4fae;
+}
+
+.conn-legend-purple {
+	background: #8b4db8;
+	border: 1px solid #622f8f;
+}
+
+/* ── Grid ───────────────────────────────────────────────────────────────── */
 
 .conn-grid {
 	display: grid;
@@ -164,7 +137,7 @@
 	80% { transform: translateX(4px); }
 }
 
-/* ── Solved groups ─────────────────────────────────────────────────────── */
+/* ── Solved groups ──────────────────────────────────────────────────────── */
 
 .conn-solved-groups {
 	display: flex;
@@ -181,12 +154,13 @@
 
 @keyframes groupPop {
 	from { opacity: 0; transform: scaleY(0.6); }
-	to { opacity: 1; transform: scaleY(1); }
+	to   { opacity: 1; transform: scaleY(1); }
 }
 
 .conn-solved-group.tier-yellow {
 	background: #f9e400;
 	border: 2px solid #c9b800;
+	color: #3a2e00;
 }
 
 .conn-solved-group.tier-green {
@@ -229,7 +203,7 @@
 	opacity: 0.85;
 }
 
-/* ── Controls ──────────────────────────────────────────────────────────── */
+/* ── Controls ───────────────────────────────────────────────────────────── */
 
 .conn-controls {
 	display: flex;
@@ -239,66 +213,61 @@
 	margin-bottom: 16px;
 }
 
-/* ── Feedback ──────────────────────────────────────────────────────────── */
+/* ── Result share grid ──────────────────────────────────────────────────── */
 
-.conn-feedback {
-	text-align: center;
-	font-size: 14px;
-	font-weight: 700;
-	min-height: 24px;
-	margin-bottom: 16px;
-	color: var(--poke-red);
-}
-
-/* ── Result screen ─────────────────────────────────────────────────────── */
-
-.conn-result {
-	text-align: center;
-}
-
-.conn-result h2 {
-	font-size: 20px;
-	margin-bottom: 10px;
-}
-
-.conn-result-stats {
-	display: flex;
-	justify-content: center;
-	gap: 24px;
-	margin: 24px 0;
-}
-
-.conn-result-stat {
+.conn-share-grid {
 	display: flex;
 	flex-direction: column;
+	gap: 4px;
 	align-items: center;
-	gap: 6px;
+	margin: 16px 0;
 }
 
-.crs-num {
-	font-family: 'Press Start 2P', monospace;
-	font-size: 28px;
-	color: var(--poke-red);
-	text-shadow: 2px 2px 0 var(--poke-black);
-}
-
-.crs-label {
-	font-size: 10px;
-	font-weight: 800;
-	text-transform: uppercase;
-	letter-spacing: 1px;
-	color: var(--muted);
-}
-
-.conn-result-actions {
+.conn-share-row {
 	display: flex;
-	gap: 10px;
-	justify-content: center;
-	flex-wrap: wrap;
-	margin-top: 20px;
+	gap: 4px;
 }
 
-/* ── Token toast ───────────────────────────────────────────────────────── */
+.conn-share-square {
+	width: 36px;
+	height: 36px;
+	border-radius: 6px;
+	font-size: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: shareSquarePop 0.4s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.conn-share-square:nth-child(1) { animation-delay: 0.05s; }
+.conn-share-square:nth-child(2) { animation-delay: 0.1s; }
+.conn-share-square:nth-child(3) { animation-delay: 0.15s; }
+.conn-share-square:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes shareSquarePop {
+	from { transform: scale(0); opacity: 0; }
+	to   { transform: scale(1); opacity: 1; }
+}
+
+.conn-share-square.sq-yellow  { background: #f9e400; }
+.conn-share-square.sq-green   { background: #68b35d; }
+.conn-share-square.sq-blue    { background: #4e6fce; }
+.conn-share-square.sq-purple  { background: #8b4db8; }
+
+/* ── One-away hint ──────────────────────────────────────────────────────── */
+
+.one-away-toast {
+	display: inline-block;
+	padding: 6px 16px;
+	background: rgba(255,203,5,0.18);
+	border: 1px solid rgba(255,203,5,0.6);
+	border-radius: 999px;
+	font-size: 13px;
+	font-weight: 700;
+	color: #7a5700;
+}
+
+/* ── Token toast ────────────────────────────────────────────────────────── */
 
 .token-burst {
 	display: inline-flex;
@@ -318,23 +287,10 @@
 
 @keyframes tokenPop {
 	from { opacity: 0; transform: scale(0.6); }
-	to { opacity: 1; transform: scale(1); }
+	to   { opacity: 1; transform: scale(1); }
 }
 
-/* ── One-away hint ─────────────────────────────────────────────────────── */
-
-.one-away-toast {
-	display: inline-block;
-	padding: 6px 16px;
-	background: rgba(255,203,5,0.18);
-	border: 1px solid rgba(255,203,5,0.6);
-	border-radius: 999px;
-	font-size: 13px;
-	font-weight: 700;
-	color: #7a5700;
-}
-
-/* ── Mobile ────────────────────────────────────────────────────────────── */
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 540px) {
 	.conn-grid {
@@ -350,6 +306,5 @@
 
 	.csg-title { font-size: 10px; }
 
-	.conn-result-stats { gap: 14px; }
-	.crs-num { font-size: 22px; }
+	.conn-share-square { width: 28px; height: 28px; font-size: 16px; }
 }

@@ -15,182 +15,10 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
+	<link rel="manifest" href="manifest.json">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/puzzle.css">
-	<style>
-		.inf-card {
-			max-width: 620px;
-			margin: 0 auto;
-			padding: 32px;
-			position: relative;
-			overflow: hidden;
-		}
-		.inf-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 24px;
-			flex-wrap: wrap;
-			gap: 10px;
-		}
-		.inf-streak {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 32px;
-			color: var(--poke-red);
-			text-shadow: 3px 3px 0 var(--poke-black);
-			display: flex;
-			align-items: center;
-			gap: 8px;
-		}
-		.inf-streak-num { transition: transform 0.2s; }
-		.inf-streak-num.bump { transform: scale(1.3); }
-		.inf-best {
-			font-size: 12px;
-			color: #888;
-			text-align: right;
-		}
-		.inf-best strong { color: var(--poke-red); display: block; font-size: 14px; }
-		.inf-question-num {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 10px;
-			color: var(--poke-red);
-			letter-spacing: 1.5px;
-			margin-bottom: 10px;
-		}
-		.inf-question {
-			font-size: 20px;
-			font-weight: 700;
-			line-height: 1.4;
-			margin-bottom: 20px;
-			color: var(--poke-black);
-		}
-		.inf-answers {
-			display: grid;
-			gap: 10px;
-			margin-bottom: 20px;
-		}
-		.inf-answer {
-			display: grid;
-			grid-template-columns: 36px 1fr;
-			align-items: center;
-			gap: 14px;
-			padding: 14px 18px;
-			background: #fff;
-			border: 2px solid #ede5e5;
-			border-radius: 14px;
-			cursor: pointer;
-			transition: border-color 0.15s, background 0.15s, transform 0.05s;
-			font-size: 15px;
-			font-weight: 500;
-		}
-		.inf-answer:hover:not(.locked) {
-			border-color: var(--poke-red);
-			background: #fffafa;
-			transform: translateX(2px);
-		}
-		.inf-answer.locked { cursor: default; }
-		.inf-answer.correct {
-			border-color: #22c55e;
-			background: rgba(34,197,94,0.12);
-		}
-		.inf-answer.wrong {
-			border-color: #ef4444;
-			background: rgba(239,68,68,0.1);
-		}
-		.inf-letter {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			width: 32px;
-			height: 32px;
-			border-radius: 50%;
-			background: linear-gradient(180deg, #2a2a2a, #000);
-			color: var(--poke-yellow);
-			font-weight: 700;
-			font-size: 12px;
-			font-family: 'Press Start 2P', monospace;
-			border: 2px solid var(--poke-yellow);
-		}
-		.inf-answer.correct .inf-letter {
-			background: linear-gradient(180deg, #22c55e, #16a34a);
-			border-color: #14532d;
-			color: #fff;
-		}
-		.inf-answer.wrong .inf-letter {
-			background: linear-gradient(180deg, #ef4444, #dc2626);
-			border-color: #7f1d1d;
-			color: #fff;
-		}
-		.inf-feedback {
-			min-height: 36px;
-			font-family: 'Press Start 2P', monospace;
-			font-size: 11px;
-			text-align: center;
-			color: #22c55e;
-			margin-bottom: 8px;
-		}
-		.inf-feedback.bad { color: #ef4444; }
-		/* Game over */
-		.inf-gameover {
-			text-align: center;
-			padding: 32px;
-			display: none;
-		}
-		.inf-gameover-skull {
-			font-size: 56px;
-			margin-bottom: 12px;
-			filter: drop-shadow(0 0 16px rgba(255,0,0,0.5));
-			animation: nuzPulse 1.2s ease-in-out infinite alternate;
-		}
-		@keyframes nuzPulse {
-			from { transform: scale(1); }
-			to { transform: scale(1.08); }
-		}
-		.inf-gameover h2 {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 18px;
-			color: var(--poke-red);
-			text-shadow: 2px 2px 0 var(--poke-black);
-			margin-bottom: 8px;
-		}
-		.inf-final-streak {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 48px;
-			color: var(--poke-red);
-			text-shadow: 4px 4px 0 var(--poke-black);
-			margin: 8px 0;
-		}
-		.inf-token-grant {
-			display: inline-flex;
-			align-items: center;
-			gap: 8px;
-			padding: 8px 18px;
-			background: rgba(234,179,8,0.12);
-			border: 1.5px solid rgba(234,179,8,0.45);
-			border-radius: 10px;
-			font-size: 13px;
-			font-weight: 700;
-			color: #92400e;
-			margin: 12px 0;
-		}
-		.inf-new-best {
-			font-family: 'Press Start 2P', monospace;
-			font-size: 11px;
-			color: var(--poke-yellow);
-			background: var(--poke-black);
-			padding: 6px 14px;
-			border-radius: 999px;
-			margin-bottom: 10px;
-			display: inline-block;
-		}
-		.inf-actions {
-			display: flex;
-			gap: 10px;
-			justify-content: center;
-			flex-wrap: wrap;
-			margin-top: 14px;
-		}
-	</style>
+	<link rel="stylesheet" href="css/puzzle-shared.css">
+	<link rel="stylesheet" href="css/puzzle-infinite.css">
 </head>
 <body>
 	<header class="site-header">
@@ -227,6 +55,12 @@
 
 	<main class="container">
 		<section class="card inf-card">
+			<a class="pz-back" href="puzzle.html">&larr; Puzzle Hub</a>
+			<div class="pz-head">
+				<div class="pz-eyebrow"><span class="pz-eyebrow-dot"></span>Endless Challenge</div>
+				<h1 class="pz-title">Infinite Streak</h1>
+				<p class="pz-lede">Answer Pok&eacute;mon trivia questions — one wrong answer ends your run!</p>
+			</div>
 			<div id="gameArea">
 				<div class="inf-header">
 					<div class="inf-streak">
@@ -234,7 +68,8 @@
 						<span class="inf-streak-num" id="streakNum">0</span>
 					</div>
 					<div class="inf-best">
-						Best<strong id="bestDisplay">—</strong>
+						<span>Best</span>
+						<strong id="bestDisplay">—</strong>
 					</div>
 				</div>
 				<div id="questionArea">
@@ -245,10 +80,10 @@
 				</div>
 			</div>
 			<div class="inf-gameover" id="gameOver">
-				<div class="inf-gameover-skull">&#128128;</div>
+				<span class="inf-gameover-skull">&#128128;</span>
 				<h2>Game Over!</h2>
-				<div style="font-size:15px;color:#555;margin-bottom:4px;">Your streak</div>
-				<div class="inf-final-streak" id="finalStreak">0</div>
+				<div class="inf-gameover-sub">Your streak</div>
+				<span class="inf-final-streak" id="finalStreak">0</span>
 				<div id="newBestBadge" style="display:none" class="inf-new-best">&#11088; New Best!</div>
 				<div class="inf-token-grant" id="tokenGrant"></div>
 				<div class="inf-actions">
@@ -261,6 +96,8 @@
 	</main>
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
+
+	<div id="pzToast" class="pz-toast" aria-live="polite"></div>
 
 	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
