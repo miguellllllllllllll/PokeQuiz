@@ -7,9 +7,9 @@
 	const SPEED = 84; // px/sec — matches old 1.4 px/frame at 60fps
 
 	// Tile IDs
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25,TBLD=26;
 
-	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TTR2, TFN, TIW, TSG, TBSH, TBED, TBKS]);
+	const SOLID = new Set([TW, TR, TR2, TRP, TWN, TH2O, TTR, TTR2, TFN, TIW, TSG, TBSH, TBED, TBKS, TBLD]);
 	const ANIMATED = new Set([TWN, TH2O, TCR]);
 
 	// Signs placed on the camp map — key is "r,c", value is the message shown when
@@ -20,6 +20,551 @@
 		'12,4':  "Trail to the deep woods. Watch out for wild Pokemon in the tall grass.",
 		'10,30': "A peaceful lake — press E near the water to fish!",
 	};
+
+	// ── Pokédex ───────────────────────────────────────────────────────────────────
+	const Pokedex = (() => {
+		const DEX = [
+			{id:1,n:'Bulbasaur'},{id:2,n:'Ivysaur'},{id:3,n:'Venusaur'},
+			{id:4,n:'Charmander'},{id:5,n:'Charmeleon'},{id:6,n:'Charizard'},
+			{id:7,n:'Squirtle'},{id:8,n:'Wartortle'},{id:9,n:'Blastoise'},
+			{id:10,n:'Caterpie'},{id:11,n:'Metapod'},{id:12,n:'Butterfree'},
+			{id:13,n:'Weedle'},{id:14,n:'Kakuna'},{id:15,n:'Beedrill'},
+			{id:16,n:'Pidgey'},{id:17,n:'Pidgeotto'},{id:18,n:'Pidgeot'},
+			{id:19,n:'Rattata'},{id:20,n:'Raticate'},{id:21,n:'Spearow'},
+			{id:22,n:'Fearow'},{id:23,n:'Ekans'},{id:24,n:'Arbok'},
+			{id:25,n:'Pikachu'},{id:26,n:'Raichu'},{id:27,n:'Sandshrew'},
+			{id:28,n:'Sandslash'},{id:29,n:'Nidoran♀'},{id:30,n:'Nidorina'},
+			{id:31,n:'Nidoqueen'},{id:32,n:'Nidoran♂'},{id:33,n:'Nidorino'},
+			{id:34,n:'Nidoking'},{id:35,n:'Clefairy'},{id:36,n:'Clefable'},
+			{id:37,n:'Vulpix'},{id:38,n:'Ninetales'},{id:39,n:'Jigglypuff'},
+			{id:40,n:'Wigglytuff'},{id:41,n:'Zubat'},{id:42,n:'Golbat'},
+			{id:43,n:'Oddish'},{id:44,n:'Gloom'},{id:45,n:'Vileplume'},
+			{id:46,n:'Paras'},{id:47,n:'Parasect'},{id:48,n:'Venonat'},
+			{id:49,n:'Venomoth'},{id:50,n:'Diglett'},{id:51,n:'Dugtrio'},
+			{id:52,n:'Meowth'},{id:53,n:'Persian'},{id:54,n:'Psyduck'},
+			{id:55,n:'Golduck'},{id:56,n:'Mankey'},{id:57,n:'Primeape'},
+			{id:58,n:'Growlithe'},{id:59,n:'Arcanine'},{id:60,n:'Poliwag'},
+			{id:61,n:'Poliwhirl'},{id:62,n:'Poliwrath'},{id:63,n:'Abra'},
+			{id:64,n:'Kadabra'},{id:65,n:'Alakazam'},{id:66,n:'Machop'},
+			{id:67,n:'Machoke'},{id:68,n:'Machamp'},{id:69,n:'Bellsprout'},
+			{id:70,n:'Weepinbell'},{id:71,n:'Victreebel'},{id:72,n:'Tentacool'},
+			{id:73,n:'Tentacruel'},{id:74,n:'Geodude'},{id:75,n:'Graveler'},
+			{id:76,n:'Golem'},{id:77,n:'Ponyta'},{id:78,n:'Rapidash'},
+			{id:79,n:'Slowpoke'},{id:80,n:'Slowbro'},{id:81,n:'Magnemite'},
+			{id:82,n:'Magneton'},{id:83,n:"Farfetch'd"},{id:84,n:'Doduo'},
+			{id:85,n:'Dodrio'},{id:86,n:'Seel'},{id:87,n:'Dewgong'},
+			{id:88,n:'Grimer'},{id:89,n:'Muk'},{id:90,n:'Shellder'},
+			{id:91,n:'Cloyster'},{id:92,n:'Gastly'},{id:93,n:'Haunter'},
+			{id:94,n:'Gengar'},{id:95,n:'Onix'},{id:96,n:'Drowzee'},
+			{id:97,n:'Hypno'},{id:98,n:'Krabby'},{id:99,n:'Kingler'},
+			{id:100,n:'Voltorb'},{id:101,n:'Electrode'},{id:102,n:'Exeggcute'},
+			{id:103,n:'Exeggutor'},{id:104,n:'Cubone'},{id:105,n:'Marowak'},
+			{id:106,n:'Hitmonlee'},{id:107,n:'Hitmonchan'},{id:108,n:'Lickitung'},
+			{id:109,n:'Koffing'},{id:110,n:'Weezing'},{id:111,n:'Rhyhorn'},
+			{id:112,n:'Rhydon'},{id:113,n:'Chansey'},{id:114,n:'Tangela'},
+			{id:115,n:'Kangaskhan'},{id:116,n:'Horsea'},{id:117,n:'Seadra'},
+			{id:118,n:'Goldeen'},{id:119,n:'Seaking'},{id:120,n:'Staryu'},
+			{id:121,n:'Starmie'},{id:122,n:'Mr. Mime'},{id:123,n:'Scyther'},
+			{id:124,n:'Jynx'},{id:125,n:'Electabuzz'},{id:126,n:'Magmar'},
+			{id:127,n:'Pinsir'},{id:128,n:'Tauros'},{id:129,n:'Magikarp'},
+			{id:130,n:'Gyarados'},{id:131,n:'Lapras'},{id:132,n:'Ditto'},
+			{id:133,n:'Eevee'},{id:134,n:'Vaporeon'},{id:135,n:'Jolteon'},
+			{id:136,n:'Flareon'},{id:137,n:'Porygon'},{id:138,n:'Omanyte'},
+			{id:139,n:'Omastar'},{id:140,n:'Kabuto'},{id:141,n:'Kabutops'},
+			{id:142,n:'Aerodactyl'},{id:143,n:'Snorlax'},{id:144,n:'Articuno'},
+			{id:145,n:'Zapdos'},{id:146,n:'Moltres'},{id:147,n:'Dratini'},
+			{id:148,n:'Dragonair'},{id:149,n:'Dragonite'},{id:150,n:'Mewtwo'},
+			{id:151,n:'Mew'},
+		];
+		function loadData() {
+			try { return JSON.parse(localStorage.getItem('pokequiz_dex') || '{"seen":[],"caught":[]}'); }
+			catch { return { seen: [], caught: [] }; }
+		}
+		function saveData(d) { localStorage.setItem('pokequiz_dex', JSON.stringify(d)); }
+		function markSeen(id) {
+			const d = loadData();
+			if (!d.seen.includes(id)) { d.seen.push(id); saveData(d); }
+		}
+		function markCaught(id) {
+			const d = loadData();
+			if (!d.seen.includes(id)) d.seen.push(id);
+			if (!d.caught.includes(id)) {
+				d.caught.push(id);
+				saveData(d);
+				checkMilestones(d.caught.length);
+			}
+		}
+		function isCaught(id) { return loadData().caught.includes(id); }
+		function checkMilestones(n) {
+			if (n === 10) { showToast('📖 Pokédex milestone: 10 caught! +20🪙'); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+20; Inventory.save(inv); }
+			if (n === 30) { showToast('📖 Pokédex milestone: 30 caught! +50🪙'); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+50; Inventory.save(inv); }
+			if (n === 60) { showToast('📖 Pokédex milestone: 60 caught! +100🪙'); const inv=Inventory.load(); inv.tokens=(inv.tokens||0)+100; Inventory.save(inv); }
+			if (n === 100) { showToast('🏆 100 Pokémon caught! Master Trainer!'); Achievements.unlock('dex100'); }
+		}
+		function open() {
+			let panel = document.getElementById('dexPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'dexPanel';
+				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+				const inner = document.createElement('div');
+				inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;width:min(480px,95%);max-height:85vh;display:flex;flex-direction:column;overflow:hidden';
+				inner.innerHTML = '<div style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(246,200,76,0.2)">' +
+					'<span style="color:#f6c84c;font-size:11px">📖 POKÉDEX</span>' +
+					'<span id="dexCounter" style="font-size:9px;color:#a8c8e8"></span>' +
+					'<button id="dexClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button>' +
+					'</div>' +
+					'<div id="dexGrid" style="padding:10px;overflow-y:auto;display:grid;grid-template-columns:repeat(5,1fr);gap:4px"></div>';
+				panel.appendChild(inner);
+				document.body.appendChild(panel);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				panel.addEventListener('pointerdown', () => { panel.hidden = true; });
+				document.getElementById('dexClose').addEventListener('click', () => { panel.hidden = true; });
+			}
+			panel.hidden = false;
+			const data = loadData();
+			const grid = document.getElementById('dexGrid');
+			const counter = document.getElementById('dexCounter');
+			counter.textContent = data.caught.length + ' / 151';
+			grid.innerHTML = '';
+			DEX.forEach(p => {
+				const seen = data.seen.includes(p.id);
+				const caught = data.caught.includes(p.id);
+				const cell = document.createElement('div');
+				cell.title = caught ? p.n : (seen ? '???' : '---');
+				cell.style.cssText = 'background:rgba(255,255,255,0.04);border-radius:6px;padding:3px;text-align:center;border:1px solid ' + (caught ? 'rgba(246,200,76,0.4)' : 'rgba(255,255,255,0.06)');
+				const img = document.createElement('img');
+				img.style.cssText = 'width:32px;height:32px;image-rendering:pixelated;' + (!seen ? 'filter:brightness(0)' : '') + (seen && !caught ? ';filter:brightness(0.3)' : '');
+				img.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/' + p.id + '.png';
+				img.loading = 'lazy';
+				const num = document.createElement('div');
+				num.style.cssText = 'font-size:6px;color:' + (caught ? '#f6c84c' : '#555') + ';margin-top:1px';
+				num.textContent = '#' + String(p.id).padStart(3,'0');
+				cell.appendChild(img); cell.appendChild(num);
+				grid.appendChild(cell);
+			});
+		}
+		return { markSeen, markCaught, isCaught, open };
+	})();
+
+	// ── PC Box ────────────────────────────────────────────────────────────────────
+	const PCBox = (() => {
+		const MAX_SLOTS = 6;
+		function load() {
+			const inv = Inventory.load();
+			if (!inv.pcBox) {
+				inv.pcBox = [{ form: inv.eeveeForm || 'eevee', nickname: '', friendship: inv.friendship || 0, since: inv.partnerSince || Date.now() }];
+				inv.pcBoxActive = 0;
+				Inventory.save(inv);
+			}
+			return inv;
+		}
+		function open() {
+			const inv = load();
+			let panel = document.getElementById('pcBoxPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'pcBoxPanel';
+				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+				document.body.appendChild(panel);
+				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+			}
+			panel.hidden = false;
+			render(panel, inv);
+		}
+		function render(panel, inv) {
+			const activeIdx = inv.pcBoxActive || 0;
+			const box = inv.pcBox || [];
+			const FORMS = { eevee:'Eevee',vaporeon:'Vaporeon',espeon:'Espeon',umbreon:'Umbreon',flareon:'Flareon',jolteon:'Jolteon',leafeon:'Leafeon',glaceon:'Glaceon',sylveon:'Sylveon' };
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;width:min(420px,95%);max-height:85vh;overflow-y:auto;padding:14px 16px';
+			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:14px"><span style="color:#f6c84c;font-size:11px">💻 PC BOX</span><button id="pcBoxClose" type="button" style="background:none;border:none;color:#f6c84c;font-size:16px;cursor:pointer;font-family:inherit">✕</button></div>';
+			const grid = document.createElement('div');
+			grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px';
+			for (let i = 0; i < MAX_SLOTS; i++) {
+				const slot = box[i];
+				const card = document.createElement('div');
+				card.style.cssText = 'border-radius:8px;padding:10px;border:2px solid ' + (i === activeIdx ? '#f6c84c' : 'rgba(255,255,255,0.1)') + ';background:rgba(255,255,255,0.03);cursor:pointer';
+				if (slot) {
+					const formName = FORMS[slot.form] || slot.form;
+					card.innerHTML = '<div style="font-size:9px;color:' + (i===activeIdx?'#f6c84c':'#e8eaf0') + '">' + (i===activeIdx?'★ ':'') + (slot.nickname || formName) + '</div>' +
+						'<div style="font-size:7px;color:#a8c8e8;margin-top:4px">Friendship: ' + (slot.friendship||0) + '</div>' +
+						(i !== activeIdx ? '<button data-slot="'+i+'" style="margin-top:6px;font-family:inherit;font-size:7px;padding:4px 10px;background:linear-gradient(180deg,#ffd968,#f6c84c);border:0;border-radius:6px;cursor:pointer;color:#2a1e08" type="button">Set Active</button>' : '<div style="font-size:7px;color:#88ee88;margin-top:4px">Active Partner</div>');
+				} else {
+					card.innerHTML = '<div style="font-size:8px;color:#555;text-align:center;padding:12px 0">Empty Slot</div>';
+				}
+				grid.appendChild(card);
+			}
+			inner.appendChild(grid);
+			const wt = document.createElement('button');
+			wt.type = 'button';
+			wt.style.cssText = 'margin-top:14px;width:100%;font-family:inherit;font-size:9px;padding:10px;background:linear-gradient(180deg,#4a9e4a,#2a7a2a);color:#fff;border:0;border-radius:8px;cursor:pointer';
+			wt.textContent = '🔄 Wonder Trade';
+			wt.addEventListener('click', () => WonderTrade.open());
+			inner.appendChild(wt);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('pcBoxClose').addEventListener('click', () => { panel.hidden = true; });
+			grid.querySelectorAll('[data-slot]').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const idx = parseInt(btn.dataset.slot);
+					const inv2 = Inventory.load();
+					const slot = (inv2.pcBox||[])[idx];
+					if (!slot) return;
+					const prev = inv2.pcBox[inv2.pcBoxActive||0];
+					if (prev) {
+						prev.friendship = inv2.friendship || 0;
+						prev.form = inv2.eeveeForm || 'eevee';
+					}
+					inv2.pcBoxActive = idx;
+					inv2.eeveeForm = slot.form;
+					inv2.friendship = slot.friendship || 0;
+					inv2.partnerSince = slot.since || Date.now();
+					Inventory.save(inv2);
+					showToast('Partner switched to ' + (FORMS[slot.form]||slot.form) + '!');
+					render(panel, Inventory.load());
+				});
+			});
+		}
+		function addToBox(pkmnData) {
+			const inv = Inventory.load();
+			if (!inv.pcBox) inv.pcBox = [];
+			if (inv.pcBox.length >= MAX_SLOTS) { showToast('PC Box is full! (6/6)'); return false; }
+			inv.pcBox.push(pkmnData);
+			Inventory.save(inv);
+			return true;
+		}
+		return { open, addToBox };
+	})();
+
+	// ── Wonder Trade ──────────────────────────────────────────────────────────────
+	const WonderTrade = (() => {
+		const TRADE_POOL = [
+			{ form:'eevee', name:'Pikachu', friendship:30 },
+			{ form:'vaporeon', name:'Vaporeon', friendship:50 },
+			{ form:'flareon', name:'Flareon', friendship:50 },
+			{ form:'jolteon', name:'Jolteon', friendship:50 },
+			{ form:'leafeon', name:'Leafeon', friendship:50 },
+			{ form:'espeon', name:'Espeon', friendship:50 },
+			{ form:'umbreon', name:'Umbreon', friendship:50 },
+			{ form:'eevee', name:'Eevee', friendship:20 },
+			{ form:'eevee', name:'Mystery Eevee', friendship:80 },
+		];
+		function open() {
+			const inv = Inventory.load();
+			const box = inv.pcBox || [];
+			if (box.length === 0) { showToast('PC Box is empty! Nothing to trade.'); return; }
+			let panel = document.getElementById('wonderTradePanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'wonderTradePanel';
+				panel.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+				document.body.appendChild(panel);
+				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+			}
+			panel.hidden = false;
+			panel.innerHTML = '';
+			const FORMS = {eevee:'Eevee',vaporeon:'Vaporeon',espeon:'Espeon',umbreon:'Umbreon',flareon:'Flareon',jolteon:'Jolteon',leafeon:'Leafeon',glaceon:'Glaceon',sylveon:'Sylveon'};
+			const inner = document.createElement('div');
+			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #88aaff;border-radius:10px;padding:16px;width:min(400px,92%);max-height:85vh;overflow-y:auto';
+			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="color:#88aaff;font-size:11px">🔄 WONDER TRADE</span><button id="wtClose" type="button" style="background:none;border:none;color:#88aaff;font-size:16px;cursor:pointer;font-family:inherit">✕</button></div>' +
+				'<div style="font-size:8px;color:#a8c8e8;margin-bottom:12px">Select a Pokémon to trade away for a mystery partner!</div>';
+			const list = document.createElement('div');
+			list.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+			const activeIdx = inv.pcBoxActive || 0;
+			box.forEach((slot, i) => {
+				if (!slot) return;
+				const row = document.createElement('div');
+				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid rgba(136,170,255,0.2);border-radius:8px;background:rgba(255,255,255,0.03)';
+				const formName = FORMS[slot.form] || slot.form;
+				row.innerHTML = '<div><div style="font-size:8px;color:#e8eaf0">' + (slot.nickname||formName) + ' <span style="color:#555;font-size:7px">(' + formName + ')</span></div>' +
+					'<div style="font-size:7px;color:#a8c8e8">Friendship: ' + (slot.friendship||0) + '</div></div>';
+				if (i !== activeIdx) {
+					const tradeBtn = document.createElement('button');
+					tradeBtn.dataset.slot = i;
+					tradeBtn.type = 'button';
+					tradeBtn.style.cssText = 'font-family:inherit;font-size:8px;padding:6px 12px;background:linear-gradient(180deg,#6888ee,#4466cc);color:#fff;border:0;border-radius:6px;cursor:pointer';
+					tradeBtn.textContent = 'Trade';
+					row.appendChild(tradeBtn);
+				} else {
+					row.innerHTML += '<span style="font-size:7px;color:#f6c84c">Active</span>';
+				}
+				list.appendChild(row);
+			});
+			inner.appendChild(list);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('wtClose').addEventListener('click', () => { panel.hidden = true; });
+			list.querySelectorAll('[data-slot]').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const slotIdx = parseInt(btn.dataset.slot);
+					const inv2 = Inventory.load();
+					const traded = inv2.pcBox[slotIdx];
+					if (!traded) return;
+					inv2.pcBox.splice(slotIdx, 1);
+					if ((inv2.pcBoxActive||0) > slotIdx) inv2.pcBoxActive--;
+					const received = TRADE_POOL[Math.floor(Math.random() * TRADE_POOL.length)];
+					inv2.pcBox.push({ form: received.form, nickname: received.name, friendship: received.friendship, since: Date.now() });
+					Inventory.save(inv2);
+					panel.hidden = true;
+					showToast('🔄 Traded ' + (traded.nickname||traded.form) + ' for ' + received.name + '!');
+					Achievements.unlock('wonderTrade');
+				});
+			});
+		}
+		return { open };
+	})();
+
+	// ── Egg System ────────────────────────────────────────────────────────────────
+	const EggSystem = (() => {
+		const HATCH_STEPS_PUBLIC = 256;
+		const HATCH_STEPS = HATCH_STEPS_PUBLIC;
+		const BABIES = [
+			{ form:'eevee', name:'Eevee', chance:0.3 },
+			{ form:'eevee', name:'Pichu', chance:0.25 },
+			{ form:'eevee', name:'Cleffa', chance:0.15 },
+			{ form:'eevee', name:'Igglybuff', chance:0.15 },
+			{ form:'eevee', name:'Togepi', chance:0.1 },
+			{ form:'eevee', name:'Azurill', chance:0.05 },
+		];
+		function hasEgg() { return !!(Inventory.load().egg); }
+		function stepUpdate() {
+			const inv = Inventory.load();
+			if (!inv.egg) return;
+			inv.egg.steps = (inv.egg.steps || 0) + 1;
+			if (inv.egg.steps >= HATCH_STEPS) {
+				hatch(inv);
+			} else {
+				Inventory.save(inv);
+			}
+		}
+		function hatch(inv) {
+			inv.egg = null;
+			const r = Math.random();
+			let cum = 0, picked = BABIES[0];
+			for (const b of BABIES) { cum += b.chance; if (r < cum) { picked = b; break; } }
+			const added = PCBox.addToBox({ form: picked.form, nickname: picked.name, friendship: 0, since: Date.now() });
+			Inventory.save(inv);
+			if (added) {
+				showToast('🥚 Your egg hatched into ' + picked.name + '! Added to PC Box.');
+				Achievements.unlock('hatchEgg');
+			} else {
+				inv = Inventory.load();
+				inv.tokens = (inv.tokens || 0) + 30;
+				Inventory.save(inv);
+				showToast('🥚 Egg hatched! PC Box full — got +30🪙 instead.');
+			}
+		}
+		function buyEgg() {
+			const inv = Inventory.load();
+			if (inv.egg) { showToast('You already have an egg!'); return; }
+			if ((inv.tokens||0) < 40) { showToast('Need 40🪙 to buy an egg.'); return; }
+			inv.tokens -= 40;
+			inv.egg = { steps: 0, target: HATCH_STEPS };
+			Inventory.save(inv);
+			showToast('🥚 Egg acquired! Walk around camp to hatch it (' + HATCH_STEPS + ' steps).');
+		}
+		function status() {
+			const inv = Inventory.load();
+			if (!inv.egg) return null;
+			return inv.egg;
+		}
+		return { hasEgg, stepUpdate, buyEgg, status, HATCH_STEPS: HATCH_STEPS_PUBLIC };
+	})();
+
+	// ── Contests ──────────────────────────────────────────────────────────────────
+	const Contests = (() => {
+		const CATEGORIES = [
+			{ id:'cool',      label:'🔥 Cool',      minigame:'rhythm',  desc:'Show off your style!' },
+			{ id:'beautiful', label:'🌊 Beautiful',  minigame:'card',    desc:'Dazzle the judges.' },
+			{ id:'cute',      label:'✨ Cute',       minigame:'rps',     desc:'Win hearts with charm.' },
+			{ id:'clever',    label:'🔮 Clever',     minigame:'sketch',  desc:'Outsmart the competition.' },
+			{ id:'tough',     label:'💪 Tough',     minigame:'card',    desc:'Prove your strength.' },
+		];
+		function open() {
+			let panel = document.getElementById('contestPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'contestPanel';
+				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+				document.body.appendChild(panel);
+				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+			}
+			panel.hidden = false;
+			const inv = Inventory.load();
+			const ribbons = inv.ribbons || {};
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.style.cssText = 'background:linear-gradient(180deg,#2a1440,#1a0c2a);border:2px solid #f6a0e8;border-radius:10px;width:min(420px,95%);padding:16px;';
+			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:14px"><span style="color:#f6a0e8;font-size:11px">🎀 CONTEST HALL</span><button id="contestClose" type="button" style="background:none;border:none;color:#f6a0e8;font-size:16px;cursor:pointer;font-family:inherit">✕</button></div>' +
+				'<div style="font-size:8px;color:#e8c0e8;margin-bottom:12px">Enter your partner in a Pokémon Contest!</div>';
+			const list = document.createElement('div');
+			list.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+			CATEGORIES.forEach(cat => {
+				const won = ribbons[cat.id];
+				const row = document.createElement('div');
+				row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;border:1px solid rgba(246,160,232,0.2);background:rgba(255,255,255,0.03)';
+				row.innerHTML = '<div><div style="font-size:9px;color:#f6a0e8">' + cat.label + '</div><div style="font-size:7px;color:#a8c8e8;margin-top:3px">' + cat.desc + '</div></div>' +
+					(won ? '<span style="font-size:9px">🎀</span>' : '<button data-cat="'+cat.id+'" type="button" style="font-family:inherit;font-size:8px;padding:6px 12px;background:linear-gradient(180deg,#c060b8,#8040a0);color:#fff;border:0;border-radius:6px;cursor:pointer">Enter</button>');
+				list.appendChild(row);
+			});
+			inner.appendChild(list);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('contestClose').addEventListener('click', () => { panel.hidden = true; });
+			list.querySelectorAll('[data-cat]').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const cat = CATEGORIES.find(c => c.id === btn.dataset.cat);
+					if (!cat) return;
+					panel.hidden = true;
+					Battle.startContestMode(cat, (won) => {
+						if (won) {
+							const inv2 = Inventory.load();
+							if (!inv2.ribbons) inv2.ribbons = {};
+							inv2.ribbons[cat.id] = true;
+							Inventory.save(inv2);
+							showToast('🎀 Won the ' + cat.label + ' Contest! Ribbon earned!');
+							Achievements.unlock('contestWin');
+							if (Object.keys(inv2.ribbons).length >= 5) Achievements.unlock('contestMaster');
+						} else {
+							showToast('Didn\'t place in the ' + cat.label + ' Contest. Try again!');
+						}
+					});
+				});
+			});
+		}
+		return { open };
+	})();
+
+	// ── Curry Cooking ─────────────────────────────────────────────────────────────
+	const CurryCooking = (() => {
+		const RECIPES = [
+			{ label: '🍛 Plain Curry',    ingredients: { pecha: 1 }, desc: '+5 friendship',         effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+5); } },
+			{ label: '🍛 Oran Curry',     ingredients: { oran: 1 },  desc: '+15 friendship',        effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+15); } },
+			{ label: '🍛 Sitrus Curry',   ingredients: { sitrus: 1 }, desc: '+30 friendship + heal', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+30); inv.partnerHp = 100; } },
+			{ label: '🍛 Mixed Berry Curry', ingredients: { pecha:1, oran:1 }, desc: '+20 friendship + 10 min rhythm boost', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+20); if(!inv.boosts) inv.boosts={}; inv.boosts.rhythmBoost = Date.now()+10*60*1000; } },
+			{ label: '🍛 Spicy Curry',    ingredients: { pecha:2 },  desc: '+10 friendship + fast-grow 15min', effect: (inv) => { inv.friendship = Math.min(100,(inv.friendship||0)+10); if(!inv.boosts) inv.boosts={}; inv.boosts.fastGrow = Date.now()+15*60*1000; } },
+		];
+		function canMake(recipe) {
+			const inv = Inventory.load();
+			const bt = inv.berryTypes || {};
+			for (const [type, amt] of Object.entries(recipe.ingredients)) {
+				if ((bt[type]||0) < amt) return false;
+			}
+			return true;
+		}
+		function open() {
+			let panel = document.getElementById('curryPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'curryPanel';
+				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+				document.body.appendChild(panel);
+				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+			}
+			panel.hidden = false;
+			const inv = Inventory.load();
+			const bt = inv.berryTypes || {};
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.style.cssText = 'background:linear-gradient(180deg,#2a1800,#1a0e00);border:2px solid #ff8800;border-radius:10px;width:min(420px,95%);max-height:85vh;overflow-y:auto;padding:16px';
+			inner.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="color:#ff8800;font-size:11px">🍛 CURRY COOKING</span><button id="curryClose" style="background:none;border:none;color:#ff8800;font-size:16px;cursor:pointer;font-family:inherit" type="button">✕</button></div>' +
+				'<div style="font-size:8px;color:#ffc080;margin-bottom:12px">Berries: Pecha:' + (bt.pecha||0) + ' Oran:' + (bt.oran||0) + ' Sitrus:' + (bt.sitrus||0) + '</div>';
+			const list = document.createElement('div');
+			list.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+			RECIPES.forEach((r, i) => {
+				const can = canMake(r);
+				const ingStr = Object.entries(r.ingredients).map(([k,v]) => v+'×'+k).join(', ');
+				const row = document.createElement('div');
+				row.style.cssText = 'padding:10px;border-radius:8px;border:1px solid rgba(255,136,0,' + (can?'0.4':'0.1') + ');background:rgba(255,255,255,0.03);opacity:' + (can?'1':'0.5');
+				row.innerHTML = '<div style="font-size:9px;color:#ff8800">' + r.label + '</div>' +
+					'<div style="font-size:7px;color:#a8c8e8;margin-top:3px">' + r.desc + ' · needs: ' + ingStr + '</div>' +
+					(can ? '<button data-recipe="'+i+'" style="margin-top:6px;font-family:inherit;font-size:8px;padding:5px 12px;background:linear-gradient(180deg,#ff9820,#cc6600);color:#fff;border:0;border-radius:6px;cursor:pointer" type="button">Cook!</button>' : '');
+				list.appendChild(row);
+			});
+			inner.appendChild(list);
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('curryClose').addEventListener('click', () => { panel.hidden = true; });
+			list.querySelectorAll('[data-recipe]').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const recipe = RECIPES[parseInt(btn.dataset.recipe)];
+					const inv2 = Inventory.load();
+					if (!inv2.berryTypes) inv2.berryTypes = {};
+					for (const [type, amt] of Object.entries(recipe.ingredients)) {
+						inv2.berryTypes[type] = (inv2.berryTypes[type]||0) - amt;
+					}
+					recipe.effect(inv2);
+					Inventory.save(inv2);
+					showToast('🍛 ' + recipe.label + ' cooked! ' + recipe.desc);
+					Achievements.unlock('chef');
+					panel.hidden = true;
+				});
+			});
+		}
+		return { open };
+	})();
+
+	// ── Pokémon Amie ───────────────────────────────────────────────────────────────
+	const Amie = (() => {
+		let taps = 0, sessionBonus = 0;
+		const MAX_SESSION = 10;
+		function open() {
+			let panel = document.getElementById('amiePanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'amiePanel';
+				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+				document.body.appendChild(panel);
+			}
+			taps = 0; sessionBonus = 0;
+			panel.hidden = false;
+			render(panel);
+		}
+		function render(panel) {
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:16px;padding:20px 24px;text-align:center;width:min(320px,90%)';
+			inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">💚 POKÉMON PLAY</div>' +
+				'<div id="amieSprite" style="font-size:64px;cursor:pointer;user-select:none;margin:8px 0;display:inline-block;transition:transform 0.1s">🐾</div>' +
+				'<div id="amieMsg" style="font-size:9px;color:#a8c8e8;margin:8px 0;min-height:18px">Tap your partner to play!</div>' +
+				'<div id="amieTaps" style="font-size:8px;color:#f6c84c;margin-bottom:12px">Taps: 0 / ' + MAX_SESSION + '</div>' +
+				'<button id="amieClose" type="button" style="font-family:inherit;font-size:8px;padding:8px 20px;background:linear-gradient(180deg,#4a5e80,#2a3a52);color:#e8eaf0;border:0;border-radius:8px;cursor:pointer">Done</button>';
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			const sprite = document.getElementById('amieSprite');
+			const msg = document.getElementById('amieMsg');
+			const tapsEl = document.getElementById('amieTaps');
+			const MESSAGES = ['💚','Yay!','Hehe~','Again!','♪','Purrr~','So fun!'];
+			sprite.addEventListener('click', () => {
+				if (taps >= MAX_SESSION) { msg.textContent = 'I need a rest! Come back later~'; return; }
+				taps++;
+				sessionBonus++;
+				sprite.style.transform = 'scale(1.3)';
+				setTimeout(() => { sprite.style.transform = 'scale(1)'; }, 100);
+				msg.textContent = MESSAGES[taps % MESSAGES.length];
+				tapsEl.textContent = 'Taps: ' + taps + ' / ' + MAX_SESSION;
+				if (taps === MAX_SESSION) {
+					const inv2 = Inventory.load();
+					const bonus = Math.min(sessionBonus, 5);
+					inv2.friendship = Math.min(100, (inv2.friendship||0) + bonus);
+					Inventory.save(inv2);
+					msg.textContent = '🌟 +' + bonus + ' friendship! Session complete!';
+					showToast('+' + bonus + ' friendship from playing!');
+				}
+			});
+			document.getElementById('amieClose').addEventListener('click', () => {
+				if (sessionBonus > 0 && taps < MAX_SESSION) {
+					const inv2 = Inventory.load();
+					const bonus = Math.floor(sessionBonus / 2);
+					if (bonus > 0) { inv2.friendship = Math.min(100,(inv2.friendship||0)+bonus); Inventory.save(inv2); showToast('+' + bonus + ' friendship!'); }
+				}
+				panel.hidden = true;
+			});
+		}
+		return { open };
+	})();
 
 	// ── Wild-encounter battle system ─────────────────────────────────────────────
 	// Self-contained DOM-overlay battle UI: shows a spinning wheel that picks one
@@ -37,17 +582,24 @@
 		};
 		// Pokémon used for sketch/foe — id, name, type. Sprites from PokeAPI CDN.
 		const POKEMON = [
-			{ id: 1, name: 'Bulbasaur', type: 'grass' },
-			{ id: 4, name: 'Charmander', type: 'fire' },
-			{ id: 7, name: 'Squirtle',  type: 'water' },
-			{ id: 25, name: 'Pikachu',  type: 'electric' },
-			{ id: 35, name: 'Clefairy', type: 'fairy' },
-			{ id: 39, name: 'Jigglypuff', type: 'normal' },
-			{ id: 54, name: 'Psyduck',  type: 'water' },
-			{ id: 60, name: 'Poliwag',  type: 'water' },
-			{ id: 63, name: 'Abra',     type: 'psychic' },
-			{ id: 133, name: 'Eevee',   type: 'normal' },
+			{id:1,name:'Bulbasaur',type:'grass'},{id:4,name:'Charmander',type:'fire'},
+			{id:7,name:'Squirtle',type:'water'},{id:25,name:'Pikachu',type:'electric'},
+			{id:35,name:'Clefairy',type:'fairy'},{id:39,name:'Jigglypuff',type:'normal'},
+			{id:54,name:'Psyduck',type:'water'},{id:60,name:'Poliwag',type:'water'},
+			{id:63,name:'Abra',type:'psychic'},{id:133,name:'Eevee',type:'normal'},
+			{id:52,name:'Meowth',type:'normal'},{id:66,name:'Machop',type:'fighting'},
+			{id:74,name:'Geodude',type:'rock'},{id:92,name:'Gastly',type:'ghost'},
+			{id:102,name:'Exeggcute',type:'grass'},{id:113,name:'Chansey',type:'normal'},
+			{id:116,name:'Horsea',type:'water'},{id:129,name:'Magikarp',type:'water'},
+			{id:137,name:'Porygon',type:'normal'},{id:143,name:'Snorlax',type:'normal'},
+			{id:147,name:'Dratini',type:'dragon'},{id:19,name:'Rattata',type:'normal'},
+			{id:41,name:'Zubat',type:'poison'},{id:43,name:'Oddish',type:'grass'},
+			{id:48,name:'Venonat',type:'bug'},{id:81,name:'Magnemite',type:'electric'},
+			{id:95,name:'Onix',type:'rock'},{id:106,name:'Hitmonlee',type:'fighting'},
+			{id:123,name:'Scyther',type:'bug'},{id:131,name:'Lapras',type:'water'},
 		];
+		let _currentEncounter = null;
+		let _contestMode = false;
 		const SPRITE_URL = (id) => 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/' + id + '.png';
 		const MINIGAMES = ['card', 'rps', 'rhythm', 'sketch'];
 		let resultCb = null;
@@ -78,6 +630,9 @@
 				_endHandler = null;
 			}
 			resultCb = cb;
+			_contestMode = false;
+			_currentEncounter = POKEMON[Math.floor(Math.random() * POKEMON.length)];
+			Pokedex.markSeen(_currentEncounter.id);
 			// Reset wheel UI
 			const disc = $('cbWheelDisc');
 			if (disc) disc.style.transform = 'rotate(0deg)';
@@ -86,10 +641,23 @@
 			const sb = $('cbSpinBtn');
 			if (sb) { sb.disabled = false; sb.textContent = 'Spin!'; }
 			show('wheel');
-			// Play a random encounter cry and switch to battle music.
-			const randomPoke = POKEMON[Math.floor(Math.random() * POKEMON.length)];
-			Sound.cry(randomPoke.id);
+			// Play encounter cry and switch to battle music.
+			Sound.cry(_currentEncounter.id);
 			Music.start('battle');
+		}
+
+		function startContestMode(cat, cb) {
+			rhythmState?.stop();
+			rhythmState = null;
+			if (_endHandler) {
+				const btn = $('cbEndBtn');
+				if (btn) btn.removeEventListener('click', _endHandler);
+				_endHandler = null;
+			}
+			resultCb = (won) => cb(won);
+			_contestMode = true;
+			Music.start('battle');
+			startMinigame(cat.minigame);
 		}
 
 		function spin() {
@@ -293,6 +861,7 @@
 			// Pick one correct + three distractors.
 			const pool = [...POKEMON].sort(() => Math.random() - 0.5);
 			const correct = pool[0];
+			_currentEncounter = correct;
 			const choices = pool.slice(0, 4).sort(() => Math.random() - 0.5);
 			stage.src = SPRITE_URL(correct.id);
 			btns.innerHTML = '';
@@ -346,13 +915,49 @@
 				DailyQuests.increment('minigame');
 				showToast && showToast('+' + (tokenBonus > 0 ? tokenBonus + ' token' + (tokenBonus !== 1 ? 's' : '') + ' 🪙' : '1 Berry 🍓'));
 			}
+			// Radar encounter doubles berry/token reward
+			if (window.__radarEncounter && won) {
+				const invR = Inventory.load();
+				invR.friendshipBerries = (invR.friendshipBerries || 0) + 1;
+				invR.tokens = (invR.tokens || 0) + 5;
+				Inventory.save(invR);
+				bodyMsg += ' [RADAR: doubled reward!]';
+			}
 			$('cbEndBody').textContent = bodyMsg;
+			// Catch button — only in normal (non-contest) mode
+			let catchBtn = null;
+			if (won && _currentEncounter && !_contestMode) {
+				catchBtn = document.createElement('button');
+				catchBtn.className = 'cb-btn';
+				catchBtn.type = 'button';
+				catchBtn.style.cssText = 'margin-top:8px;font-size:9px';
+				const alreadyCaught = Pokedex.isCaught(_currentEncounter.id);
+				catchBtn.textContent = alreadyCaught ? '✅ Already Caught' : '🎳 Throw Ball (5🪙)';
+				catchBtn.disabled = alreadyCaught;
+				catchBtn.addEventListener('click', () => {
+					if (alreadyCaught) return;
+					const inv = Inventory.load();
+					if ((inv.tokens || 0) < 5) { showToast('Not enough tokens!'); return; }
+					inv.tokens -= 5;
+					Inventory.save(inv);
+					Pokedex.markCaught(_currentEncounter.id);
+					catchBtn.textContent = '🎉 Caught ' + _currentEncounter.name + '!';
+					catchBtn.disabled = true;
+					Achievements.unlock('firstCatch');
+					showToast('🎳 ' + _currentEncounter.name + ' caught and added to Pokédex!');
+				}, { once: true });
+				const endBody = $('cbEndBody');
+				if (endBody && endBody.parentElement) {
+					endBody.parentElement.insertBefore(catchBtn, endBody.nextSibling);
+				}
+			}
 			const btn = $('cbEndBtn');
 			btn.textContent = 'Continue';
 			// Remove any handler left from a previous battle before adding the new one.
 			if (_endHandler) { btn.removeEventListener('click', _endHandler); _endHandler = null; }
 			const handler = () => {
 				_endHandler = null;
+				if (catchBtn) { catchBtn.remove(); catchBtn = null; }
 				hideAll();
 				if (resultCb) { const cb = resultCb; resultCb = null; cb(won); }
 			};
@@ -385,7 +990,7 @@
 			return root && !root.hidden;
 		}
 
-		return { start, isOpen };
+		return { start, isOpen, startContestMode };
 	})();
 
 	// ── Mart UI — Pikachu shopkeeper buys berries / sells seeds ──────────────────
@@ -436,6 +1041,13 @@
 			document.querySelectorAll('.cm-stone-status').forEach(el => {
 				el.textContent = inv.stone === el.dataset.stone ? '(held)' : '';
 			});
+			const buyRadar = $('cmBuyRadar');
+			const radarStatus = $('cmRadarStatus');
+			if (buyRadar) { buyRadar.disabled = !!(inv.pokeRadar) || (inv.tokens||0) < 80; buyRadar.textContent = inv.pokeRadar ? 'Owned' : 'Buy'; }
+			if (radarStatus) radarStatus.textContent = inv.pokeRadar ? '(owned)' : '';
+			const rsBtn = $('cmBuyRockSmash');
+			if (rsBtn) { rsBtn.disabled = !!(inv.hasRockSmash)||(inv.tokens||0)<60; rsBtn.textContent = inv.hasRockSmash?'Owned':'Buy'; }
+			$('cmRockSmashStatus') && ($('cmRockSmashStatus').textContent = inv.hasRockSmash ? '(owned)' : '');
 			// Plot upgrade
 			const upgradeBtn = $('cmUpgradePlot');
 			const plotLvlEl = $('cmPlotLevel');
@@ -607,6 +1219,26 @@
 					setStatus('Bought ' + nm + ' Stone! Hand it to Eevee to evolve.');
 					refresh();
 				});
+			});
+			$('cmBuyRadar') && $('cmBuyRadar').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if (inv.pokeRadar) { setStatus('Already owned!'); return; }
+				if ((inv.tokens||0) < 80) { setStatus('Need 80🪙'); return; }
+				inv.tokens -= 80;
+				inv.pokeRadar = true;
+				Inventory.save(inv);
+				setStatus('Poké Radar purchased! Press R in camp to toggle.');
+				refresh();
+			});
+			$('cmBuyRockSmash') && $('cmBuyRockSmash').addEventListener('click', () => {
+				const inv = Inventory.load();
+				if (inv.hasRockSmash) { setStatus('Already have Rock Smash!'); return; }
+				if ((inv.tokens||0) < 60) { setStatus('Need 60🪙'); return; }
+				inv.tokens -= 60;
+				inv.hasRockSmash = true;
+				Inventory.save(inv);
+				setStatus('Got Rock Smash! Press E near boulders to break them.');
+				refresh();
 			});
 			$('cmClose') && $('cmClose').addEventListener('click', close);
 
@@ -1104,7 +1736,8 @@
 			root.dataset.wired = '1';
 			$('cpClose') && $('cpClose').addEventListener('click', close);
 			$('cpFeed') && $('cpFeed').addEventListener('click', () => feed(scene));
-			$('cpPet') && $('cpPet').addEventListener('click', pet);
+			$('cpPet') && $('cpPet').addEventListener('click', () => { Amie.open(); });
+			$('cpPC') && $('cpPC').addEventListener('click', () => PCBox.open());
 			// Nickname — save on input, notify scene to update label.
 			const ni = $('cpNickname');
 			if (ni) ni.addEventListener('input', () => {
@@ -1830,13 +2463,42 @@
 						});
 						delete cosm.houseRoomActive;
 					}
+					// Away-time check: if lastLogin is set, compute time away and award items
+					if (parsed.lastLogin) {
+						const awayMs = Date.now() - parsed.lastLogin;
+						const awayHours = awayMs / 3600000;
+						if (awayHours >= 1) {
+							let msg = '';
+							if (awayHours >= 8) {
+								parsed.seeds = (parsed.seeds||0) + 3;
+								parsed.friendshipBerries = (parsed.friendshipBerries||0) + 2;
+								parsed.tokens = (parsed.tokens||0) + 10;
+								msg = 'Away 8h+: found 3 seeds, 2 berries, 10 tokens!';
+							} else if (awayHours >= 4) {
+								parsed.seeds = (parsed.seeds||0) + 2;
+								parsed.friendshipBerries = (parsed.friendshipBerries||0) + 1;
+								msg = 'Away 4h+: found 2 seeds, 1 berry!';
+							} else if (awayHours >= 1) {
+								parsed.seeds = (parsed.seeds||0) + 1;
+								msg = 'Away 1h+: found a seed!';
+							}
+							if (msg) {
+								parsed.lastLogin = Date.now();
+								localStorage.setItem(INVENTORY_KEY, JSON.stringify(parsed));
+								setTimeout(() => { if (typeof showToast !== 'undefined') showToast('🌿 Your Pokémon explored! ' + msg); }, 2000);
+							}
+						}
+					}
 					return Object.assign({}, DEFAULT, parsed, { cosmetics: cosm });
 				}
 			} catch {}
 			return Object.assign({}, DEFAULT, { cosmetics: Object.assign({}, DEFAULT.cosmetics) });
 		}
 		function save(inv) {
-			try { localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv)); } catch {}
+			try {
+				inv.lastLogin = Date.now();
+				localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv));
+			} catch {}
 		}
 		return { load, save };
 	})();
@@ -2186,6 +2848,9 @@
 		variant.forEach(([r,c]) => { if (map[r][c] === TTR) map[r][c] = TTR2; });
 		const bushes = [[14,8],[16,9],[18,8],[22,9],[24,7],[26,9],[6,20],[5,29],[8,32]];
 		bushes.forEach(([r,c]) => { if (map[r][c] === TG || map[r][c] === TG2) map[r][c] = TBSH; });
+
+		// Boulders that can be smashed with Rock Smash
+		[[14,2],[24,3],[5,33],[18,36]].forEach(([r,c]) => set(r,c,TBLD));
 
 		// Tall grass patches — wild Pokémon hide here. Two clumps off the main path.
 		const tallGrass = [
@@ -2569,6 +3234,14 @@
 				ctx.fillRect(x+5,y+3,1,1); ctx.fillRect(x+11,y+4,1,1);
 				break;
 			}
+			case TBLD:
+				ctx.fillStyle='#8A8888'; ctx.fillRect(x,y,d,d);
+				ctx.fillStyle='#A8A6A6'; ctx.fillRect(x+1,y+1,d-2,d-2);
+				ctx.fillStyle='#C0BEBE'; ctx.fillRect(x+2,y+2,6,5);
+				ctx.fillStyle='#686666'; ctx.fillRect(x,y+d-3,d,3);
+				ctx.fillStyle='#787676'; ctx.fillRect(x+d-3,y,3,d);
+				ctx.fillStyle='#FFFFFF'; ctx.fillRect(x+3,y+3,2,2);
+				break;
 			default:
 				ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
 		}
@@ -2792,6 +3465,7 @@
 			case TSO: case TCR: return '#5A4020';
 			case TFN: return '#8A6030';
 			case TSG: return '#C48848';
+			case TBLD: return '#888888';
 			default: return '#101020';
 		}
 	}
@@ -3011,6 +3685,12 @@
 			spriteScale: 0.6, frameHeight: 40,
 			dialog: "Jolt! Welcome to my café — grab something energizing before your next quiz!",
 		},
+		{
+			key: 'm-contest', species: 'espeon', r: 14, c: 18,
+			label: 'Contest', shopKind: null, kind: 'contest',
+			spriteScale: 0.6, frameHeight: 48,
+			dialog: ['Welcome to the Contest Hall! Show off your partner\'s talents!', 'Ribbons are forever — come compete!'],
+		},
 	];
 
 	function getSeasonalItems() {
@@ -3085,6 +3765,7 @@
 				{ label: '🍵 Herbal Tea',       cost: 18, action: 'cafeBuy', gives: 'seed',     amount: 2 },
 				{ label: '🥐 Croissant',        cost: 5,  action: 'cafeBuy', gives: 'berry',    amount: 2 },
 				{ label: '🍫 Choco Bar',        cost: 12, action: 'cafeBuy', gives: 'tokens',   amount: 8 },
+				{ label: '🥚 Pokémon Egg',      cost: 40, action: 'buyEgg' },
 			],
 		},
 	};
@@ -3361,6 +4042,14 @@
 			{ id: 'shopkeeper',   label: '💰 Wealthy Trainer',  desc: 'Earn 500 tokens total'              },
 			{ id: 'decorator',    label: '🛋️ Interior Design',  desc: 'Place 5 furniture pieces'           },
 			{ id: 'nightOwl',     label: '🌙 Night Owl',        desc: 'Play camp after 10 PM'              },
+			{ id: 'dex100',       label: '📖 Pokémon Master',   desc: 'Catch 100 different Pokémon'        },
+			{ id: 'hatchEgg',     label: '🥚 Hatcher',          desc: 'Hatch a Pokémon egg'                },
+			{ id: 'contestWin',   label: '🎀 Contestant',       desc: 'Win your first Pokémon Contest'     },
+			{ id: 'contestMaster',label: '🎀 Contest Master',   desc: 'Win all 5 Contest categories'       },
+			{ id: 'chef',         label: '🍛 Camp Chef',        desc: 'Cook your first curry'              },
+			{ id: 'explorer',     label: '🗺️ Explorer',         desc: 'Reveal the entire camp map'         },
+			{ id: 'mysteryGift',  label: '🎁 Gift Receiver',    desc: 'Claim a Mystery Gift'               },
+			{ id: 'wonderTrade',  label: '🔄 Wonder Trade',     desc: 'Complete a Wonder Trade'            },
 		];
 		function load() {
 			const raw = localStorage.getItem('pokequiz_achievements');
@@ -3500,6 +4189,13 @@
 			questRewardBonus:   form === 'espeon' ? 3 : 0,
 			dailyCooldownMult:  form === 'umbreon' ? 0.85 : 1.0,
 		};
+	}
+
+	// ── Surf / movement helpers ───────────────────────────────────────────────────
+	function canWalkOn(tileId, inv) {
+		if (!SOLID.has(tileId)) return true;
+		if (tileId === TH2O && inv && inv.eeveeForm === 'vaporeon') return true;
+		return false;
 	}
 
 	// ── Phaser Scenes ────────────────────────────────────────────────────────────
@@ -3672,12 +4368,15 @@
 
 				// Solid tile bodies
 				this.solids = this.physics.add.staticGroup();
-				for (let r = 0; r < MAP_H; r++) {
-					for (let c = 0; c < MAP_W; c++) {
-						if (SOLID.has(this.map[r][c])) {
-							const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
-							this.physics.add.existing(rect, true);
-							this.solids.add(rect);
+				{
+					const _campInv = Inventory.load();
+					for (let r = 0; r < MAP_H; r++) {
+						for (let c = 0; c < MAP_W; c++) {
+							if (!canWalkOn(this.map[r][c], _campInv)) {
+								const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
+								this.physics.add.existing(rect, true);
+								this.solids.add(rect);
+							}
 						}
 					}
 				}
@@ -3815,6 +4514,15 @@
 				this.armedForDoor = this.spawnFrom !== 'house';
 				this.armedForSouth = this.spawnFrom !== 'market';
 
+				// Poké Radar state
+				this._radarShimmer = new Set();
+				this._radarActive = false;
+				this._radarTick = 0;
+				this._radarGfx = null;
+
+				// Egg step accumulator
+				this._eggStepAccum = 0;
+
 				// Spawn NPCs from the NPCS table. They render frame 0 of their walk
 				// sheet (south idle), block movement via static collision rects, and
 				// register into npcByTile for the E-key interaction prompt.
@@ -3870,13 +4578,14 @@
 					this.minimapEl.height = MAP_H * 3;
 					const mctx = this.minimapEl.getContext('2d');
 					mctx.imageSmoothingEnabled = false;
-					for (let r = 0; r < MAP_H; r++) {
-						for (let c = 0; c < MAP_W; c++) {
-							mctx.fillStyle = miniMapColor(this.map[r][c]);
-							mctx.fillRect(c*3, r*3, 3, 3);
-						}
-					}
-					this.minimapBase = mctx.getImageData(0, 0, this.minimapEl.width, this.minimapEl.height);
+					// Fog-of-war: blank initially — tiles revealed as player explores
+					mctx.fillStyle = '#000';
+					mctx.fillRect(0, 0, this.minimapEl.width, this.minimapEl.height);
+				}
+				// Initialize fog for spawn area
+				{
+					const spawnFogInv = Inventory.load();
+					if (!spawnFogInv.fog) { spawnFogInv.fog = []; Inventory.save(spawnFogInv); }
 				}
 			}
 
@@ -3904,6 +4613,14 @@
 					if (t === TD) return { kind: 'door', r, c };
 					// Water tile — open fishing minigame
 					if (t === TH2O) return { kind: 'fish', r, c, label: 'Fish' };
+					// Campfire tile — open curry cooking
+					if (t === TFR || t === TFY) return { kind: 'fire', r, c, label: 'Cook' };
+					// Boulder tile
+					if (t === TBLD) return { kind: 'boulder', r, c, label: 'Smash' };
+					// Radar shimmer on tall grass
+					if (t === TTG && this._radarShimmer && this._radarShimmer.has(r+','+c)) {
+						return { kind: 'radar', r, c, label: 'Investigate' };
+					}
 					// Soil tile — plant if free + have seeds, harvest if ripe, status otherwise.
 					if (t === TSO || t === TCR) {
 						const plant = this._findPlantAt(r, c);
@@ -4117,7 +4834,9 @@
 				const scythe = inv.hasScythe
 					? '   ' + (inv.scytheEquipped ? '🌾 equipped' : '🌾 (Q)')
 					: '';
-				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0) + heart + scythe;
+				const egg = EggSystem.status();
+				const eggStr = egg ? '   🥚 ' + egg.steps + '/' + EggSystem.HATCH_STEPS : '';
+				el.textContent = '🌱 ' + (inv.seeds || 0) + '   🍓 ' + (inv.friendshipBerries || 0) + '   💰 ' + (inv.tokens || 0) + heart + scythe + eggStr;
 			}
 
 			_handleFeed() {
@@ -4295,9 +5014,20 @@
 			}
 
 			updateMinimap() {
-				if (!this.minimapEl || !this.minimapBase) return;
+				if (!this.minimapEl) return;
 				const mctx = this.minimapEl.getContext('2d');
-				mctx.putImageData(this.minimapBase, 0, 0);
+				mctx.fillStyle = '#000';
+				mctx.fillRect(0, 0, this.minimapEl.width, this.minimapEl.height);
+				const fogInvM = Inventory.load();
+				const fog = new Set(fogInvM.fog || []);
+				for (let r = 0; r < MAP_H; r++) {
+					for (let c = 0; c < MAP_W; c++) {
+						if (fog.has(r+','+c)) {
+							mctx.fillStyle = miniMapColor(this.map[r][c]);
+							mctx.fillRect(c*3, r*3, 3, 3);
+						}
+					}
+				}
 				// Player dot — bright yellow
 				const px = Math.floor(this.player.x / TILE) * 3;
 				const py = Math.floor(this.player.y / TILE) * 3;
@@ -4408,7 +5138,24 @@
 					}
 				}
 				if (k.rain && Phaser.Input.Keyboard.JustDown(k.rain) && !dialogOpen) {
-					this.isRaining = !this.isRaining;
+					const invR = Inventory.load();
+					if (invR.pokeRadar) {
+						this._radarActive = !this._radarActive;
+						showToast(this._radarActive ? '📡 Poké Radar ON — watch the grass!' : '📡 Poké Radar OFF');
+					} else {
+						this.isRaining = !this.isRaining;
+					}
+				}
+				// Radar shimmer update
+				if (this._radarActive && this.tick % 90 === 0) {
+					this._radarShimmer.clear();
+					const grassTiles = [];
+					for (let r=0;r<MAP_H;r++) for (let c=0;c<MAP_W;c++) if (this.map[r][c] === TTG) grassTiles.push([r,c]);
+					const picks = Math.floor(Math.random()*3)+2;
+					for (let i=0;i<picks && i<grassTiles.length;i++) {
+						const idx = Math.floor(Math.random()*grassTiles.length);
+						this._radarShimmer.add(grassTiles[idx][0]+','+grassTiles[idx][1]);
+					}
 				}
 				if (k.scythe && Phaser.Input.Keyboard.JustDown(k.scythe) && !dialogOpen) {
 					const inv = Inventory.load();
@@ -4444,6 +5191,31 @@
 					else if (target && target.kind === 'npc' && target.npcKind === 'quests') {
 						DailyQuests.open();
 					}
+					else if (target && target.kind === 'fire') {
+						CurryCooking.open();
+					}
+					else if (target && target.kind === 'boulder') {
+						const invB = Inventory.load();
+						if (!invB.hasRockSmash) { Dialog.open('It\'s a large boulder. You need Rock Smash to break it!'); }
+						else {
+							this.map[target.r][target.c] = TG;
+							// Rebuild solid bodies for the changed tile — simplest: just hide the solid
+							Dialog.open('💥 Smashed the boulder! The path is clear.');
+							showToast('💥 Rock Smash!');
+							const invB2 = Inventory.load();
+							invB2.tokens = (invB2.tokens||0) + 15;
+							Inventory.save(invB2);
+						}
+					}
+					else if (target && target.kind === 'radar') {
+						this._radarShimmer.clear();
+						window.__radarEncounter = true;
+						Battle.start((won) => {
+							window.__radarEncounter = false;
+							Music.start('camp');
+							if (won) { DailyQuests.increment('minigame'); }
+						});
+					}
 					else if (target && target.message) Dialog.open(target.message);
 					else if (target && target.kind === 'door' && !this.didTransition && this.armedForDoor) {
 						this.didTransition = true;
@@ -4461,6 +5233,24 @@
 					if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 				}
 				this.player.setVelocity(vx, vy);
+
+				// Egg step counter
+				if (Math.abs(vx) > 0 || Math.abs(vy) > 0) {
+					this._eggStepAccum = (this._eggStepAccum || 0) + 1;
+					if (this._eggStepAccum >= 8) { this._eggStepAccum = 0; EggSystem.stepUpdate(); }
+				}
+
+				// Surf: Vaporeon water-walk tint
+				{
+					const _ptile_r = Math.floor(this.player.y / TILE);
+					const _ptile_c = Math.floor(this.player.x / TILE);
+					const _ptile = this.map[_ptile_r] && this.map[_ptile_r][_ptile_c];
+					if (_ptile === TH2O && (Inventory.load().eeveeForm === 'vaporeon')) {
+						this.player.setTint(0x88bbff);
+					} else {
+						this.player.clearTint();
+					}
+				}
 
 				// Sweep planting — while holding E and walking, auto-plant on each new
 				// soil tile entered (one plant per tile, not per frame).
@@ -4511,6 +5301,41 @@
 				// Refresh plant visuals every 8 ticks so the ripe-berry bob animates smoothly.
 				if (this.tick % 8 === 0) this._refreshPlantSprites();
 				this.updateMinimap();
+
+				// Fog of war: reveal tiles around player every 6 ticks
+				if (this.tick % 6 === 0) {
+					const pr = Math.floor(this.player.y / TILE);
+					const pc = Math.floor(this.player.x / TILE);
+					const fogInv = Inventory.load();
+					if (!fogInv.fog) fogInv.fog = [];
+					const fogSet = new Set(fogInv.fog);
+					let fogChanged = false;
+					for (let dr = -3; dr <= 3; dr++) {
+						for (let dc = -3; dc <= 3; dc++) {
+							const key = (pr+dr)+','+(pc+dc);
+							if (!fogSet.has(key)) { fogSet.add(key); fogChanged = true; }
+						}
+					}
+					if (fogChanged) {
+						fogInv.fog = [...fogSet];
+						Inventory.save(fogInv);
+						// Check explorer achievement: 90% of map revealed
+						if (fogInv.fog.length >= MAP_W * MAP_H * 0.9) Achievements.unlock('explorer');
+					}
+				}
+
+				// Radar sparkle graphics
+				if (this._radarGfx) this._radarGfx.clear();
+				if (this._radarActive && this._radarShimmer && this._radarShimmer.size > 0) {
+					if (!this._radarGfx) this._radarGfx = this.add.graphics().setDepth(5);
+					this._radarShimmer.forEach(key => {
+						const [srStr, scStr] = key.split(',');
+						const sr = parseInt(srStr), sc = parseInt(scStr);
+						const pulse = Math.abs(Math.sin(this.tick * 0.08)) * 0.7 + 0.3;
+						this._radarGfx.fillStyle(0xffffff, pulse);
+						this._radarGfx.fillCircle(sc*TILE+8, sr*TILE+8, 4);
+					});
+				}
 
 				// Trail mode: sample player position; follower lerps toward the oldest sample
 				// so it lags ~1 sprite-width behind.
@@ -5678,6 +6503,11 @@
 					}
 					break;
 				}
+				case 'buyEgg':
+					EggSystem.buyEgg();
+					Inventory.save(inv);
+					close();
+					return;
 				case 'healPokemon':
 					inv.partnerHp = 100;
 					setStatus('Your Pokémon has been fully healed! ♥');
@@ -6062,6 +6892,8 @@
 				if (ePressed && !shopOpen) {
 					if (dialogOpen) {
 						Dialog.advance();
+					} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'contest') {
+						Contests.open();
 					} else if (target && target.kind === 'npc') {
 						MarketShop.open(target.npc);
 					} else if (target && target.kind === 'sign') {
@@ -6142,6 +6974,87 @@
 		// has painted, so we don't need a fixed timeout here.
 	}
 
+	// ── Mystery Gift ─────────────────────────────────────────────────────────────
+	const MysteryGift = (() => {
+		const GIFTS = {
+			'01-01': { label: 'New Year Gift',      gives: 'tokens', amount: 50,  msg: '🎊 Happy New Year! +50🪙' },
+			'02-14': { label: 'Valentine Gift',     gives: 'berry',  amount: 10,  msg: '💝 Happy Valentine\'s Day! +10🍓' },
+			'04-01': { label: 'April Fools Gift',   gives: 'seed',   amount: 5,   msg: '🃏 April Fools! Here\'s 5 seeds...' },
+			'10-31': { label: 'Halloween Gift',     gives: 'tokens', amount: 30,  msg: '🎃 Trick or Treat! +30🪙' },
+			'12-25': { label: 'Christmas Gift',     gives: 'tokens', amount: 100, msg: '🎄 Merry Christmas! +100🪙' },
+			'12-31': { label: 'New Year\'s Eve Gift',gives: 'seed',  amount: 10,  msg: '🎆 New Year\'s Eve! +10 seeds' },
+			'02-27': { label: 'Pokémon Day Gift',   gives: 'egg',               msg: '🎂 Happy Pokémon Day! Mystery Egg!' },
+		};
+		function todayKey() {
+			const d = new Date();
+			return String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+		}
+		function check() {
+			const key = todayKey();
+			const gift = GIFTS[key];
+			if (!gift) return null;
+			const claimedKey = 'pokequiz_mgift_' + new Date().getFullYear() + '_' + key;
+			if (localStorage.getItem(claimedKey)) return { ...gift, claimed: true };
+			return { ...gift, claimed: false };
+		}
+		function claim() {
+			const gift = check();
+			if (!gift || gift.claimed) return;
+			const key = todayKey();
+			const claimedKey = 'pokequiz_mgift_' + new Date().getFullYear() + '_' + key;
+			localStorage.setItem(claimedKey, '1');
+			const inv = Inventory.load();
+			if (gift.gives === 'tokens') inv.tokens = (inv.tokens||0) + gift.amount;
+			else if (gift.gives === 'berry') inv.friendshipBerries = (inv.friendshipBerries||0) + gift.amount;
+			else if (gift.gives === 'seed') inv.seeds = (inv.seeds||0) + gift.amount;
+			else if (gift.gives === 'egg') EggSystem.buyEgg();
+			Inventory.save(inv);
+			showToast(gift.msg);
+			Achievements.unlock('mysteryGift');
+		}
+		function open() {
+			const gift = check();
+			let panel = document.getElementById('mysteryGiftPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'mysteryGiftPanel';
+				panel.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+				document.body.appendChild(panel);
+				panel.addEventListener('pointerdown', e => { if(e.target===panel) panel.hidden=true; });
+			}
+			panel.hidden = false;
+			panel.innerHTML = '';
+			const inner = document.createElement('div');
+			inner.style.cssText = 'background:linear-gradient(180deg,#1a2440,#0e1826);border:2px solid #f6c84c;border-radius:10px;padding:20px 24px;text-align:center;width:min(360px,90%)';
+			if (!gift) {
+				inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">🎁 MYSTERY GIFT</div>' +
+					'<div style="font-size:9px;color:#a8c8e8;margin-bottom:16px">No special gift today.<br>Check back on holidays!</div>' +
+					'<button id="mgClose" type="button" style="font-family:inherit;font-size:9px;padding:8px 20px;background:linear-gradient(180deg,#4a5e80,#2a3a52);color:#e8eaf0;border:0;border-radius:8px;cursor:pointer">Close</button>';
+			} else if (gift.claimed) {
+				inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">🎁 ' + gift.label.toUpperCase() + '</div>' +
+					'<div style="font-size:9px;color:#88ee88;margin-bottom:16px">✅ Already claimed today!</div>' +
+					'<button id="mgClose" type="button" style="font-family:inherit;font-size:9px;padding:8px 20px;background:linear-gradient(180deg,#4a5e80,#2a3a52);color:#e8eaf0;border:0;border-radius:8px;cursor:pointer">Close</button>';
+			} else {
+				inner.innerHTML = '<div style="color:#f6c84c;font-size:11px;margin-bottom:12px">🎁 ' + gift.label.toUpperCase() + '</div>' +
+					'<div style="font-size:48px;margin:12px 0">🎁</div>' +
+					'<div style="font-size:9px;color:#e8eaf0;margin-bottom:16px">A special gift awaits!</div>' +
+					'<button id="mgClaim" type="button" style="font-family:inherit;font-size:9px;padding:10px 24px;background:linear-gradient(180deg,#ffd968,#f6c84c);color:#2a1e08;border:0;border-radius:8px;cursor:pointer;margin-bottom:8px">Open Gift!</button><br>' +
+					'<button id="mgClose" type="button" style="font-family:inherit;font-size:8px;background:none;border:none;color:#a8c8e8;cursor:pointer;margin-top:4px">Later</button>';
+			}
+			panel.appendChild(inner);
+			inner.addEventListener('pointerdown', e => e.stopPropagation());
+			document.getElementById('mgClose')?.addEventListener('click', () => { panel.hidden = true; });
+			document.getElementById('mgClaim')?.addEventListener('click', () => { claim(); panel.hidden = true; });
+		}
+		function autoCheck() {
+			const gift = check();
+			if (gift && !gift.claimed) {
+				setTimeout(() => showToast('🎁 A Mystery Gift is available today! Check the Pause menu.'), 3000);
+			}
+		}
+		return { open, autoCheck, check };
+	})();
+
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
 	else start();
 
@@ -6151,6 +7064,29 @@
 	} else {
 		updateDayNightTint();
 		setInterval(updateDayNightTint, 60000);
+	}
+
+	// ── Extra wiring (Pokédex button, Mystery Gift auto-check) ───────────────────
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => {
+			document.getElementById('campDexBtn')?.addEventListener('click', () => Pokedex.open());
+			document.getElementById('campPauseMystery')?.addEventListener('click', () => {
+				const p = document.getElementById('campPause');
+				if (p) p.hidden = true;
+				MysteryGift.open();
+			});
+			MysteryGift.autoCheck();
+			document.getElementById('cpPC')?.addEventListener('click', () => PCBox.open());
+		});
+	} else {
+		document.getElementById('campDexBtn')?.addEventListener('click', () => Pokedex.open());
+		document.getElementById('campPauseMystery')?.addEventListener('click', () => {
+			const p = document.getElementById('campPause');
+			if (p) p.hidden = true;
+			MysteryGift.open();
+		});
+		MysteryGift.autoCheck();
+		document.getElementById('cpPC')?.addEventListener('click', () => PCBox.open());
 	}
 
 	// ── Achievements panel wiring ─────────────────────────────────────────────────

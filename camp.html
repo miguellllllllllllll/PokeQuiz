@@ -162,6 +162,9 @@
 		<!-- Achievements button -->
 		<button class="camp-achieve-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements">🏅</button>
 
+		<!-- Pokédex button -->
+		<button class="camp-dex-btn" id="campDexBtn" title="Pokédex" aria-label="Pokédex">📖</button>
+
 		<!-- Achievements panel -->
 		<div id="achievePanel" hidden style="position:fixed;top:0;right:0;bottom:0;width:min(340px,100%);background:linear-gradient(180deg,#1a2440,#0e1826);border-left:2px solid #f6c84c;z-index:50;overflow-y:auto;font-family:'Press Start 2P',monospace;color:#e8eaf0;padding:14px 16px;box-sizing:border-box">
 			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -194,7 +197,8 @@
 				</div>
 				<div class="cp-actions">
 					<button class="cb-btn" id="cpFeed" type="button">Feed Berry 🍓 <span class="cp-count">×<span id="cpBerries">0</span></span></button>
-					<button class="cb-btn cp-btn-alt" id="cpPet" type="button">Pet 💚</button>
+					<button class="cb-btn cp-btn-alt" id="cpPet" type="button">Play 💚</button>
+					<button class="cb-btn cp-btn-alt" id="cpPC" type="button">💻 PC Box</button>
 					<button class="cb-btn cp-btn-shiny" id="cpShiny" type="button">✨ Shiny</button>
 				</div>
 				<div class="cp-status" id="cpStatus"></div>
@@ -276,6 +280,16 @@
 						<div class="cm-row-name">🫐 Oran Seed <span class="cm-row-count">(×<span id="cmOranSeedCount">0</span> owned)</span></div>
 						<span class="cm-row-cost">20 💰</span>
 						<button class="cb-btn cm-action" id="cmBuyOranSeed" type="button">Buy</button>
+					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">📡 Poké Radar <span class="cm-row-count" id="cmRadarStatus"></span></div>
+						<span class="cm-row-cost">80 💰</span>
+						<button class="cb-btn cm-action" id="cmBuyRadar" type="button">Buy</button>
+					</div>
+					<div class="cm-row">
+						<div class="cm-row-name">💥 Rock Smash HM <span class="cm-row-count" id="cmRockSmashStatus"></span></div>
+						<span class="cm-row-cost">60 💰</span>
+						<button class="cb-btn cm-action" id="cmBuyRockSmash" type="button">Buy</button>
 					</div>
 				</div>
 
@@ -413,6 +427,7 @@
 				<button class="camp-pause-btn" id="campPauseResume" type="button">Resume</button>
 				<button class="camp-pause-btn camp-pause-btn--save" id="campPauseSave" type="button">💾 Save</button>
 				<button class="camp-pause-btn camp-pause-btn--music" id="campPauseMusic" type="button">🎵 Music: On</button>
+				<button class="camp-pause-btn" id="campPauseMystery" type="button">🎁 Mystery Gift</button>
 				<a class="camp-pause-btn camp-pause-btn--alt" href="camp.html">Return to Camp</a>
 				<div class="camp-pause-save-time" id="campPauseSaveTime"></div>
 				<div class="camp-pause-hint">Press Esc to resume</div>
