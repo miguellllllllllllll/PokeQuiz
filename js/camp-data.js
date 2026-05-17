@@ -695,3 +695,75 @@ window.CAMP_DATA.NPCS = [
 			dialog: ["I can teach your partner special skills! Come talk to me."],
 		},
 	];
+
+// ── BERRY_TYPES ────────────────────────────────────────────────────────
+window.CAMP_DATA.BERRY_TYPES = {
+		pecha:  { label: 'Pecha Berry',  icoKey: 'berry', growMs: 30000,  friendship: 20, sellPrice: 10, color: '#ffaacc' },
+		oran:   { label: 'Oran Berry',   icoKey: 'berry', growMs: 90000,  friendship: 35, sellPrice: 18, color: '#6688ff' },
+		sitrus: { label: 'Sitrus Berry', icoKey: 'berry', growMs: 180000, friendship: 50, sellPrice: 30, color: '#ffdd44' },
+	};
+
+// ── MARKET_NPCS ────────────────────────────────────────────────────────
+window.CAMP_DATA.MARKET_NPCS = [
+		{
+			key: 'm-pikachu', species: 'youngster', r: 7, c: 7,
+			label: 'Shop', shopKind: 'general',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: [
+				"Seeds and berries at the trainer's mart.",
+				"Berry prices looking good today!",
+				"Come see what's in stock!",
+			],
+		},
+		{
+			key: 'm-bulbasaur', species: 'camper', r: 7, c: 22,
+			label: 'Shop', shopKind: 'berries',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: [
+				"Fresh-picked berries straight from my patch.",
+				"The soil looks extra fertile today — good planting weather!",
+				"Try an Oran Seed for a bigger friendship boost!",
+			],
+		},
+		{
+			key: 'm-vaporeon', species: 'lady', r: 14, c: 7,
+			label: 'Shop', shopKind: 'cosmetics',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: "Wallpapers and accents to spruce up your camp.",
+		},
+		{
+			key: 'm-umbreon', species: 'gentleman', r: 14, c: 22,
+			label: 'Shop', shopKind: 'stones',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: "Evolution stones, if you've got the tokens.",
+		},
+		{
+			key: 'm-espeon', species: 'old-lady', r: 5, c: 34,
+			label: 'Heal', shopKind: 'pokecenter',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: "Welcome to the Pokémon Center. We restore your Pokémon to full health — free of charge!",
+		},
+		{
+			key: 'm-jolteon', species: 'scientist', r: 5, c: 43,
+			label: 'Café', shopKind: 'cafe',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: "Welcome to my café — grab something energizing before your next quiz!",
+		},
+		{
+			key: 'm-contest', species: 'cooltrainer-f', r: 14, c: 18,
+			label: 'Contest', shopKind: null, kind: 'contest',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: ['Welcome to the Contest Hall! Show off your partner\'s talents!', 'Ribbons are forever — come compete!'],
+		},
+	];
+
+// ── SHINY_POOL ────────────────────────────────────────────────────────
+window.CAMP_DATA.SHINY_POOL = [
+		'Bulbasaur','Charmander','Squirtle','Pikachu','Eevee','Snorlax','Gengar',
+		'Mewtwo','Mew','Lapras','Vaporeon','Jolteon','Flareon','Umbreon','Espeon',
+		'Glaceon','Leafeon','Sylveon','Dragonite','Gyarados','Lucario','Garchomp',
+		'Togekiss','Gardevoir','Alakazam','Machamp','Golem','Arcanine','Ninetales',
+		'Rapidash','Slowbro','Magneton','Clefable','Chansey','Scyther','Electabuzz',
+		'Magmar','Pinsir','Tauros','Ditto','Porygon','Aerodactyl','Articuno',
+		'Zapdos','Moltres','Dratini','Dragonair','Kabuto',
+	];
