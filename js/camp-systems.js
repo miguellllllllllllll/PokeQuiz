@@ -345,4 +345,221 @@
 		})();
 	window.CAMP_SYSTEMS.PokeEncyclopedia = PokeEncyclopedia;
 
+	// Additional CAMP_DATA refs used by FurnitureSprites
+	const SPRITE_DEFS       = (window.CAMP_DATA || {}).SPRITE_DEFS       || {};
+	const ROOM_ITEMS        = (window.CAMP_DATA || {}).ROOM_ITEMS        || {};
+	const HOUSE_ITEMS       = (window.CAMP_DATA || {}).HOUSE_ITEMS       || {};
+	const FURNITURE_DESIGNS = (window.CAMP_DATA || {}).FURNITURE_DESIGNS || {};
+
+
+	// ── FurnitureSprites ────────────────────────────────────────────────────────
+		const FurnitureSprites = (() => {
+			const cache = {};
+	
+			// Eagerly load both sprite sheets so they're ready by the time the user
+			// enters their house. The images are tiny (<15 KB total).
+			const sheets = [null, null, null]; // 1-indexed
+			function loadSheets() {
+				[1, 2].forEach((n) => {
+					const img = new Image();
+					img.src = `Pictures/furniture_sheet${n === 1 ? '' : n}.png`;
+					sheets[n] = img;
+				});
+			}
+			loadSheets();
+	
+			function drawFromSheet(ctx, def) {
+				const img = sheets[def.s];
+				if (!img || !img.complete || img.naturalWidth === 0) return false;
+				ctx.imageSmoothingEnabled = false;
+				ctx.drawImage(img, def.x, def.y, def.w, def.h, 0, 0, 16, 16);
+				return true;
+			}
+	
+			function get(key) {
+				if (cache[key]) return cache[key];
+				const canvas = document.createElement('canvas');
+				canvas.width = 16; canvas.height = 16;
+				const ctx = canvas.getContext('2d');
+				ctx.imageSmoothingEnabled = false;
+	
+				// Try sprite sheet first.
+				const def = SPRITE_DEFS[key];
+				if (def && drawFromSheet(ctx, def)) {
+					cache[key] = canvas;
+					return canvas;
+				}
+	
+				// Fall back to canvas pixel-art design.
+				const designKey = key === 'plant' ? 'floorplant' : key;
+				const d = FURNITURE_DESIGNS[designKey] || FURNITURE_DESIGNS[key];
+				if (!d) return null;
+				for (let r = 0; r < d.rows.length; r++) {
+					const row = d.rows[r];
+					for (let c = 0; c < row.length; c++) {
+						const ch = row[c];
+						if (ch === '.' || ch === ' ') continue;
+						const color = d.palette[ch];
+						if (!color) continue;
+						ctx.fillStyle = color;
+						ctx.fillRect(c, r, 1, 1);
+					}
+				}
+				cache[key] = canvas;
+				return canvas;
+			}
+	
+			// Invalidate cache on sheet load so subsequent get() calls use the real art.
+			[1, 2].forEach((n) => {
+				sheets[n] && (sheets[n].onload = () => {
+					Object.keys(cache).forEach((k) => {
+						if (SPRITE_DEFS[k]?.s === n) delete cache[k];
+					});
+				});
+			});
+	
+			function makeIcon(key, sizePx) {
+				const src = get(key);
+				if (!src) {
+					const span = document.createElement('span');
+					span.innerHTML = (() => { const _it = ROOM_ITEMS[key] || HOUSE_ITEMS[key] || {}; return _it.icoKey ? ico(ICO[_it.icoKey]||_it.icoKey) : ''; })();
+					span.style.fontSize = (sizePx || 22) + 'px';
+					return span;
+				}
+				const img = document.createElement('canvas');
+				img.width = 16; img.height = 16;
+				const ctx = img.getContext('2d');
+				ctx.imageSmoothingEnabled = false;
+				ctx.drawImage(src, 0, 0);
+				img.style.width = (sizePx || 32) + 'px';
+				img.style.height = (sizePx || 32) + 'px';
+				img.style.imageRendering = 'pixelated';
+				img.style.display = 'block';
+				return img;
+			}
+	
+			// Re-render icons after sheet loads (editor may already be open).
+			function refreshIcons() {
+				document.querySelectorAll('[data-furniture-key]').forEach((el) => {
+					const key = el.dataset.furnitureKey;
+					const fresh = get(key);
+					if (fresh && el.tagName === 'CANVAS') {
+						el.getContext('2d').drawImage(fresh, 0, 0);
+					}
+				});
+			}
+			[1, 2].forEach((n) => {
+				if (sheets[n]) sheets[n].addEventListener('load', refreshIcons);
+			});
+	
+			return { get, makeIcon };
+		})();
+	window.CAMP_SYSTEMS.FurnitureSprites = FurnitureSprites;
+
+	// ── Music ────────────────────────────────────────────────────────
+		const Music = (() => {
+			const BASE = 'https://archive.org/download/pkmn-frlg-soundtrack/Disc%201/';
+			const URLS = {
+				camp:     BASE + '04%20-%20Pallet%20Town.mp3',
+				house:    BASE + '16%20-%20Pok%C3%A9mon%20Center.mp3',
+				upstairs: BASE + '12%20-%20Route%201.mp3',
+			};
+	
+			let current = null;   // the active HTMLAudioElement
+			let area    = null;
+			let on      = true;
+	
+			// Battle stays synthesised — fast, no network latency on encounter.
+			let musicCtx = null;
+			let battleOscs = [];
+			let battleTimer = null;
+			const BATTLE_NOTES = [440,.09,494,.09,523,.09,587,.09,523,.09,440,.18,415,.09,440,.18];
+	
+			function ensureCtx() {
+				try {
+					if (!musicCtx) musicCtx = new (window.AudioContext || window.webkitAudioContext)();
+					if (musicCtx.state === 'suspended') musicCtx.resume();
+				} catch(e) { musicCtx = null; }
+				return musicCtx;
+			}
+	
+			function playBattleLoop() {
+				if (!on || area !== 'battle') return;
+				const c = ensureCtx();
+				if (!c) return;
+				let t = c.currentTime, totalDur = 0;
+				const notes = BATTLE_NOTES;
+				for (let i = 0; i < notes.length; i += 2) {
+					const freq = notes[i], dur = notes[i+1];
+					const osc = c.createOscillator(), g = c.createGain();
+					osc.connect(g).connect(c.destination);
+					osc.frequency.value = freq; osc.type = 'square';
+					g.gain.setValueAtTime(0.020, t);
+					g.gain.exponentialRampToValueAtTime(0.0001, t + dur - 0.01);
+					osc.start(t); osc.stop(t + dur);
+					battleOscs.push(osc);
+					t += dur; totalDur += dur;
+				}
+				battleTimer = setTimeout(() => {
+					battleOscs = battleOscs.filter(o => { try { o.stop(0); } catch {} return false; });
+					playBattleLoop();
+				}, (totalDur - 0.05) * 1000);
+			}
+	
+			function stopBattle() {
+				if (battleTimer) { clearTimeout(battleTimer); battleTimer = null; }
+				battleOscs.forEach(o => { try { o.stop(0); } catch {} });
+				battleOscs = [];
+			}
+	
+			// Preload all tracks immediately so there's no network lag when start() fires.
+			const _pool = {};
+			Object.entries(URLS).forEach(([key, url]) => {
+				const a = new Audio();
+				a.preload = 'auto';
+				a.loop    = true;
+				a.volume  = 0.45;
+				a.src     = url;   // setting src starts buffering
+				_pool[key] = a;
+			});
+	
+			function stopAudio() {
+				if (current) {
+					current.pause();
+					current.currentTime = 0;
+					current = null;
+				}
+			}
+	
+			function start(key) {
+				if (!on) return;
+				if (area === key) return;
+				stop();
+				area = key;
+				if (key === 'battle') { playBattleLoop(); return; }
+				const audio = _pool[key];
+				if (!audio) return;
+				audio.currentTime = 0;
+				audio.play().catch(() => {});   // browsers may block until a gesture
+				current = audio;
+			}
+	
+			function stop() {
+				area = null;
+				stopAudio();
+				stopBattle();
+			}
+	
+			function setEnabled(flag) {
+				on = !!flag;
+				if (!on) { stop(); return; }
+				try { localStorage.setItem('pokequiz_music_on', flag ? '1' : '0'); } catch {}
+			}
+			function isEnabled() { return on; }
+			try { const saved = localStorage.getItem('pokequiz_music_on'); if (saved === '0') on = false; } catch {}
+	
+			return { start, stop, setEnabled, isEnabled };
+		})();
+	window.CAMP_SYSTEMS.Music = Music;
+
 })();

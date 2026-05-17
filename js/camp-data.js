@@ -767,3 +767,53 @@ window.CAMP_DATA.SHINY_POOL = [
 		'Magmar','Pinsir','Tauros','Ditto','Porygon','Aerodactyl','Articuno',
 		'Zapdos','Moltres','Dratini','Dragonair','Kabuto',
 	];
+
+// ── SCALE_MULT ────────────────────────────────────────────────────────
+window.CAMP_DATA.SCALE_MULT = { normal: 1.0, small: 0.68, large: 1.38 };
+
+// ── COSM_PRICE ────────────────────────────────────────────────────────
+window.CAMP_DATA.COSM_PRICE = { wallpaper: 15, accent: 20, scale: 10, flowers: 25, lantern: 30 };
+
+// ── SPRITE_DEFS ────────────────────────────────────────────────────────
+window.CAMP_DATA.SPRITE_DEFS = {
+		// ── Sheet 2 (each sprite is already 16×16) ──────────────────────────────
+		bed:          { s:2, x:0,   y:0,  w:16, h:16 },
+		bookcase:     { s:2, x:48,  y:0,  w:16, h:16 },
+		dresser:      { s:2, x:64,  y:0,  w:16, h:16 },
+		stool:        { s:2, x:80,  y:0,  w:16, h:16 },
+		desk:         { s:2, x:96,  y:0,  w:16, h:16 },
+		sidetable:    { s:2, x:112, y:0,  w:16, h:16 },
+		tv:           { s:2, x:0,   y:16, w:16, h:16 },
+		nightstand:   { s:2, x:48,  y:16, w:16, h:16 },
+		plant:        { s:2, x:64,  y:16, w:16, h:16 },
+		floorplant:   { s:2, x:64,  y:16, w:16, h:16 },
+		flowerplant:  { s:2, x:80,  y:16, w:16, h:16 },
+		trophy:       { s:2, x:112, y:16, w:16, h:16 },
+		armchair:     { s:2, x:16,  y:32, w:16, h:16 },
+		couch:        { s:2, x:32,  y:32, w:16, h:16 },
+		barrel:       { s:2, x:64,  y:32, w:16, h:16 },
+		gaming:       { s:2, x:96,  y:32, w:16, h:16 },
+		kettle:       { s:2, x:0,   y:48, w:16, h:16 },
+		wardrobe:     { s:2, x:64,  y:48, w:16, h:16 },
+		chest:        { s:2, x:0,   y:32, w:16, h:16 },
+		// ── Sheet 1 (multi-tile sprites scaled to 16×16) ─────────────────────────
+		// Curtains: cols 8-9, each set is 3 rows tall (verified via pixel scan)
+		curtain:      { s:1, x:128, y:80,  w:32, h:48 },
+		curtain_green:{ s:1, x:128, y:128, w:32, h:48 },
+		curtain_blue: { s:1, x:128, y:176, w:32, h:48 },
+		// Candle at col 15, row 10 (verified)
+		lamp:         { s:1, x:240, y:160, w:16, h:16 },
+		floorlamp:    { s:1, x:240, y:160, w:16, h:16 },
+		// Vase/pot at col 13, row 14
+		vase:         { s:1, x:208, y:224, w:16, h:16 },
+	};
+
+// ── SIGN_MESSAGES_MARKET ────────────────────────────────────────────────────────
+window.CAMP_DATA.SIGN_MESSAGES_MARKET = {
+		'9,7':   "Pikachu's Mart — seeds, basics, and berry trades.",
+		'9,22':  "Berry Stand — sells berries by the bunch.",
+		'16,7':  "Boutique — wallpapers and camp accent colors.",
+		'16,22': "Stone Vendor — evolution stones for the worthy.",
+		'10,31': "Pokémon Center — free healing and a complimentary berry!",
+		'12,39': "Jolteon's Café — energizing beverages and treats!",
+	};
