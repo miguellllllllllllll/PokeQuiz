@@ -6,8 +6,22 @@
 	<title>Leaderboard &middot; PokeQuiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="The PokeQuiz global leaderboard — top trainers across every game mode.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Leaderboard — PokeQuiz">
+	<meta property="og:description" content="The PokeQuiz global leaderboard — top trainers across every game mode.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/ranking">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Leaderboard — PokeQuiz">
+	<meta name="twitter:description" content="The PokeQuiz global leaderboard — top trainers across every game mode.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
 	<link rel="manifest" href="manifest.json">
 	<meta name="theme-color" content="#ee1515">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/ranking.css">
 </head>
@@ -111,14 +125,13 @@
 
 			<div id="modeTabs" class="lb-mode-tabs" hidden></div>
 
-			<div class="leaderboard-wrap">
+			<div class="leaderboard-wrap" id="lbPanel" role="tabpanel" aria-label="Leaderboard scores">
 				<table class="leaderboard" id="leaderboard">
 					<thead>
 						<tr>
 							<th class="col-rank">#</th>
 							<th class="col-name">Trainer</th>
 							<th class="col-score" id="colScoreLabel">Score</th>
-							<th class="col-mode">Mode</th>
 							<th class="col-date">Date</th>
 						</tr>
 					</thead>
@@ -142,90 +155,13 @@
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
+	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
+	<script src="js/games-config.js"></script>
 	<script>
 		(function() {
-			const GAMES = {
-				quiz: {
-					label: 'Trivia Quiz', scoreLabel: 'Score', defaultTotal: 21, timeBased: false,
-					modes: null,
-				},
-				silhouette: {
-					label: "Who's That Pokémon?", scoreLabel: 'Streak', timeBased: false,
-					modes: [
-						{ key: 'casual',   label: 'Casual' },
-						{ key: 'standard', label: 'Standard' },
-						{ key: 'hardcore', label: 'Hardcore' },
-					],
-				},
-				cry: {
-					label: 'Cry Quiz', scoreLabel: 'Streak', timeBased: false,
-					modes: [
-						{ key: 'casual',   label: 'Casual' },
-						{ key: 'standard', label: 'Standard' },
-						{ key: 'hardcore', label: 'Hardcore' },
-					],
-				},
-				higherlower: {
-					label: 'Higher or Lower', scoreLabel: 'Streak', timeBased: false,
-					modes: [
-						{ key: 'weight', label: 'Weight' },
-						{ key: 'height', label: 'Height' },
-						{ key: 'hp',     label: 'HP' },
-						{ key: 'atk',    label: 'Attack' },
-						{ key: 'spd',    label: 'Speed' },
-						{ key: 'random', label: 'Random' },
-					],
-				},
-				memory: {
-					label: 'Memory Match', scoreLabel: 'Time', timeBased: true,
-					modes: [
-						{ key: '6',  label: 'Easy (6 pairs)' },
-						{ key: '8',  label: 'Medium (8 pairs)' },
-						{ key: '12', label: 'Hard (12 pairs)' },
-					],
-				},
-				zoom: {
-					label: 'Zoomed-In', scoreLabel: 'Streak', timeBased: false,
-					modes: [
-						{ key: 'casual',   label: 'Casual' },
-						{ key: 'standard', label: 'Standard' },
-						{ key: 'hardcore', label: 'Hardcore' },
-					],
-				},
-				dex: {
-					label: 'Pokédex Entry', scoreLabel: 'Streak', timeBased: false,
-					modes: [
-						{ key: 'casual',   label: 'Casual' },
-						{ key: 'standard', label: 'Standard' },
-						{ key: 'hardcore', label: 'Hardcore' },
-					],
-				},
-				type: {
-					label: 'Type Chart', scoreLabel: 'Streak', timeBased: false,
-					modes: [
-						{ key: 'mono',   label: 'Mono-type' },
-						{ key: 'dual',   label: 'Dual-type' },
-						{ key: 'random', label: 'Random' },
-					],
-				},
-				stats: {
-					label: 'Stat Spread', scoreLabel: 'Streak', timeBased: false,
-					modes: [
-						{ key: 'easy',   label: 'Easy (4 choices)' },
-						{ key: 'medium', label: 'Medium (6 choices)' },
-						{ key: 'hard',   label: 'Hard (8 choices)' },
-					],
-				},
-				sprint: {
-					label: 'Gen Sprint', scoreLabel: 'Caught', timeBased: false,
-					modes: [
-						{ key: '30',  label: '30 seconds' },
-						{ key: '60',  label: '60 seconds' },
-						{ key: '120', label: '2 minutes' },
-					],
-				},
-			};
+			// Canonical leaderboard game config — see js/games-config.js.
+			const GAMES = window.POKEQUIZ_GAMES;
 
 			const tabsEl = document.querySelectorAll('.lb-tab');
 			const modeTabsEl = document.getElementById('modeTabs');
@@ -321,8 +257,6 @@
 					} else {
 						scoreDisplay = `<strong>${e.score}</strong>`;
 					}
-					// Mode column is always hidden — every board is mode-specific now.
-					const modeDisplay = '';
 					const isMe = myName && e.name === myName;
 					const nameDisplay = isMe
 						? `${escapeHtml(e.name)} ${eeveeEmoji ? eeveeEmoji + ' ' : ''}<span class="lb-you-badge">You</span>`
@@ -332,7 +266,6 @@
 							<td class="col-rank">${medal}</td>
 							<td class="col-name">${nameDisplay}</td>
 							<td class="col-score">${scoreDisplay}</td>
-							<td class="col-mode">${modeDisplay}</td>
 							<td class="col-date">${formatDate(e.at)}</td>
 						</tr>
 					`;
@@ -411,12 +344,32 @@
 					const active = t.dataset.game === game;
 					t.classList.toggle('is-active', active);
 					t.setAttribute('aria-selected', active ? 'true' : 'false');
+					// Roving tabindex: only the selected tab is in the tab order.
+					t.tabIndex = active ? 0 : -1;
 				});
 				buildModeTabs(game);
 				await loadAndRender(game, activeMode);
 			}
 
-			tabsEl.forEach((t) => t.addEventListener('click', () => selectGame(t.dataset.game)));
+			// Wire game tabs as a proper ARIA tablist: click + roving
+			// arrow-key navigation, each tab controlling the shared panel.
+			tabsEl.forEach((t, i) => {
+				t.id = 'lbtab-' + t.dataset.game;
+				t.setAttribute('aria-controls', 'lbPanel');
+				t.addEventListener('click', () => selectGame(t.dataset.game));
+				t.addEventListener('keydown', (e) => {
+					let next = -1;
+					if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % tabsEl.length;
+					else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + tabsEl.length) % tabsEl.length;
+					else if (e.key === 'Home') next = 0;
+					else if (e.key === 'End') next = tabsEl.length - 1;
+					else return;
+					e.preventDefault();
+					const target = tabsEl[next];
+					target.focus();
+					selectGame(target.dataset.game);
+				});
+			});
 
 			// Initial load
 			selectGame('quiz');

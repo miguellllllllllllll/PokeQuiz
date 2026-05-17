@@ -6,8 +6,22 @@
 	<title id="pageTitle">PokeQuiz &middot; Quiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Answer Pokémon trivia questions and climb the PokeQuiz leaderboard.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="PokeQuiz Trivia Quiz">
+	<meta property="og:description" content="Answer Pokémon trivia questions and climb the PokeQuiz leaderboard.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/quiz">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="PokeQuiz Trivia Quiz">
+	<meta name="twitter:description" content="Answer Pokémon trivia questions and climb the PokeQuiz leaderboard.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
 	<link rel="manifest" href="manifest.json">
 	<meta name="theme-color" content="#ee1515">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/quiz.css">
 </head>
@@ -55,6 +69,9 @@
 			<div class="quiz-bg" aria-hidden="true">
 				<img class="quiz-pokeball" src="Pictures/pokeball.png" alt="">
 			</div>
+			<!-- Challenge banner (Feature 5) -->
+			<div id="challengeBanner" class="challenge-banner" hidden></div>
+
 			<div class="quiz-meta">
 				<div class="player-pill" id="playerPill">
 					<img src="Pictures/pokeball.png" alt="" class="player-icon">
@@ -64,6 +81,8 @@
 					<span class="quiz-title-name" id="quizTitleName">Master Quiz</span>
 					<span class="quiz-title-diff" id="quizTitleDiff">Master</span>
 				</div>
+				<!-- Mode badges -->
+				<div id="modeBadges" class="mode-badges"></div>
 				<div class="progress">
 					<span id="progressText">1 / 21</span>
 					<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -72,6 +91,11 @@
 
 			<div class="quiz-stage">
 				<div id="quiz" class="quiz-slides" aria-live="polite"></div>
+				<!-- Time Attack timer bar (Feature 2) -->
+				<div id="timerWrap" class="timer-wrap" hidden>
+					<div class="timer-bar-track"><div class="timer-bar-fill" id="timerBarFill"></div></div>
+					<span class="timer-seconds" id="timerSeconds">20</span>
+				</div>
 			</div>
 
 			<div class="quiz-controls">
@@ -86,6 +110,7 @@
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
+	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
 	<script src="js/quizzes.js"></script>
 	<script>
@@ -122,6 +147,26 @@
 			document.getElementById('pageTitle').textContent = `PokeQuiz · ${quizDef.name}`;
 			const myQuestions = quizDef.questions;
 
+			// --- Feature 1: Nuzlocke mode ---
+			const isNuzlocke = getParameterByName('nuzlocke') === '1';
+			// --- Feature 2: Time Attack mode ---
+			const isTimed = getParameterByName('timed') === '1';
+			// --- Feature 5: Trainer Rivalries ---
+			const challengerName = getParameterByName('challenge') || '';
+			const challengeTarget = parseInt(getParameterByName('target') || '0', 10);
+
+			// Mode badges
+			const modeBadgesEl = document.getElementById('modeBadges');
+			if (isNuzlocke) modeBadgesEl.innerHTML += `<span class="mode-badge mode-badge-nuzlocke">&#9760;&#65039; NUZLOCKE</span>`;
+			if (isTimed)   modeBadgesEl.innerHTML += `<span class="mode-badge mode-badge-timed">&#9889; Time Attack</span>`;
+
+			// Challenge banner (Feature 5)
+			if (challengerName && challengeTarget > 0) {
+				const banner = document.getElementById('challengeBanner');
+				banner.hidden = false;
+				banner.innerHTML = `&#9876;&#65039; <strong>${escapeHtml(challengerName)}</strong> scored <strong>${challengeTarget}/${myQuestions.length}</strong> — can you beat them?`;
+			}
+
 			const quizContainer = document.getElementById('quiz');
 			const resultsContainer = document.getElementById('results');
 			const previousButton = document.getElementById('previous');
@@ -129,6 +174,15 @@
 			const submitButton = document.getElementById('submit');
 			const progressText = document.getElementById('progressText');
 			const progressFill = document.getElementById('progressFill');
+			const timerWrap = document.getElementById('timerWrap');
+			const timerBarFill = document.getElementById('timerBarFill');
+			const timerSeconds = document.getElementById('timerSeconds');
+
+			// Time Attack state
+			let timerInterval = null;
+			let timeRemaining = 20;
+			let questionStartTime = 0;
+			let timeMultipliers = []; // one per question
 
 			function buildQuiz() {
 				const out = myQuestions.map((q, qi) => {
@@ -155,12 +209,60 @@
 				progressFill.style.width = `${((currentSlide + 1) / myQuestions.length) * 100}%`;
 			}
 
+			// --- Timer logic (Feature 2) ---
+			function startTimer() {
+				if (!isTimed) return;
+				stopTimer();
+				timeRemaining = 20;
+				questionStartTime = Date.now();
+				timerWrap.hidden = false;
+				timerBarFill.style.width = '100%';
+				timerBarFill.style.transition = 'none';
+				timerSeconds.textContent = '20';
+
+				// Animate the bar
+				requestAnimationFrame(() => {
+					timerBarFill.style.transition = 'width 20s linear';
+					timerBarFill.style.width = '0%';
+				});
+
+				timerInterval = setInterval(() => {
+					timeRemaining--;
+					timerSeconds.textContent = String(timeRemaining);
+					if (timeRemaining <= 0) {
+						stopTimer();
+						// Record multiplier: timed out = 1x (full time used)
+						timeMultipliers[currentSlide] = 1.0;
+						// Auto-advance (counts as wrong)
+						if (currentSlide < slides.length - 1) {
+							showSlide(currentSlide + 1);
+						} else {
+							showResults();
+						}
+					}
+				}, 1000);
+			}
+
+			function stopTimer() {
+				if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+			}
+
+			function recordTimedAnswer() {
+				if (!isTimed) return;
+				const elapsed = (Date.now() - questionStartTime) / 1000;
+				let mult = 1.0;
+				if (elapsed < 5) mult = 2.0;
+				else if (elapsed < 10) mult = 1.5;
+				timeMultipliers[currentSlide] = mult;
+				stopTimer();
+			}
+
 			function showSlide(n) {
 				slides[currentSlide].classList.remove('active-slide');
 				slides[n].classList.add('active-slide');
 				currentSlide = n;
 
-				previousButton.style.display = currentSlide === 0 ? 'none' : 'inline-flex';
+				previousButton.style.display = (currentSlide === 0 || isNuzlocke) ? 'none' : 'inline-flex';
 				if (currentSlide === slides.length - 1) {
 					nextButton.style.display = 'none';
 					submitButton.style.display = 'inline-flex';
@@ -170,10 +272,10 @@
 				}
 				updateProgress();
 				quizContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-				// Move focus to the new question so screen-reader and keyboard
-				// users land on the fresh content after navigating.
 				const heading = slides[n].querySelector('.question');
 				if (heading) heading.focus({ preventScroll: true });
+
+				startTimer();
 			}
 
 			function grantQuizTokens(pct) {
@@ -191,6 +293,16 @@
 				return tokens;
 			}
 
+			function grantTokensDirect(amount) {
+				try {
+					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+					if (typeof inv.tokens !== 'number') inv.tokens = 0;
+					inv.tokens += amount;
+					localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+					return inv.tokens;
+				} catch { return 0; }
+			}
+
 			function getRank(pct) {
 				if (pct === 100) return { label: 'Perfect!', emoji: '🏆', color: '#f59e0b' };
 				if (pct >= 80)  return { label: 'Champion', emoji: '⭐', color: '#6366f1' };
@@ -199,7 +311,34 @@
 				return { label: 'Try Again', emoji: '💪', color: '#ef4444' };
 			}
 
+			// Feature 5: copy challenge link
+			window.copyChallengeLink = function(numCorrect) {
+				const url = `${location.origin}/quiz.html?quiz=${quizId}&challenge=${encodeURIComponent(playerName)}&target=${numCorrect}`;
+				navigator.clipboard.writeText(url).then(() => {
+					showToast('Challenge link copied! Share it with a friend.');
+				}).catch(() => {
+					showToast('Could not copy — try manually: ' + url);
+				});
+			};
+
+			function showToast(msg) {
+				let t = document.getElementById('pqToast');
+				if (!t) {
+					t = document.createElement('div');
+					t.id = 'pqToast';
+					t.className = 'pq-toast';
+					document.body.appendChild(t);
+				}
+				t.textContent = msg;
+				t.classList.add('pq-toast-show');
+				clearTimeout(t._timer);
+				t._timer = setTimeout(() => t.classList.remove('pq-toast-show'), 3200);
+			}
+
 			function showResults() {
+				stopTimer();
+				if (isTimed) timerWrap.hidden = true;
+
 				const answerContainers = quizContainer.querySelectorAll('.answers');
 				let numCorrect = 0;
 
@@ -219,17 +358,56 @@
 				});
 
 				const pct = Math.round((numCorrect / myQuestions.length) * 100);
-				const tokensEarned = grantQuizTokens(pct);
+
+				// Feature 2: Time Attack token calc with multipliers
+				let tokensEarned;
+				if (isTimed) {
+					let baseTokens = 0;
+					myQuestions.forEach((q, qi) => {
+						const container = answerContainers[qi];
+						const selected = container.querySelector(`input[name=question${qi}]:checked`);
+						const correct = selected ? selected.value === q.correctAnswer : false;
+						if (correct) {
+							const mult = timeMultipliers[qi] || 1.0;
+							baseTokens += Math.round(1 * mult); // 1 base token per correct, scaled
+						}
+					});
+					// Scale to normal quiz token range for balance: multiply by 5
+					baseTokens = Math.round(baseTokens * 5 / myQuestions.length * (pct === 100 ? 15 : pct >= 80 ? 12 : pct >= 60 ? 10 : pct >= 40 ? 7 : 5));
+					tokensEarned = Math.max(1, baseTokens);
+					const totalTokens = grantTokensDirect(tokensEarned);
+					var totalTokensDisplay = totalTokens;
+				} else {
+					tokensEarned = grantQuizTokens(pct);
+					let totalTokens2 = 0;
+					try { const inv2 = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}'); totalTokens2 = inv2.tokens || 0; } catch {}
+					var totalTokensDisplay = totalTokens2;
+				}
+
 				const rank = getRank(pct);
 
-				let totalTokens = 0;
-				try {
-					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
-					totalTokens = typeof inv.tokens === 'number' ? inv.tokens : 0;
-				} catch {}
+				// Challenge result message (Feature 5)
+				let challengeResultHtml = '';
+				if (challengerName && challengeTarget > 0) {
+					if (numCorrect > challengeTarget) {
+						challengeResultHtml = `<div class="challenge-result challenge-win">&#127942; You beat ${escapeHtml(challengerName)}'s score!</div>`;
+					} else {
+						challengeResultHtml = `<div class="challenge-result challenge-lose">Keep training! ${escapeHtml(challengerName)} scored ${challengeTarget}.</div>`;
+					}
+				}
+
+				// Time attack multiplier summary
+				let timedSummaryHtml = '';
+				if (isTimed) {
+					const avg = timeMultipliers.filter(Boolean).length
+						? (timeMultipliers.filter(Boolean).reduce((a,b)=>a+b,0) / timeMultipliers.filter(Boolean).length).toFixed(2)
+						: '1.00';
+					timedSummaryHtml = `<div class="timed-summary">&#9889; Avg multiplier: <strong>${avg}x</strong></div>`;
+				}
 
 				resultsContainer.hidden = false;
 				resultsContainer.innerHTML = `
+					${challengeResultHtml}
 					<div class="results-rank" style="color:${rank.color}">
 						<span class="results-rank-emoji">${rank.emoji}</span>
 						<span class="results-rank-label">${rank.label}</span>
@@ -240,15 +418,17 @@
 						<span class="score-denom"> / ${myQuestions.length}</span>
 					</div>
 					<div class="score-pct">${pct}% Correct</div>
+					${timedSummaryHtml}
 					<div class="results-token-grant">
-						<span class="rtg-icon">💰</span>
-						<span class="rtg-text">+${tokensEarned} Tokens earned &mdash; Balance: ${totalTokens}</span>
+						<span class="rtg-icon">&#128176;</span>
+						<span class="rtg-text">+${tokensEarned} Tokens earned &mdash; Balance: ${totalTokensDisplay}</span>
 					</div>
 					<p class="results-msg" id="resultsMsg" aria-live="polite">Nice run, ${escapeHtml(playerName)}! Saving your score&hellip;</p>
 					<div class="results-actions">
 						<a href="ranking.html" class="btn">View Leaderboard &rarr;</a>
-						<a href="camp.html" class="btn btn-secondary">Spend Tokens at Camp 🏕️</a>
+						<a href="camp.html" class="btn btn-secondary">Spend Tokens at Camp &#127957;&#65039;</a>
 						<a href="quizzes.html" class="btn btn-ghost">Pick Another Quiz</a>
+						<button class="btn btn-secondary" onclick="copyChallengeLink(${numCorrect})">&#9876;&#65039; Challenge a Friend</button>
 					</div>
 				`;
 
@@ -259,6 +439,58 @@
 				submitButton.style.display = 'none';
 				previousButton.style.display = 'none';
 				resultsContainer.scrollIntoView({ behavior: 'smooth' });
+			}
+
+			// Feature 1: Nuzlocke — check answer immediately after picking
+			function handleNuzlockeAnswer(qi) {
+				const container = quizContainer.querySelectorAll('.answers')[qi];
+				const selected = container.querySelector(`input[name=question${qi}]:checked`);
+				const userAnswer = selected ? selected.value : null;
+				const correct = myQuestions[qi].correctAnswer;
+
+				if (userAnswer && userAnswer !== correct) {
+					// Wrong — run over
+					stopTimer();
+					showNuzlockeRunOver(qi);
+				}
+			}
+
+			function showNuzlockeRunOver(qi) {
+				const survived = qi; // 0-indexed question number reached
+				const tokensEarned = survived * 3;
+				const totalTokens = grantTokensDirect(tokensEarned);
+
+				// Hide quiz controls
+				submitButton.style.display = 'none';
+				nextButton.style.display = 'none';
+				previousButton.style.display = 'none';
+				if (isTimed) timerWrap.hidden = true;
+
+				resultsContainer.hidden = false;
+				resultsContainer.className = 'results results-nuzlocke';
+				resultsContainer.innerHTML = `
+					<div class="nuzlocke-skull">&#128128;</div>
+					<h2 class="nuzlocke-title">Run Over!</h2>
+					<div class="nuzlocke-survived">You survived<br><span class="nuzlocke-num">${survived}</span><br>question${survived !== 1 ? 's' : ''}</div>
+					<div class="results-token-grant">
+						<span class="rtg-icon">&#128176;</span>
+						<span class="rtg-text">+${tokensEarned} Tokens (3 per question) &mdash; Balance: ${totalTokens}</span>
+					</div>
+					<div class="results-actions" style="margin-top:16px;">
+						<a href="quizzes.html" class="btn">Try Again</a>
+						<a href="ranking.html" class="btn btn-secondary">Leaderboard</a>
+					</div>
+				`;
+				resultsContainer.scrollIntoView({ behavior: 'smooth' });
+
+				// Post to leaderboard
+				let playerId = '';
+				try { playerId = localStorage.getItem('pokequiz_player_id') || ''; } catch {}
+				fetch('/api/leaderboard', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ game: 'nuzlocke', name: playerName, score: survived, total: myQuestions.length, playerId }),
+				}).catch(() => {});
 			}
 
 			function saveToLeaderboard(name, score) {
@@ -306,8 +538,27 @@
 			let currentSlide = 0;
 			showSlide(0);
 
+			// Nuzlocke: listen for radio changes
+			if (isNuzlocke) {
+				quizContainer.addEventListener('change', (e) => {
+					if (e.target.type === 'radio') {
+						const qi = parseInt(e.target.name.replace('question', ''), 10);
+						handleNuzlockeAnswer(qi);
+					}
+				});
+			}
+
+			// Time Attack: record answer time on radio change
+			if (isTimed) {
+				quizContainer.addEventListener('change', (e) => {
+					if (e.target.type === 'radio') {
+						const qi = parseInt(e.target.name.replace('question', ''), 10);
+						if (qi === currentSlide) recordTimedAnswer();
+					}
+				});
+			}
+
 			submitButton.addEventListener('click', () => {
-				// Warn before submitting with unanswered questions.
 				let unanswered = 0;
 				myQuestions.forEach((q, qi) => {
 					if (!quizContainer.querySelector(`input[name=question${qi}]:checked`)) unanswered++;
@@ -322,7 +573,14 @@
 				showResults();
 			});
 			previousButton.addEventListener('click', () => showSlide(currentSlide - 1));
-			nextButton.addEventListener('click', () => showSlide(currentSlide + 1));
+			nextButton.addEventListener('click', () => {
+				if (isTimed) {
+					// If no answer recorded for current slide, record as 1x (full time)
+					if (timeMultipliers[currentSlide] === undefined) timeMultipliers[currentSlide] = 1.0;
+					stopTimer();
+				}
+				showSlide(currentSlide + 1);
+			});
 		})();
 	</script>
 </body>

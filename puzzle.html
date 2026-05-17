@@ -6,8 +6,22 @@
 	<title>Puzzles &middot; PokeQuiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Who's That Pokémon, cry quiz, memory match, and more Pokémon puzzles.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="PokeQuiz Puzzles">
+	<meta property="og:description" content="Who's That Pokémon, cry quiz, memory match, and more Pokémon puzzles.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/puzzle">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="PokeQuiz Puzzles">
+	<meta name="twitter:description" content="Who's That Pokémon, cry quiz, memory match, and more Pokémon puzzles.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
 	<link rel="manifest" href="manifest.json">
 	<meta name="theme-color" content="#ee1515">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/puzzle.css">
 	<link rel="stylesheet" href="css/puzzles.css">
@@ -311,6 +325,199 @@
 					</a>
 				</div>
 
+				<!-- ─── New Challenges ─────────────────────────────── -->
+				<div class="hub-section-divider">
+					<span>New Challenges</span>
+				</div>
+
+				<div class="games-grid">
+					<a class="game-card is-available" href="puzzle-connections.html" data-game="connections" style="--stagger:0">
+						<span class="game-badge">Daily</span>
+						<div class="game-icon">
+							<div class="pokeball pokeball-ultra" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="game-title">Pok&eacute;mon Connections</strong>
+						<span class="game-desc">Group 16 Pok&eacute;mon into 4 hidden categories. 4 strikes and it's over &mdash; puzzle resets every day.</span>
+						<div class="game-chips">
+							<span class="game-chip">🔗 Groups</span>
+							<span class="game-chip">4 Tiers</span>
+							<span class="game-chip">Daily Seed</span>
+							<span class="game-chip game-chip--reward">5–20 💰 per day</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="connections">
+								<span class="gb-label">Streak</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
+					</a>
+
+					<a class="game-card is-available" href="puzzle-wordle.html" data-game="wordle" style="--stagger:1">
+						<span class="game-badge">Daily</span>
+						<div class="game-icon">
+							<div class="pokeball pokeball-great" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="game-title">Pok&eacute;dle</strong>
+						<span class="game-desc">Guess the mystery Pok&eacute;mon in 6 tries. Gen, type, height and legendary hints after every guess.</span>
+						<div class="game-chips">
+							<span class="game-chip">🟩 Wordle-style</span>
+							<span class="game-chip">6 Guesses</span>
+							<span class="game-chip">Daily</span>
+							<span class="game-chip game-chip--reward">5–15 💰 per day</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="wordle">
+								<span class="gb-label">Streak</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
+					</a>
+
+					<a class="game-card is-available" href="puzzle-infinite.html" data-game="infinite" style="--stagger:2">
+						<span class="game-badge">Endless</span>
+						<div class="game-icon">
+							<div class="pokeball pokeball-classic" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+								<span class="pb-shine"></span>
+							</div>
+						</div>
+						<strong class="game-title">Infinite Quiz</strong>
+						<span class="game-desc">Endless trivia from all quiz banks. One wrong answer ends your run &mdash; how far can you go?</span>
+						<div class="game-chips">
+							<span class="game-chip">🔥 Streak</span>
+							<span class="game-chip">All Questions</span>
+							<span class="game-chip">Endless</span>
+							<span class="game-chip game-chip--reward">1 💰 per correct</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="infinite">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
+					</a>
+
+					<a class="game-card is-available" href="puzzle-spotlight.html" data-game="spotlight" style="--stagger:3">
+						<span class="game-badge">Daily</span>
+						<div class="game-icon">
+							<div class="pokeball pokeball-heal" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="game-title">Daily Spotlight</strong>
+						<span class="game-desc">5 mini-challenges about today's featured Pok&eacute;mon: silhouette, cry, Pok&eacute;dex, stats, and type.</span>
+						<div class="game-chips">
+							<span class="game-chip">⭐ Featured</span>
+							<span class="game-chip">5 Rounds</span>
+							<span class="game-chip">Daily</span>
+							<span class="game-chip game-chip--reward">5–30 💰 per day</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="spotlight">
+								<span class="gb-label">Today</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
+					</a>
+
+					<a class="game-card is-available" href="puzzle-moveset.html" data-game="moveset" style="--stagger:4">
+						<span class="game-badge">Available</span>
+						<div class="game-icon">
+							<div class="pokeball pokeball-master" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-mletter">M</span>
+								<span class="pb-mdot pb-mdot-l"></span>
+								<span class="pb-mdot pb-mdot-r"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="game-title">Moveset Guesser</strong>
+						<span class="game-desc">Four classic moves are shown &mdash; name the Pok&eacute;mon that owns the set. Hardcore requires typing.</span>
+						<div class="game-chips">
+							<span class="game-chip">⚔️ Moves</span>
+							<span class="game-chip">3 Modes</span>
+							<span class="game-chip">52 Sets</span>
+							<span class="game-chip game-chip--reward">1–3 💰 per correct</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="moveset">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
+					</a>
+
+					<a class="game-card is-available" href="puzzle-ability.html" data-game="ability" style="--stagger:5">
+						<span class="game-badge">Available</span>
+						<div class="game-icon">
+							<div class="pokeball pokeball-net" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="game-title">Ability Guesser</strong>
+						<span class="game-desc">Read an ability description and name it, or pick which Pok&eacute;mon carries that signature power.</span>
+						<div class="game-chips">
+							<span class="game-chip">💡 Abilities</span>
+							<span class="game-chip">2 Modes</span>
+							<span class="game-chip">62+ Entries</span>
+							<span class="game-chip game-chip--reward">2 💰 per correct</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="ability">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
+					</a>
+
+					<a class="game-card is-available" href="puzzle-team.html" data-game="team" style="--stagger:6">
+						<span class="game-badge">Available</span>
+						<div class="game-icon">
+							<div class="pokeball pokeball-ultra" aria-hidden="true">
+								<span class="pb-top"></span>
+								<span class="pb-belt"></span>
+								<span class="pb-button"></span>
+							</div>
+						</div>
+						<strong class="game-title">Team Builder</strong>
+						<span class="game-desc">Pick 3 Pok&eacute;mon from a pool to counter the gym leader's team. Score by type-effectiveness coverage.</span>
+						<div class="game-chips">
+							<span class="game-chip">🏟️ Gym Leaders</span>
+							<span class="game-chip">10 Challenges</span>
+							<span class="game-chip">Type Coverage</span>
+							<span class="game-chip game-chip--reward">Up to 20 💰</span>
+						</div>
+						<div class="game-footer">
+							<span class="game-best" data-best="team">
+								<span class="gb-label">Best</span>
+								<span class="gb-value">&mdash;</span>
+							</span>
+							<span class="game-cta">Play Now &rarr;</span>
+						</div>
+					</a>
+				</div>
+
 				<div class="hub-tip">
 					<span class="hub-tip-icon" aria-hidden="true">!</span>
 					<span>Each game tracks its own <strong>best streak</strong> separately. Your trainer profile carries across all of them.</span>
@@ -321,6 +528,7 @@
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
+	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
 	<script>
 		(function() {

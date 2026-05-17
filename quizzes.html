@@ -6,9 +6,50 @@
 	<title>Quizzes &middot; PokeQuiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Choose a difficulty, from Rookie to Master Pokémon trivia quizzes.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Pick Your Quiz — PokeQuiz">
+	<meta property="og:description" content="Choose a difficulty, from Rookie to Master Pokémon trivia quizzes.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/quizzes">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Pick Your Quiz — PokeQuiz">
+	<meta name="twitter:description" content="Choose a difficulty, from Rookie to Master Pokémon trivia quizzes.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/puzzle.css">
 	<link rel="stylesheet" href="css/puzzles.css">
+	<style>
+		.game-card-wrap {
+			display: flex;
+			flex-direction: column;
+		}
+		.quiz-mode-toggles {
+			display: flex;
+			gap: 14px;
+			flex-wrap: wrap;
+			padding: 10px 16px;
+			background: rgba(0,0,0,0.04);
+			border-radius: 0 0 14px 14px;
+			border: 1px solid rgba(0,0,0,0.07);
+			border-top: none;
+		}
+		.mode-toggle {
+			display: inline-flex;
+			align-items: center;
+			gap: 7px;
+			cursor: pointer;
+			user-select: none;
+		}
+		.mode-toggle input[type="checkbox"] { accent-color: var(--poke-red); width: 15px; height: 15px; cursor: pointer; }
+		.mode-toggle-label { font-size: 12px; font-weight: 700; color: #333; }
+		/* When inside wrapper, remove card's bottom border-radius to blend with toggle bar */
+		.game-card-wrap .game-card { border-radius: 16px 16px 0 0; }
+	</style>
 </head>
 <body>
 	<header class="site-header">
@@ -77,6 +118,7 @@
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
+	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
 	<script src="js/quizzes.js"></script>
 	<script>
@@ -109,10 +151,12 @@
 				Master: 'pokeball-master'
 			};
 
-			const href = (id) => {
+			const href = (id, nuzlocke, timed) => {
 				const params = new URLSearchParams();
 				params.set('quiz', id);
 				if (playerName) params.set('playerName', playerName);
+				if (nuzlocke) params.set('nuzlocke', '1');
+				if (timed) params.set('timed', '1');
 				return `quiz.html?${params.toString()}`;
 			};
 
@@ -124,30 +168,49 @@
 					? `<span class="pb-mletter">M</span><span class="pb-mdot pb-mdot-l"></span><span class="pb-mdot pb-mdot-r"></span>`
 					: '';
 				return `
-					<a class="game-card is-available" href="${href(q.id)}" data-game="quiz-${q.id}" style="--stagger:${i}">
-						<span class="game-badge">${escapeHtml(q.difficulty)}</span>
-						<div class="game-icon">
-							<div class="pokeball ${ball}" aria-hidden="true">
-								<span class="pb-top"></span>
-								${masterExtra}
-								<span class="pb-belt"></span>
-								<span class="pb-button"></span>
-								<span class="pb-shine"></span>
+					<div class="game-card-wrap" style="--stagger:${i}">
+						<a class="game-card is-available" href="${href(q.id, false, false)}" data-game="quiz-${q.id}" id="card-link-${q.id}">
+							<span class="game-badge">${escapeHtml(q.difficulty)}</span>
+							<div class="game-icon">
+								<div class="pokeball ${ball}" aria-hidden="true">
+									<span class="pb-top"></span>
+									${masterExtra}
+									<span class="pb-belt"></span>
+									<span class="pb-button"></span>
+									<span class="pb-shine"></span>
+								</div>
 							</div>
+							<strong class="game-title">${escapeHtml(q.name)}</strong>
+							<span class="game-desc">${escapeHtml(q.description)}</span>
+							<div class="game-chips">${chips}</div>
+							<div class="game-footer">
+								<span class="game-best">
+									<span class="gb-label">Questions</span>
+									<span class="gb-value">${q.questions.length}</span>
+								</span>
+								<span class="game-cta">Start &rarr;</span>
+							</div>
+						</a>
+						<div class="quiz-mode-toggles">
+							<label class="mode-toggle">
+								<input type="checkbox" class="mode-chk" data-id="${q.id}" data-mode="nuzlocke" onchange="updateCardLink('${q.id}')">
+								<span class="mode-toggle-label">&#9760;&#65039; Nuzlocke Mode</span>
+							</label>
+							<label class="mode-toggle">
+								<input type="checkbox" class="mode-chk" data-id="${q.id}" data-mode="timed" onchange="updateCardLink('${q.id}')">
+								<span class="mode-toggle-label">&#9889; Time Attack</span>
+							</label>
 						</div>
-						<strong class="game-title">${escapeHtml(q.name)}</strong>
-						<span class="game-desc">${escapeHtml(q.description)}</span>
-						<div class="game-chips">${chips}</div>
-						<div class="game-footer">
-							<span class="game-best">
-								<span class="gb-label">Questions</span>
-								<span class="gb-value">${q.questions.length}</span>
-							</span>
-							<span class="game-cta">Start &rarr;</span>
-						</div>
-					</a>
+					</div>
 				`;
 			}).join('');
+
+			window.updateCardLink = function(id) {
+				const nuzChk = document.querySelector(`.mode-chk[data-id="${id}"][data-mode="nuzlocke"]`);
+				const timedChk = document.querySelector(`.mode-chk[data-id="${id}"][data-mode="timed"]`);
+				const link = document.getElementById(`card-link-${id}`);
+				if (link) link.href = href(id, nuzChk && nuzChk.checked, timedChk && timedChk.checked);
+			};
 		})();
 	</script>
 </body>

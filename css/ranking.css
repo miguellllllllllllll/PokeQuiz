@@ -80,18 +80,10 @@
 .lb-tab-icon { font-size: 16px; line-height: 1; }
 .lb-tab-label { white-space: nowrap; }
 
-.col-mode {
-	font-size: 12px;
-	color: var(--muted);
-	text-transform: uppercase;
-	letter-spacing: 0.8px;
-}
-
 @media (max-width: 640px) {
 	.lb-tab-label { display: none; }
 	.lb-tab { padding: 9px 12px; }
 	.lb-tab-icon { font-size: 18px; }
-	.col-mode { display: none; }
 }
 
 .leaderboard-wrap {

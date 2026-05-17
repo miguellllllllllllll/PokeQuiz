@@ -20,6 +20,8 @@ function getRedis() {
 // Per-game leaderboards. Each game gets its own Redis sorted set.
 // score = numeric value used for sorting (always "higher is better"; for time-based
 // games like memory, we store negated milliseconds so higher = faster).
+// NOTE: the game ids and mode keys here must stay in sync with the client
+// display config in js/games-config.js.
 const GAMES = {
 	quiz:       { key: 'pokequiz:leaderboard',                maxTotal: 100, defaultTotal: 21 },
 	// Streak caps: ~500 is humanly unreachable in a single session; anything higher is fraudulent.

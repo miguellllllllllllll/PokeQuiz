@@ -180,13 +180,7 @@
 			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
 			const playerId = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
 			if (!playerName || !playerId || streak <= 0) return;
-			try {
-				fetch('/api/leaderboard', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ game: 'cry', name: playerName, score: streak, mode, playerId }),
-				}).catch(() => {});
-			} catch {}
+			window.PokeUtil.submitScore({ game: 'cry', name: playerName, score: streak, mode, playerId });
 		}
 
 		function showGameOver(victory) {

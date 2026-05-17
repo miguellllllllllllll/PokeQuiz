@@ -135,7 +135,7 @@
 			const name = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
 			const pid = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
 			if (!name || !pid || caught <= 0) return;
-			try { fetch('/api/leaderboard', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ game: 'sprint', name, score: caught, mode, playerId: pid }) }).catch(() => {}); } catch {}
+			window.PokeUtil.submitScore({ game: 'sprint', name, score: caught, mode, playerId: pid });
 		}
 
 		function endRun() {

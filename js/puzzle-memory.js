@@ -223,13 +223,7 @@
 			const playerName = (sessionStorage.getItem('playerName') || localStorage.getItem('playerName') || '').trim();
 			const playerId = (window.PokeProfile && window.PokeProfile.playerId) || localStorage.getItem('pokequiz_player_id') || '';
 			if (!playerName || !playerId) return;
-			try {
-				fetch('/api/leaderboard', {
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ game: 'memory', name: playerName, score: elapsedMs, mode: String(chosenPairs) , playerId }),
-				}).catch(() => {});
-			} catch {}
+			window.PokeUtil.submitScore({ game: 'memory', name: playerName, score: elapsedMs, mode: String(chosenPairs), playerId });
 		}
 
 		function finishGame() {

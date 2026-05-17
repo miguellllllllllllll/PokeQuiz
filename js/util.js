@@ -80,6 +80,44 @@
 			});
 	}
 
+	// Inject a hamburger toggle into the site header so the nav can collapse
+	// on small screens. Runs on every page — the header markup is shared.
+	function initMobileNav() {
+		const header = document.querySelector('header.site-header');
+		if (!header) return;
+		const nav = header.querySelector('nav');
+		if (!nav || header.querySelector('.nav-toggle')) return;
+		if (!nav.id) nav.id = 'siteNav';
+
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'nav-toggle';
+		btn.setAttribute('aria-label', 'Toggle navigation menu');
+		btn.setAttribute('aria-expanded', 'false');
+		btn.setAttribute('aria-controls', nav.id);
+		btn.textContent = '☰'; // ☰
+
+		function setOpen(open) {
+			header.classList.toggle('nav-open', open);
+			btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+			btn.textContent = open ? '✕' : '☰'; // ✕ / ☰
+		}
+		btn.addEventListener('click', () => setOpen(!header.classList.contains('nav-open')));
+		nav.addEventListener('click', (e) => { if (e.target.closest('a')) setOpen(false); });
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && header.classList.contains('nav-open')) setOpen(false);
+		});
+
+		// Place the toggle right before the nav; CSS `order` handles layout.
+		nav.parentNode.insertBefore(btn, nav);
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initMobileNav);
+	} else {
+		initMobileNav();
+	}
+
 	window.PokeUtil = {
 		escapeHtml, getQueryParam, getPlayerId, getPlayerName, toast, submitScore,
 	};

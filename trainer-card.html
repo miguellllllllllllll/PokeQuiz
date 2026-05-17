@@ -6,6 +6,20 @@
 	<title>Trainer Card &middot; PokeQuiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Your shareable PokeQuiz trainer card.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Trainer Card — PokeQuiz">
+	<meta property="og:description" content="Your shareable PokeQuiz trainer card.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/trainer-card">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Trainer Card — PokeQuiz">
+	<meta name="twitter:description" content="Your shareable PokeQuiz trainer card.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/trainer-card.css">
 </head>
@@ -62,6 +76,13 @@
 					</div>
 					<h1 class="tc-trainer-name" id="tcTrainerName">Trainer</h1>
 					<p class="tc-trainer-id">Trainer ID: <code class="tc-id-code" id="tcTrainerId">&mdash;</code></p>
+					<!-- Gym Badge Mini Strip -->
+					<div class="tc-gym-strip" id="tcGymStrip" aria-label="Gym badges earned" title="Gym Badges">
+						<a href="badges.html" class="tc-gym-strip-link" title="View all gym badges">
+							<span class="tc-gym-strip-label">Badges</span>
+							<span class="tc-gym-strip-icons" id="tcGymBadgeIcons"><span class="tc-gym-empty">None yet</span></span>
+						</a>
+					</div>
 				</div>
 				<div class="tc-badge-row" aria-label="Trainer badges">
 					<span class="tc-badge" id="tcBadgeStreak" title="Login Streak">
@@ -221,11 +242,67 @@
 			</div>
 		</section>
 
+		<!-- Gym Badges -->
+		<section class="card tc-card" id="tcBadgesSection">
+			<header class="section-head">
+				<h2>Gym Badges</h2>
+				<p>Earn all 8 Kanto gym badges through challenges. <a href="badges.html" class="tc-section-link">View badge case &rarr;</a></p>
+			</header>
+			<div class="tc-badges-grid" id="tcBadgesGrid">
+				<!-- Rendered by JS -->
+			</div>
+		</section>
+
+		<!-- Achievements -->
+		<section class="card tc-card" id="tcAchievementsSection">
+			<header class="section-head">
+				<h2>Achievements</h2>
+				<p>Special milestones earned on your Pok&eacute;Quiz journey.</p>
+			</header>
+			<div class="tc-achievements-grid" id="tcAchievementsGrid">
+				<!-- Rendered by JS -->
+			</div>
+		</section>
+
+		<!-- Pokédex Tracker -->
+		<section class="card tc-card" id="tcPokedexSection">
+			<header class="section-head">
+				<h2>Pok&eacute;dex</h2>
+				<p>Pok&eacute;mon registered through your puzzle game sessions.</p>
+			</header>
+			<!-- Progress bar -->
+			<div class="tc-dex-progress-wrap">
+				<div class="tc-dex-progress-bar-outer">
+					<div class="tc-dex-progress-bar-fill" id="tcDexFill" style="width: 0%"></div>
+				</div>
+				<div class="tc-dex-progress-meta">
+					<span class="tc-dex-count"><span id="tcDexCount">0</span> / 1025 registered</span>
+					<span class="tc-dex-pct" id="tcDexPct">0%</span>
+				</div>
+			</div>
+			<!-- Recent registrations -->
+			<div class="tc-dex-recent-wrap" id="tcDexRecentWrap">
+				<div class="tc-dex-recent-label">Recently Registered</div>
+				<div class="tc-dex-recent-list" id="tcDexRecentList">
+					<span class="tc-dex-none">No Pok&eacute;mon registered yet.</span>
+				</div>
+			</div>
+			<!-- Gen 1 mini grid (first 151 slots) -->
+			<div class="tc-dex-grid-wrap">
+				<div class="tc-dex-grid-label">Kanto Pok&eacute;dex (first 151)</div>
+				<div class="tc-dex-mini-grid" id="tcDexMiniGrid" aria-hidden="true">
+					<!-- 151 tiny squares rendered by JS -->
+				</div>
+			</div>
+		</section>
+
 	</main>
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
+	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
+	<script src="js/badges.js" defer></script>
 	<script src="js/trainer-card.js" defer></script>
 </body>
 </html>

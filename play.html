@@ -6,6 +6,20 @@
 	<title>Trainer Sign-In &middot; PokeQuiz</title>
 	<meta name="author" content="Angelo Miguel G. Vinluan">
 	<link rel="icon" type="image/png" href="Pictures/pokeball.png">
+	<meta name="description" content="Enter your trainer name and start a PokeQuiz Pokémon trivia run.">
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="PokeQuiz">
+	<meta property="og:title" content="Start a Quiz — PokeQuiz">
+	<meta property="og:description" content="Enter your trainer name and start a PokeQuiz Pokémon trivia run.">
+	<meta property="og:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<meta property="og:url" content="https://poke-quiz-chi.vercel.app/play">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="Start a Quiz — PokeQuiz">
+	<meta name="twitter:description" content="Enter your trainer name and start a PokeQuiz Pokémon trivia run.">
+	<meta name="twitter:image" content="https://poke-quiz-chi.vercel.app/Pictures/pokeball.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/playerinfo.css">
 </head>
@@ -89,17 +103,6 @@
 							<input type="text" id="playerName" name="playerName" required minlength="1" maxlength="30" placeholder="e.g. Ash" autocomplete="off">
 						</div>
 
-						<div class="field two-col">
-							<div>
-								<label for="Age">Age</label>
-								<input type="number" id="Age" name="Age" min="1" max="120" placeholder="10">
-							</div>
-							<div>
-								<label for="email">Email</label>
-								<input type="email" id="email" name="email" placeholder="ash@pallet.town">
-							</div>
-						</div>
-
 						<div class="form-actions">
 							<button type="submit" class="btn">Choose Quiz &rarr;</button>
 							<button type="reset" class="btn btn-secondary">Reset</button>
@@ -113,6 +116,7 @@
 
 	<footer>Made with care by Angelo Miguel G. Vinluan</footer>
 
+	<script src="js/util.js" defer></script>
 	<script src="js/profile.js" defer></script>
 	<script>
 		(function() {
