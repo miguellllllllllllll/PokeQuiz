@@ -5892,7 +5892,11 @@
 				[15,17],[16,17],[16,18],[17,17],[17,18],[18,18],
 			];
 			tallGrass.forEach(([r,c]) => { if (map[r][c] === TG || map[r][c] === TG2) map[r][c] = TTG; });
-	
+
+			// Beach exit path — far right, bottom rows (cols 27-29, rows MAP_H-3 to MAP_H-1)
+			set(MAP_H-1, 28, TP); set(MAP_H-2, 28, TP); set(MAP_H-3, 28, TP);
+			set(MAP_H-3, 27, TSG);
+
 			return map;
 		}
 	window.CAMP_SYSTEMS.buildMap = buildMap;
@@ -7185,8 +7189,10 @@
 					// otherwise the default starting position on the path.
 					const spawnTileR = this.spawnFrom === 'house'  ? 12
 					                 : this.spawnFrom === 'market' ? MAP_H - 2
+					                 : this.spawnFrom === 'beach'  ? MAP_H - 2
 					                 : 14;
-					this.player = this.physics.add.sprite(11*TILE + TILE/2, spawnTileR*TILE + TILE/2, 'player', 0);
+					const spawnTileC = this.spawnFrom === 'beach' ? 28 : 11;
+					this.player = this.physics.add.sprite(spawnTileC*TILE + TILE/2, spawnTileR*TILE + TILE/2, 'player', 0);
 					// Origin: feet at the bottom-centre of the frame (foot point ≈ y=36 in 38-tall frame)
 					this.player.setOrigin(0.5, 36/38);
 					this.player.setScale(0.75);  // shrink trainer to roughly one-tile-wide for tile-scale match
@@ -7271,7 +7277,7 @@
 					WeatherSystem.check(this);
 					if (this.isFoggy) this.fogOverlay.setAlpha(0.32);
 	
-					this.dir = this.spawnFrom === 'market' ? 2 : 0;
+					this.dir = (this.spawnFrom === 'market' || this.spawnFrom === 'beach') ? 2 : 0;
 					this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
 					// Idle frame index per direction (frame 0 of each row)
 					this.dirIdleFrame = [0, 3, 6, 9];
@@ -7363,6 +7369,7 @@
 					// without this — wait until they step OFF the door area to re-arm.
 					this.armedForDoor = this.spawnFrom !== 'house';
 					this.armedForSouth = this.spawnFrom !== 'market';
+					this.armedForBeach = this.spawnFrom !== 'beach';
 	
 					// Poké Radar state
 					this._radarShimmer = new Set();
@@ -8943,7 +8950,16 @@
 						this.didTransition = true;
 						safeSceneStart(this, 'market', { from: 'camp' });
 					}
-	
+
+					// Bottom-right beach exit
+					const onBeachExit = tr === MAP_H - 1 && tc === 28;
+					const distFromBeach = Math.abs((MAP_H - 1) - tr) + Math.abs(tc - 28);
+					if (distFromBeach >= 2) this.armedForBeach = true;
+					if (this.armedForBeach && onBeachExit && !this.didTransition) {
+						this.didTransition = true;
+						safeSceneStart(this, 'beach', { from: 'camp' });
+					}
+
 					Debug.render(
 						'CAMP\n' +
 						'tile  ' + tc + ',' + tr + '\n' +
@@ -10042,7 +10058,11 @@
 					this.player.setDepth(3);
 					this.player.body.setSize(10, 6);
 					this.player.body.setOffset((22-10)/2, 38-8);
-	
+
+					// Partner follower sprite — trails the player around the market.
+					// (update() already calls _updateMarketFollower each frame.)
+					this._buildMarketFollower();
+
 					this.solids = this.physics.add.staticGroup();
 					for (let r = 0; r < MARKET_H; r++) {
 						for (let c = 0; c < MARKET_W; c++) {
@@ -11256,8 +11276,14 @@
 	const Minimap = (() => {
 		let visible = false;
 		let timer = null;
+		let inited = false;
 		const KEY = 'pokequiz_minimap_on';
 		function init() {
+			// Idempotent — init() is called both from the camp scene's create
+			// hook and unconditionally at load (so the minimap also works when
+			// the page boots straight into the market scene).
+			if (inited) return;
+			inited = true;
 			try { visible = localStorage.getItem(KEY) !== '0'; } catch { visible = true; }
 			const el = document.getElementById('campMinimap');
 			if (el) el.style.display = visible ? '' : 'none';
@@ -11305,6 +11331,12 @@
 		return { init, toggle, destroy };
 	})();
 	window.CAMP_SYSTEMS.Minimap = Minimap;
+	// Start the minimap refresh loop regardless of which scene boots first —
+	// the camp create hook also calls init(), but that no-ops once inited.
+	if (document.readyState === 'loading')
+		document.addEventListener('DOMContentLoaded', () => Minimap.init());
+	else
+		Minimap.init();
 
 	// ══════════════════════════════════════════════════════════════════════════════
 	// BATCH 3 — CAMP ACTIVITIES
