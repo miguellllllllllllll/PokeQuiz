@@ -236,7 +236,6 @@ body.camp-body {
 	pointer-events: none;
 	background: #0a1a40;
 	opacity: 0;
-	mix-blend-mode: multiply;
 	z-index: 4;
 	transition: opacity 1.5s linear, background 1.5s linear;
 }

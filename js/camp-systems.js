@@ -6935,8 +6935,6 @@
 					this._footprints = [];
 					this._footprintTick = 0;
 
-					// ── Feature 8: Persistent follower friendship HP bar ──────────────
-					this._followerHpBar = this.add.graphics().setDepth(8).setScrollFactor(1);
 				}
 
 				findInteractTarget() {
@@ -8326,22 +8324,6 @@
 							const _isWater = this.map[_ptile_r2] && this.map[_ptile_r2][_ptile_c2] === TH2O;
 							if (!_isWater) this.follower.clearTint();
 						}
-					}
-
-					// ── Feature 8: Persistent friendship bar above follower ───────────
-					if (this._followerHpBar && this.follower && this.tick % 10 === 0) {
-						const _inv8 = Inventory.load();
-						const _fr8  = Math.min(100, Math.max(0, _inv8.friendship || 0));
-						const _pct8 = _fr8 / 100;
-						const _BAR_W = 20, _BAR_H = 3;
-						const _bx = this.follower.x - _BAR_W / 2;
-						const _by = this.follower.y - this.follower.displayHeight * this.follower.originY - 6;
-						this._followerHpBar.clear();
-						this._followerHpBar.fillStyle(0x000000, 0.5);
-						this._followerHpBar.fillRect(_bx, _by, _BAR_W, _BAR_H);
-						const _col8 = _pct8 > 0.5 ? 0x40c870 : _pct8 > 0.25 ? 0xf6c84c : 0xe04848;
-						this._followerHpBar.fillStyle(_col8, 0.7);
-						this._followerHpBar.fillRect(_bx, _by, Math.round(_BAR_W * _pct8), _BAR_H);
 					}
 
 					// Walk onto the door → enter the house. The player has to walk at least
