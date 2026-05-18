@@ -1979,8 +1979,12 @@ body.camp-body {
               opacity   0.22s ease;
 }
 
-/* Collapsed state — disabled (grouped HUD always shows icons) */
-/* .camp-btn-bar--closed .camp-btn-bar-items { } */
+/* Collapsed state — hamburger hides the icon row */
+.camp-btn-bar--closed .camp-btn-bar-items {
+  max-width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
 
 /* ── Hamburger toggle button ─────────────────────────────────────────────── */
 .camp-bar-toggle {
@@ -3013,6 +3017,14 @@ body.pk-reduce-motion *::after {
 
 /* ── Mobile bottom sheet ──────────────────────────────────────────────── */
 @media (max-width: 600px) {
+  /* Hamburger stays above the sheet so it's always tappable */
+  #campBarToggle {
+    position: fixed !important;
+    bottom: 14px;
+    left: 12px;
+    z-index: 50;
+  }
+
   .camp-btn-bar-items.camp-mobile-sheet {
     position: fixed;
     bottom: 0;

@@ -540,11 +540,13 @@
 
 	// Hamburger: on mobile open the bottom sheet; on desktop let BtnBarToggle handle it
 	window.__campHamburger = function () {
-		var MBS = window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.MobileBottomSheet;
+		var MBS  = window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.MobileBottomSheet;
+		var BTT  = window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.BtnBarToggle;
 		if (MBS && window.innerWidth <= 600) {
-			MBS.toggle();
+			MBS.toggle();   // mobile: slide the bottom sheet up/down
+		} else if (BTT && BTT.toggle) {
+			BTT.toggle();   // desktop: collapse/expand the icon row
 		}
-		// Desktop: BtnBarToggle already has its own listener on this button
 	};
 
 })();
