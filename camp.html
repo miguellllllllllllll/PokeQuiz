@@ -23,7 +23,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/camp.css?v=17">
+	<link rel="stylesheet" href="css/camp.css?v=18">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body class="camp-body">
@@ -247,6 +247,9 @@
 			<button class="camp-quick-btn" id="campAlbumBtn" title="Photo Album" aria-label="Photo Album" type="button"><i class="bi bi-images"></i></button>
 			<button class="camp-quick-btn" id="campWeeklyBtn" title="Weekly Challenge" aria-label="Weekly Challenge" type="button"><i class="bi bi-calendar-week"></i></button>
 			<button class="camp-quick-btn" id="campInstallBtn" title="Install App" aria-label="Install App" type="button" hidden><i class="bi bi-phone-vibrate"></i></button>
+			<button class="camp-quick-btn" id="campExpeditionBtn" title="Expeditions" aria-label="Expeditions" type="button"><i class="bi bi-compass-fill"></i></button>
+			<button class="camp-quick-btn" id="campTypeMasteryBtn" title="Type Mastery" aria-label="Type Mastery" type="button"><i class="bi bi-patch-check-fill"></i></button>
+			<button class="camp-quick-btn" id="campBerryBuffBtn" title="Use Berry Buff" aria-label="Use Berry Buff" type="button"><i class="bi bi-brightness-high-fill"></i></button>
 		</div>
 
 		<!-- Partner portrait widget (bottom-left, above touch pad) -->
@@ -667,6 +670,56 @@
 		<!-- Hidden file input for import save -->
 		<input type="file" id="saveImportInput" accept=".json" style="display:none">
 
+		<!-- Expedition Panel -->
+		<div id="expeditionPanel" class="pk-drawer" hidden role="dialog" aria-label="Expeditions">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-compass-fill"></i> EXPEDITIONS</span>
+				<button id="expeditionClose" class="pk-close" type="button" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="expeditionPanelBody"></div>
+			</div>
+		</div>
+
+		<!-- Camp Upgrades Panel -->
+		<div id="upgradePanel" class="pk-drawer" hidden role="dialog" aria-label="Camp Upgrades">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-hammer"></i> CAMP UPGRADES</span>
+				<button id="upgradeClose" class="pk-close" type="button" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="upgradePanelBody"></div>
+			</div>
+		</div>
+
+		<!-- Type Mastery Panel -->
+		<div id="typeMasteryPanel" class="pk-drawer" hidden role="dialog" aria-label="Type Mastery">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-patch-check-fill"></i> TYPE MASTERY</span>
+				<button id="typeMasteryClose" class="pk-close" type="button" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="typeMasteryBody"></div>
+			</div>
+		</div>
+
+		<!-- Berry Buff Modal -->
+		<div id="berryBuffModal" class="pk-drawer" hidden role="dialog" aria-label="Berry Buffs">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-brightness-high-fill"></i> BERRY BUFFS</span>
+				<button id="berryBuffClose" class="pk-close" type="button" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="berryBuffBody"></div>
+			</div>
+		</div>
+
+		<!-- Camp Tier Badge (shown in location area) -->
+		<div id="campTierBadge" class="camp-tier-badge" hidden aria-live="polite"></div>
+
+		<!-- Expedition Away Badge -->
+		<div id="expeditionAwayBadge" class="expedition-away-badge" hidden aria-live="polite"></div>
+
 		<!-- Pause menu (Escape) -->
 		<div class="camp-pause" id="campPause" hidden role="dialog" aria-modal="true">
 			<div class="camp-pause-panel">
@@ -692,8 +745,8 @@
 	<script src="js/profile.js" defer></script>
 	<script src="js/trainer-palette.js" defer></script>
 	<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js" defer></script>
-	<script src="js/camp-data.js?v=10" defer></script>
-	<script src="js/camp-systems.js?v=32" defer></script>
-	<script src="js/camp.js?v=30" defer></script>
+	<script src="js/camp-data.js?v=11" defer></script>
+	<script src="js/camp-systems.js?v=35" defer></script>
+	<script src="js/camp.js?v=32" defer></script>
 </body>
 </html>

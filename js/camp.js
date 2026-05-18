@@ -33,6 +33,14 @@
 	const ShinyEncounters = (window.CAMP_SYSTEMS || {}).ShinyEncounters;
 	const Music                 = (window.CAMP_SYSTEMS || {}).Music;
 	const AccessibilitySettings = (window.CAMP_SYSTEMS || {}).AccessibilitySettings;
+	const PartnerBondSkills = (window.CAMP_SYSTEMS || {}).PartnerBondSkills;
+	const BerryBuffs        = (window.CAMP_SYSTEMS || {}).BerryBuffs;
+	const CampUpgrades      = (window.CAMP_SYSTEMS || {}).CampUpgrades;
+	const Expeditions       = (window.CAMP_SYSTEMS || {}).Expeditions;
+	const CampStoryArc      = (window.CAMP_SYSTEMS || {}).CampStoryArc;
+	const TypeMastery       = (window.CAMP_SYSTEMS || {}).TypeMastery;
+	const CampTier          = (window.CAMP_SYSTEMS || {}).CampTier;
+	const TrainerBattles    = (window.CAMP_SYSTEMS || {}).TrainerBattles;
 	const applyWrapTop    = (window.CAMP_SYSTEMS || {}).applyWrapTop;
 	const readBootHash    = (window.CAMP_SYSTEMS || {}).readBootHash;
 	const updateDayNightTint = (window.CAMP_SYSTEMS || {}).updateDayNightTint;
@@ -404,10 +412,14 @@
 		});
 
 		// Auto-checks on load
-		if (RivalSystem)    RivalSystem.autoCheck();
-		if (WeeklyChallenge) WeeklyChallenge.checkProgress();
-		if (TrainerTitles)  TrainerTitles.check();
-		if (OfflineProgress) OfflineProgress.check();
+		if (RivalSystem)       RivalSystem.autoCheck();
+		if (WeeklyChallenge)   WeeklyChallenge.checkProgress();
+		if (TrainerTitles)     TrainerTitles.check();
+		if (OfflineProgress)   OfflineProgress.check();
+		if (CampStoryArc)      CampStoryArc.check();
+		if (Expeditions)       Expeditions.check();
+		if (PartnerBondSkills) PartnerBondSkills.check();
+		if (CampTier)          CampTier.check();
 
 		// Show install button if PWA prompt is available (PWAInstall auto-inits itself)
 		if (PWAInstall && typeof PWAInstall.init === 'function') PWAInstall.init();
@@ -431,16 +443,19 @@
 			{ id: 'campAchieveBtn',  icon: 'bi-award-fill',        label: 'Achieve' },
 		],
 		records:  [
-			{ id: 'campDexBtn',        icon: 'bi-book-fill',      label: 'Pokédex' },
-			{ id: 'campJournalBtn',    icon: 'bi-book-half',      label: 'Journal' },
-			{ id: 'campShinyBtn',      icon: 'bi-stars',          label: 'Shinies' },
-			{ id: 'campAlbumBtn',      icon: 'bi-images',         label: 'Album'   },
-			{ id: 'campGuestbookBtn',  icon: 'bi-journal-text',   label: 'Guests'  },
+			{ id: 'campDexBtn',          icon: 'bi-book-fill',        label: 'Pokédex'  },
+			{ id: 'campJournalBtn',      icon: 'bi-book-half',        label: 'Journal'  },
+			{ id: 'campShinyBtn',        icon: 'bi-stars',            label: 'Shinies'  },
+			{ id: 'campAlbumBtn',        icon: 'bi-images',           label: 'Album'    },
+			{ id: 'campGuestbookBtn',    icon: 'bi-journal-text',     label: 'Guests'   },
+			{ id: 'campTypeMasteryBtn',  icon: 'bi-patch-check-fill', label: 'Mastery'  },
 		],
 		camp:     [
-			{ id: 'campMapBtn',      icon: 'bi-map-fill',        label: 'Map'     },
-			{ id: 'campUpgradeBtn',  icon: 'bi-hammer',          label: 'Build'   },
-			{ id: 'campWeeklyBtn',   icon: 'bi-calendar-week',   label: 'Weekly'  },
+			{ id: 'campMapBtn',        icon: 'bi-map-fill',          label: 'Map'      },
+			{ id: 'campUpgradeBtn',    icon: 'bi-hammer',            label: 'Build'    },
+			{ id: 'campWeeklyBtn',     icon: 'bi-calendar-week',     label: 'Weekly'   },
+			{ id: 'campExpeditionBtn', icon: 'bi-compass-fill',      label: 'Explore'  },
+			{ id: 'campBerryBuffBtn',  icon: 'bi-brightness-high-fill', label: 'Buff'  },
 		],
 		social:   [
 			{ id: 'campFriendsBtn',  icon: 'bi-people-fill',     label: 'Friends' },

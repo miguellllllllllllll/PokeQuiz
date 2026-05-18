@@ -5225,7 +5225,9 @@
 					const priceStr = it.cost != null ? ' — ' + it.cost + ' ' + ico(ICO.token)
 					             : it.sells != null ? ' — +' + it.sells + ' ' + ico(ICO.token)
 					             : '';
-					lbl.textContent = it.label + priceStr;
+					// priceStr embeds an ico() <i> element, so render as HTML — using
+					// textContent here would print the raw markup as literal text.
+					lbl.innerHTML = it.label + priceStr;
 					const b = document.createElement('button');
 					b.type = 'button'; b.style.cssText = btn(true);
 					b.textContent = it.cost != null ? (it.cost === 0 ? 'Free' : 'Buy') : 'Sell';
@@ -7204,12 +7206,10 @@
 						sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
 						sprite.setScale(NPC_SPRITE_SCALES[npc.species] || npc.spriteScale);
 						sprite.setDepth(3);
-						// Invisible static blocker: 2×2 tiles so the player body is
-						// caught from all four directions. refreshBody() ensures AABB is correct.
+						// Blocker is 2×2 tiles — StaticBody auto-sizes from the Rectangle
+						// dimensions, and npcSolids.add() calls body.reset() to place it.
 						const rect = this.add.rectangle(x, y, TILE * 2, TILE * 2);
 						this.physics.add.existing(rect, true);
-						rect.body.setSize(TILE * 2, TILE * 2);
-						rect.body.refreshBody();
 						npcSolids.add(rect);
 						this.npcByTile[npc.r + ',' + npc.c] = npc;
 					}
@@ -9854,12 +9854,10 @@
 						sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
 						sprite.setScale(NPC_SPRITE_SCALES[npc.species] || npc.spriteScale);
 						sprite.setDepth(3);
-						// Invisible static blocker: 2×2 tiles so the player body is
-						// caught from all four directions. refreshBody() ensures AABB is correct.
+						// Blocker is 2×2 tiles — StaticBody auto-sizes from the Rectangle
+						// dimensions, and npcSolids.add() calls body.reset() to place it.
 						const rect = this.add.rectangle(x, y, TILE * 2, TILE * 2);
 						this.physics.add.existing(rect, true);
-						rect.body.setSize(TILE * 2, TILE * 2);
-						rect.body.refreshBody();
 						npcSolids.add(rect);
 						this.npcByTile[npc.r + ',' + npc.c] = npc;
 					}
@@ -11991,6 +11989,864 @@
 			document.getElementById('campPauseImport')?.addEventListener('click',()=>document.getElementById('saveImportInput')?.click());
 		};
 	})();
+
+	// ── PartnerBondSkills ──────────────────────────────────────────────────────
+	const PartnerBondSkills = (() => {
+		const TYPE_PERKS = {
+			fire:     { label: '+15% quiz XP',                 desc: 'Earn 15% more XP on quiz pages.' },
+			water:    { label: 'Fishing always bites',          desc: 'Every cast is guaranteed to catch something.' },
+			grass:    { label: 'Berries grow 50% faster',       desc: 'Berry grow timers are cut in half.' },
+			electric: { label: 'Sprint quiz timer +3s',         desc: 'Sprint quiz questions give 3 extra seconds.' },
+			psychic:  { label: 'Shiny rate doubled',            desc: 'Shiny Pokémon encounters are twice as likely.' },
+			normal:   { label: '+5 tokens per daily login',     desc: 'Collect 5 bonus tokens every day.' },
+			ghost:    { label: 'Secret area resets every 12h',  desc: 'Secret areas refresh twice as often.' },
+			dragon:   { label: 'Camp rating gain +25%',         desc: 'All camp rating actions earn 25% more stars.' },
+			fighting: { label: 'Curry always max quality',      desc: 'Campfire curry is always best quality.' },
+			poison:   { label: 'Berry trader refreshes 2×/day', desc: 'Berry trader stock refreshes twice daily.' },
+			ice:      { label: 'Rival cooldown halved',         desc: 'Challenge rivals again in half the usual time.' },
+			rock:     { label: 'Dig finds double items',        desc: 'Digging for treasure yields twice as many items.' },
+			ground:   { label: '+10% token earnings',           desc: 'Earn 10% more tokens from all sources.' },
+			bug:      { label: 'Berry harvests +1 extra',       desc: 'Each berry harvest yields one bonus berry.' },
+			steel:    { label: 'No durability loss on tools',   desc: 'Fishing/digging tools never degrade.' },
+			dark:     { label: 'Night bonuses always active',   desc: 'Night-time camp bonuses apply 24 hours a day.' },
+			fairy:    { label: 'Friendship gains +10%',         desc: 'All friendship increases are 10% higher.' },
+			flying:   { label: 'Expedition returns 20% faster', desc: 'Expedition return time is reduced by 20%.' },
+		};
+		const MILESTONES = [25, 50, 75, 100];
+		const KEY = 'pokequiz_bond_perks';
+
+		function _load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; } }
+		function _save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(_) {} }
+
+		function check() {
+			try {
+				const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+				const friendship = inv.friendship || 0;
+				const partnerType = (inv.partnerType || 'normal').toLowerCase();
+				const data = _load();
+				const currentLevel = MILESTONES.filter(m => friendship >= m).length;
+				const prevLevel = data[partnerType] || 0;
+				if (currentLevel > prevLevel) {
+					data[partnerType] = currentLevel;
+					_save(data);
+					const perk = TYPE_PERKS[partnerType];
+					if (perk) {
+						setTimeout(() => {
+							showToast('🌟 Bond Perk Unlocked! ' + perk.label);
+							(typeof NotifFeed !== 'undefined') && NotifFeed.push('Bond Perk: ' + perk.label, 'star-fill');
+						}, 800);
+					}
+				}
+			} catch(_) {}
+		}
+
+		function getPerks() {
+			const data = _load();
+			return Object.entries(data).map(([type, level]) => ({
+				type, level,
+				...(TYPE_PERKS[type] || { label: type, desc: '' })
+			}));
+		}
+
+		function applyPassive(type) {
+			try {
+				const data = _load();
+				const t = (type || '').toLowerCase();
+				return (data[t] || 0) > 0;
+			} catch { return false; }
+		}
+
+		function hasPerk(type) { return applyPassive(type); }
+
+		return { check, getPerks, applyPassive, hasPerk, TYPE_PERKS };
+	})();
+	window.CAMP_SYSTEMS.PartnerBondSkills = PartnerBondSkills;
+
+	// ── BerryBuffs ─────────────────────────────────────────────────────────────
+	const BerryBuffs = (() => {
+		const BUFF_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+		const KEY = 'pokequiz_active_buff';
+		const BUFF_DEFS = {
+			sitrus: { name: 'Sitrus Berry', icon: '🍇', desc: '+1 extra life on quiz pages.' },
+			oran:   { name: 'Oran Berry',   icon: '🫐', desc: '+5 seconds on quiz timer.' },
+			leppa:  { name: 'Leppa Berry',  icon: '🍒', desc: 'Combo streak starts at ×1.5.' },
+			pecha:  { name: 'Pecha Berry',  icon: '🍑', desc: 'No friendship penalty on wrong answers.' },
+		};
+
+		function getActive() {
+			try {
+				const raw = localStorage.getItem(KEY);
+				if (!raw) return null;
+				const buff = JSON.parse(raw);
+				if (Date.now() > buff.expires) { localStorage.removeItem(KEY); return null; }
+				if (localStorage.getItem('pokequiz_buff_used') === '1') {
+					localStorage.removeItem(KEY);
+					localStorage.removeItem('pokequiz_buff_used');
+					return null;
+				}
+				return buff;
+			} catch { return null; }
+		}
+
+		function activateBuff(berryType) {
+			const def = BUFF_DEFS[berryType];
+			if (!def) return;
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			const berries = inv.berries || {};
+			const count = berries[berryType] || 0;
+			if (count <= 0) { showToast('No ' + def.name + ' in inventory!'); return; }
+			berries[berryType] = count - 1;
+			inv.berries = berries;
+			try { (typeof Inventory !== 'undefined') && Inventory.save(inv); } catch(_) {}
+			const buff = { type: berryType, expires: Date.now() + BUFF_DURATION_MS };
+			try { localStorage.setItem(KEY, JSON.stringify(buff)); } catch(_) {}
+			showToast(def.icon + ' ' + def.name + ' buff active! ' + def.desc);
+			const modal = document.getElementById('berryBuffModal');
+			if (modal) modal.hidden = true;
+		}
+
+		function open() {
+			const modal = document.getElementById('berryBuffModal');
+			if (!modal) return;
+			modal.hidden = false;
+			_renderModal(modal);
+		}
+
+		function _renderModal(modal) {
+			const body = modal.querySelector('#berryBuffBody');
+			if (!body) return;
+			const active = getActive();
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			const berries = inv.berries || {};
+			body.innerHTML = '';
+			if (active) {
+				const def = BUFF_DEFS[active.type] || {};
+				const mins = Math.ceil((active.expires - Date.now()) / 60000);
+				const info = document.createElement('div');
+				info.style.cssText = 'padding:10px;border:1px solid var(--pk-gold);border-radius:8px;margin-bottom:12px;font-size:7px;color:var(--pk-gold)';
+				info.innerHTML = 'Active: ' + (def.icon || '') + ' <b>' + (def.name || active.type) + '</b><br><span style="color:var(--pk-muted)">Expires in ~' + mins + ' min</span>';
+				body.appendChild(info);
+			}
+			Object.entries(BUFF_DEFS).forEach(([type, def]) => {
+				const count = berries[type] || 0;
+				const row = document.createElement('div');
+				row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--pk-border);border-radius:8px;margin-bottom:6px';
+				const ico2 = document.createElement('span');
+				ico2.style.cssText = 'font-size:20px;flex-shrink:0';
+				ico2.textContent = def.icon;
+				const info2 = document.createElement('div');
+				info2.style.flex = '1';
+				info2.innerHTML = '<div style="font-size:8px;color:var(--pk-text)">' + def.name + ' <span style="color:var(--pk-muted)">×' + count + '</span></div><div style="font-size:6px;color:var(--pk-muted);margin-top:3px">' + def.desc + '</div>';
+				const btn = document.createElement('button');
+				btn.className = 'pk-btn pk-btn-xs pk-btn-gold';
+				btn.textContent = 'Use';
+				btn.disabled = count <= 0 || !!active;
+				btn.addEventListener('click', () => { activateBuff(type); _renderModal(modal); });
+				row.appendChild(ico2);
+				row.appendChild(info2);
+				row.appendChild(btn);
+				body.appendChild(row);
+			});
+			if (!Object.values(berries).some(v => v > 0)) {
+				const empty = document.createElement('div');
+				empty.style.cssText = 'font-size:7px;color:var(--pk-muted);text-align:center;padding:16px 0';
+				empty.textContent = 'No buff berries in inventory.';
+				body.appendChild(empty);
+			}
+		}
+
+		const _wire = () => {
+			document.getElementById('berryBuffClose')?.addEventListener('click', () => {
+				const m = document.getElementById('berryBuffModal');
+				if (m) m.hidden = true;
+			});
+			document.getElementById('campBerryBuffBtn')?.addEventListener('click', () => open());
+		};
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wire); else _wire();
+
+		return { open, activateBuff, getActive, BUFF_DEFS };
+	})();
+	window.CAMP_SYSTEMS.BerryBuffs = BerryBuffs;
+
+	// ── CampUpgrades (Facility Upgrades — replaces cosmetic-only version) ─────
+	const FacilityUpgrades = (() => {
+		const KEY = 'pokequiz_upgrades';
+		const FACILITIES = {
+			fishing: {
+				name: 'Fishing Dock',
+				icon: '🎣',
+				levels: [
+					{ label: 'Basic Dock',    cost: 0,   desc: 'Standard fishing — common Pokémon.' },
+					{ label: 'Better Dock',   cost: 150, desc: '+Rare Pokémon chance when fishing.' },
+					{ label: 'Premium Dock',  cost: 400, desc: 'Legendary encounters possible!' },
+				],
+			},
+			garden: {
+				name: 'Garden Plot',
+				icon: '🌱',
+				levels: [
+					{ label: 'Small Plot',    cost: 0,   desc: '4 berry slots available.' },
+					{ label: 'Large Plot',    cost: 100, desc: '8 berry slots (2× capacity).' },
+					{ label: 'Expert Plot',   cost: 300, desc: 'Berries grow 50% faster.' },
+				],
+			},
+			campfire: {
+				name: 'Campfire',
+				icon: '🔥',
+				levels: [
+					{ label: 'Small Fire',    cost: 0,   desc: 'Standard curry — normal quality.' },
+					{ label: 'Warm Fire',     cost: 80,  desc: 'Curry gives +5 bonus friendship.' },
+					{ label: 'Roaring Fire',  cost: 250, desc: 'Campfire stories reward 10 tokens.' },
+				],
+			},
+		};
+
+		function _load() { try { return JSON.parse(localStorage.getItem(KEY) || '{"fishing":0,"garden":0,"campfire":0}'); } catch { return { fishing: 0, garden: 0, campfire: 0 }; } }
+		function _save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(_) {} }
+
+		function getLevel(facility) { return _load()[facility] || 0; }
+
+		function canUpgrade(facility) {
+			const data = _load();
+			const lvl = data[facility] || 0;
+			const fac = FACILITIES[facility];
+			if (!fac) return false;
+			if (lvl >= fac.levels.length - 1) return false;
+			const nextCost = fac.levels[lvl + 1].cost;
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			return (inv.tokens || 0) >= nextCost;
+		}
+
+		function upgrade(facility) {
+			const data = _load();
+			const lvl = data[facility] || 0;
+			const fac = FACILITIES[facility];
+			if (!fac) return;
+			if (lvl >= fac.levels.length - 1) { showToast('Already max level!'); return; }
+			const nextLevel = fac.levels[lvl + 1];
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			if ((inv.tokens || 0) < nextLevel.cost) { showToast('Not enough tokens!'); return; }
+			inv.tokens = (inv.tokens || 0) - nextLevel.cost;
+			try { (typeof Inventory !== 'undefined') && Inventory.save(inv); } catch(_) {}
+			data[facility] = lvl + 1;
+			_save(data);
+			showToast('🔨 ' + fac.name + ' upgraded to ' + nextLevel.label + '!');
+			(typeof NotifFeed !== 'undefined') && NotifFeed.push(fac.name + ' upgraded! ' + nextLevel.desc, 'hammer');
+			const panel = document.getElementById('upgradePanel');
+			if (panel && !panel.hidden) _renderPanel(panel);
+		}
+
+		function open() {
+			const panel = document.getElementById('upgradePanel');
+			if (!panel) return;
+			panel.hidden = false;
+			_renderPanel(panel);
+		}
+
+		function _renderPanel(panel) {
+			const body = panel.querySelector('#upgradePanelBody');
+			if (!body) return;
+			const data = _load();
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			const tokens = inv.tokens || 0;
+			body.innerHTML = '<div style="font-size:7px;color:var(--pk-muted);margin-bottom:12px">Tokens: <span style="color:var(--pk-gold)">' + tokens + '</span></div>';
+			Object.entries(FACILITIES).forEach(([key, fac]) => {
+				const lvl = data[key] || 0;
+				const isMax = lvl >= fac.levels.length - 1;
+				const current = fac.levels[lvl];
+				const next = fac.levels[lvl + 1];
+				const card = document.createElement('div');
+				card.style.cssText = 'border:1px solid var(--pk-border);border-radius:10px;padding:12px;margin-bottom:10px';
+				const canUp = !isMax && tokens >= (next ? next.cost : Infinity);
+				card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">' + fac.icon + '</span><div style="flex:1"><div style="font-size:9px;color:var(--pk-gold)">' + fac.name + '</div><div style="font-size:7px;color:var(--pk-muted)">Level ' + (lvl + 1) + ' — ' + current.label + '</div></div></div>' +
+					'<div style="font-size:7px;color:var(--pk-text);margin-bottom:10px">' + current.desc + '</div>' +
+					(isMax ? '<div style="font-size:7px;color:#50dd88">✓ Max Level</div>' :
+						'<div style="font-size:7px;color:var(--pk-muted);margin-bottom:8px">Next: ' + next.label + ' — ' + next.desc + '</div>');
+				if (!isMax) {
+					const btn = document.createElement('button');
+					btn.className = 'pk-btn pk-btn-sm ' + (canUp ? 'pk-btn-gold' : 'pk-btn-dark');
+					btn.textContent = 'Upgrade (' + next.cost + ' tokens)';
+					btn.disabled = !canUp;
+					btn.addEventListener('click', () => upgrade(key));
+					card.appendChild(btn);
+				}
+				body.appendChild(card);
+			});
+		}
+
+		const _wire = () => {
+			document.getElementById('upgradeClose')?.addEventListener('click', () => {
+				const p = document.getElementById('upgradePanel');
+				if (p) p.hidden = true;
+			});
+			document.getElementById('campUpgradeBtn')?.addEventListener('click', () => open());
+		};
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wire); else _wire();
+
+		return { open, getLevel, canUpgrade, upgrade, FACILITIES };
+	})();
+	window.CAMP_SYSTEMS.CampUpgrades = FacilityUpgrades;
+
+	// ── Expeditions ────────────────────────────────────────────────────────────
+	const Expeditions = (() => {
+		const KEY = 'pokequiz_expedition';
+		const TYPES = {
+			short: {
+				label: 'Short Trip',
+				duration: 60 * 60 * 1000,
+				cost: 20,
+				icon: '🥾',
+				rewardDesc: '2-3 berries + 10 tokens',
+				reward: () => {
+					const count = 2 + Math.floor(Math.random() * 2);
+					const berryTypes = ['sitrus', 'oran', 'leppa', 'pecha', 'rawst', 'chesto'];
+					const berries = {};
+					for (let i = 0; i < count; i++) {
+						const b = berryTypes[Math.floor(Math.random() * berryTypes.length)];
+						berries[b] = (berries[b] || 0) + 1;
+					}
+					return { tokens: 10, berries };
+				},
+			},
+			long: {
+				label: 'Long Expedition',
+				duration: 4 * 60 * 60 * 1000,
+				cost: 50,
+				icon: '🏕️',
+				rewardDesc: 'Rare item + 2-5 seeds + 30 tokens',
+				reward: () => {
+					const seedCount = 2 + Math.floor(Math.random() * 4);
+					const seeds = {};
+					const seedTypes = ['sitrus', 'oran', 'leppa', 'pecha'];
+					for (let i = 0; i < seedCount; i++) {
+						const s = seedTypes[Math.floor(Math.random() * seedTypes.length)];
+						seeds[s] = (seeds[s] || 0) + 1;
+					}
+					return { tokens: 30, seeds, rareItem: 'Rare Feather' };
+				},
+			},
+			epic: {
+				label: 'Epic Adventure',
+				duration: 8 * 60 * 60 * 1000,
+				cost: 100,
+				icon: '⚔️',
+				rewardDesc: 'Guaranteed shiny + 5 seeds + 100 tokens',
+				reward: () => {
+					const seeds = { sitrus: 2, oran: 2, leppa: 1 };
+					return { tokens: 100, seeds, shinyEncounter: true };
+				},
+			},
+		};
+
+		function _load() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } }
+		function _save(d) { try { d ? localStorage.setItem(KEY, JSON.stringify(d)) : localStorage.removeItem(KEY); } catch(_) {} }
+
+		function getActive() { return _load(); }
+
+		function isComplete() {
+			const exp = _load();
+			if (!exp) return false;
+			return Date.now() >= exp.startTime + (TYPES[exp.type] ? TYPES[exp.type].duration : 0);
+		}
+
+		function check() {
+			const exp = _load();
+			if (!exp) return;
+			if (!isComplete()) {
+				_updatePartnerBadge(true, exp);
+				return;
+			}
+			const typeDef = TYPES[exp.type];
+			const rewards = typeDef ? typeDef.reward() : { tokens: 0 };
+			_giveRewards(rewards, exp);
+			_save(null);
+			_updatePartnerBadge(false);
+			_showRewardModal(rewards, exp);
+		}
+
+		function _giveRewards(rewards, exp) {
+			try {
+				const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+				inv.tokens = (inv.tokens || 0) + (rewards.tokens || 0);
+				if (rewards.berries) {
+					inv.berries = inv.berries || {};
+					Object.entries(rewards.berries).forEach(([k, v]) => { inv.berries[k] = (inv.berries[k] || 0) + v; });
+				}
+				if (rewards.seeds) {
+					inv.seeds = inv.seeds || {};
+					Object.entries(rewards.seeds).forEach(([k, v]) => { inv.seeds[k] = (inv.seeds[k] || 0) + v; });
+				}
+				(typeof Inventory !== 'undefined') && Inventory.save(inv);
+				if (rewards.shinyEncounter && typeof ShinyEncounters !== 'undefined') {
+					setTimeout(() => ShinyEncounters.trigger(), 2000);
+				}
+			} catch(_) {}
+		}
+
+		function _showRewardModal(rewards, exp) {
+			const overlay = document.createElement('div');
+			overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center';
+			const typeDef = TYPES[exp.type] || {};
+			let rewardText = '+' + (rewards.tokens || 0) + ' tokens';
+			if (rewards.berries) rewardText += ', berries: ' + Object.entries(rewards.berries).map(([k,v])=>v+'× '+k).join(', ');
+			if (rewards.seeds)   rewardText += ', seeds: ' + Object.entries(rewards.seeds).map(([k,v])=>v+'× '+k).join(', ');
+			if (rewards.rareItem) rewardText += ', ' + rewards.rareItem;
+			if (rewards.shinyEncounter) rewardText += ', ✨ Shiny Encounter!';
+			overlay.innerHTML = '<div style="background:var(--pk-bg,#0a1220);border:2px solid var(--pk-gold,#f6c84c);border-radius:12px;padding:24px 28px;max-width:340px;font-family:\'Press Start 2P\',monospace;text-align:center"><div style="font-size:24px;margin-bottom:12px">' + (typeDef.icon||'🎒') + '</div><div style="font-size:9px;color:var(--pk-gold,#f6c84c);margin-bottom:10px">' + (exp.partnerName||'Your partner') + ' returned!</div><div style="font-size:7px;color:#c8d8f0;margin-bottom:16px">' + rewardText + '</div><button id="_expDismiss" class="pk-btn pk-btn-gold pk-btn-sm">Collect Rewards!</button></div>';
+			document.body.appendChild(overlay);
+			overlay.querySelector('#_expDismiss')?.addEventListener('click', () => overlay.remove());
+			showToast((typeDef.icon||'') + ' ' + (exp.partnerName||'Partner') + ' returned from expedition!');
+		}
+
+		function _updatePartnerBadge(away, exp) {
+			try {
+				const sprite = document.getElementById('campPartnerSprite') || document.getElementById('cpPortrait');
+				const badge = document.getElementById('expeditionAwayBadge');
+				if (badge) badge.hidden = !away;
+				if (sprite) sprite.style.opacity = away ? '0.3' : '1';
+				if (away && exp) {
+					const remaining = Math.max(0, Math.ceil((exp.startTime + (TYPES[exp.type]?.duration || 0) - Date.now()) / 60000));
+					if (badge) badge.textContent = '✈️ Away! ~' + remaining + 'min';
+				}
+			} catch(_) {}
+		}
+
+		function start(type) {
+			if (_load()) { showToast('Partner is already on an expedition!'); return; }
+			const typeDef = TYPES[type];
+			if (!typeDef) return;
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			if ((inv.tokens || 0) < typeDef.cost) { showToast('Not enough tokens!'); return; }
+			inv.tokens = (inv.tokens || 0) - typeDef.cost;
+			try { (typeof Inventory !== 'undefined') && Inventory.save(inv); } catch(_) {}
+			const partnerName = inv.partnerNickname || inv.eeveeForm || 'Partner';
+			_save({ type, startTime: Date.now(), partnerName, rewards: null });
+			_updatePartnerBadge(true, _load());
+			showToast(typeDef.icon + ' ' + partnerName + ' has left on a ' + typeDef.label + '!');
+			const panel = document.getElementById('expeditionPanel');
+			if (panel) panel.hidden = true;
+		}
+
+		function cancel() {
+			const exp = _load();
+			if (!exp) { showToast('No active expedition.'); return; }
+			_save(null);
+			_updatePartnerBadge(false);
+			showToast('Expedition cancelled. No rewards.');
+		}
+
+		function open() {
+			const panel = document.getElementById('expeditionPanel');
+			if (!panel) return;
+			panel.hidden = false;
+			_renderPanel(panel);
+		}
+
+		function _renderPanel(panel) {
+			const body = panel.querySelector('#expeditionPanelBody');
+			if (!body) return;
+			const exp = _load();
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			const tokens = inv.tokens || 0;
+			body.innerHTML = '';
+			// Check tier gate
+			const tier = (typeof CampTier !== 'undefined') ? CampTier.getTier() : 5;
+			if (tier < 4) {
+				body.innerHTML = '<div style="font-size:7px;color:var(--pk-muted);text-align:center;padding:20px">Reach Camp Tier 4 (4★) to unlock Expeditions!</div>';
+				return;
+			}
+			if (exp) {
+				const typeDef = TYPES[exp.type] || {};
+				const endTime = exp.startTime + (typeDef.duration || 0);
+				const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 60000));
+				const done = Date.now() >= endTime;
+				body.innerHTML = '<div style="border:1px solid var(--pk-gold);border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;margin-bottom:8px">' + (typeDef.icon||'') + '</div><div style="font-size:8px;color:var(--pk-gold);margin-bottom:6px">' + exp.partnerName + ' is away!</div><div style="font-size:7px;color:var(--pk-muted);margin-bottom:12px">' + typeDef.label + (done ? ' — <span style="color:#50dd88">READY!</span>' : ' — ~' + remaining + ' min left') + '</div>' +
+					(done ? '<button id="_expCollectBtn" class="pk-btn pk-btn-gold pk-btn-sm" style="width:100%">Collect Rewards!</button>' : '<button id="_expCancelBtn" class="pk-btn pk-btn-dark pk-btn-sm" style="width:100%">Cancel (no reward)</button>') + '</div>';
+				body.querySelector('#_expCollectBtn')?.addEventListener('click', () => { check(); panel.hidden = true; });
+				body.querySelector('#_expCancelBtn')?.addEventListener('click', () => { if (confirm('Cancel the expedition? No rewards will be given.')) { cancel(); _renderPanel(panel); } });
+				return;
+			}
+			body.innerHTML = '<div style="font-size:7px;color:var(--pk-muted);margin-bottom:14px">Tokens: <span style="color:var(--pk-gold)">' + tokens + '</span></div>';
+			Object.entries(TYPES).forEach(([typeKey, typeDef]) => {
+				const canStart = tokens >= typeDef.cost;
+				const durationH = typeDef.duration / 3600000;
+				const durationLabel = durationH < 1 ? (typeDef.duration / 60000) + 'min' : durationH + 'h';
+				const card = document.createElement('div');
+				card.style.cssText = 'border:1px solid var(--pk-border);border-radius:10px;padding:12px;margin-bottom:10px';
+				card.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:20px">' + typeDef.icon + '</span><div style="flex:1"><div style="font-size:9px;color:var(--pk-gold)">' + typeDef.label + '</div><div style="font-size:7px;color:var(--pk-muted)">Duration: ' + durationLabel + ' · Cost: ' + typeDef.cost + ' tokens</div></div></div><div style="font-size:7px;color:var(--pk-text);margin-bottom:10px">Rewards: ' + typeDef.rewardDesc + '</div>';
+				const btn = document.createElement('button');
+				btn.className = 'pk-btn pk-btn-sm ' + (canStart ? 'pk-btn-gold' : 'pk-btn-dark');
+				btn.textContent = canStart ? 'Send Partner!' : 'Not enough tokens';
+				btn.disabled = !canStart;
+				btn.addEventListener('click', () => { start(typeKey); _renderPanel(panel); });
+				card.appendChild(btn);
+				body.appendChild(card);
+			});
+		}
+
+		const _wire = () => {
+			document.getElementById('expeditionClose')?.addEventListener('click', () => {
+				const p = document.getElementById('expeditionPanel');
+				if (p) p.hidden = true;
+			});
+			document.getElementById('campExpeditionBtn')?.addEventListener('click', () => open());
+		};
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wire); else _wire();
+
+		return { start, check, getActive, cancel, open, TYPES };
+	})();
+	window.CAMP_SYSTEMS.Expeditions = Expeditions;
+
+	// ── CampStoryArc ───────────────────────────────────────────────────────────
+	const CampStoryArc = (() => {
+		const KEY_DAY  = 'pokequiz_story_day';
+		const KEY_DATE = 'pokequiz_story_last_date';
+		const KEY_ARC  = 'pokequiz_story_arc';
+
+		const ARCS = [
+			[
+				{ text: 'A letter from Prof. Oak arrives at camp…',                      tokens: 20, berries: 1 },
+				{ text: 'A mysterious trainer is spotted near the south gate.',           tokens: 25, berries: 1 },
+				{ text: 'Strange Pokémon footprints appear by the pond.',                tokens: 20, berries: 2 },
+				{ text: 'The camp visitor leaves a package at the campfire.',            tokens: 30, berries: 2 },
+				{ text: 'A legendary Pokémon silhouette is seen at dusk.',               tokens: 35, berries: 2 },
+				{ text: 'The mysterious trainer challenges you to a quiz battle!',       tokens: 40, berries: 3 },
+				{ text: 'The arc concludes — your camp earns a special story badge! 🏅', tokens: 100, berries: 5 },
+			],
+			[
+				{ text: 'A flock of Wingull delivers mysterious packages to camp.',      tokens: 20, berries: 1 },
+				{ text: 'Strange blue flames flicker at the forest edge at midnight.',   tokens: 25, berries: 1 },
+				{ text: 'A Pokémon egg appears on your doorstep with no note.',          tokens: 20, berries: 2 },
+				{ text: 'Prof. Birch radios in with urgent news about a rare Pokémon.',  tokens: 30, berries: 2 },
+				{ text: 'The sky turns an unusual color — Rayquaza was spotted nearby.', tokens: 35, berries: 2 },
+				{ text: 'An ancient stone tablet is unearthed near the dig site.',       tokens: 40, berries: 3 },
+				{ text: 'Arc 2 complete — legend becomes reality at your camp! 🏆',      tokens: 100, berries: 5 },
+			],
+		];
+
+		function _today() { return new Date().toISOString().slice(0, 10); }
+		function _loadDay()  { try { return parseInt(localStorage.getItem(KEY_DAY)  || '1', 10); } catch { return 1; } }
+		function _loadDate() { try { return localStorage.getItem(KEY_DATE) || ''; } catch { return ''; } }
+		function _loadArc()  { try { return parseInt(localStorage.getItem(KEY_ARC)  || '0', 10); } catch { return 0; } }
+
+		function getCurrentDay() { return _loadDay(); }
+
+		function getStoryText(day) {
+			const arc = _loadArc() % ARCS.length;
+			const d = (day || _loadDay()) - 1;
+			return (ARCS[arc][d] || ARCS[0][0]).text;
+		}
+
+		function check() {
+			const today = _today();
+			const lastDate = _loadDate();
+			if (lastDate === today) return;
+			let day = _loadDay();
+			let arc = _loadArc();
+			const storyEntry = (ARCS[arc % ARCS.length] || ARCS[0])[day - 1] || ARCS[0][0];
+			try {
+				localStorage.setItem(KEY_DATE, today);
+				const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+				inv.tokens = (inv.tokens || 0) + (storyEntry.tokens || 0);
+				const berries = inv.berries || {};
+				berries.sitrus = (berries.sitrus || 0) + (storyEntry.berries || 0);
+				inv.berries = berries;
+				(typeof Inventory !== 'undefined') && Inventory.save(inv);
+			} catch(_) {}
+			setTimeout(() => {
+				showToast('📖 Story Day ' + day + ': ' + storyEntry.text);
+				(typeof NotifFeed !== 'undefined') && NotifFeed.push('Story Day ' + day + ': ' + storyEntry.text, 'book-fill');
+			}, 1200);
+			if (day >= 7) {
+				arc++;
+				day = 1;
+				try { localStorage.setItem(KEY_ARC, String(arc)); } catch(_) {}
+			} else {
+				day++;
+			}
+			try { localStorage.setItem(KEY_DAY, String(day)); } catch(_) {}
+		}
+
+		return { check, getCurrentDay, getStoryText };
+	})();
+	window.CAMP_SYSTEMS.CampStoryArc = CampStoryArc;
+
+	// ── TypeMastery ────────────────────────────────────────────────────────────
+	const TypeMastery = (() => {
+		const KEY   = 'pokequiz_type_mastery';
+		const DELTA = 'pokequiz_type_mastery_delta';
+		const TYPES = ['normal','fire','water','grass','electric','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
+		const THRESHOLDS = { bronze: 10, silver: 25, gold: 50, platinum: 100 };
+		const COLORS = { bronze: '#cd7f32', silver: '#a8a9ad', gold: '#f6c84c', platinum: '#e5e4e2' };
+
+		function _load() {
+			try {
+				const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
+				const out = {};
+				TYPES.forEach(t => { out[t] = raw[t] || 0; });
+				return out;
+			} catch { return Object.fromEntries(TYPES.map(t => [t, 0])); }
+		}
+		function _save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(_) {} }
+
+		function getLevel(type) {
+			const count = (_load()[type] || 0);
+			if (count >= THRESHOLDS.platinum) return 'platinum';
+			if (count >= THRESHOLDS.gold)     return 'gold';
+			if (count >= THRESHOLDS.silver)   return 'silver';
+			if (count >= THRESHOLDS.bronze)   return 'bronze';
+			return 'none';
+		}
+
+		function getTotal() { return Object.values(_load()).reduce((a, b) => a + b, 0); }
+
+		function addCorrect(type, count) {
+			if (!TYPES.includes(type)) return;
+			const data = _load();
+			const prev = data[type] || 0;
+			const prevLevel = getLevel(type);
+			data[type] = prev + (count || 1);
+			_save(data);
+			const newLevel = getLevel(type);
+			if (newLevel !== prevLevel && newLevel !== 'none') {
+				setTimeout(() => {
+					showToast('🏅 ' + type.charAt(0).toUpperCase() + type.slice(1) + ' type: ' + newLevel.charAt(0).toUpperCase() + newLevel.slice(1) + ' mastery!');
+					(typeof NotifFeed !== 'undefined') && NotifFeed.push(type + ' Type Mastery: ' + newLevel, 'patch-check-fill');
+				}, 500);
+			}
+		}
+
+		function _absorbDelta() {
+			try {
+				const raw = localStorage.getItem(DELTA);
+				if (!raw) return;
+				const delta = JSON.parse(raw);
+				localStorage.removeItem(DELTA);
+				Object.entries(delta).forEach(([type, count]) => addCorrect(type, count));
+			} catch(_) {}
+		}
+
+		function open() {
+			_absorbDelta();
+			const panel = document.getElementById('typeMasteryPanel');
+			if (!panel) return;
+			panel.hidden = false;
+			_renderPanel(panel);
+		}
+
+		function _renderPanel(panel) {
+			const body = panel.querySelector('#typeMasteryBody');
+			if (!body) return;
+			const data = _load();
+			const total = getTotal();
+			body.innerHTML = '<div style="font-size:7px;color:var(--pk-muted);margin-bottom:14px">Total Mastery Score: <span style="color:var(--pk-gold)">' + total + '</span></div>';
+			TYPES.forEach(type => {
+				const count = data[type] || 0;
+				const lvl = getLevel(type);
+				const color = COLORS[lvl] || 'rgba(255,255,255,0.2)';
+				const nextThresh = lvl === 'none' ? THRESHOLDS.bronze : lvl === 'bronze' ? THRESHOLDS.silver : lvl === 'silver' ? THRESHOLDS.gold : lvl === 'gold' ? THRESHOLDS.platinum : THRESHOLDS.platinum;
+				const pct = Math.min(100, Math.round((count / nextThresh) * 100));
+				const badge = lvl !== 'none' ? '<span style="font-size:6px;color:' + color + ';margin-left:6px">[' + lvl.toUpperCase() + ']</span>' : '';
+				const row = document.createElement('div');
+				row.style.cssText = 'margin-bottom:8px';
+				row.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><span style="font-size:7px;color:var(--pk-text)">' + type.charAt(0).toUpperCase() + type.slice(1) + badge + '</span><span style="font-size:6px;color:var(--pk-muted)">' + count + ' / ' + nextThresh + '</span></div><div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:3px;transition:width 0.3s"></div></div>';
+				body.appendChild(row);
+			});
+		}
+
+		const _wire = () => {
+			document.getElementById('typeMasteryClose')?.addEventListener('click', () => {
+				const p = document.getElementById('typeMasteryPanel');
+				if (p) p.hidden = true;
+			});
+			document.getElementById('campTypeMasteryBtn')?.addEventListener('click', () => open());
+		};
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wire); else _wire();
+
+		// Also absorb delta on camp load
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _absorbDelta); else _absorbDelta();
+
+		return { open, addCorrect, getLevel, getTotal, TYPES, THRESHOLDS };
+	})();
+	window.CAMP_SYSTEMS.TypeMastery = TypeMastery;
+
+	// ── CampTier ───────────────────────────────────────────────────────────────
+	const CampTier = (() => {
+		const TIER_PERKS = [
+			{ tier: 1, stars: 0,  label: 'Base Camp',       desc: 'Welcome to camp!' },
+			{ tier: 2, stars: 1,  label: 'Growing Camp',    desc: 'Garden Lv2 now available.' },
+			{ tier: 3, stars: 2,  label: 'Popular Camp',    desc: 'Two NPCs can visit simultaneously.' },
+			{ tier: 4, stars: 3,  label: 'Advanced Camp',   desc: 'Expeditions system unlocked!' },
+			{ tier: 5, stars: 4,  label: 'Legendary Camp',  desc: 'Prof. Oak visits with legendary hints.' },
+		];
+
+		function getTier() {
+			try {
+				const stars = typeof CampRating !== 'undefined' ? (CampRating.getStars ? CampRating.getStars() : CampRating.get?.().stars || 0) : 0;
+				for (let i = TIER_PERKS.length - 1; i >= 0; i--) {
+					if (stars >= TIER_PERKS[i].stars) return TIER_PERKS[i].tier;
+				}
+				return 1;
+			} catch { return 1; }
+		}
+
+		function check() {
+			const tier = getTier();
+			_renderBadge(tier);
+			return tier;
+		}
+
+		function getPerks() {
+			const tier = getTier();
+			return TIER_PERKS.filter(p => p.tier <= tier);
+		}
+
+		function _renderBadge(tier) {
+			try {
+				const badge = document.getElementById('campTierBadge');
+				if (!badge) return;
+				const info = TIER_PERKS[tier - 1] || TIER_PERKS[0];
+				badge.textContent = '★'.repeat(tier) + ' ' + info.label;
+				badge.title = info.desc;
+				badge.hidden = false;
+			} catch(_) {}
+		}
+
+		const _wire = () => { _renderBadge(getTier()); };
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wire); else _wire();
+
+		return { check, getTier, getPerks, TIER_PERKS };
+	})();
+	window.CAMP_SYSTEMS.CampTier = CampTier;
+
+	// ── TrainerBattles ─────────────────────────────────────────────────────────
+	const TrainerBattles = (() => {
+		const KEY_WINS = 'pokequiz_battle_wins';
+		const NPC_DATA = {
+			Red:   { sprite: '🧢', taunt: '"..." — Red says nothing, but his stare says everything.' },
+			Leaf:  { sprite: '🌿', taunt: '"Better luck next time, trainer!"' },
+			Blue:  { sprite: '💙', taunt: '"Ha! You\'ll have to do WAY better than that!"' },
+			May:   { sprite: '🎀', taunt: '"Keep practicing! You\'ll get there!"' },
+			Lucas: { sprite: '📘', taunt: '"Interesting battle data. You need more training."' },
+			Dawn:  { sprite: '💫', taunt: '"Don\'t give up! I believe in you!"' },
+		};
+
+		function getWins() { try { return parseInt(localStorage.getItem(KEY_WINS) || '0', 10); } catch { return 0; } }
+		function _isBeaten(npc) { try { return localStorage.getItem('pokequiz_battle_' + npc + '_beaten') === '1'; } catch { return false; } }
+		function _setBeaten(npc) { try { localStorage.setItem('pokequiz_battle_' + npc + '_beaten', '1'); } catch(_) {} }
+		function _incWins() { try { localStorage.setItem(KEY_WINS, String(getWins() + 1)); } catch(_) {} }
+
+		function _getQuestions(count) {
+			try {
+				const pool = (window.CAMP_DATA || {}).QUIZ_POOL || (window.CAMP_DATA || {}).quizPool || [];
+				if (pool.length > 0) {
+					const shuffled = [...pool].sort(() => Math.random() - 0.5);
+					return shuffled.slice(0, count).map(q => ({
+						question: q.question || q.q || 'What type is this Pokémon?',
+						choices: q.choices || q.options || ['Fire', 'Water', 'Grass', 'Electric'],
+						answer: q.answer || q.correct || 0,
+					}));
+				}
+			} catch(_) {}
+			// Fallback questions
+			const FALLBACK = [
+				{ question: 'What is Pikachu\'s primary type?', choices: ['Electric', 'Normal', 'Fire', 'Psychic'], answer: 0 },
+				{ question: 'Which Pokémon evolves from Eevee using a Water Stone?', choices: ['Flareon', 'Vaporeon', 'Jolteon', 'Espeon'], answer: 1 },
+				{ question: 'What type is Gengar?', choices: ['Dark', 'Psychic', 'Ghost', 'Poison'], answer: 2 },
+				{ question: 'How many HP does a standard Potion restore?', choices: ['10', '20', '30', '50'], answer: 1 },
+				{ question: 'What is Charizard\'s secondary type?', choices: ['Dragon', 'Flying', 'Fire', 'Normal'], answer: 1 },
+				{ question: 'Which move has 100% accuracy and 40 base power for Normal type?', choices: ['Tackle', 'Scratch', 'Pound', 'Cut'], answer: 2 },
+				{ question: 'What type is effective against Dragon?', choices: ['Fire', 'Ice', 'Water', 'Grass'], answer: 1 },
+				{ question: 'Which Pokémon is known as the Flame Pokémon?', choices: ['Charmander', 'Vulpix', 'Growlithe', 'Magmar'], answer: 0 },
+				{ question: 'What is the max base friendship value?', choices: ['100', '200', '255', '300'], answer: 2 },
+				{ question: 'Which region is Johto located in?', choices: ['Kanto', 'Japan', 'Gold/Silver games', 'Hoenn'], answer: 2 },
+			];
+			const shuffled = [...FALLBACK].sort(() => Math.random() - 0.5);
+			return shuffled.slice(0, count);
+		}
+
+		function startBattle(npcName) {
+			const npc = NPC_DATA[npcName] || { sprite: '❓', taunt: '"Good try!"' };
+			const questions = _getQuestions(5);
+			let current = 0;
+			let correct = 0;
+			let timerInterval = null;
+			let timeLeft = 8;
+
+			const overlay = document.createElement('div');
+			overlay.id = 'trainerBattleOverlay';
+			overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace';
+
+			function _render() {
+				clearInterval(timerInterval);
+				if (current >= questions.length) {
+					_showResult();
+					return;
+				}
+				const q = questions[current];
+				timeLeft = 8;
+				overlay.innerHTML = '<div style="background:var(--pk-bg,#0a1220);border:2px solid var(--pk-gold,#f6c84c);border-radius:12px;padding:24px;max-width:380px;width:95%;text-align:center">' +
+					'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:20px">' + npc.sprite + '</div><div style="font-size:8px;color:var(--pk-gold)">' + npcName + '\'s Battle</div><div style="font-size:8px;color:var(--pk-muted)">' + (current + 1) + '/5 · ✓' + correct + '</div></div>' +
+					'<div id="_bTimerBar" style="height:5px;background:var(--pk-gold,#f6c84c);border-radius:3px;margin-bottom:14px;transition:width 0.1s linear;width:100%"></div>' +
+					'<div style="font-size:8px;color:#e8eaf0;margin-bottom:18px;min-height:40px">' + q.question + '</div>' +
+					'<div id="_bChoices" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+					q.choices.map((c, i) => '<button class="pk-btn pk-btn-dark pk-btn-sm _bChoice" data-idx="' + i + '" style="font-size:7px">' + c + '</button>').join('') +
+					'</div></div>';
+				overlay.querySelectorAll('._bChoice').forEach(btn => {
+					btn.addEventListener('click', () => {
+						clearInterval(timerInterval);
+						const idx = parseInt(btn.dataset.idx, 10);
+						if (idx === q.answer) {
+							correct++;
+							btn.style.background = 'rgba(80,221,136,0.4)';
+						} else {
+							btn.style.background = 'rgba(221,80,80,0.4)';
+							overlay.querySelectorAll('._bChoice')[q.answer].style.background = 'rgba(80,221,136,0.4)';
+						}
+						overlay.querySelectorAll('._bChoice').forEach(b => b.disabled = true);
+						setTimeout(() => { current++; _render(); }, 700);
+					});
+				});
+				// Timer
+				const bar = overlay.querySelector('#_bTimerBar');
+				timerInterval = setInterval(() => {
+					timeLeft -= 0.1;
+					if (bar) bar.style.width = Math.max(0, (timeLeft / 8) * 100) + '%';
+					if (timeLeft <= 0) {
+						clearInterval(timerInterval);
+						overlay.querySelectorAll('._bChoice').forEach(b => b.disabled = true);
+						if (bar) bar.style.background = '#dd5050';
+						setTimeout(() => { current++; _render(); }, 700);
+					}
+				}, 100);
+			}
+
+			function _showResult() {
+				clearInterval(timerInterval);
+				const won = correct >= 3;
+				if (won) {
+					_incWins();
+					_setBeaten(npcName);
+					const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+					inv.tokens = (inv.tokens || 0) + 50;
+					try { (typeof Inventory !== 'undefined') && Inventory.save(inv); } catch(_) {}
+					(typeof Achievements !== 'undefined') && Achievements.unlock('battle_win');
+				}
+				overlay.innerHTML = '<div style="background:var(--pk-bg,#0a1220);border:2px solid ' + (won ? '#50dd88' : '#dd5050') + ';border-radius:12px;padding:28px;max-width:360px;width:95%;text-align:center">' +
+					'<div style="font-size:28px;margin-bottom:12px">' + (won ? '🏆' : npc.sprite) + '</div>' +
+					'<div style="font-size:9px;color:' + (won ? '#50dd88' : '#dd5050') + ';margin-bottom:10px">' + (won ? 'You Win!' : 'You Lose!') + '</div>' +
+					'<div style="font-size:7px;color:#c8d8f0;margin-bottom:16px">' + (won ? 'Answered ' + correct + '/5 correctly!<br>+50 tokens earned!' : npc.taunt + '<br>Got ' + correct + '/5 correct.') + '</div>' +
+					'<button id="_bClose" class="pk-btn pk-btn-gold pk-btn-sm">Close</button></div>';
+				overlay.querySelector('#_bClose')?.addEventListener('click', () => overlay.remove());
+			}
+
+			document.body.appendChild(overlay);
+			_render();
+		}
+
+		return { startBattle, getWins, NPC_DATA };
+	})();
+	window.CAMP_SYSTEMS.TrainerBattles = TrainerBattles;
 
 	// ── Sound additions ────────────────────────────────────────────────────────
 	(function(){
