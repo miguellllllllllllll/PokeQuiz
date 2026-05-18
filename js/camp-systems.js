@@ -3400,6 +3400,34 @@
 				if (root) root.hidden = true;
 			}
 	
+			function showIntro(onDone) {
+				const enc = _currentEncounter;
+				// Populate sprite + name
+				const img = $('cbIntroSprite');
+				if (img) { img.src = SPRITE_URL(enc.id); img.alt = enc.name; }
+				const nameEl = $('cbIntroName');
+				if (nameEl) nameEl.textContent = enc.name;
+				// Re-trigger CSS animations (flash + poke entrance)
+				['cbIntroFlash', 'cbIntroPoke'].forEach(id => {
+					const el = $(id);
+					if (!el) return;
+					el.style.animation = 'none';
+					void el.offsetWidth;
+					el.style.animation = '';
+				});
+				show('intro');
+				// Play cry after the flash peak
+				setTimeout(() => Sound.cry(enc.id), 460);
+				Music.start('battle');
+				// Wire the "Battle!" button — clone to strip stale listeners
+				const oldBtn = $('cbIntroBtn');
+				if (oldBtn) {
+					const fresh = oldBtn.cloneNode(true);
+					oldBtn.parentNode.replaceChild(fresh, oldBtn);
+					fresh.addEventListener('click', onDone, { once: true });
+				}
+			}
+
 			function start(cb) {
 				// Clean up any leftover state from a previous encounter.
 				rhythmState?.stop();
@@ -3413,17 +3441,15 @@
 				_contestMode = false;
 				_currentEncounter = POKEMON[Math.floor(Math.random() * POKEMON.length)];
 				Pokedex.markSeen(_currentEncounter.id);
-				// Reset wheel UI
+				// Pre-reset wheel UI so it's ready when the intro transitions to it
 				const disc = $('cbWheelDisc');
 				if (disc) disc.style.transform = 'rotate(0deg)';
 				const wr = $('cbWheelResult');
 				if (wr) { wr.hidden = true; wr.textContent = ''; }
 				const sb = $('cbSpinBtn');
 				if (sb) { sb.disabled = false; sb.textContent = 'Spin!'; }
-				show('wheel');
-				// Play encounter cry and switch to battle music.
-				Sound.cry(_currentEncounter.id);
-				Music.start('battle');
+				// Show encounter intro — player clicks "Battle!" to reach the wheel
+				showIntro(() => show('wheel'));
 			}
 	
 			function startContestMode(cat, cb) {
@@ -6435,7 +6461,13 @@
 			set(16, 46, TFR); set(19, 46, TFY); set(22, 46, TFR);
 			// Sign just outside the café entrance on the south side of the path
 			set(12, 39, TSG);
-	
+
+			// ── Medieval Tower — bottom-left quadrant (rows 16–21, cols 3–6) ──
+			// Overwrites any flower/bush tiles that landed here — the tower wins.
+			fill(16, 3, 21, 6, TBLD);
+			// Small cobblestone approach path leading south from the tower entrance
+			set(22, 4, TP); set(22, 5, TP);
+
 			return map;
 		}
 	window.CAMP_SYSTEMS.buildMarketMap = buildMarketMap;
@@ -9354,6 +9386,8 @@
 							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
 						}
 					}
+					// Paint the medieval tower art over its TBLD footprint
+					this._drawMarketTower(baseCtx, 3 * TILE, 16 * TILE);
 					this.baseTex.refresh();
 					this.add.image(0, 0, 'marketBase').setOrigin(0).setDepth(0);
 	
@@ -9495,6 +9529,104 @@
 						if (this._promptEl) this._promptEl.hidden = true;
 						if (this._locEl && this._prevLocText) this._locEl.textContent = this._prevLocText;
 					});
+				}
+
+				// ── Medieval tower pixel-art painter ─────────────────────────────────
+				// Paints a 64×96 px BW2-style stone tower onto the base canvas.
+				// px,py = top-left pixel of the 4×6-tile footprint (col3×16, row16×16).
+				_drawMarketTower(ctx, px, py) {
+					const W = 64, H = 96;
+					const r = (x, y, w, h, col) => {
+						ctx.fillStyle = col;
+						ctx.fillRect(px + x, py + y, w, h);
+					};
+
+					// ── Palette (BW2 stone/wood) ────────────────────────────────────────
+					const STONE  = '#787068';
+					const SHADOW = '#504840';
+					const HILIT  = '#9C9488';
+					const MORTAR = '#585048';
+					const DARK   = '#18100C';
+					const WOOD   = '#3A2210';
+					const WFRAME = '#584838';
+					const GLOW   = '#F8D040';
+					const GLOWL  = '#FFF0A0';
+					const GLOWD  = '#C89010';
+
+					// ── Main tower body (below battlements) ─────────────────────────────
+					r(0, 14, W, H - 14, STONE);
+					// Left & right shadow edges
+					r(0, 14, 3, H - 14, SHADOW);
+					r(W - 3, 14, 3, H - 14, SHADOW);
+
+					// ── Horizontal mortar lines ──────────────────────────────────────────
+					for (let my = 22; my < H; my += 8) {
+						r(3, my, W - 6, 1, MORTAR);
+					}
+
+					// ── Vertical mortar (alternating brick offset) ────────────────────────
+					const bodyRows = Math.ceil((H - 14) / 8);
+					for (let by = 0; by < bodyRows; by++) {
+						const offX = (by % 2 === 0) ? 8 : 16;
+						for (let mx = offX; mx < W - 3; mx += 24) {
+							r(mx, 14 + by * 8 + 1, 1, 6, MORTAR);
+						}
+					}
+
+					// ── Battlements — 3 merlons (16 px) with 2 crenels (8 px) ──────────
+					// Crenel shadow fill (depth behind gaps)
+					r(16, 0, 8, 14, SHADOW);
+					r(40, 0, 8, 14, SHADOW);
+					// Merlons: left, centre, right
+					r(0,  0, 16, 14, STONE);
+					r(24, 0, 16, 14, STONE);
+					r(48, 0, 16, 14, STONE);
+					// Merlon highlight (top edge)
+					r(0,  0, 16, 2, HILIT);
+					r(24, 0, 16, 2, HILIT);
+					r(48, 0, 16, 2, HILIT);
+					// Merlon left-edge shadow
+					r(0,  2, 2, 12, SHADOW);
+					r(24, 2, 2, 12, SHADOW);
+					r(48, 2, 2, 12, SHADOW);
+					// Battlement ledge cap & underline
+					r(0, 14, W, 2, HILIT);
+					r(0, 16, W, 2, SHADOW);
+
+					// ── Arrow slit — cross shape, vertically centred in upper body ───────
+					const slitX = 28, slitY = 34;
+					r(slitX,     slitY,      8, 14, MORTAR);          // outer frame
+					r(slitX + 2, slitY + 1,  4, 12, DARK);            // vertical channel
+					r(slitX + 1, slitY + 4,  6,  4, DARK);            // horizontal bar
+					r(slitX + 3, slitY + 2,  2,  2, '#303858');       // sky-glint
+
+					// ── Arched window with warm glow ─────────────────────────────────────
+					const wX = 16, wY = 50, wW = 32, wH = 14;
+					r(wX,      wY,      wW,     wH,     WFRAME);       // frame
+					r(wX + 2,  wY + 2,  wW - 4, wH - 4, GLOW);        // glass
+					r(wX + 2,  wY + 2,  wW - 4, 2,      GLOWL);       // top glint
+					r(wX + (wW >> 1) - 1, wY + 2, 2, wH - 4, GLOWD); // vertical divider
+					r(wX + 2,  wY + (wH >> 1), wW - 4, 1, GLOWD);    // horizontal divider
+					// Soft glow bloom
+					ctx.fillStyle = 'rgba(248,208,64,0.12)';
+					ctx.fillRect(px + wX - 2, py + wY - 2, wW + 4, wH + 4);
+
+					// ── Wooden door at base centre ────────────────────────────────────────
+					const dX = 18, dY = 76, dW = 28, dH = 20;
+					r(dX,      dY,      dW,     dH,     WFRAME);       // arch/frame
+					r(dX + 2,  dY + 4,  dW - 4, dH - 4, WOOD);        // door panel
+					// Plank lines on door
+					r(dX + 2,  dY + 8,  dW - 4, 1, SHADOW);
+					r(dX + 2,  dY + 12, dW - 4, 1, SHADOW);
+					// Arch top pixels
+					r(dX + 4,  dY + 2,  dW - 8, 2, WOOD);
+					r(dX + 2,  dY + 3,  dW - 4, 1, WOOD);
+					// Door handle
+					r(dX + dW - 8, dY + 11, 4, 4, WFRAME);
+					r(dX + dW - 7, dY + 12, 2, 2, '#8A7050');
+
+					// ── Ground-shadow line at base ────────────────────────────────────────
+					r(2, H - 1, W - 4, 1, SHADOW);
 				}
 
 				_buildMarketFollower() {
@@ -10076,69 +10208,6 @@
 	// ══════════════════════════════════════════════════════════════════════════════
 	// BATCH 3 — CAMP ACTIVITIES
 	// ══════════════════════════════════════════════════════════════════════════════
-
-	// ── B3-1: Wild Pokémon encounters while walking ───────────────────────────────
-	const WildEncounter = (() => {
-		const POOL = [
-			'Rattata','Pidgey','Zubat','Ekans','Sandshrew','Nidoran♀','Nidoran♂','Clefairy',
-			'Vulpix','Meowth','Psyduck','Mankey','Growlithe','Abra','Machop','Bellsprout',
-			'Tentacool','Geodude','Ponyta','Slowpoke','Magnemite','Doduo','Seel','Gastly',
-			'Drowzee','Voltorb','Exeggcute','Cubone','Koffing','Rhyhorn',
-		];
-		let pending = false;
-		function step(scene) {
-			const __S2 = window.__CAMP_STATE;
-			__S2._stepCount = (__S2._stepCount || 0) + 1;
-			if (__S2._stepCount % 60 === 0 && Math.random() < 0.25 && !pending) {
-				pending = true;
-				const poke = POOL[Math.floor(Math.random() * POOL.length)];
-				const msg = 'A wild ' + poke + ' appeared!';
-				setTimeout(() => {
-					Dialog.open(msg);
-					// Offer two buttons via a temporary overlay
-					let overlay = document.getElementById('wildEncounterOverlay');
-					if (!overlay) {
-						overlay = document.createElement('div');
-						overlay.id = 'wildEncounterOverlay';
-						overlay.style.cssText = 'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:120;display:flex;gap:10px;font-family:"Press Start 2P",monospace';
-						document.body.appendChild(overlay);
-					}
-					overlay.innerHTML = '';
-					const befBtn = document.createElement('button');
-					befBtn.className = 'pk-btn pk-btn-sm';
-					befBtn.style.cssText = 'background:linear-gradient(180deg,#44cc88,#228844);color:#fff';
-					befBtn.textContent = 'Befriend';
-					befBtn.addEventListener('click', () => {
-						overlay.remove();
-						Dialog.close();
-						const inv = Inventory.load();
-						inv.friendship = Math.min(FRIENDSHIP_MAX || 100, (inv.friendship || 0) + 5);
-						inv.tokens = (inv.tokens || 0) + 10;
-						if (Math.random() < 0.05) {
-							// 5% chance to add to PC box
-							const dexId = POOL.indexOf(poke) + 1;
-							if (window.CAMP_SYSTEMS.PCBox) window.CAMP_SYSTEMS.PCBox.addToBox({ form: String(dexId), nickname: poke, friendship: 0, since: Date.now() });
-							showToast('✨ ' + poke + ' joined your PC Box!');
-						}
-						Inventory.save(inv);
-						if (window.CAMP_SYSTEMS.FriendshipMilestone) window.CAMP_SYSTEMS.FriendshipMilestone.check(null, inv.friendship);
-						showToast('💚 Befriended ' + poke + '! +5 friendship, +10 tokens');
-						pending = false;
-					});
-					const runBtn = document.createElement('button');
-					runBtn.className = 'pk-btn pk-btn-sm pk-btn-dark';
-					runBtn.textContent = 'Run';
-					runBtn.addEventListener('click', () => { overlay.remove(); Dialog.close(); pending = false; });
-					overlay.appendChild(befBtn);
-					overlay.appendChild(runBtn);
-					// Auto-dismiss after 8s
-					setTimeout(() => { if (overlay.parentNode) { overlay.remove(); pending = false; } }, 8000);
-				}, 200);
-			}
-		}
-		return { step };
-	})();
-	window.CAMP_SYSTEMS.WildEncounter = WildEncounter;
 
 	// ── B3-2: Treasure Digging ────────────────────────────────────────────────────
 	const TreasureDig = (() => {
@@ -10745,10 +10814,6 @@
 		SceneClass.prototype.update = function (time, delta) {
 			origUpdate.call(this, time, delta);
 			try {
-				// Step counter for wild encounters (every 4th frame ~= 1 step at 60fps)
-				if (this.player && (this.player.body?.velocity?.x !== 0 || this.player.body?.velocity?.y !== 0)) {
-					if (this.tick % 4 === 0) WildEncounter.step(this);
-				}
 				// Treasure dig sparkle pulse
 				TreasureDig.updateSparkle();
 				// Day/Night NPC states
