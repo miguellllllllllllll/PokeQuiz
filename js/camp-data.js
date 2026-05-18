@@ -752,7 +752,7 @@ window.CAMP_DATA.HOUSE_ITEMS = {
 // ── NPCS ────────────────────────────────────────────────────────
 window.CAMP_DATA.NPCS = [
 		{
-			key: 'mart-keeper', species: 'youngster', r: 14, c: 13,
+			key: 'mart-keeper', species: 'fisherman', r: 14, c: 13,
 			label: 'Shop',
 			spriteScale: 0.89, frameHeight: 32,
 			kind: 'mart',
@@ -764,7 +764,7 @@ window.CAMP_DATA.NPCS = [
 			],
 		},
 		{
-			key: 'farmer', species: 'camper', r: 19, c: 19,
+			key: 'farmer', species: 'hiker', r: 19, c: 19,
 			label: 'Talk',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: [
@@ -775,7 +775,7 @@ window.CAMP_DATA.NPCS = [
 			],
 		},
 		{
-			key: 'quest-board', species: 'cooltrainer-m', r: 8, c: 28,
+			key: 'quest-board', species: 'ace-trainer-m', r: 8, c: 28,
 			label: 'Quests',
 			kind: 'quests',
 			spriteScale: 0.89, frameHeight: 32,
@@ -786,28 +786,28 @@ window.CAMP_DATA.NPCS = [
 			],
 		},
 		{
-			key: 'visiting-camper', species: 'picnicker', r: 16, c: 8,
+			key: 'visiting-camper', species: 'lass', r: 16, c: 8,
 			label: 'Talk',
 			kind: 'camper',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: ["..."],  // overridden by NpcCampers.openDialog
 		},
 		{
-			key: 'move-tutor', species: 'camper', r: 18, c: 6,
+			key: 'move-tutor', species: 'black-belt', r: 18, c: 6,
 			label: 'Tutor',
 			kind: 'tutor',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: ["I can teach your partner special skills! Come talk to me."],
 		},
 		{
-			key: 'berry-trader', species: 'youngster', r: 20, c: 6,
+			key: 'berry-trader', species: 'bug-catcher', r: 20, c: 6,
 			label: 'Trade',
 			kind: 'berrytrader',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: ["I love trading berries! Got some to spare?"],
 		},
 		{
-			key: 'guestbook-keeper', species: 'picnicker', r: 22, c: 8,
+			key: 'guestbook-keeper', species: 'ranger-f', r: 22, c: 8,
 			label: 'Guestbook',
 			kind: 'guestbook',
 			spriteScale: 0.89, frameHeight: 32,
@@ -825,7 +825,7 @@ window.CAMP_DATA.BERRY_TYPES = {
 // ── MARKET_NPCS ────────────────────────────────────────────────────────
 window.CAMP_DATA.MARKET_NPCS = [
 		{
-			key: 'm-pikachu', species: 'youngster', r: 7, c: 7,
+			key: 'm-pikachu', species: 'sailor', r: 7, c: 7,
 			label: 'Shop', shopKind: 'general',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: [
@@ -835,7 +835,7 @@ window.CAMP_DATA.MARKET_NPCS = [
 			],
 		},
 		{
-			key: 'm-bulbasaur', species: 'camper', r: 7, c: 22,
+			key: 'm-bulbasaur', species: 'parasol-lady', r: 7, c: 22,
 			label: 'Shop', shopKind: 'berries',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: [
@@ -845,43 +845,43 @@ window.CAMP_DATA.MARKET_NPCS = [
 			],
 		},
 		{
-			key: 'm-vaporeon', species: 'lady', r: 14, c: 7,
+			key: 'm-vaporeon', species: 'beauty', r: 14, c: 7,
 			label: 'Shop', shopKind: 'cosmetics',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Wallpapers and accents to spruce up your camp.",
 		},
 		{
-			key: 'm-umbreon', species: 'gentleman', r: 14, c: 22,
+			key: 'm-umbreon', species: 'super-nerd', r: 14, c: 22,
 			label: 'Shop', shopKind: 'stones',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Evolution stones, if you've got the tokens.",
 		},
 		{
-			key: 'm-espeon', species: 'old-lady', r: 5, c: 34,
+			key: 'm-espeon', species: 'hex-maniac', r: 5, c: 34,
 			label: 'Heal', shopKind: 'pokecenter',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Welcome to the Pokémon Center. We restore your Pokémon to full health — free of charge!",
 		},
 		{
-			key: 'm-jolteon', species: 'scientist', r: 5, c: 43,
+			key: 'm-jolteon', species: 'psychic', r: 5, c: 43,
 			label: 'Café', shopKind: 'cafe',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Welcome to my café — grab something energizing before your next quiz!",
 		},
 		{
-			key: 'm-contest', species: 'cooltrainer-f', r: 14, c: 18,
+			key: 'm-contest', species: 'ace-trainer-f', r: 14, c: 18,
 			label: 'Contest', shopKind: null, kind: 'contest',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: ['Welcome to the Contest Hall! Show off your partner\'s talents!', 'Ribbons are forever — come compete!'],
 		},
 		{
-			key: 'm-noticeboard', species: 'camper', r: 8, c: 12,
+			key: 'm-noticeboard', species: 'ranger-m', r: 8, c: 12,
 			label: 'Quests', shopKind: null, kind: 'quests',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: 'Daily quests reset every morning. Complete them all for a big token bonus!',
 		},
 		{
-			key: 'm-archivist', species: 'gentleman', r: 22, c: 12,
+			key: 'm-archivist', species: 'ninja-boy', r: 22, c: 12,
 			label: 'Talk', shopKind: null, kind: 'archivist',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: [

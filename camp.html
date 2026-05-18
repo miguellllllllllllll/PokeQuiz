@@ -23,7 +23,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/camp.css?v=12">
+	<link rel="stylesheet" href="css/camp.css?v=13">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body class="camp-body">
@@ -196,29 +196,57 @@
 			</button>
 			<!-- All other buttons — hidden when bar is collapsed -->
 			<div class="camp-btn-bar-items" id="campBtnBarItems">
-				<a class="camp-quick-btn" id="campTCBtn" href="trainer-card.html" title="Trainer Card" aria-label="Open Trainer Card"><i class="bi bi-person-vcard-fill"></i></a>
-				<button class="camp-quick-btn" id="campDexBtn" title="Pokédex (D)" aria-label="Pokédex" type="button"><i class="bi bi-book-fill"></i></button>
-				<button class="camp-quick-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements" type="button"><i class="bi bi-award-fill"></i></button>
-				<button class="camp-quick-btn" id="campPostcardBtn" title="Postcards" aria-label="Postcards" type="button"><i class="bi bi-envelope-fill"></i></button>
-				<button class="camp-quick-btn" id="campPhotoBtn" title="Photo Mode (F)" aria-label="Take Photo" type="button"><i class="bi bi-camera-fill"></i></button>
-				<button class="camp-quick-btn" id="campMusicBtn" title="Toggle Music" aria-label="Toggle Music" type="button"><i class="bi bi-music-note-beamed"></i></button>
-				<button class="camp-quick-btn" id="campShinyBtn" title="Shiny Collection" aria-label="Shiny Collection" type="button">✨</button>
-				<button class="camp-quick-btn camp-notif-btn" id="campNotifBtn" title="Notifications" aria-label="Notifications" type="button">
+				<button class="camp-quick-btn camp-grp-btn" id="grpTrainer" data-grp="trainer" type="button" title="Trainer" aria-label="Trainer menu">
+					<i class="bi bi-person-fill"></i>
+					<span class="camp-btn-label">Trainer</span>
+				</button>
+				<button class="camp-quick-btn camp-grp-btn" id="grpRecords" data-grp="records" type="button" title="Records" aria-label="Records menu">
+					<i class="bi bi-book-fill"></i>
+					<span class="camp-btn-label">Records</span>
+				</button>
+				<button class="camp-quick-btn camp-grp-btn" id="grpCamp" data-grp="camp" type="button" title="Camp" aria-label="Camp menu">
+					<i class="bi bi-map-fill"></i>
+					<span class="camp-btn-label">Camp</span>
+				</button>
+				<button class="camp-quick-btn camp-grp-btn" id="grpSocial" data-grp="social" type="button" title="Social" aria-label="Social menu">
+					<i class="bi bi-people-fill"></i>
+					<span class="camp-btn-label">Social</span>
+				</button>
+				<button class="camp-quick-btn camp-grp-btn" id="grpSettings" data-grp="settings" type="button" title="Settings" aria-label="Settings menu">
+					<i class="bi bi-gear-fill"></i>
+					<span class="camp-btn-label">Settings</span>
+				</button>
+				<button class="camp-quick-btn camp-grp-btn camp-notif-btn" id="grpNotifs" data-grp="notifs" type="button" title="Notifications" aria-label="Notifications">
 					<i class="bi bi-bell-fill"></i>
 					<span class="camp-notif-badge" id="campNotifBadge" hidden>0</span>
+					<span class="camp-btn-label">Notifs</span>
 				</button>
-				<button class="camp-quick-btn" id="campGuestbookBtn" title="Guestbook" aria-label="Guestbook" type="button"><i class="bi bi-journal-text"></i></button>
-				<button class="camp-quick-btn" id="campJournalBtn" title="Journal" aria-label="Camp Journal" type="button"><i class="bi bi-book-half"></i></button>
-				<button class="camp-quick-btn" id="campUpgradeBtn" title="Camp Upgrades" aria-label="Camp Upgrades" type="button"><i class="bi bi-hammer"></i></button>
-				<button class="camp-quick-btn" id="campMapBtn" title="Mini-map (M)" aria-label="Toggle Mini-map" type="button"><i class="bi bi-map-fill"></i></button>
-				<button class="camp-quick-btn" id="campHudToggle" title="Compact HUD" aria-label="Toggle Compact HUD" type="button"><i class="bi bi-chevron-right"></i></button>
-				<button class="camp-quick-btn" id="campShareBtn" title="Share Camp" aria-label="Share Camp" type="button"><i class="bi bi-share-fill"></i></button>
-				<button class="camp-quick-btn" id="campRivalBtn" title="Rival Challenge" aria-label="Rival Challenge" type="button"><i class="bi bi-trophy-fill"></i></button>
-				<button class="camp-quick-btn" id="campFriendsBtn" title="Friends" aria-label="Friends" type="button"><i class="bi bi-people-fill"></i></button>
-				<button class="camp-quick-btn" id="campAlbumBtn" title="Photo Album" aria-label="Photo Album" type="button"><i class="bi bi-images"></i></button>
-				<button class="camp-quick-btn" id="campWeeklyBtn" title="Weekly Challenge" aria-label="Weekly Challenge" type="button"><i class="bi bi-calendar-week"></i></button>
-				<button class="camp-quick-btn" id="campInstallBtn" title="Install App" aria-label="Install App" type="button" hidden><i class="bi bi-phone-vibrate"></i></button>
 			</div>
+		</div>
+
+		<!-- Hidden sub-buttons — kept in DOM so all existing JS handlers work -->
+		<div id="campHudSubBtns" hidden aria-hidden="true">
+			<a class="camp-quick-btn" id="campTCBtn" href="trainer-card.html" title="Trainer Card" aria-label="Open Trainer Card"><i class="bi bi-person-vcard-fill"></i></a>
+			<button class="camp-quick-btn" id="campDexBtn" title="Pokédex (D)" aria-label="Pokédex" type="button"><i class="bi bi-book-fill"></i></button>
+			<button class="camp-quick-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements" type="button"><i class="bi bi-award-fill"></i></button>
+			<button class="camp-quick-btn" id="campPostcardBtn" title="Postcards" aria-label="Postcards" type="button"><i class="bi bi-envelope-fill"></i></button>
+			<button class="camp-quick-btn" id="campPhotoBtn" title="Photo Mode (F)" aria-label="Take Photo" type="button"><i class="bi bi-camera-fill"></i></button>
+			<button class="camp-quick-btn" id="campMusicBtn" title="Toggle Music" aria-label="Toggle Music" type="button"><i class="bi bi-music-note-beamed"></i></button>
+			<button class="camp-quick-btn" id="campShinyBtn" title="Shiny Collection" aria-label="Shiny Collection" type="button">✨</button>
+			<button class="camp-quick-btn camp-notif-btn" id="campNotifBtn" title="Notifications" aria-label="Notifications" type="button">
+				<i class="bi bi-bell-fill"></i>
+			</button>
+			<button class="camp-quick-btn" id="campGuestbookBtn" title="Guestbook" aria-label="Guestbook" type="button"><i class="bi bi-journal-text"></i></button>
+			<button class="camp-quick-btn" id="campJournalBtn" title="Journal" aria-label="Camp Journal" type="button"><i class="bi bi-book-half"></i></button>
+			<button class="camp-quick-btn" id="campUpgradeBtn" title="Camp Upgrades" aria-label="Camp Upgrades" type="button"><i class="bi bi-hammer"></i></button>
+			<button class="camp-quick-btn" id="campMapBtn" title="Mini-map (M)" aria-label="Toggle Mini-map" type="button"><i class="bi bi-map-fill"></i></button>
+			<button class="camp-quick-btn" id="campHudToggle" title="Compact HUD" aria-label="Toggle Compact HUD" type="button"><i class="bi bi-chevron-right"></i></button>
+			<button class="camp-quick-btn" id="campShareBtn" title="Share Camp" aria-label="Share Camp" type="button"><i class="bi bi-share-fill"></i></button>
+			<button class="camp-quick-btn" id="campRivalBtn" title="Rival Challenge" aria-label="Rival Challenge" type="button"><i class="bi bi-trophy-fill"></i></button>
+			<button class="camp-quick-btn" id="campFriendsBtn" title="Friends" aria-label="Friends" type="button"><i class="bi bi-people-fill"></i></button>
+			<button class="camp-quick-btn" id="campAlbumBtn" title="Photo Album" aria-label="Photo Album" type="button"><i class="bi bi-images"></i></button>
+			<button class="camp-quick-btn" id="campWeeklyBtn" title="Weekly Challenge" aria-label="Weekly Challenge" type="button"><i class="bi bi-calendar-week"></i></button>
+			<button class="camp-quick-btn" id="campInstallBtn" title="Install App" aria-label="Install App" type="button" hidden><i class="bi bi-phone-vibrate"></i></button>
 		</div>
 
 		<!-- Partner portrait widget (bottom-left, above touch pad) -->
@@ -666,6 +694,6 @@
 	<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js" defer></script>
 	<script src="js/camp-data.js?v=7" defer></script>
 	<script src="js/camp-systems.js?v=24" defer></script>
-	<script src="js/camp.js?v=25" defer></script>
+	<script src="js/camp.js?v=26" defer></script>
 </body>
 </html>

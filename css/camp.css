@@ -3055,4 +3055,48 @@ body.pk-reduce-motion *::after {
   transform: translateX(0);
 }
 
-
+/* ── Grouped HUD popups ──────────────────────────────────────── */
+#campGrpPopup {
+  position: absolute;
+  bottom: 64px;
+  left: 14px;
+  background: rgba(10,14,28,0.97);
+  border: 1.5px solid rgba(246,200,76,0.5);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  z-index: 30;
+  min-width: 160px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  animation: pk-modal-in 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  transform-origin: bottom left;
+}
+#campGrpPopup.is-hidden { display: none; }
+.cgp-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 8px 6px 5px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  color: var(--pk-text);
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  min-width: 44px;
+}
+.cgp-btn:hover { border-color: var(--pk-gold); background: rgba(246,200,76,0.1); }
+.cgp-btn:active { transform: scale(0.93); }
+.cgp-btn .bi { font-size: 16px; color: var(--pk-gold); }
+.cgp-label { font-size: 5px; color: var(--pk-muted); margin-top: 1px; }
+/* Active group button highlight */
+.camp-grp-btn.is-active { border-color: var(--pk-gold) !important; background: rgba(246,200,76,0.12) !important; }
+@media (max-width: 600px) {
+  #campGrpPopup { bottom: 56px; left: 8px; grid-template-columns: repeat(3, 1fr); }
+}

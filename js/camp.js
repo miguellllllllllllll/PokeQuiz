@@ -415,4 +415,130 @@
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireBatch5Buttons);
 	else wireBatch5Buttons();
 
+	// ── Grouped HUD popups ────────────────────────────────────────────────────
+	function wireGroupedHud() {
+		// Group definitions — map group id → array of {btnId, icon, label}
+		const GROUPS = {
+			trainer:  [
+				{ btnId: 'campTCBtn',      icon: 'bi-person-vcard-fill', label: 'Card',    isLink: true },
+				{ btnId: 'campAchieveBtn', icon: 'bi-award-fill',        label: 'Achieve' },
+			],
+			records:  [
+				{ btnId: 'campDexBtn',       icon: 'bi-book-fill',      label: 'Pokédex' },
+				{ btnId: 'campJournalBtn',   icon: 'bi-book-half',      label: 'Journal' },
+				{ btnId: 'campShinyBtn',     icon: 'bi-stars',          label: 'Shinies' },
+				{ btnId: 'campAlbumBtn',     icon: 'bi-images',         label: 'Album' },
+				{ btnId: 'campGuestbookBtn', icon: 'bi-journal-text',   label: 'Guests' },
+			],
+			camp:     [
+				{ btnId: 'campMapBtn',     icon: 'bi-map-fill',       label: 'Map' },
+				{ btnId: 'campUpgradeBtn', icon: 'bi-hammer',         label: 'Build' },
+				{ btnId: 'campWeeklyBtn',  icon: 'bi-calendar-week',  label: 'Weekly' },
+			],
+			social:   [
+				{ btnId: 'campFriendsBtn', icon: 'bi-people-fill',    label: 'Friends' },
+				{ btnId: 'campRivalBtn',   icon: 'bi-trophy-fill',    label: 'Rival' },
+				{ btnId: 'campShareBtn',   icon: 'bi-share-fill',     label: 'Share' },
+				{ btnId: 'campPostcardBtn',icon: 'bi-envelope-fill',  label: 'Cards' },
+			],
+			settings: [
+				{ btnId: 'campMusicBtn',   icon: 'bi-music-note-beamed', label: 'Music' },
+				{ btnId: 'campPhotoBtn',   icon: 'bi-camera-fill',       label: 'Photo' },
+			],
+			notifs:   [] // opens feed directly — handled separately
+		};
+
+		// Lazily add optional buttons if they exist in the DOM
+		const optionalBtns = {
+			settings: [
+				{ btnId: 'campSaveSlotsBtn', icon: 'bi-floppy-fill',    label: 'Saves' },
+				{ btnId: 'campExportBtn',    icon: 'bi-download',       label: 'Export' },
+				{ btnId: 'campInstallBtn',   icon: 'bi-phone-vibrate',  label: 'Install' },
+			],
+			trainer: [
+				{ btnId: 'campPrestigeBtn',  icon: 'bi-star-fill',      label: 'Prestige' },
+			]
+		};
+		for (const [grp, extras] of Object.entries(optionalBtns)) {
+			for (const e of extras) {
+				if (document.getElementById(e.btnId)) GROUPS[grp].push(e);
+			}
+		}
+
+		// Create the shared popup element once
+		const popup = document.createElement('div');
+		popup.id = 'campGrpPopup';
+		popup.className = 'is-hidden';
+		popup.setAttribute('aria-label', 'HUD submenu');
+		const wrap = document.getElementById('campWrap');
+		if (wrap) wrap.appendChild(popup);
+
+		let activeGrp = null;
+
+		function closePopup() {
+			popup.classList.add('is-hidden');
+			popup.innerHTML = '';
+			if (activeGrp) {
+				const btnId = 'grp' + activeGrp.charAt(0).toUpperCase() + activeGrp.slice(1);
+				document.getElementById(btnId)?.classList.remove('is-active');
+			}
+			activeGrp = null;
+		}
+
+		function openPopup(grpId, anchorBtn) {
+			if (activeGrp === grpId) { closePopup(); return; }
+			closePopup();
+			activeGrp = grpId;
+			anchorBtn.classList.add('is-active');
+
+			const items = GROUPS[grpId] || [];
+			popup.innerHTML = '';
+			for (const item of items) {
+				const origBtn = document.getElementById(item.btnId);
+				const btn = document.createElement('button');
+				btn.className = 'cgp-btn';
+				btn.type = 'button';
+				btn.setAttribute('aria-label', item.label);
+				btn.innerHTML = `<i class="bi ${item.icon}"></i><span class="cgp-label">${item.label}</span>`;
+				btn.addEventListener('click', () => {
+					if (origBtn) origBtn.click();
+					closePopup();
+				});
+				popup.appendChild(btn);
+			}
+
+			// Position popup above the anchor button
+			popup.classList.remove('is-hidden');
+			const rect = anchorBtn.getBoundingClientRect();
+			const wrapRect = wrap ? wrap.getBoundingClientRect() : { left: 0, bottom: window.innerHeight };
+			popup.style.left = Math.max(4, (rect.left - wrapRect.left)) + 'px';
+			popup.style.bottom = (wrapRect.bottom - rect.top + 6) + 'px';
+			popup.style.top = 'auto';
+		}
+
+		// Wire group buttons
+		for (const grpId of Object.keys(GROUPS)) {
+			const btnId = 'grp' + grpId.charAt(0).toUpperCase() + grpId.slice(1);
+			const btn = document.getElementById(btnId);
+			if (!btn) continue;
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				if (grpId === 'notifs') {
+					// Notifs opens feed directly
+					(window.CAMP_SYSTEMS?.NotifFeed || window.CAMP_SYSTEMS?.Notifications)?.open?.();
+					return;
+				}
+				openPopup(grpId, btn);
+			});
+		}
+
+		// Close popup on outside click or Escape
+		document.addEventListener('click', (e) => {
+			if (!popup.contains(e.target) && !e.target.closest('.camp-grp-btn')) closePopup();
+		});
+		document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireGroupedHud);
+	else wireGroupedHud();
+
 })();
