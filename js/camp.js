@@ -51,6 +51,7 @@
 	const makeHouseSceneClass    = (window.CAMP_SCENES || {}).makeHouseSceneClass;
 	const makeUpstairsSceneClass = (window.CAMP_SCENES || {}).makeUpstairsSceneClass;
 	const makeMarketSceneClass   = (window.CAMP_SCENES || {}).makeMarketSceneClass;
+	const makeBeachSceneClass    = (window.CAMP_SCENES || {}).makeBeachSceneClass;
 
 	// ── Universal ESC-to-close ────────────────────────────────────────────────────
 	document.addEventListener('keydown', (e) => {
@@ -126,12 +127,14 @@
 		const HouseClass     = makeHouseSceneClass();
 		const UpstairsClass  = makeUpstairsSceneClass();
 		const MarketClass    = makeMarketSceneClass();
+		const BeachClass     = makeBeachSceneClass();
 
 		let sceneList;
-		if      (boot.scene === 'house')    sceneList = [HouseClass,    CampClass, UpstairsClass, MarketClass];
-		else if (boot.scene === 'upstairs') sceneList = [UpstairsClass, CampClass, HouseClass,    MarketClass];
-		else if (boot.scene === 'market')   sceneList = [MarketClass,   CampClass, HouseClass,    UpstairsClass];
-		else                                sceneList = [CampClass,      HouseClass, UpstairsClass, MarketClass];
+		if      (boot.scene === 'house')    sceneList = [HouseClass,    CampClass, UpstairsClass, MarketClass, BeachClass];
+		else if (boot.scene === 'upstairs') sceneList = [UpstairsClass, CampClass, HouseClass,    MarketClass, BeachClass];
+		else if (boot.scene === 'market')   sceneList = [MarketClass,   CampClass, HouseClass,    UpstairsClass, BeachClass];
+		else if (boot.scene === 'beach')    sceneList = [BeachClass,    CampClass, HouseClass,    UpstairsClass, MarketClass];
+		else                                sceneList = [CampClass,      HouseClass, UpstairsClass, MarketClass, BeachClass];
 
 		new Phaser.Game({
 			type: Phaser.AUTO,

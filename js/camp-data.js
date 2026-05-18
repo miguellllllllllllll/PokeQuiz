@@ -489,6 +489,7 @@ window.CAMP_DATA.SIGN_MESSAGES = {
 		'10,30': "A peaceful lake — press E near the water to fish!",
 		'17,9':  '__mailbox__',
 		'25,11': '__camprating__',
+		'27,27': 'BEACH PATH\nA sandy trail leading to the lakeside beach.',
 	};
 
 
