@@ -17,8 +17,8 @@
 	// ── Tile IDs ────────────────────────────────────────────────────────────────
 	// These must be defined here (not just in camp.js) because buildMap, drawTile,
 	// canWalkOn, and all four scene classes reference them and live in this file.
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25,TBLD=26;
-	const SOLID    = new Set([TW,TR,TR2,TRP,TWN,TH2O,TTR,TTR2,TFN,TIW,TSG,TBSH,TBED,TBKS,TBLD]);
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25,TBLD=26,TSA=27,TSA2=28,TSHO=29,TBWT=30,TPIER=31,TPALM=32,TROCKB=33,TSHL=34;
+	const SOLID    = new Set([TW,TR,TR2,TRP,TWN,TH2O,TTR,TTR2,TFN,TIW,TSG,TBSH,TBED,TBKS,TBLD,TBWT,TPALM,TROCKB]);
 	const ANIMATED = new Set([TWN,TH2O,TCR]);
 
 	// ── Scene constants ──────────────────────────────────────────────────────────
@@ -35,6 +35,7 @@
 	const UPSTAIRS_W = 12, UPSTAIRS_H = 9;
 	const UPSTAIRS_STAIRS_C = 2, UPSTAIRS_STAIRS_R = UPSTAIRS_H - 2;
 	const MARKET_W = 50, MARKET_H = 28, MARKET_NORTH_C = 15;
+	const BEACH_W = 32, BEACH_H = 22, BEACH_NORTH_C = 15;
 
 	// ── CAMP_DATA pull-ins ────────────────────────────────────────────────────────
 	// All of these are plain references to the already-populated CAMP_DATA objects,
@@ -63,6 +64,7 @@
 	const COSM_PRICE       = (window.CAMP_DATA || {}).COSM_PRICE;
 	const SIGN_MESSAGES    = (window.CAMP_DATA || {}).SIGN_MESSAGES;
 	const SIGN_MESSAGES_MARKET = (window.CAMP_DATA || {}).SIGN_MESSAGES_MARKET;
+	const SIGN_MESSAGES_BEACH  = (window.CAMP_DATA || {}).SIGN_MESSAGES_BEACH;
 	const FURNITURE_DESIGNS = (window.CAMP_DATA || {}).FURNITURE_DESIGNS;
 	const PLANTS_KEY       = (window.CAMP_DATA || {}).PLANTS_KEY;
 	const STATS_KEY        = (window.CAMP_DATA || {}).STATS_KEY;
@@ -686,6 +688,7 @@
 				camp:     BASE + '04%20-%20Pallet%20Town.mp3',
 				house:    BASE + '16%20-%20Pok%C3%A9mon%20Center.mp3',
 				upstairs: BASE + '12%20-%20Route%201.mp3',
+				beach:    'https://archive.org/download/pkmn-frlg-soundtrack/Disc%201/23%20-%20Seafoam%20Islands.mp3',
 			};
 	
 			let current = null;   // the active HTMLAudioElement
@@ -6274,6 +6277,123 @@
 					ctx.fillStyle='#787676'; ctx.fillRect(x+d-3,y,3,d);
 					ctx.fillStyle='#FFFFFF'; ctx.fillRect(x+3,y+3,2,2);
 					break;
+				case TSA:
+					// Warm sandy beige with grain noise
+					ctx.fillStyle='#E8D070'; ctx.fillRect(x,y,d,d);
+					ctx.fillStyle='#F0DC88';
+					ctx.fillRect(x+1,y+1,3,2); ctx.fillRect(x+9,y+5,4,2); ctx.fillRect(x+3,y+11,5,1);
+					ctx.fillStyle='#C8B040';
+					ctx.fillRect(x+6,y+3,1,1); ctx.fillRect(x+13,y+7,1,1); ctx.fillRect(x+5,y+13,1,1);
+					ctx.fillRect(x+10,y+11,1,1); ctx.fillRect(x+2,y+7,1,1); ctx.fillRect(x+14,y+2,1,1);
+					break;
+				case TSA2:
+					// Darker wet sand
+					ctx.fillStyle='#C8A840'; ctx.fillRect(x,y,d,d);
+					ctx.fillStyle='#D8BC58';
+					ctx.fillRect(x+2,y+2,3,2); ctx.fillRect(x+10,y+6,4,1); ctx.fillRect(x+4,y+12,4,1);
+					ctx.fillStyle='#A88830';
+					ctx.fillRect(x+7,y+4,1,1); ctx.fillRect(x+12,y+9,1,1); ctx.fillRect(x+3,y+14,1,1);
+					ctx.fillRect(x+1,y+9,1,1); ctx.fillRect(x+13,y+3,1,1);
+					break;
+				case TSHO: {
+					// Shoreline — top half sand with foam, bottom half water
+					ctx.fillStyle='#E8D070'; ctx.fillRect(x,y,d,d/2);
+					ctx.fillStyle='#40B8D8'; ctx.fillRect(x,y+d/2,d,d/2);
+					// Animated foam line
+					const foamOff=Math.round(Math.sin(tick*0.07+(x)*0.05)*1);
+					ctx.fillStyle='rgba(255,255,255,0.7)';
+					ctx.fillRect(x+1,y+7+foamOff,d-2,1);
+					// Foam flecks
+					ctx.fillStyle='rgba(255,255,255,0.85)';
+					const fs=Math.floor(tick/10)%3;
+					if(fs===0){ctx.fillRect(x+3,y+8,2,1);ctx.fillRect(x+11,y+7,2,1);}
+					else if(fs===1){ctx.fillRect(x+6,y+8,2,1);ctx.fillRect(x+13,y+7,1,1);}
+					else{ctx.fillRect(x+2,y+7,1,1);ctx.fillRect(x+9,y+8,2,1);}
+					break;
+				}
+				case TBWT: {
+					// Tropical beach water — vivid turquoise
+					const bw1=Math.round(Math.sin(tick*0.05+(x+y)*0.04)*1.5);
+					const bw2=Math.round(Math.sin(tick*0.04+x*0.06)*1);
+					ctx.fillStyle='#40B8D8'; ctx.fillRect(x,y,d,d);
+					ctx.fillStyle='#5CCCE8';
+					ctx.fillRect(x+1,y+bw1+2,d-2,2); ctx.fillRect(x+2,y+bw2+7,d-4,2); ctx.fillRect(x+1,y+bw1+12,d-2,2);
+					ctx.fillStyle='#80D8F0';
+					ctx.fillRect(x+2,y+bw1+3,4,1); ctx.fillRect(x+10,y+bw2+8,3,1);
+					const bsp=Math.floor(tick/12)%4;
+					ctx.fillStyle='rgba(255,255,255,0.8)';
+					if(bsp===0) ctx.fillRect(x+6,y+3,2,2);
+					else if(bsp===1) ctx.fillRect(x+11,y+10,2,2);
+					else if(bsp===2) ctx.fillRect(x+3,y+10,2,2);
+					else ctx.fillRect(x+12,y+3,2,2);
+					ctx.fillStyle='rgba(255,255,255,0.9)';
+					if(bsp===0) ctx.fillRect(x+7,y+4,1,1);
+					else if(bsp===1) ctx.fillRect(x+12,y+11,1,1);
+					else if(bsp===2) ctx.fillRect(x+4,y+11,1,1);
+					else ctx.fillRect(x+13,y+4,1,1);
+					break;
+				}
+				case TPIER:
+					// Dark wood pier planks
+					ctx.fillStyle='#6B4423'; ctx.fillRect(x,y,d,d);
+					ctx.fillStyle='#4A2E14';
+					ctx.fillRect(x,y+4,d,1); ctx.fillRect(x,y+12,d,1); // plank gaps
+					ctx.fillStyle='#7C5530';
+					ctx.fillRect(x+1,y+1,d-2,2); ctx.fillRect(x+1,y+5,d-2,6); ctx.fillRect(x+1,y+13,d-2,2);
+					ctx.fillStyle='#3A2210'; // nail dots
+					ctx.fillRect(x+2,y+2,1,1); ctx.fillRect(x+13,y+2,1,1);
+					ctx.fillRect(x+2,y+14,1,1); ctx.fillRect(x+13,y+14,1,1);
+					break;
+				case TPALM: {
+					// Tropical palm tree
+					ctx.fillStyle='#E8D070'; ctx.fillRect(x,y,d,d); // sand base
+					// Trunk (2px wide, centered)
+					ctx.fillStyle='#7A5030'; ctx.fillRect(x+7,y+8,2,8);
+					ctx.fillStyle='#5A3818'; ctx.fillRect(x+8,y+8,1,8);
+					ctx.fillStyle='#9A6840'; ctx.fillRect(x+7,y+8,1,8);
+					// Fronds — fan shape
+					ctx.fillStyle='#2A6A18';
+					ctx.fillRect(x+3,y+3,10,2); ctx.fillRect(x+2,y+4,12,1);
+					ctx.fillRect(x+5,y+2,6,1);
+					ctx.fillStyle='#5A9A30';
+					ctx.fillRect(x+4,y+3,8,2); ctx.fillRect(x+3,y+4,10,1);
+					ctx.fillStyle='#88CC44';
+					ctx.fillRect(x+6,y+2,4,1); ctx.fillRect(x+5,y+3,6,1);
+					// Left frond
+					ctx.fillStyle='#2A6A18'; ctx.fillRect(x+1,y+5,5,2);
+					ctx.fillStyle='#5A9A30'; ctx.fillRect(x+2,y+5,4,1);
+					// Right frond
+					ctx.fillStyle='#2A6A18'; ctx.fillRect(x+10,y+5,5,2);
+					ctx.fillStyle='#5A9A30'; ctx.fillRect(x+10,y+5,4,1);
+					break;
+				}
+				case TROCKB:
+					// Rounded gray boulder
+					ctx.fillStyle='#888888'; ctx.fillRect(x,y,d,d);
+					ctx.fillStyle='#A0A0A0'; ctx.fillRect(x+2,y+2,10,9);
+					ctx.fillStyle='#BBBBBB'; // top-left highlight
+					ctx.fillRect(x+3,y+3,5,3); ctx.fillRect(x+3,y+6,2,1);
+					ctx.fillStyle='#555555'; // bottom-right shadow
+					ctx.fillRect(x+9,y+8,5,5); ctx.fillRect(x+7,y+11,5,2);
+					ctx.fillStyle='#777777'; // texture dots
+					ctx.fillRect(x+6,y+5,1,1); ctx.fillRect(x+10,y+4,1,1); ctx.fillRect(x+4,y+9,1,1);
+					break;
+				case TSHL:
+					// Shell/starfish decoration on sand
+					ctx.fillStyle='#E8D070'; ctx.fillRect(x,y,d,d);
+					// Sand grain
+					ctx.fillStyle='#C8B040'; ctx.fillRect(x+3,y+3,1,1); ctx.fillRect(x+12,y+11,1,1);
+					// Shell spiral shape (pink/white)
+					ctx.fillStyle='#F0A8B0'; // outer shell
+					ctx.fillRect(x+5,y+5,6,6); ctx.fillRect(x+6,y+4,4,1); ctx.fillRect(x+6,y+11,4,1);
+					ctx.fillRect(x+4,y+6,1,4); ctx.fillRect(x+11,y+6,1,4);
+					ctx.fillStyle='#E07890'; // mid shell
+					ctx.fillRect(x+6,y+6,4,4); ctx.fillRect(x+7,y+5,2,1);
+					ctx.fillStyle='#FFFFFF'; // highlight
+					ctx.fillRect(x+6,y+6,2,2); ctx.fillRect(x+7,y+5,1,1);
+					ctx.fillStyle='#D05878'; // center point
+					ctx.fillRect(x+8,y+8,1,1);
+					break;
 				default:
 					ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
 			}
@@ -6396,7 +6516,7 @@
 						// getScenes(true) only returns running scenes, but all scenes are paused
 						// while the pause menu is open. Use _pausedKeys[0] instead.
 						const sceneKey = _pausedKeys[0];
-						if (sceneKey && ['camp', 'house', 'upstairs'].includes(sceneKey)) Music.start(sceneKey);
+						if (sceneKey && ['camp', 'house', 'upstairs', 'beach'].includes(sceneKey)) Music.start(sceneKey);
 					}
 					musicBtn.innerHTML = ico(ICO.music) + ' Music: ' + (next ? 'On' : 'Off');
 				});
@@ -6800,6 +6920,65 @@
 			return map;
 		}
 	window.CAMP_SYSTEMS.buildMarketMap = buildMarketMap;
+
+	// ── buildBeachMap ────────────────────────────────────────────────────────
+		function buildBeachMap() {
+			const map = Array.from({ length: BEACH_H }, () => new Array(BEACH_W).fill(TSA));
+			const set = (r, c, t) => { if (r>=0 && r<BEACH_H && c>=0 && c<BEACH_W) map[r][c] = t; };
+			const fill = (r1, c1, r2, c2, t) => { for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) set(r,c,t); };
+
+			// Sprinkle wet sand for variety
+			let rng = 54321;
+			const rand = () => { rng^=rng<<13; rng^=rng>>17; rng^=rng<<5; return (rng>>>0)/0xFFFFFFFF; };
+			for (let r=2;r<9;r++) for (let c=2;c<BEACH_W-2;c++) {
+				if (rand() < 0.12) map[r][c] = TSA2;
+			}
+
+			// Top border — palm treeline
+			for (let c=0;c<BEACH_W;c++) { set(0,c,TPALM); set(1,c,TPALM); }
+			// Left/right rock columns
+			for (let r=2;r<9;r++) { set(r,0,TROCKB); set(r,1,TROCKB); set(r,BEACH_W-1,TROCKB); set(r,BEACH_W-2,TROCKB); }
+
+			// Top entrance path (cols 14-16, rows 0-3)
+			for (let r=0;r<=3;r++) { set(r,14,TP); set(r,15,TP); set(r,16,TP); }
+
+			// Rocky boulder clusters at corners
+			[[2,2],[2,3],[3,2],[3,3],[4,2],[4,3],  // NW cluster
+			 [2,28],[2,29],[3,28],[3,29],[4,28],[4,29]  // NE cluster
+			].forEach(([r,c]) => set(r,c,TROCKB));
+
+			// Scattered palm trees in sand area
+			[[4,7],[5,7],[4,8],[5,8],   // palm 1
+			 [4,22],[5,22],[4,23],[5,23], // palm 2
+			 [7,5],[8,5],[7,6],          // palm 3
+			 [6,26],[7,26],[6,27],       // palm 4
+			].forEach(([r,c]) => set(r,c,TPALM));
+
+			// Shell decorations scattered on sand
+			[[5,10],[6,13],[7,20],[5,25],[8,9],[6,19]].forEach(([r,c]) => set(r,c,TSHL));
+
+			// Shoreline band (rows 9-11, full width except rock sides)
+			for (let r=9;r<=11;r++) for (let c=2;c<BEACH_W-2;c++) set(r,c,TSHO);
+
+			// Beach water (rows 12-21)
+			for (let r=12;r<BEACH_H;r++) for (let c=0;c<BEACH_W;c++) set(r,c,TBWT);
+			// Rock sides continue in water area
+			for (let r=9;r<BEACH_H;r++) { set(r,0,TROCKB); set(r,1,TROCKB); set(r,BEACH_W-1,TROCKB); set(r,BEACH_W-2,TROCKB); }
+
+			// Pier (rows 2-12, cols 15-17 = TPIER planks extending into water)
+			for (let r=2;r<=12;r++) { set(r,15,TPIER); set(r,16,TPIER); set(r,17,TPIER); }
+
+			// Small rocky islands in water
+			set(14,10,TROCKB); set(14,22,TROCKB); set(16,8,TROCKB); set(16,24,TROCKB);
+
+			// Signs
+			set(2,13,TSG);  // BEACH PIER sign
+			set(2,5,TSG);   // ROCKY COVE sign
+			set(7,26,TSG);  // DEEP WATER sign
+
+			return map;
+		}
+	window.CAMP_SYSTEMS.buildBeachMap = buildBeachMap;
 
 	// ── canWalkOn ────────────────────────────────────────────────────────
 		function canWalkOn(tileId, inv) {
@@ -7304,6 +7483,7 @@
 					// updateMinimap() then does 1 drawImage blit + 2 fillRects per frame instead
 					// of iterating all 1200 tiles each frame (which caused frame drops while walking).
 					this.minimapEl = document.getElementById('campMinimap');
+					this._minimapScale = 3;
 					if (this.minimapEl) {
 						this.minimapEl.width = MAP_W * 3;
 						this.minimapEl.height = MAP_H * 3;
@@ -9773,6 +9953,37 @@
 					this._drawMarketTower(baseCtx, 10 * TILE, 15 * TILE);
 					this._drawWell(baseCtx, 17 * TILE, 16 * TILE);
 					this.baseTex.refresh();
+					// ── Market minimap ──────────────────────────────────────────────────
+					this.minimapEl = document.getElementById('campMinimap');
+					if (this.minimapEl) {
+						const _mS = 2; // 2 px per market tile
+						this._minimapScale = _mS;
+						this.minimapEl.width  = MARKET_W * _mS;
+						this.minimapEl.height = MARKET_H * _mS;
+						this._minimapCtx = this.minimapEl.getContext('2d');
+						this._minimapCtx.imageSmoothingEnabled = false;
+						const _mOff = document.createElement('canvas');
+						_mOff.width  = this.minimapEl.width;
+						_mOff.height = this.minimapEl.height;
+						const _mCtx = _mOff.getContext('2d');
+						for (let _r = 0; _r < MARKET_H; _r++) {
+							for (let _c = 0; _c < MARKET_W; _c++) {
+								const _t = this.map[_r][_c];
+								let _col;
+								if      (SOLID.has(_t) && (_t === TTR || _t === TTR2)) _col = '#1a3311';
+								else if (SOLID.has(_t) && _t === TIW)                  _col = '#888899';
+								else if (SOLID.has(_t) && _t === TBLD)                 _col = '#555566';
+								else if (SOLID.has(_t))                                _col = '#997744';
+								else if (_t === TIF)                                   _col = '#ccbb88';
+								else if (_t === TRU)                                   _col = '#aa5555';
+								else if (_t === TP)                                    _col = '#c8b078';
+								else                                                   _col = '#4a6e30';
+								_mCtx.fillStyle = _col;
+								_mCtx.fillRect(_c * _mS, _r * _mS, _mS, _mS);
+							}
+						}
+						this._minimapCache = _mOff;
+					}
 					this.add.image(0, 0, 'marketBase').setOrigin(0).setDepth(0);
 	
 					// Palette-swap the trainer sheet (same pipeline as HouseScene)
@@ -9863,6 +10074,25 @@
 					}
 					this.physics.add.collider(this.player, npcSolids);
 	
+					// Repurpose the F (faceoff) touch button as minimap toggle in market
+					const _fBtn = document.getElementById('capFaceoff');
+					if (_fBtn) {
+						_fBtn._mktOrig = _fBtn.textContent;
+						_fBtn._mktTitle = _fBtn.title;
+						_fBtn.textContent = 'M';
+						_fBtn.title = 'Mini-map (M)';
+						_fBtn._mktFn = (e) => { e.preventDefault(); Minimap.toggle(); };
+						_fBtn.addEventListener('pointerdown', _fBtn._mktFn);
+					}
+					this.events.once('shutdown', () => {
+						const _fb = document.getElementById('capFaceoff');
+						if (_fb && _fb._mktOrig != null) {
+							_fb.textContent = _fb._mktOrig;
+							_fb.title       = _fb._mktTitle || '';
+							if (_fb._mktFn) _fb.removeEventListener('pointerdown', _fb._mktFn);
+							delete _fb._mktOrig; delete _fb._mktFn; delete _fb._mktTitle;
+						}
+					});
 					this.physics.world.setBounds(0, 0, W, H);
 					this.player.setCollideWorldBounds(true);
 					this.cameras.main.setBounds(0, 0, W, H);
@@ -10403,6 +10633,469 @@
 		}
 	window.CAMP_SCENES.makeMarketSceneClass = makeMarketSceneClass;
 
+	// ── makeBeachSceneClass ────────────────────────────────────────────────────────
+		function makeBeachSceneClass() {
+			return class BeachScene extends Phaser.Scene {
+				constructor() { super({ key: 'beach' }); }
+
+				init(data) {
+					this.spawnFrom = (data && data.from) || consumeBootFrom('beach') || null;
+				}
+
+				preload() {
+					this.load.image('player-base', 'Pictures/sprites/calem.png');
+					this.load.image('npc-fisherman',   'Pictures/sprites/trainer-fisherman.png');
+					this.load.image('npc-swimmer-m',   'Pictures/sprites/trainer-swimmer-m.png');
+					this.load.image('npc-picnicker',   'Pictures/sprites/trainer-picnicker.png');
+				}
+
+				create() {
+					console.log('[BeachScene] create()');
+					try {
+						this._buildBeach();
+						requestAnimationFrame(() => requestAnimationFrame(() => {
+							const f = document.getElementById('campFade');
+							if (f) f.classList.add('is-hidden');
+						}));
+					} catch (e) {
+						console.error('[BeachScene] create failed:', e);
+						Debug.lastError = 'BeachScene.create: ' + e.message;
+						this.scene.start('camp', { from: 'beach' });
+					}
+					if (typeof window !== 'undefined') window.__beachScene = this;
+				}
+
+				_buildBeach() {
+					this.tick = 0;
+					this.map = buildBeachMap();
+					const W = BEACH_W * TILE, H = BEACH_H * TILE;
+
+					if (this.textures.exists('beachBase')) {
+						this.textures.remove('beachBase');
+					}
+					this.baseTex = this.textures.createCanvas('beachBase', W, H);
+					if (!this.baseTex) throw new Error('createCanvas("beachBase") returned null');
+					const baseCtx = this.baseTex.getContext();
+					baseCtx.imageSmoothingEnabled = false;
+					for (let r = 0; r < BEACH_H; r++) {
+						for (let c = 0; c < BEACH_W; c++) {
+							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+						}
+					}
+					this.baseTex.refresh();
+					this.add.image(0, 0, 'beachBase').setOrigin(0).setDepth(0);
+
+					try {
+						if (!this.textures.exists('player-base')) {
+							throw new Error('player-base texture missing');
+						}
+						const baseImg = this.textures.get('player-base').getSourceImage();
+						const pw = baseImg.width, ph = baseImg.height;
+						this._playerCanvas = document.createElement('canvas');
+						this._playerCanvas.width = pw;
+						this._playerCanvas.height = ph;
+						this._playerCtx = this._playerCanvas.getContext('2d');
+						const applyPalette = () => {
+							if (window.TrainerPalette) {
+								window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx, window.TrainerPalette.loadBody && window.TrainerPalette.loadBody());
+							} else {
+								this._playerCtx.clearRect(0, 0, pw, ph);
+								this._playerCtx.drawImage(baseImg, 0, 0);
+							}
+						};
+						applyPalette();
+						if (!this.textures.exists('player-beach') && this._playerCanvas) {
+							this.textures.addSpriteSheet('player-beach', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+						} else if (this.textures.exists('player-beach')) {
+							this.textures.get('player-beach').refresh();
+						}
+						this._onStorage = (e) => {
+							if ((e.key === 'pokequiz_trainer_palette' || e.key === 'pokequiz_trainer_body') && window.TrainerPalette) {
+								applyPalette();
+								this.textures.get('player-beach').refresh();
+							}
+						};
+						window.addEventListener('storage', this._onStorage);
+						this.events.once('shutdown', () => window.removeEventListener('storage', this._onStorage));
+					} catch (e) {
+						console.error('[BeachScene] palette swap failed:', e);
+					}
+
+					const mkAnim = (key, frames) => {
+						if (this.anims.exists(key)) this.anims.remove(key);
+						this.anims.create({ key, frameRate: 6, repeat: -1,
+							frames: this.anims.generateFrameNumbers('player-beach', { frames }) });
+					};
+					mkAnim('bch-walk-south', [1, 0, 2, 0]);
+					mkAnim('bch-walk-west',  [4, 3, 5, 3]);
+					mkAnim('bch-walk-north', [7, 6, 8, 6]);
+					mkAnim('bch-walk-east',  [10, 9, 11, 9]);
+
+					const spawnX = BEACH_NORTH_C * TILE + TILE/2;
+					const spawnY = 2 * TILE + TILE/2;
+					this.player = this.physics.add.sprite(spawnX, spawnY, 'player-beach', 0);
+					this.player.setOrigin(0.5, 36/38);
+					this.player.setScale(0.75);
+					this.player.setDepth(3);
+					this.player.body.setSize(10, 6);
+					this.player.body.setOffset((22-10)/2, 38-8);
+
+					this.solids = this.physics.add.staticGroup();
+					for (let r = 0; r < BEACH_H; r++) {
+						for (let c = 0; c < BEACH_W; c++) {
+							if (SOLID.has(this.map[r][c])) {
+								const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
+								this.physics.add.existing(rect, true);
+								this.solids.add(rect);
+							}
+						}
+					}
+					this.physics.add.collider(this.player, this.solids);
+
+					const BEACH_NPCS = [
+						{ r:8,  c:16, species:'fisherman', label:'Talk',
+						  dialog: "I've been fishing here for hours. The bite is best at sunset!" },
+						{ r:10, c:8,  species:'swimmer-m', label:'Talk',
+						  dialog: "The water's warm today! Watch out for currents." },
+						{ r:5,  c:22, species:'picnicker', label:'Talk',
+						  dialog: "I found a Pokemon fossil here once. Keep looking!" },
+					];
+					this.npcByTile = {};
+					const npcSolids = this.physics.add.staticGroup();
+					for (const npc of BEACH_NPCS) {
+						const nx = npc.c * TILE + TILE/2;
+						const ny = npc.r * TILE + TILE/2;
+						const sprite = this.add.sprite(nx, ny, 'npc-' + npc.species, 0);
+						sprite.setOrigin(0.5, 0.875);
+						sprite.setScale(0.75);
+						sprite.setDepth(3);
+						const rect = this.add.rectangle(nx, ny, TILE * 2, TILE * 2);
+						this.physics.add.existing(rect, true);
+						npcSolids.add(rect);
+						this.npcByTile[npc.r + ',' + npc.c] = npc;
+					}
+					this.physics.add.collider(this.player, npcSolids);
+
+					this._interactSpots = {
+						'6,3':  { kind: 'wishing_well',   label: 'Wish' },
+						'8,25': { kind: 'treasure_spot',  label: 'Dig'  },
+						'9,20': { kind: 'bottle_message', label: 'Read' },
+					};
+					for (let pr = 10; pr <= 12; pr++) {
+						this._interactSpots[pr + ',16'] = { kind: 'pier_fishing', label: 'Fish' };
+					}
+
+					this.physics.world.setBounds(0, 0, W, H);
+					this.player.setCollideWorldBounds(true);
+					this.cameras.main.setBounds(0, 0, W, H);
+					this.cameras.main.setBackgroundColor('#2090B8');
+					this.cameras.main.setRoundPixels(true);
+					this.cameras.main.startFollow(this.player, true, 1, 1);
+					this.applyZoom();
+					this.scale.on('resize', this.onResize, this);
+					this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
+
+					__S._sceneKeyboard = this.input.keyboard;
+					this.keys = this.input.keyboard.addKeys({
+						up: Phaser.Input.Keyboard.KeyCodes.UP,
+						down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+						left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+						right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+						w: Phaser.Input.Keyboard.KeyCodes.W,
+						a: Phaser.Input.Keyboard.KeyCodes.A,
+						s: Phaser.Input.Keyboard.KeyCodes.S,
+						d: Phaser.Input.Keyboard.KeyCodes.D,
+						interact: Phaser.Input.Keyboard.KeyCodes.E,
+					});
+					this.dpad = { up:false, down:false, left:false, right:false };
+					this.setupJoystick();
+					setupPauseMenu(this.game);
+					Music.start('beach');
+					this.events.once('shutdown', () => Music.stop());
+
+					this.dir = 0;
+					this.dirAnimKeys = ['bch-walk-south', 'bch-walk-west', 'bch-walk-north', 'bch-walk-east'];
+					this.dirIdleFrame = [0, 3, 6, 9];
+					this.player.setFrame(this.dirIdleFrame[this.dir]);
+					this.didTransition = false;
+					this.armedForExit = false;
+
+					this._promptEl  = document.getElementById('campPrompt');
+					this._promptLbl = document.getElementById('campPromptLabel');
+					this._locEl = document.querySelector('.camp-location-name');
+					if (this._locEl) {
+						this._prevLocText = this._locEl.textContent;
+						this._locEl.textContent = 'BEACH PIER';
+					}
+					this.events.once('shutdown', () => {
+						if (this._promptEl) this._promptEl.hidden = true;
+						if (this._locEl && this._prevLocText) this._locEl.textContent = this._prevLocText;
+					});
+				}
+
+				onResize() { applyWrapTop(); this.applyZoom(); }
+
+				applyZoom() {
+					const dpr = window.devicePixelRatio || 1;
+					const vw = this.scale.width / dpr, vh = this.scale.height / dpr;
+					if (vw <= 0 || vh <= 0) {
+						this.events.once('postupdate', () => this.applyZoom());
+						return;
+					}
+					const roomW = BEACH_W * TILE, roomH = BEACH_H * TILE;
+					let s = Math.max(2, Math.floor(Math.min(vw / 380, vh / 240)));
+					s = Math.min(s, 4);
+					const cam = this.cameras.main;
+					cam.setZoom(s);
+					cam.setBounds(0, 0, roomW, roomH);
+					if (!this.player) cam.centerOn(roomW / 2, roomH / 2);
+				}
+
+				setupJoystick() {
+					const base = document.getElementById('joystickBase');
+					const knob = document.getElementById('joystickKnob');
+					if (!base || !knob) return;
+					base.__campDpad = this.dpad;
+					if (base.dataset.wired) return;
+					base.dataset.wired = '1';
+					const RADIUS = 42, DEAD = 0.18;
+					let active = false, pointerId = null;
+					const reset = () => {
+						active = false; pointerId = null;
+						const d = base.__campDpad;
+						if (d) { d.up = d.down = d.left = d.right = false; }
+						knob.style.transform = 'translate(-50%,-50%)';
+					};
+					const applyJoy = (dx, dy) => {
+						const d = base.__campDpad;
+						if (!d) return;
+						const dist = Math.sqrt(dx*dx + dy*dy);
+						const clamp = Math.min(dist, RADIUS);
+						const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
+						knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
+						const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
+						const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
+						d.left = fx < -DEAD; d.right = fx > DEAD;
+						d.up   = fy < -DEAD; d.down  = fy > DEAD;
+					};
+					base.addEventListener('pointerdown', e => {
+						if (active) return;
+						active = true; pointerId = e.pointerId;
+						base.setPointerCapture(e.pointerId); e.preventDefault();
+						const r = base.getBoundingClientRect();
+						applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+					});
+					base.addEventListener('pointermove', e => {
+						if (!active || e.pointerId !== pointerId) return;
+						e.preventDefault();
+						const r = base.getBoundingClientRect();
+						applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+					});
+					['pointerup','pointercancel'].forEach(ev => base.addEventListener(ev, e => {
+						if (e.pointerId !== pointerId) return;
+						e.preventDefault(); reset();
+					}));
+				}
+
+				findInteractTarget() {
+					const tc = Math.floor(this.player.x / TILE);
+					const tr = Math.floor(this.player.y / TILE);
+					const DV = [[0,1],[-1,0],[0,-1],[1,0]];
+					const [dc, dr] = DV[this.dir] || [0, 1];
+					const fc = tc + dc, fr = tr + dr;
+					const npcKey = fr + ',' + fc;
+					if (this.npcByTile && this.npcByTile[npcKey]) {
+						return { kind: 'npc', npc: this.npcByTile[npcKey] };
+					}
+					const spotKey = tr + ',' + tc;
+					if (this._interactSpots && this._interactSpots[spotKey]) {
+						return { kind: 'spot', spot: this._interactSpots[spotKey] };
+					}
+					const facingKey = fr + ',' + fc;
+					if (this._interactSpots && this._interactSpots[facingKey]) {
+						return { kind: 'spot', spot: this._interactSpots[facingKey] };
+					}
+					const t = this.map[fr] && this.map[fr][fc];
+					if (t === TSG) {
+						const msg = SIGN_MESSAGES_BEACH && SIGN_MESSAGES_BEACH[fr + ',' + fc];
+						if (msg) return { kind: 'sign', message: msg };
+					}
+					return null;
+				}
+
+				_handleSpot(spot) {
+					const today = new Date().toDateString();
+					if (spot.kind === 'wishing_well') {
+						const key = 'pokequiz_beach_wishing_well_' + today;
+						if (localStorage.getItem(key)) {
+							Dialog.open("The well shimmers quietly. Come back tomorrow for another wish!");
+							return;
+						}
+						localStorage.setItem(key, '1');
+						const inv = Inventory.load();
+						inv.tokens = (inv.tokens || 0) + 5;
+						Inventory.save(inv);
+						const fortunes = [
+							"A great adventure awaits you on the horizon!",
+							"Friendship is your strongest power.",
+							"The rarest Pokemon will appear when you least expect it.",
+							"Today's catch will be legendary!",
+							"Patience is the key to becoming a master trainer.",
+							"A shiny surprise may be closer than you think!",
+							"Your bond with your partner grows stronger every day.",
+							"Great things come to those who keep trying!",
+						];
+						const fortune = fortunes[Math.floor(Date.now() / 86400000) % fortunes.length];
+						Dialog.open(fortune + '\n+5 tokens from the wishing well!');
+						showToast('+5 tokens from the wishing well!');
+					} else if (spot.kind === 'treasure_spot') {
+						const key = 'pokequiz_beach_treasure_spot_' + today;
+						if (localStorage.getItem(key)) {
+							Dialog.open("The sand is undisturbed here. Maybe tomorrow the tide will wash in something new?");
+							return;
+						}
+						localStorage.setItem(key, '1');
+						const inv = Inventory.load();
+						const berriesFound = 1 + Math.floor(Math.random() * 3);
+						inv.friendshipBerries = (inv.friendshipBerries || 0) + berriesFound;
+						Inventory.save(inv);
+						Dialog.open('You dig in the sand and find ' + berriesFound + ' buried berries! Someone must have hidden them here.');
+						showToast('+' + berriesFound + ' berries found!');
+					} else if (spot.kind === 'bottle_message') {
+						const key = 'pokequiz_beach_bottle_message_' + today;
+						const messages = [
+							"Keep training hard! A true champion never gives up! — A Mystery Trainer",
+							"The ocean holds many secrets. Dive deep and you'll find your destiny! — A Mystery Trainer",
+							"I once caught a shiny Gyarados at this very pier. Believe in your luck! — A Mystery Trainer",
+							"A Pokemon's friendship is worth more than any trophy. Cherish it! — A Mystery Trainer",
+							"Every step of your journey matters. Don't rush the adventure! — A Mystery Trainer",
+							"The rarest berries grow where no one looks. Explore everywhere! — A Mystery Trainer",
+							"I left you something for the road. May your battles be ever in your favor! — A Mystery Trainer",
+							"The best trainers I've met had one thing in common: they never stopped believing! — A Mystery Trainer",
+						];
+						const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
+						if (!localStorage.getItem(key)) {
+							localStorage.setItem(key, '1');
+							const inv = Inventory.load();
+							inv.tokens = (inv.tokens || 0) + 5;
+							Inventory.save(inv);
+							Dialog.open('You find a bottle washed ashore. Inside is a note:\n\n"' + msg + '"\n\n+5 tokens!');
+							showToast('+5 tokens from bottle message!');
+						} else {
+							Dialog.open('You find a bottle washed ashore. Inside is a note:\n\n"' + msg + '"');
+						}
+					} else if (spot.kind === 'pier_fishing') {
+						Fishing.start();
+					}
+				}
+
+				update() {
+					this.tick++;
+					if (this.didTransition) {
+						this.player.setVelocity(0, 0);
+						return;
+					}
+					applyDayNight();
+					Dialog.tick();
+					const dialogOpen = Dialog.isOpen();
+					const k = this.keys, d = this.dpad;
+					let vx = 0, vy = 0;
+					if (!dialogOpen) {
+						if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+						if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+						if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+						if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+						if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+					}
+					this.player.setVelocity(vx, vy);
+
+					const animCtx = this.baseTex && this.baseTex.getContext ? this.baseTex.getContext() : null;
+					if (animCtx) {
+						for (let r = 9; r < BEACH_H; r++) {
+							for (let c = 2; c < BEACH_W - 2; c++) {
+								const t = this.map[r][c];
+								if (t === TBWT || t === TSHO) {
+									drawTile(animCtx, t, c*TILE, r*TILE, this.tick);
+								}
+							}
+						}
+						this.baseTex.refresh();
+					}
+
+					const moving = vx !== 0 || vy !== 0;
+					const animKey = this.dirAnimKeys[this.dir];
+					if (moving) {
+						if (!this.player.anims.isPlaying || this.player.anims.currentAnim?.key !== animKey) {
+							this.player.anims.play(animKey, true);
+						}
+					} else {
+						this.player.anims.stop();
+						this.player.setFrame(this.dirIdleFrame[this.dir]);
+					}
+
+					const tc = Math.floor(this.player.x / TILE);
+					const tr = Math.floor(this.player.y / TILE);
+
+					const onExitTile = tr <= 1 && tc >= 14 && tc <= 16;
+					const distFromExit = Math.max(0, tr - 1) + Math.max(0, 14 - tc, tc - 16);
+					if (distFromExit >= 2) this.armedForExit = true;
+
+					const target = this.findInteractTarget();
+					const ePressed = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
+
+					const pe = this._promptEl;
+					const lbl = this._promptLbl;
+					const showPrompt = !dialogOpen && target;
+					if (pe && lbl) {
+						if (showPrompt) {
+							const lblText = target.kind === 'npc' ? (target.npc.label || 'Talk') : (target.kind === 'spot' ? (target.spot.label || 'Use') : 'Read');
+							lbl.textContent = lblText;
+							pe.hidden = false;
+							const cam = this.cameras.main;
+							const sx = (this.player.x - cam.worldView.x) * cam.zoom;
+							const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+							const maxTop = this.scale.height - 180;
+							pe.style.left = sx + 'px';
+							pe.style.top  = Math.min(sy, maxTop) + 'px';
+							pe.style.transform = 'translate(-50%, calc(-100% - 12px))';
+						} else {
+							pe.hidden = true;
+						}
+					}
+
+					if (ePressed) {
+						if (dialogOpen) {
+							Dialog.advance();
+						} else if (target && target.kind === 'npc') {
+							const lines = Array.isArray(target.npc.dialog) ? target.npc.dialog : [target.npc.dialog];
+							Dialog.open(lines.join('\n'));
+						} else if (target && target.kind === 'spot') {
+							this._handleSpot(target.spot);
+						} else if (target && target.kind === 'sign') {
+							Dialog.open(target.message);
+						}
+					}
+
+					if (!this.didTransition && this.armedForExit && onExitTile && !dialogOpen) {
+						this.didTransition = true;
+						if (pe) pe.hidden = true;
+						safeSceneStart(this, 'camp', { from: 'beach' });
+					}
+
+					Debug.render(
+						'BEACH\n' +
+						'tile  ' + tc + ',' + tr + '\n' +
+						'target ' + (target ? target.kind : '-') + '\n' +
+						'distE ' + distFromExit + '\n' +
+						'armed ' + this.armedForExit + '\n' +
+						'trans ' + this.didTransition + '\n' +
+						(Debug.lastError ? 'ERR ' + Debug.lastError : '')
+					);
+				}
+			};
+		}
+	window.CAMP_SCENES.makeBeachSceneClass = makeBeachSceneClass;
+
 	// ── SeasonalRewards ────────────────────────────────────────────────────────
 	const SeasonalRewards = (() => {
 		async function check() {
@@ -10583,28 +11276,31 @@
 			const el = document.getElementById('campMinimap');
 			if (el) el.style.display = visible ? '' : 'none';
 		}
-		function updateDot() {
-			if (!visible) return;
-			const scene = window.__campScene;
-			if (!scene || !scene.minimapEl || !scene._minimapCtx || !scene._minimapCache) return;
-			const ctx = scene._minimapCtx;
-			const mEl = scene.minimapEl;
-			ctx.drawImage(scene._minimapCache, 0, 0);
-			// Player dot
-			if (scene.player) {
-				const px = Math.floor(scene.player.x / (TILE || 16));
-				const py = Math.floor(scene.player.y / (TILE || 16));
-				ctx.fillStyle = '#44ff44';
-				ctx.fillRect(px * 3 - 1, py * 3 - 1, 5, 5);
-			}
-			// NPC dots
-			if (scene.npcByTile) {
-				ctx.fillStyle = '#ffff44';
-				Object.values(scene.npcByTile).forEach(npc => {
-					ctx.fillRect(npc.c * 3, npc.r * 3, 3, 3);
-				});
-			}
+	function updateDot() {
+		if (!visible) return;
+		// Prefer the market scene when it is active
+		const _ms = window.__marketScene;
+		const scene = (_ms && _ms.sys && _ms.sys.isActive()) ? _ms : window.__campScene;
+		if (!scene || !scene.minimapEl || !scene._minimapCtx || !scene._minimapCache) return;
+		const ctx = scene._minimapCtx;
+		const mEl = scene.minimapEl;
+		const mS  = scene._minimapScale || 3;
+		ctx.drawImage(scene._minimapCache, 0, 0);
+		// Player dot
+		if (scene.player) {
+			const px = Math.floor(scene.player.x / (TILE || 16));
+			const py = Math.floor(scene.player.y / (TILE || 16));
+			ctx.fillStyle = '#44ff44';
+			ctx.fillRect(px * mS - 1, py * mS - 1, mS + 2, mS + 2);
 		}
+		// NPC dots
+		if (scene.npcByTile) {
+			ctx.fillStyle = '#ffff44';
+			Object.values(scene.npcByTile).forEach(npc => {
+				ctx.fillRect(npc.c * mS, npc.r * mS, mS, mS);
+			});
+		}
+	}
 		function destroy() { if (timer) { clearInterval(timer); timer = null; } }
 		return { init, toggle, destroy };
 	})();

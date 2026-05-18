@@ -957,7 +957,7 @@ window.CAMP_DATA.MARKET_NPCS = [
 			dialog: 'A new technique is available every week — costs tokens but the power is real!',
 		},
 		{
-			key: 'm-expedition', species: 'hiker', r: 20, c: 20,
+			key: 'm-expedition', species: 'hiker', r: 13, c: 28,
 			label: 'Explore', kind: 'expedition',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: 'Send your partner on an adventure! Longer trips bring better rewards.',
@@ -969,7 +969,7 @@ window.CAMP_DATA.MARKET_NPCS = [
 			dialog: "Something's buried all over this field — you get 5 digs a day. Good luck!",
 		},
 		{
-			key: 'm-gossip-a', species: 'lass', r: 22, c: 25,
+			key: 'm-gossip-a', species: 'lass', r: 16, c: 35,
 			label: 'Chat', kind: 'gossip',
 			spriteScale: 0.89, frameHeight: 32,
 			pool: [
@@ -983,7 +983,7 @@ window.CAMP_DATA.MARKET_NPCS = [
 			],
 		},
 		{
-			key: 'm-gossip-b', species: 'picnicker', r: 23, c: 25,
+			key: 'm-gossip-b', species: 'picnicker', r: 20, c: 38,
 			label: 'Chat', kind: 'gossip',
 			spriteScale: 0.89, frameHeight: 32,
 			pool: [
@@ -997,7 +997,7 @@ window.CAMP_DATA.MARKET_NPCS = [
 			],
 		},
 		{
-			key: 'm-gossip-c', species: 'ace-trainer-m', r: 22, c: 26,
+			key: 'm-gossip-c', species: 'ace-trainer-m', r: 22, c: 45,
 			label: 'Chat', kind: 'gossip',
 			spriteScale: 0.89, frameHeight: 32,
 			pool: [
@@ -1081,6 +1081,13 @@ window.CAMP_DATA.SIGN_MESSAGES_MARKET = {
 	'24,23': "⛏ Excavation Site — dig for buried treasure daily!",
 	'21,25': "💬 Gossip Corner — hear the latest market rumours.",
 	};
+
+// ── SIGN_MESSAGES_BEACH ────────────────────────────────────────────────────────
+window.CAMP_DATA.SIGN_MESSAGES_BEACH = {
+	'2,13': 'BEACH PIER\nCast your line for rare Water-type Pokémon!',
+	'2,5':  'ROCKY COVE\nTreasure may be hidden among the stones.',
+	'7,26': 'DEEP WATER\nDangerous currents ahead. Only skilled swimmers allowed.',
+};
 
 // ── PLANTS_KEY ────────────────────────────────────────────────────────
 window.CAMP_DATA.PLANTS_KEY = 'pokequiz_camp_plants';
