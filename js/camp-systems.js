@@ -7919,6 +7919,14 @@
 								if (won) { DailyQuests.increment('minigame'); TrainerLevel.addXP('battle'); }
 							});
 						}
+						else if (target && target.kind === 'dig') {
+							const tc2 = Math.floor(this.player.x / TILE);
+							const tr2 = Math.floor(this.player.y / TILE);
+							TreasureDig.tryDig(tr2, tc2);
+						}
+						else if (target && target.kind === 'seasonal_npc') {
+							SeasonalNPC.interact(target.npcData);
+						}
 						else if (target && target.kind === 'secret') {
 							const secretKey = 'pokequiz_secret_' + new Date().toISOString().slice(0,10);
 							const alreadyFound = !!localStorage.getItem(secretKey);
@@ -9630,4 +9638,927 @@
 	})();
 	window.CAMP_SYSTEMS.SeasonalRewards = SeasonalRewards;
 
+	// ══════════════════════════════════════════════════════════════════════════════
+	// BATCH 2 — HUD / GUI
+	// ══════════════════════════════════════════════════════════════════════════════
+
+	// ── B2-1: Compact HUD mode ────────────────────────────────────────────────────
+	const HudCompact = (() => {
+		const KEY = 'pokequiz_hud_compact';
+		let compact = false;
+		function apply() {
+			const bar = document.querySelector('.camp-btn-bar');
+			if (!bar) return;
+			if (compact) bar.classList.add('campHudBar--compact');
+			else bar.classList.remove('campHudBar--compact');
+			const btn = document.getElementById('campHudToggle');
+			if (btn) btn.title = compact ? 'Expand HUD' : 'Compact HUD';
+		}
+		function init() {
+			try { compact = localStorage.getItem(KEY) === '1'; } catch {}
+			apply();
+			const btn = document.getElementById('campHudToggle');
+			if (btn) {
+				btn.addEventListener('click', () => {
+					compact = !compact;
+					try { localStorage.setItem(KEY, compact ? '1' : '0'); } catch {}
+					apply();
+				});
+			}
+		}
+		return { init };
+	})();
+	window.CAMP_SYSTEMS.HudCompact = HudCompact;
+
+	// ── B2-2: Partner Portrait Widget ────────────────────────────────────────────
+	const PartnerWidget = (() => {
+		let el = null, timer = null;
+		function init() {
+			el = document.getElementById('campPartnerWidget');
+			if (!el) return;
+			update();
+			timer = setInterval(update, 2000);
+		}
+		function update() {
+			if (!el) return;
+			try {
+				const inv = Inventory.load();
+				const companionKey = inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee');
+				const formLookup = (window.CAMP_SYSTEMS.dexFromKey || (k => k))(companionKey);
+				const form = FOLLOWER_FORMS ? (FOLLOWER_FORMS[formLookup] || FOLLOWER_FORMS.eevee) : null;
+				const friendship = inv.friendship || 0;
+				const hearts = Math.round((friendship / 100) * 5);
+				const name = (form && form.displayName) || 'Eevee';
+				const activeSlot = (inv.party || [])[inv.partyActive || 0];
+				const nick = (activeSlot && activeSlot.nickname) || '';
+				const displayName = nick || name;
+
+				let spriteHTML = '';
+				if (form) {
+					const PS = 2;
+					const imgUrl = form.url ? form.url : ('Pictures/sprites/' + form.sheet + '.png');
+					spriteHTML = '<div style="' +
+						'background-image:url(\'' + imgUrl + '\');' +
+						'background-position:0 0;' +
+						'background-size:' + (form.frameW * form.cols * PS) + 'px ' + (form.frameH * 8 * PS) + 'px;' +
+						'width:' + (form.frameW * PS) + 'px;height:' + (form.frameH * PS) + 'px;' +
+						'image-rendering:pixelated;margin:0 auto 2px"></div>';
+				}
+				const heartStr = '♥'.repeat(hearts) + '<span style="opacity:0.3">' + '♥'.repeat(5 - hearts) + '</span>';
+				el.innerHTML = spriteHTML +
+					'<div class="cpw-name">' + displayName + '</div>' +
+					'<div class="cpw-hearts">' + heartStr + '</div>';
+			} catch (e) {}
+		}
+		function destroy() { if (timer) { clearInterval(timer); timer = null; } }
+		return { init, update, destroy };
+	})();
+	window.CAMP_SYSTEMS.PartnerWidget = PartnerWidget;
+
+	// ── B2-3: Quick-slot bar ──────────────────────────────────────────────────────
+	const QuickSlotBar = (() => {
+		const DEFAULTS = ['oran', 'pecha', 'sitrus', 'friendship'];
+		const LABELS   = { oran: '🫐', pecha: '🍬', sitrus: '🍋', friendship: '🍓' };
+		const NAMES    = { oran: 'Oran', pecha: 'Pecha', sitrus: 'Sitrus', friendship: 'Friend' };
+		let el = null;
+		function getSlots() {
+			try {
+				const raw = localStorage.getItem('pokequiz_quickslots');
+				return raw ? JSON.parse(raw) : [...DEFAULTS];
+			} catch { return [...DEFAULTS]; }
+		}
+		function getCount(type) {
+			const inv = Inventory.load();
+			if (type === 'friendship') return inv.friendshipBerries || 0;
+			return ((inv.berryTypes || {})[type]) || 0;
+		}
+		function useSlot(idx) {
+			const slots = getSlots();
+			const type = slots[idx];
+			if (!type) return;
+			const inv = Inventory.load();
+			if (type === 'friendship') {
+				if ((inv.friendshipBerries || 0) <= 0) { showToast('No Friendship Berries!'); return; }
+				inv.friendshipBerries = Math.max(0, (inv.friendshipBerries || 0) - 1);
+				inv.friendship = Math.min(FRIENDSHIP_MAX || 100, (inv.friendship || 0) + (window.CAMP_DATA?.FRIENDSHIP_PER_BERRY || 10));
+				Inventory.save(inv);
+				showToast(LABELS[type] + ' +' + (window.CAMP_DATA?.FRIENDSHIP_PER_BERRY || 10) + ' friendship!');
+				if (window.CAMP_SYSTEMS.FriendshipMilestone) window.CAMP_SYSTEMS.FriendshipMilestone.check(null, inv.friendship);
+			} else {
+				const bt = inv.berryTypes || {};
+				if ((bt[type] || 0) <= 0) { showToast('No ' + NAMES[type] + ' Berries!'); return; }
+				bt[type] = Math.max(0, (bt[type] || 0) - 1);
+				inv.berryTypes = bt;
+				inv.friendship = Math.min(FRIENDSHIP_MAX || 100, (inv.friendship || 0) + 5);
+				Inventory.save(inv);
+				showToast(LABELS[type] + ' ' + NAMES[type] + ' Berry used! +5 friendship');
+			}
+			render();
+		}
+		function render() {
+			if (!el) return;
+			const slots = getSlots();
+			el.querySelectorAll('.cpQuickSlot').forEach((slot, i) => {
+				const type = slots[i];
+				const cnt = type ? getCount(type) : 0;
+				const icon = type ? (LABELS[type] || '?') : '—';
+				slot.innerHTML = '<span class="cqs-icon">' + icon + '</span><span class="cqs-count">' + cnt + '</span>';
+				slot.dataset.slot = i + 1;
+				slot.title = (type ? NAMES[type] + ' Berry' : 'Empty') + ' [' + (i + 1) + ']';
+				slot.classList.toggle('cqs-empty', cnt === 0);
+			});
+		}
+		function init() {
+			el = document.getElementById('campQuickBar');
+			if (!el) return;
+			render();
+			// Keyboard 1-4
+			document.addEventListener('keydown', (e) => {
+				if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+				const idx = ['1','2','3','4'].indexOf(e.key);
+				if (idx !== -1) useSlot(idx);
+			});
+		}
+		function refresh() { render(); }
+		return { init, refresh, useSlot };
+	})();
+	window.CAMP_SYSTEMS.QuickSlotBar = QuickSlotBar;
+
+	// ── B2-4: Mini-map overlay ────────────────────────────────────────────────────
+	const Minimap = (() => {
+		let visible = false;
+		let timer = null;
+		const KEY = 'pokequiz_minimap_on';
+		function init() {
+			try { visible = localStorage.getItem(KEY) !== '0'; } catch { visible = true; }
+			const el = document.getElementById('campMinimap');
+			if (el) el.style.display = visible ? '' : 'none';
+			// M key toggle
+			document.addEventListener('keydown', (e) => {
+				if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+				if (e.key === 'm' || e.key === 'M') toggle();
+			});
+			const btn = document.getElementById('campMapBtn');
+			if (btn) btn.addEventListener('click', toggle);
+			timer = setInterval(updateDot, 500);
+		}
+		function toggle() {
+			visible = !visible;
+			try { localStorage.setItem(KEY, visible ? '1' : '0'); } catch {}
+			const el = document.getElementById('campMinimap');
+			if (el) el.style.display = visible ? '' : 'none';
+		}
+		function updateDot() {
+			if (!visible) return;
+			const scene = window.__campScene;
+			if (!scene || !scene.minimapEl || !scene._minimapCtx || !scene._minimapCache) return;
+			const ctx = scene._minimapCtx;
+			const mEl = scene.minimapEl;
+			ctx.drawImage(scene._minimapCache, 0, 0);
+			// Player dot
+			if (scene.player) {
+				const px = Math.floor(scene.player.x / (TILE || 16));
+				const py = Math.floor(scene.player.y / (TILE || 16));
+				ctx.fillStyle = '#44ff44';
+				ctx.fillRect(px * 3 - 1, py * 3 - 1, 5, 5);
+			}
+			// NPC dots
+			if (scene.npcByTile) {
+				ctx.fillStyle = '#ffff44';
+				Object.values(scene.npcByTile).forEach(npc => {
+					ctx.fillRect(npc.c * 3, npc.r * 3, 3, 3);
+				});
+			}
+		}
+		function destroy() { if (timer) { clearInterval(timer); timer = null; } }
+		return { init, toggle, destroy };
+	})();
+	window.CAMP_SYSTEMS.Minimap = Minimap;
+
+	// ══════════════════════════════════════════════════════════════════════════════
+	// BATCH 3 — CAMP ACTIVITIES
+	// ══════════════════════════════════════════════════════════════════════════════
+
+	// ── B3-1: Wild Pokémon encounters while walking ───────────────────────────────
+	const WildEncounter = (() => {
+		const POOL = [
+			'Rattata','Pidgey','Zubat','Ekans','Sandshrew','Nidoran♀','Nidoran♂','Clefairy',
+			'Vulpix','Meowth','Psyduck','Mankey','Growlithe','Abra','Machop','Bellsprout',
+			'Tentacool','Geodude','Ponyta','Slowpoke','Magnemite','Doduo','Seel','Gastly',
+			'Drowzee','Voltorb','Exeggcute','Cubone','Koffing','Rhyhorn',
+		];
+		let pending = false;
+		function step(scene) {
+			const __S2 = window.__CAMP_STATE;
+			__S2._stepCount = (__S2._stepCount || 0) + 1;
+			if (__S2._stepCount % 60 === 0 && Math.random() < 0.25 && !pending) {
+				pending = true;
+				const poke = POOL[Math.floor(Math.random() * POOL.length)];
+				const msg = 'A wild ' + poke + ' appeared!';
+				setTimeout(() => {
+					Dialog.open(msg);
+					// Offer two buttons via a temporary overlay
+					let overlay = document.getElementById('wildEncounterOverlay');
+					if (!overlay) {
+						overlay = document.createElement('div');
+						overlay.id = 'wildEncounterOverlay';
+						overlay.style.cssText = 'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:120;display:flex;gap:10px;font-family:"Press Start 2P",monospace';
+						document.body.appendChild(overlay);
+					}
+					overlay.innerHTML = '';
+					const befBtn = document.createElement('button');
+					befBtn.className = 'pk-btn pk-btn-sm';
+					befBtn.style.cssText = 'background:linear-gradient(180deg,#44cc88,#228844);color:#fff';
+					befBtn.textContent = 'Befriend';
+					befBtn.addEventListener('click', () => {
+						overlay.remove();
+						Dialog.close();
+						const inv = Inventory.load();
+						inv.friendship = Math.min(FRIENDSHIP_MAX || 100, (inv.friendship || 0) + 5);
+						inv.tokens = (inv.tokens || 0) + 10;
+						if (Math.random() < 0.05) {
+							// 5% chance to add to PC box
+							const dexId = POOL.indexOf(poke) + 1;
+							if (window.CAMP_SYSTEMS.PCBox) window.CAMP_SYSTEMS.PCBox.addToBox({ form: String(dexId), nickname: poke, friendship: 0, since: Date.now() });
+							showToast('✨ ' + poke + ' joined your PC Box!');
+						}
+						Inventory.save(inv);
+						if (window.CAMP_SYSTEMS.FriendshipMilestone) window.CAMP_SYSTEMS.FriendshipMilestone.check(null, inv.friendship);
+						showToast('💚 Befriended ' + poke + '! +5 friendship, +10 tokens');
+						pending = false;
+					});
+					const runBtn = document.createElement('button');
+					runBtn.className = 'pk-btn pk-btn-sm pk-btn-dark';
+					runBtn.textContent = 'Run';
+					runBtn.addEventListener('click', () => { overlay.remove(); Dialog.close(); pending = false; });
+					overlay.appendChild(befBtn);
+					overlay.appendChild(runBtn);
+					// Auto-dismiss after 8s
+					setTimeout(() => { if (overlay.parentNode) { overlay.remove(); pending = false; } }, 8000);
+				}, 200);
+			}
+		}
+		return { step };
+	})();
+	window.CAMP_SYSTEMS.WildEncounter = WildEncounter;
+
+	// ── B3-2: Treasure Digging ────────────────────────────────────────────────────
+	const TreasureDig = (() => {
+		let scene = null;
+		let spotR = -1, spotC = -1;
+		let sparkleGfx = null;
+		function _dateStr() { return new Date().toISOString().slice(0, 10); }
+		function _seed(str) {
+			let h = 5381;
+			for (let i = 0; i < str.length; i++) h = ((h << 5) + h) + str.charCodeAt(i);
+			return Math.abs(h);
+		}
+		function init(sc) {
+			scene = sc;
+			const today = _dateStr();
+			const s = _seed(today);
+			// Pick a random tile that is walkable (grass area) — use center region
+			spotR = 5 + (s % 12);
+			spotC = 8 + ((s >> 4) % 20);
+			// Draw sparkle
+			if (sparkleGfx) { try { sparkleGfx.destroy(); } catch {} sparkleGfx = null; }
+			if (localStorage.getItem('pokequiz_dig_' + today)) return; // already dug today
+			if (!scene) return;
+			sparkleGfx = scene.add.graphics().setDepth(4);
+			_drawSparkle();
+		}
+		function _drawSparkle() {
+			if (!sparkleGfx) return;
+			sparkleGfx.clear();
+			const t = TILE || 16;
+			const cx = spotC * t + t / 2, cy = spotR * t + t / 2;
+			const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.006);
+			sparkleGfx.fillStyle(0xffee44, pulse);
+			sparkleGfx.fillStar(cx, cy, 4, 3, 6);
+		}
+		function updateSparkle() { _drawSparkle(); }
+		function tryDig(pr, pc) {
+			if (Math.abs(pr - spotR) > 1 || Math.abs(pc - spotC) > 1) return false;
+			const today = _dateStr();
+			const digKey = 'pokequiz_dig_' + today;
+			if (localStorage.getItem(digKey)) {
+				Dialog.open('You already dug here today. Come back tomorrow!');
+				return true;
+			}
+			localStorage.setItem(digKey, '1');
+			if (sparkleGfx) { try { sparkleGfx.destroy(); } catch {} sparkleGfx = null; }
+			const roll = Math.random();
+			const inv = Inventory.load();
+			let reward = '';
+			if (roll < 0.05) {
+				// Rare: evolution stone
+				if (!inv.items) inv.items = [];
+				const stones = ['Fire Stone','Thunder Stone','Leaf Stone','Water Stone'];
+				const stone = stones[Math.floor(Math.random() * stones.length)];
+				inv.items.push(stone);
+				reward = '✨ Rare find: ' + stone + '!';
+			} else if (roll < 0.25) {
+				const berries = 1 + Math.floor(Math.random() * 3);
+				inv.friendshipBerries = (inv.friendshipBerries || 0) + berries;
+				reward = '🍓 Found ' + berries + ' Friendship ' + (berries === 1 ? 'Berry' : 'Berries') + '!';
+			} else if (roll < 0.55) {
+				const seeds = 1 + Math.floor(Math.random() * 3);
+				inv.seeds = (inv.seeds || 0) + seeds;
+				reward = '🌱 Found ' + seeds + ' ' + (seeds === 1 ? 'Seed' : 'Seeds') + '!';
+			} else {
+				const tokens = 10 + Math.floor(Math.random() * 41);
+				inv.tokens = (inv.tokens || 0) + tokens;
+				reward = '💰 Found ' + tokens + ' tokens!';
+			}
+			Inventory.save(inv);
+			showToast('⛏️ Dug up: ' + reward);
+			Dialog.open('You dug up a hidden treasure!\n' + reward + '\nThis spot refreshes daily.');
+			return true;
+		}
+		return { init, updateSparkle, tryDig, getSpot: () => ({ r: spotR, c: spotC }) };
+	})();
+	window.CAMP_SYSTEMS.TreasureDig = TreasureDig;
+
+	// ── B3-3: Camp Journal ────────────────────────────────────────────────────────
+	const Journal = (() => {
+		const KEY = 'pokequiz_journal';
+		const MAX = 30;
+		const FLAVOURS = [
+			'The berries are growing well.', 'The weather feels just right today.',
+			'Your partner seems happy.', 'A gentle breeze rustles the leaves.',
+			'The campfire crackles warmly.', 'You spot a Butterfree in the distance.',
+			'The pond shimmers in the light.', 'Dew clings to the morning grass.',
+			'Birdsong fills the air.', 'The stars were bright last night.',
+		];
+		function load() {
+			try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
+		}
+		function save(entries) { try { localStorage.setItem(KEY, JSON.stringify(entries)); } catch {} }
+		function autoLog() {
+			const today = new Date().toISOString().slice(0, 10);
+			const entries = load();
+			if (entries.length && entries[0].date === today) return; // already logged today
+			const inv = Inventory.load();
+			const streak = (window.CAMP_SYSTEMS.Daily && window.CAMP_SYSTEMS.Daily.streak) ? window.CAMP_SYSTEMS.Daily.streak() : 1;
+			const companionKey = inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee');
+			const formLookup = (window.CAMP_SYSTEMS.dexFromKey || (k => k))(companionKey);
+			const form = FOLLOWER_FORMS ? (FOLLOWER_FORMS[formLookup] || FOLLOWER_FORMS.eevee) : null;
+			const partnerName = (form && form.displayName) || 'Eevee';
+			const weather = (() => { try { return window.__campWeather || 'Clear'; } catch { return 'Clear'; } })();
+			const flavour = FLAVOURS[Math.floor(Math.random() * FLAVOURS.length)];
+			const entry = {
+				date: today,
+				day: streak,
+				text: 'Day ' + streak + ' — ' + today + ' — You visited camp. Partner: ' + partnerName + '. Weather: ' + weather + '. ' + flavour,
+			};
+			entries.unshift(entry);
+			if (entries.length > MAX) entries.length = MAX;
+			save(entries);
+		}
+		function open() {
+			let panel = document.getElementById('journalPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'journalPanel';
+				panel.className = 'pk-drawer';
+				panel.setAttribute('role', 'dialog');
+				panel.setAttribute('aria-label', 'Journal');
+				document.getElementById('campWrap')?.appendChild(panel);
+			}
+			const entries = load();
+			panel.innerHTML = '<div class="pk-drawer-head">' +
+				'<span class="pk-drawer-title">📖 JOURNAL</span>' +
+				'<button id="journalClose" class="pk-close" type="button" aria-label="Close"><i class="bi bi-x-lg"></i></button>' +
+				'</div><div class="pk-drawer-body" id="journalBody">' +
+				(entries.length === 0 ? '<div style="color:var(--pk-muted);font-size:8px">No entries yet. Visit camp daily!</div>' :
+					entries.map(e => '<div class="journal-entry"><div class="journal-date">' + e.date + '</div><div class="journal-text">' + e.text + '</div></div>').join('')
+				) + '</div>';
+			panel.hidden = false;
+			document.getElementById('journalClose')?.addEventListener('click', close);
+		}
+		function close() {
+			const panel = document.getElementById('journalPanel');
+			if (panel) panel.hidden = true;
+		}
+		return { autoLog, open, close, load };
+	})();
+	window.CAMP_SYSTEMS.Journal = Journal;
+
+	// ── B3-4: Friendship Milestones ───────────────────────────────────────────────
+	const FriendshipMilestone = (() => {
+		const MILESTONES = [25, 50, 75, 100];
+		function check(dexId, friendship) {
+			for (const level of MILESTONES) {
+				if (friendship >= level) {
+					const mKey = 'pokequiz_fmilestone_' + (dexId || 'partner') + '_' + level;
+					if (!localStorage.getItem(mKey)) {
+						localStorage.setItem(mKey, '1');
+						_showModal(dexId, level, friendship);
+						break; // show one at a time
+					}
+				}
+			}
+		}
+		function _showModal(dexId, level, friendship) {
+			let modal = document.getElementById('friendshipMilestoneModal');
+			if (modal) modal.remove();
+			modal = document.createElement('div');
+			modal.id = 'friendshipMilestoneModal';
+			modal.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;font-family:"Press Start 2P",monospace;animation:pk-backdrop-in 0.2s ease';
+			const inv = Inventory.load();
+			const companionKey = inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee');
+			const formLookup = (window.CAMP_SYSTEMS.dexFromKey || (k => k))(companionKey);
+			const form = FOLLOWER_FORMS ? (FOLLOWER_FORMS[formLookup] || FOLLOWER_FORMS.eevee) : null;
+			const name = (form && form.displayName) || 'Partner';
+			const PS = 4;
+			let spriteHTML = '🌟';
+			if (form) {
+				const imgUrl = form.url ? form.url : ('Pictures/sprites/' + form.sheet + '.png');
+				spriteHTML = '<div style="background-image:url(\'' + imgUrl + '\');background-position:0 0;background-size:' + (form.frameW * form.cols * PS) + 'px ' + (form.frameH * 8 * PS) + 'px;width:' + (form.frameW * PS) + 'px;height:' + (form.frameH * PS) + 'px;image-rendering:pixelated;margin:0 auto 10px"></div>';
+			}
+			const colours = { 25: '#44cc88', 50: '#f6c84c', 75: '#ff8844', 100: '#ff44cc' };
+			const col = colours[level] || '#fff';
+			modal.innerHTML = '<div style="background:linear-gradient(180deg,#1a2448,#0e1826);border:2px solid ' + col + ';border-radius:14px;padding:28px 32px;text-align:center;max-width:340px;width:90vw;box-shadow:0 0 40px ' + col + '44">' +
+				'<div style="font-size:11px;color:' + col + ';margin-bottom:16px;letter-spacing:2px">✨ FRIENDSHIP MILESTONE ✨</div>' +
+				spriteHTML +
+				'<div style="font-size:10px;color:#fff;margin-bottom:8px">' + name + ' reached<br>Friendship Level ' + level + '!</div>' +
+				'<div style="font-size:8px;color:var(--pk-muted);margin-bottom:18px">' + '♥'.repeat(Math.round(level / 20)) + ' ' + friendship + ' / ' + (FRIENDSHIP_MAX || 100) + '</div>' +
+				'<button id="fmClose" type="button" class="pk-btn pk-btn-sm" style="background:linear-gradient(180deg,' + col + ',#884422);color:#fff">Wonderful!</button>' +
+				'</div>';
+			document.body.appendChild(modal);
+			document.getElementById('fmClose')?.addEventListener('click', () => modal.remove());
+			Sound.win && Sound.win();
+		}
+		return { check };
+	})();
+	window.CAMP_SYSTEMS.FriendshipMilestone = FriendshipMilestone;
+
+	// ── B3-5: Berry Recipes (Tea & Puffin additions to campfire) ─────────────────
+	// Injected into _showCampfireMenu via monkey-patch applied when the scene starts.
+	// We store the extra recipes here so they can be imported there.
+	const BerryRecipes = (() => {
+		function addToCampfireMenu(panel, body, scene) {
+			const teaBtn = document.createElement('button');
+			teaBtn.className = 'pk-btn pk-btn-sm pk-btn-full';
+			teaBtn.style.cssText = 'background:linear-gradient(180deg,#44aacc,#226688);color:#fff';
+			teaBtn.innerHTML = '🍵 Brew Berry Tea';
+			teaBtn.addEventListener('click', () => {
+				panel.hidden = true;
+				const inv = Inventory.load();
+				const bt = inv.berryTypes || {};
+				if ((bt.oran || 0) < 2) { showToast('Need 2 Oran Berries!'); return; }
+				bt.oran -= 2;
+				inv.berryTypes = bt;
+				inv.friendship = Math.min(FRIENDSHIP_MAX || 100, (inv.friendship || 0) + 15);
+				inv.tokens = (inv.tokens || 0) + 5;
+				Inventory.save(inv);
+				if (window.CAMP_SYSTEMS.FriendshipMilestone) window.CAMP_SYSTEMS.FriendshipMilestone.check(null, inv.friendship);
+				showToast('🍵 Berry Tea brewed! +15 friendship, +5 tokens');
+			});
+
+			const puffinBtn = document.createElement('button');
+			puffinBtn.className = 'pk-btn pk-btn-sm pk-btn-full';
+			puffinBtn.style.cssText = 'background:linear-gradient(180deg,#cc88ff,#884499);color:#fff';
+			puffinBtn.innerHTML = '🧁 Bake Poké Puffin';
+			puffinBtn.addEventListener('click', () => {
+				panel.hidden = true;
+				const inv = Inventory.load();
+				const bt = inv.berryTypes || {};
+				if ((bt.sitrus || 0) < 1 || (bt.pecha || 0) < 1) { showToast('Need 1 Sitrus + 1 Pecha Berry!'); return; }
+				bt.sitrus -= 1;
+				bt.pecha  -= 1;
+				inv.berryTypes = bt;
+				inv.friendship = Math.min(FRIENDSHIP_MAX || 100, (inv.friendship || 0) + 20);
+				Inventory.save(inv);
+				if (window.CAMP_SYSTEMS.FriendshipMilestone) window.CAMP_SYSTEMS.FriendshipMilestone.check(null, inv.friendship);
+				showToast('🧁 Poké Puffin baked! +20 friendship! Your partner is spinning with joy!');
+				// Happy spin on follower
+				const sc = window.__campScene;
+				if (sc && sc.follower && sc.follower.setAngularVelocity) {
+					sc.follower.setAngularVelocity(300);
+					setTimeout(() => { try { sc.follower.setAngularVelocity(0); sc.follower.setAngle(0); } catch {} }, 800);
+				}
+			});
+
+			body.appendChild(teaBtn);
+			body.appendChild(puffinBtn);
+		}
+		return { addToCampfireMenu };
+	})();
+	window.CAMP_SYSTEMS.BerryRecipes = BerryRecipes;
+
+	// ══════════════════════════════════════════════════════════════════════════════
+	// BATCH 4 — MAJOR CAMP FEATURES
+	// ══════════════════════════════════════════════════════════════════════════════
+
+	// ── B4-1: Ambient Party Pokémon ───────────────────────────────────────────────
+	const AmbientParty = (() => {
+		let sprites = [], timers = [], scene = null;
+		function init(sc) {
+			scene = sc;
+			destroy();
+			const inv = Inventory.load();
+			const slots = (inv.pcBox || []).slice(0, 3);
+			if (slots.length < 3) return;
+			for (let i = 0; i < Math.min(3, slots.length); i++) {
+				const slot = slots[i];
+				const formKey = slot.form || 'eevee';
+				const formLookup = (window.CAMP_SYSTEMS.dexFromKey || (k => k))(formKey);
+				const form = FOLLOWER_FORMS ? (FOLLOWER_FORMS[formLookup] || FOLLOWER_FORMS.eevee) : null;
+				if (!form) continue;
+				const startX = (8 + i * 4) * (TILE || 16);
+				const startY = (14 + i * 2) * (TILE || 16);
+				let sp = null;
+				try {
+					// Use PokeAPI sprite as a static image fallback
+					const SPRITE_CDN = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+					const dexId = typeof formLookup === 'number' ? formLookup : (i + 1);
+					sp = scene.add.sprite(startX, startY, form.sheet || 'eevee', 0)
+						.setDepth(2.5)
+						.setScale((form.scale || 0.7) * 0.8);
+				} catch {
+					sp = null;
+				}
+				if (sp) sprites.push({ sp, baseX: startX, baseY: startY, dx: 0, dy: 0, tick: 0 });
+				const t = setInterval(() => wander(sprites[sprites.length - 1]), 3000);
+				timers.push(t);
+			}
+		}
+		function wander(entry) {
+			if (!entry || !entry.sp) return;
+			const dirs = [[1,0],[-1,0],[0,1],[0,-1],[0,0]];
+			const [dx, dy] = dirs[Math.floor(Math.random() * dirs.length)];
+			const nx = entry.sp.x + dx * (TILE || 16);
+			const ny = entry.sp.y + dy * (TILE || 16);
+			// Keep within reasonable bounds
+			if (nx > 4 * (TILE||16) && nx < 30 * (TILE||16) && ny > 4 * (TILE||16) && ny < 20 * (TILE||16)) {
+				try { entry.sp.setPosition(nx, ny); } catch {}
+			}
+		}
+		function destroy() {
+			timers.forEach(t => clearInterval(t));
+			timers = [];
+			sprites.forEach(e => { try { e.sp.destroy(); } catch {} });
+			sprites = [];
+		}
+		return { init, destroy };
+	})();
+	window.CAMP_SYSTEMS.AmbientParty = AmbientParty;
+
+	// ── B4-2: Seasonal Special NPCs ──────────────────────────────────────────────
+	const SeasonalNPC = (() => {
+		const SCHEDULE = [
+			{ weeks: [1,13],  name: 'Mew',    dex: 151, emoji: '🌸', bonus: 'Spring spirit brings renewal!' },
+			{ weeks: [14,26], name: 'Celebi',  dex: 251, emoji: '🌿', bonus: 'Summer time traveller visits!' },
+			{ weeks: [27,39], name: 'Jirachi', dex: 385, emoji: '⭐', bonus: 'Autumn wish-maker appears!' },
+			{ weeks: [40,52], name: 'Deoxys',  dex: 386, emoji: '❄️', bonus: 'Winter alien descends!' },
+		];
+		const NPC_ROW = 3, NPC_COL = 12;
+		let npcSprite = null, scene = null;
+		function _weekOfYear() {
+			const now = new Date();
+			const start = new Date(now.getFullYear(), 0, 1);
+			return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+		}
+		function _current() {
+			const w = _weekOfYear();
+			return SCHEDULE.find(s => w >= s.weeks[0] && w <= s.weeks[1]) || SCHEDULE[0];
+		}
+		function init(sc) {
+			scene = sc;
+			if (!scene) return;
+			const npc = _current();
+			const x = NPC_COL * (TILE || 16) + (TILE || 16) / 2;
+			const y = NPC_ROW * (TILE || 16) + (TILE || 16) / 2;
+			// Render as emoji text since PMD sprites for legendaries need CDN fetch
+			try {
+				npcSprite = scene.add.text(x, y, npc.emoji + '\n' + npc.name, {
+					fontSize: '10px',
+					fontFamily: 'monospace',
+					color: '#fff',
+					stroke: '#000',
+					strokeThickness: 2,
+					align: 'center',
+				}).setDepth(3).setOrigin(0.5);
+			} catch {}
+			// Register in npcByTile for interaction
+			if (scene.npcByTile) {
+				scene.npcByTile[NPC_ROW + ',' + NPC_COL] = {
+					r: NPC_ROW, c: NPC_COL, kind: 'seasonal_legendary',
+					label: 'Talk',
+					dialog: npc.emoji + ' ' + npc.name + ' appears!\n"' + npc.bonus + '"\n+50 tokens! A special legend noted!',
+					_npc: npc,
+				};
+			}
+		}
+		function interact(npcData) {
+			const rewardKey = 'pokequiz_seasonal_npc_' + _weekOfYear();
+			const inv = Inventory.load();
+			let msg = npcData.dialog;
+			if (!localStorage.getItem(rewardKey)) {
+				localStorage.setItem(rewardKey, '1');
+				inv.tokens = (inv.tokens || 0) + 50;
+				Inventory.save(inv);
+				if (window.CAMP_SYSTEMS.Achievements) window.CAMP_SYSTEMS.Achievements.unlock('legendary_encounter');
+				msg += '\nYou received +50 tokens!';
+			} else {
+				msg += '\n(Already received weekly reward.)';
+			}
+			Dialog.open(msg);
+		}
+		return { init, interact, getCurrent: _current };
+	})();
+	window.CAMP_SYSTEMS.SeasonalNPC = SeasonalNPC;
+
+	// ── B4-3: Camp Upgrades ───────────────────────────────────────────────────────
+	const CampUpgrades = (() => {
+		const UPGRADES = [
+			{ id: 'flowerPath', label: 'Flower Path',  cost: 200, icon: '🌸', desc: 'Decorative flowers along the path' },
+			{ id: 'fountain',   label: 'Fountain',     cost: 500, icon: '⛲', desc: 'A fountain at the camp centre' },
+			{ id: 'lanterns',   label: 'Lanterns',     cost: 300, icon: '🏮', desc: 'Glowing lanterns around the camp' },
+		];
+		function isOwned(id) { return !!localStorage.getItem('pokequiz_upgrade_' + id); }
+		function open() {
+			let panel = document.getElementById('upgradesPanel');
+			if (!panel) {
+				panel = document.createElement('div');
+				panel.id = 'upgradesPanel';
+				panel.className = 'pk-drawer';
+				panel.setAttribute('role', 'dialog');
+				panel.setAttribute('aria-label', 'Camp Upgrades');
+				document.getElementById('campWrap')?.appendChild(panel);
+			}
+			const inv = Inventory.load();
+			panel.innerHTML = '<div class="pk-drawer-head">' +
+				'<span class="pk-drawer-title">🔨 CAMP UPGRADES</span>' +
+				'<button id="upgradesClose" class="pk-close" type="button" aria-label="Close"><i class="bi bi-x-lg"></i></button>' +
+				'</div><div class="pk-drawer-body">' +
+				'<div style="font-size:7px;color:var(--pk-muted);margin-bottom:12px">Tokens: <b style="color:var(--pk-gold)">' + (inv.tokens || 0) + '</b></div>' +
+				'<div id="upgradesList" style="display:flex;flex-direction:column;gap:10px">' +
+				UPGRADES.map(u => {
+					const owned = isOwned(u.id);
+					return '<div class="upgrade-row' + (owned ? ' upgrade-owned' : '') + '" data-id="' + u.id + '">' +
+						'<span class="upgrade-icon">' + u.icon + '</span>' +
+						'<div class="upgrade-info"><div class="upgrade-name">' + u.label + '</div><div class="upgrade-desc">' + u.desc + '</div></div>' +
+						(owned ? '<span class="upgrade-badge">✓ Owned</span>' :
+							'<button class="pk-btn pk-btn-sm upgrade-buy" data-id="' + u.id + '" data-cost="' + u.cost + '" type="button">' + u.cost + ' 🪙</button>') +
+						'</div>';
+				}).join('') +
+				'</div></div>';
+			panel.hidden = false;
+			document.getElementById('upgradesClose')?.addEventListener('click', () => { panel.hidden = true; });
+			panel.querySelectorAll('.upgrade-buy').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const id = btn.dataset.id;
+					const cost = parseInt(btn.dataset.cost);
+					const inv2 = Inventory.load();
+					if ((inv2.tokens || 0) < cost) { showToast('Not enough tokens!'); return; }
+					inv2.tokens -= cost;
+					Inventory.save(inv2);
+					localStorage.setItem('pokequiz_upgrade_' + id, '1');
+					showToast(UPGRADES.find(u => u.id === id)?.icon + ' ' + UPGRADES.find(u => u.id === id)?.label + ' purchased!');
+					// Apply immediately
+					if (window.__campScene) apply(id, window.__campScene);
+					open(); // re-render
+				});
+			});
+		}
+		function apply(id, sc) {
+			if (!sc || !isOwned(id)) return;
+			if (id === 'flowerPath') {
+				// Flower sprites along the path row (row 12, cols 5-15)
+				for (let c = 5; c <= 15; c += 2) {
+					try { sc.add.text(c * (TILE||16) + 4, 12 * (TILE||16) - 4, '🌸', { fontSize:'8px' }).setDepth(1.9); } catch {}
+				}
+			} else if (id === 'fountain') {
+				try {
+					const fx = 8 * (TILE||16) + (TILE||16)/2, fy = 4 * (TILE||16) + (TILE||16)/2;
+					sc.add.text(fx, fy, '⛲', { fontSize:'16px' }).setDepth(2).setOrigin(0.5);
+					const gfx = sc.add.graphics().setDepth(1.8);
+					gfx.fillStyle(0x4499ff, 0.3);
+					gfx.fillCircle(fx, fy, 20);
+				} catch {}
+			} else if (id === 'lanterns') {
+				const positions = [[3,2],[3,35],[20,2],[20,35],[12,2],[12,35]];
+				positions.forEach(([r,c]) => {
+					try {
+						sc.add.text(c*(TILE||16), r*(TILE||16), '🏮', {fontSize:'10px'}).setDepth(1.9);
+						const g = sc.add.graphics().setDepth(1.7);
+						g.fillStyle(0xff8822, 0.2);
+						g.fillCircle(c*(TILE||16)+8, r*(TILE||16)+8, 18);
+					} catch {}
+				});
+			}
+		}
+		function applyAll(sc) {
+			UPGRADES.forEach(u => { if (isOwned(u.id)) apply(u.id, sc); });
+		}
+		return { open, apply, applyAll, isOwned };
+	})();
+	window.CAMP_SYSTEMS.CampUpgrades = CampUpgrades;
+
+	// ── B4-4: Day/Night NPC animation states ─────────────────────────────────────
+	const NpcDayNight = (() => {
+		let sleepyEls = [];
+		function update(scene) {
+			if (!scene || !scene.npcByTile) return;
+			const h = new Date().getHours();
+			const isNight  = h >= 22 || h < 6;
+			const isDawn   = (h >= 6 && h < 8) || (h >= 18 && h < 20);
+			const npcs = Object.values(scene.npcByTile);
+			// Clean old sleepy overlays
+			sleepyEls.forEach(e => { try { e.destroy(); } catch {} });
+			sleepyEls = [];
+			if (isNight && scene.tick % 120 === 0) {
+				npcs.forEach(npc => {
+					try {
+						const t = scene.add.text(
+							npc.c * (TILE||16) + (TILE||16)/2,
+							npc.r * (TILE||16) - 4,
+							'💤', { fontSize: '8px' }
+						).setDepth(3.5);
+						sleepyEls.push(t);
+						// Float up and fade
+						scene.tweens.add({ targets: t, y: '-=12', alpha: 0, duration: 1800, onComplete: () => { try { t.destroy(); } catch {} } });
+					} catch {}
+				});
+			}
+			// Dawn/dusk bob — apply to NPC sprites if we can find them in scene
+			if (isDawn && scene._npcSprites) {
+				const bob = Math.sin(scene.tick * 0.08) * 2;
+				scene._npcSprites.forEach(sp => {
+					try { sp.y = sp._baseY + bob; } catch {}
+				});
+			}
+		}
+		return { update };
+	})();
+	window.CAMP_SYSTEMS.NpcDayNight = NpcDayNight;
+
+	// ══════════════════════════════════════════════════════════════════════════════
+	// BATCH 5 — META / PROGRESSION
+	// ══════════════════════════════════════════════════════════════════════════════
+
+	// ── B5-1: Seasonal Gate Sign (leaderboard top score) ─────────────────────────
+	const SeasonalGateSign = (() => {
+		let lastFetch = 0;
+		const CACHE_MS = 5 * 60 * 1000;
+		async function init() {
+			const __S2 = window.__CAMP_STATE;
+			if (__S2._seasonalTop && Date.now() - lastFetch < CACHE_MS) return;
+			try {
+				const res = await fetch('/api/leaderboard?game=quiz&limit=1&season=1');
+				if (!res.ok) return;
+				const data = await res.json();
+				const top = (data.entries || [])[0];
+				if (top) {
+					__S2._seasonalTop = { score: top.score, name: top.name };
+					lastFetch = Date.now();
+				}
+			} catch {}
+		}
+		function getText() {
+			const __S2 = window.__CAMP_STATE;
+			const t = __S2._seasonalTop;
+			if (!t) return '';
+			return '🏆 This month\'s top score: ' + t.score + ' by ' + t.name;
+		}
+		return { init, getText };
+	})();
+	window.CAMP_SYSTEMS.SeasonalGateSign = SeasonalGateSign;
+
+	// ── B5-2: Badge Challenges ────────────────────────────────────────────────────
+	const BadgeChallenges = (() => {
+		const BADGES = [
+			{ name: 'Boulder Badge', game: 'quiz',        req: 80,  label: 'Score 80+ on the Quiz' },
+			{ name: 'Cascade Badge', game: 'silhouette',  req: 80,  label: 'Score 80+ on Silhouette' },
+			{ name: 'Thunder Badge', game: 'cry',         req: 80,  label: 'Score 80+ on Cry' },
+			{ name: 'Rainbow Badge', game: 'memory',      req: 150, label: 'Score 150+ on Memory' },
+			{ name: 'Soul Badge',    game: 'type',        req: 80,  label: 'Score 80+ on Type' },
+			{ name: 'Marsh Badge',   game: 'stats',       req: 80,  label: 'Score 80+ on Stats' },
+			{ name: 'Volcano Badge', game: 'higherlower', req: 80,  label: 'Score 80+ on Higher/Lower' },
+			{ name: 'Earth Badge',   game: 'sprint',      req: 80,  label: 'Score 80+ on Sprint' },
+		];
+		function getStatus() {
+			return BADGES.map(b => {
+				let best = 0;
+				try { best = parseInt(localStorage.getItem('pokequiz_' + b.game + '_best') || '0'); } catch {}
+				return { name: b.name, requirement: b.label, earned: best >= b.req, best };
+			});
+		}
+		function getSummaryText() {
+			const statuses = getStatus();
+			const earned = statuses.filter(s => s.earned).length;
+			return '🏅 Gym Badges: ' + earned + '/8 earned\n' +
+				statuses.map(s => (s.earned ? '✅' : '⬜') + ' ' + s.name + ': ' + s.requirement + (s.best > 0 ? ' (Best: ' + s.best + ')' : '')).join('\n');
+		}
+		return { getStatus, getSummaryText };
+	})();
+	window.CAMP_SYSTEMS.BadgeChallenges = BadgeChallenges;
+
+	// ══════════════════════════════════════════════════════════════════════════════
+	// HOOK PATCHES — wire new systems into existing scene hooks
+	// ══════════════════════════════════════════════════════════════════════════════
+
+	// Patch _showCampfireMenu to include Berry Tea and Poké Puffin buttons.
+	// We wait for the scene class to be created then wrap the prototype method.
+	const _origMakeSceneClass = window.CAMP_SCENES.makeSceneClass;
+	window.CAMP_SCENES.makeSceneClass = function () {
+		const SceneClass = _origMakeSceneClass.apply(this, arguments);
+		const origMenu = SceneClass.prototype._showCampfireMenu;
+		if (origMenu) {
+			SceneClass.prototype._showCampfireMenu = function () {
+				origMenu.call(this);
+				// After original opens the panel, append our new buttons before Cancel
+				const panel = document.getElementById('campfireChoicePanel');
+				if (!panel) return;
+				const inner = panel.querySelector('.pk-modal');
+				if (!inner) return;
+				const body = inner.querySelector('.pk-modal-body');
+				if (!body) return;
+				// Find cancel button (last child) and insert before it
+				const cancelBtn = body.lastElementChild;
+				const tempDiv = document.createElement('div');
+				body.insertBefore(tempDiv, cancelBtn);
+				BerryRecipes.addToCampfireMenu(panel, tempDiv, this);
+			};
+		}
+		// Patch create() to call our new inits
+		const origCreate = SceneClass.prototype.create;
+		SceneClass.prototype.create = function () {
+			origCreate.call(this);
+			try {
+				// Init new systems after camp is built
+				PartnerWidget.init();
+				QuickSlotBar.init();
+				Minimap.init();
+				HudCompact.init();
+				TreasureDig.init(this);
+				Journal.autoLog();
+				SeasonalNPC.init(this);
+				CampUpgrades.applyAll(this);
+				AmbientParty.init(this);
+				SeasonalGateSign.init();
+			} catch (e) { console.warn('[Camp Batch 2-5 init]', e); }
+		};
+		// Patch update() to call per-frame hooks
+		const origUpdate = SceneClass.prototype.update;
+		SceneClass.prototype.update = function (time, delta) {
+			origUpdate.call(this, time, delta);
+			try {
+				// Step counter for wild encounters (every 4th frame ~= 1 step at 60fps)
+				if (this.player && (this.player.body?.velocity?.x !== 0 || this.player.body?.velocity?.y !== 0)) {
+					if (this.tick % 4 === 0) WildEncounter.step(this);
+				}
+				// Treasure dig sparkle pulse
+				TreasureDig.updateSparkle();
+				// Day/Night NPC states
+				if (this.tick % 60 === 0) NpcDayNight.update(this);
+			} catch {}
+		};
+		// Patch findInteractTarget to include dig spot
+		const origFind = SceneClass.prototype.findInteractTarget;
+		SceneClass.prototype.findInteractTarget = function () {
+			const base = origFind.call(this);
+			if (base) return base;
+			// Check dig spot
+			const tc = Math.floor(this.player.x / (TILE || 16));
+			const tr = Math.floor(this.player.y / (TILE || 16));
+			const spot = TreasureDig.getSpot();
+			if (Math.abs(tr - spot.r) <= 1 && Math.abs(tc - spot.c) <= 1) {
+				return { kind: 'dig', r: spot.r, c: spot.c, label: 'Dig' };
+			}
+			// Check seasonal NPC
+			if (Math.abs(tr - 3) <= 1 && Math.abs(tc - 12) <= 1) {
+				const npc = this.npcByTile && this.npcByTile['3,12'];
+				if (npc && npc.kind === 'seasonal_legendary') {
+					return { kind: 'seasonal_npc', r: 3, c: 12, label: 'Talk', npcData: npc };
+				}
+			}
+			return base;
+		};
+		return SceneClass;
+	};
+
+	// Also patch gate-sign dialog to include badge status + seasonal top
+	// We do this by wrapping the sign message resolution inline with a storage hook:
+	// When __camprating__ or gate sign messages are shown, enrich them.
+	// Enrich gate/sign dialogs with seasonal leaderboard top + badge status.
+	// We intercept Dialog.open and augment messages that contain camp-related keywords.
+	(function () {
+		const _orig = Dialog.open;
+		Dialog.open = function (message) {
+			let msg = message;
+			// Enrich messages that look like gate or camp rating signs
+			if (typeof msg === 'string' && (msg.includes('Camp') || msg.includes('Welcome') || msg.includes('gate') || msg.toLowerCase().includes('welcome to camp'))) {
+				const top = SeasonalGateSign.getText();
+				if (top && !msg.includes('top score')) msg += '\n\n' + top;
+				const badges = BadgeChallenges.getSummaryText();
+				if (badges && !msg.includes('Gym Badges')) msg += '\n\n' + badges;
+			}
+			_orig.call(this, msg);
+		};
+	})();
+
 })();
+

@@ -287,4 +287,37 @@
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireGuestbookBtn);
 	else wireGuestbookBtn();
 
+	// ── Journal button (Batch 3-3) ─────────────────────────────────────────────
+	function wireJournalBtn() {
+		document.getElementById('campJournalBtn')?.addEventListener('click', () => {
+			const J = (window.CAMP_SYSTEMS || {}).Journal;
+			if (J) J.open();
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireJournalBtn);
+	else wireJournalBtn();
+
+	// ── Upgrades button (Batch 4-3) ────────────────────────────────────────────
+	function wireUpgradeBtn() {
+		document.getElementById('campUpgradeBtn')?.addEventListener('click', () => {
+			const U = (window.CAMP_SYSTEMS || {}).CampUpgrades;
+			if (U) U.open();
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireUpgradeBtn);
+	else wireUpgradeBtn();
+
+	// ── Quick-slot bar click wiring (Batch 2-3) ────────────────────────────────
+	function wireQuickSlots() {
+		document.getElementById('campQuickBar')?.addEventListener('click', (e) => {
+			const slot = e.target.closest('.cpQuickSlot');
+			if (!slot) return;
+			const idx = parseInt(slot.dataset.slot) - 1;
+			const QS = (window.CAMP_SYSTEMS || {}).QuickSlotBar;
+			if (QS) QS.useSlot(idx);
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireQuickSlots);
+	else wireQuickSlots();
+
 })();
