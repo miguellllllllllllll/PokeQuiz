@@ -409,8 +409,8 @@
 		if (TrainerTitles)  TrainerTitles.check();
 		if (OfflineProgress) OfflineProgress.check();
 
-		// Show install button if PWA prompt is available
-		if (PWAInstall) PWAInstall.init();
+		// Show install button if PWA prompt is available (PWAInstall auto-inits itself)
+		if (PWAInstall && typeof PWAInstall.init === 'function') PWAInstall.init();
 	}
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireBatch5Buttons);
 	else wireBatch5Buttons();
