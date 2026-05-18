@@ -465,13 +465,13 @@
 			}
 		}
 
-		// Create the shared popup element once
+		// Create the shared popup element once — append to body to avoid overflow:hidden clip
 		const popup = document.createElement('div');
 		popup.id = 'campGrpPopup';
 		popup.className = 'is-hidden';
 		popup.setAttribute('aria-label', 'HUD submenu');
+		document.body.appendChild(popup);
 		const wrap = document.getElementById('campWrap');
-		if (wrap) wrap.appendChild(popup);
 
 		let activeGrp = null;
 
@@ -507,13 +507,20 @@
 				popup.appendChild(btn);
 			}
 
-			// Position popup above the anchor button
+			// Position popup above the anchor button using viewport coords
 			popup.classList.remove('is-hidden');
 			const rect = anchorBtn.getBoundingClientRect();
-			const wrapRect = wrap ? wrap.getBoundingClientRect() : { left: 0, bottom: window.innerHeight };
-			popup.style.left = Math.max(4, (rect.left - wrapRect.left)) + 'px';
-			popup.style.bottom = (wrapRect.bottom - rect.top + 6) + 'px';
-			popup.style.top = 'auto';
+			// Measure popup after making it visible to get correct dimensions
+			popup.style.left = '0px';
+			popup.style.top = '0px';
+			const pW = popup.offsetWidth || 180;
+			const pH = popup.offsetHeight || 120;
+			let left = Math.max(4, rect.left);
+			if (left + pW > window.innerWidth - 4) left = Math.max(4, window.innerWidth - pW - 4);
+			const top = Math.max(4, rect.top - pH - 8);
+			popup.style.left = left + 'px';
+			popup.style.top = top + 'px';
+			popup.style.bottom = 'auto';
 		}
 
 		// Wire group buttons
@@ -530,6 +537,18 @@
 				}
 				openPopup(grpId, btn);
 			});
+		}
+
+		// Wire hamburger toggle: on mobile → slide sheet; on desktop → max-width collapse
+		const hamburger = document.getElementById('campBarToggle');
+		if (hamburger) {
+			hamburger.addEventListener('click', () => {
+				const MBS = window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.MobileBottomSheet;
+				if (MBS && window.innerWidth <= 600) {
+					MBS.toggle();
+				}
+				// Desktop collapse still handled by BtnBarToggle in camp-systems.js
+			}, true); // capture phase so this fires before any stopPropagation
 		}
 
 		// Close popup on outside click or Escape
