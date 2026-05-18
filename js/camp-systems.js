@@ -6740,28 +6740,12 @@
 					// ── Seasonal Events (date-specific overlays) ───────────────────────
 					SeasonalEvents.applyToScene(this);
 	
-					// ── Camp rating display near south gate ───────────────────────────
-					{
-						const stars = CampRating.calculate();
-						const starStr = '★'.repeat(stars) + '☆'.repeat(5-stars);
-						this.add.text(11*TILE + TILE/2, 26*TILE, starStr, {
-							fontFamily: '"Press Start 2P", monospace',
-							fontSize: '6px',
-							color: '#f6c84c',
-							stroke: '#000000',
-							strokeThickness: 2,
-						}).setDepth(3).setOrigin(0.5);
-						TrainerLevel.updateHUD();
-					}
+					// ── Camp rating → HUD badge (not an in-world text) ────────────────
+					CampRating.displayOnGate();
+					TrainerLevel.updateHUD();
 
-					// ── Pokémon of the Day sign near gate ─────────────────────────────
-					{
-						const potdId = PokemonOfDay.get();
-						const potdName = PokemonOfDay.getName(potdId);
-						this.add.text(11*TILE, (MAP_H-4)*TILE, '⭐ ' + potdName, { fontSize:'7px', color:'#f6c84c', backgroundColor:'rgba(0,0,0,0.6)', padding:{x:4,y:2} })
-							.setDepth(3).setOrigin(0.5, 1);
-						PokemonOfDay.checkBonus(this);
-					}
+					// ── Pokémon of the Day bonus (silent — no in-world sign) ───────────
+					PokemonOfDay.checkBonus(this);
 
 					// ── Surfing current state ─────────────────────────────────────────
 					this._surfDriftTick = 0;
