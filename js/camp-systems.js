@@ -8373,11 +8373,12 @@
 				}
 	
 				applyZoom() {
-					const dpr = window.devicePixelRatio || 1;
-					const W = this.scale.width / dpr;
-					const H = this.scale.height / dpr;
-					let s = Math.max(2, Math.floor(Math.min(W / 380, H / 240)));
-					s = Math.min(s, 4);
+					const W = this.scale.width, H = this.scale.height;
+					if (W <= 0 || H <= 0) { this.events.once("postupdate", () => this.applyZoom()); return; }
+					const mapW = MAP_W * TILE, mapH = MAP_H * TILE;
+					// Fill viewport: zoom so map covers both axes
+					let s = Math.ceil(Math.max(W / mapW, H / mapH));
+					s = Math.max(2, Math.min(s, 4));
 					this.cameras.main.setZoom(s);
 				}
 	
@@ -10778,6 +10779,36 @@
 					this.player.body.setSize(10, 6);
 					this.player.body.setOffset((22-10)/2, 38-8);
 
+					// ── Beach minimap — static cache canvas (same pipeline as market) ──
+					this.minimapEl = document.getElementById('campMinimap');
+					if (this.minimapEl) {
+						const _mS = 3; // px per beach tile
+						this._minimapScale = _mS;
+						this.minimapEl.width  = BEACH_W * _mS;
+						this.minimapEl.height = BEACH_H * _mS;
+						this._minimapCtx = this.minimapEl.getContext('2d');
+						this._minimapCtx.imageSmoothingEnabled = false;
+						const _mOff = document.createElement('canvas');
+						_mOff.width  = this.minimapEl.width;
+						_mOff.height = this.minimapEl.height;
+						const _mCtx = _mOff.getContext('2d');
+						for (let _r = 0; _r < BEACH_H; _r++) {
+							for (let _c = 0; _c < BEACH_W; _c++) {
+								const _t = this.map[_r][_c];
+								let _col;
+								if      (_t === TBWT)   _col = '#2c6cae';
+								else if (_t === TSHO)   _col = '#d8c98f';
+								else if (_t === TPALM)  _col = '#1f3d18';
+								else if (_t === TROCKB) _col = '#776b5a';
+								else if (_t === TPIER)  _col = '#9c7b4a';
+								else                    _col = '#e6d6a0';
+								_mCtx.fillStyle = _col;
+								_mCtx.fillRect(_c * _mS, _r * _mS, _mS, _mS);
+							}
+						}
+						this._minimapCache = _mOff;
+					}
+
 					this.solids = this.physics.add.staticGroup();
 					for (let r = 0; r < BEACH_H; r++) {
 						for (let c = 0; c < BEACH_W; c++) {
@@ -10874,15 +10905,15 @@
 				onResize() { applyWrapTop(); this.applyZoom(); }
 
 				applyZoom() {
-					const dpr = window.devicePixelRatio || 1;
-					const vw = this.scale.width / dpr, vh = this.scale.height / dpr;
-					if (vw <= 0 || vh <= 0) {
+					const W = this.scale.width, H = this.scale.height;
+					if (W <= 0 || H <= 0) {
 						this.events.once('postupdate', () => this.applyZoom());
 						return;
 					}
 					const roomW = BEACH_W * TILE, roomH = BEACH_H * TILE;
-					let s = Math.max(2, Math.floor(Math.min(vw / 380, vh / 240)));
-					s = Math.min(s, 4);
+					// Fill viewport: zoom until map covers both axes
+					let s = Math.ceil(Math.max(W / roomW, H / roomH));
+					s = Math.max(2, Math.min(s, 4));
 					const cam = this.cameras.main;
 					cam.setZoom(s);
 					cam.setBounds(0, 0, roomW, roomH);
@@ -11322,9 +11353,11 @@
 		}
 	function updateDot() {
 		if (!visible) return;
-		// Prefer the market scene when it is active
-		const _ms = window.__marketScene;
-		const scene = (_ms && _ms.sys && _ms.sys.isActive()) ? _ms : window.__campScene;
+		// Use whichever overworld scene is currently active (market / beach / camp).
+		const _active = (s) => s && s.sys && s.sys.isActive();
+		const scene = _active(window.__marketScene) ? window.__marketScene
+		            : _active(window.__beachScene)  ? window.__beachScene
+		            : window.__campScene;
 		if (!scene || !scene.minimapEl || !scene._minimapCtx || !scene._minimapCache) return;
 		const ctx = scene._minimapCtx;
 		const mEl = scene.minimapEl;
@@ -12010,6 +12043,30 @@
 		}
 		return HouseClass;
 	};
+
+	// Share the camp's inventory HUD updater with the Market and Beach scenes
+	// so the bottom-centre stat bar (seeds / berries / tokens / …) shows live
+	// values there too — otherwise it keeps the stale "0 0" placeholder.
+	['makeMarketSceneClass', 'makeBeachSceneClass'].forEach((factoryName) => {
+		const orig = window.CAMP_SCENES[factoryName];
+		if (typeof orig !== 'function') return;
+		window.CAMP_SCENES[factoryName] = function () {
+			const Cls = orig.apply(this, arguments);
+			if (!Cls.prototype._updateInventoryHud) {
+				const CampClass = window.CAMP_SCENES.makeSceneClass();
+				Cls.prototype._updateInventoryHud = CampClass.prototype._updateInventoryHud;
+			}
+			if (Cls.prototype.update && !Cls.prototype.__invHudPatched) {
+				Cls.prototype.__invHudPatched = true;
+				const origUpdate = Cls.prototype.update;
+				Cls.prototype.update = function (time, delta) {
+					origUpdate.call(this, time, delta);
+					try { if (this._updateInventoryHud) this._updateInventoryHud(); } catch (_) {}
+				};
+			}
+			return Cls;
+		};
+	});
 
 	// Also patch gate-sign dialog to include badge status + seasonal top
 	// We do this by wrapping the sign message resolution inline with a storage hook:
