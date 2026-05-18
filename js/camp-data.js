@@ -963,13 +963,13 @@ window.CAMP_DATA.MARKET_NPCS = [
 			dialog: 'Send your partner on an adventure! Longer trips bring better rewards.',
 		},
 		{
-			key: 'm-treasure', species: 'pokefan-m', r: 23, c: 23,
+			key: 'm-treasure', species: 'bug-catcher', r: 23, c: 23,
 			label: 'Dig', kind: 'treasure',
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: "Something's buried all over this field — you get 5 digs a day. Good luck!",
 		},
 		{
-			key: 'm-gossip-a', species: 'twins', r: 22, c: 25,
+			key: 'm-gossip-a', species: 'lass', r: 22, c: 25,
 			label: 'Chat', kind: 'gossip',
 			spriteScale: 0.89, frameHeight: 32,
 			pool: [
@@ -983,7 +983,7 @@ window.CAMP_DATA.MARKET_NPCS = [
 			],
 		},
 		{
-			key: 'm-gossip-b', species: 'twins', r: 23, c: 25,
+			key: 'm-gossip-b', species: 'picnicker', r: 23, c: 25,
 			label: 'Chat', kind: 'gossip',
 			spriteScale: 0.89, frameHeight: 32,
 			pool: [
