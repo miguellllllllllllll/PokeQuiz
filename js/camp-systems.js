@@ -82,12 +82,21 @@
 	// have the PMD entries available without relying on camp.js's load order.
 	if (FOLLOWER_FORMS) {
 		for (let _i = 1; _i <= 151; _i++) {
+			// Apply any known frame-size overrides at construction time so the form
+			// object always has correct dims even before the sprite image is loaded.
+			// This prevents wrong portrait/picker rendering and avoids relying solely
+			// on the runtime auto-detector to patch the form after load.
+			const _initOv = PMD_FRAME_OVERRIDES && PMD_FRAME_OVERRIDES[_i];
 			FOLLOWER_FORMS[_i] = {
 				sheet: 'pmd-' + _i,
 				url: PMD_CDN + String(_i).padStart(4, '0') + '/Walk-Anim.png',
-				cols: 6, originY: 0.75,
+				cols: _initOv ? _initOv.cols : 6,
+				originY: 0.75,
 				scale: 0.72,
-				frameW: 40, frameH: 40, displayName: (PMD_NAMES || {})[_i], dex: _i,
+				frameW: _initOv ? _initOv.frameW : 40,
+				frameH: _initOv ? _initOv.frameH : 40,
+				displayName: (PMD_NAMES || {})[_i],
+				dex: _i,
 			};
 		}
 	}
@@ -340,6 +349,49 @@
 		}
 	window.CAMP_SYSTEMS.showToast = showToast;
 
+	// ── Feature 2: Floating reward label ──────────────────────────────────
+	function showFloatingReward(text, x, y) {
+		const wrap = document.getElementById('campWrap');
+		if (!wrap) return;
+		const el = document.createElement('div');
+		el.className = 'pk-floating-reward';
+		el.textContent = text;
+		if (typeof x === 'number' && typeof y === 'number') {
+			const rect = wrap.getBoundingClientRect();
+			el.style.left = (rect.left + x) + 'px';
+			el.style.top  = (rect.top  + y) + 'px';
+		} else {
+			// Default: centre-bottom of campWrap
+			const rect = wrap.getBoundingClientRect();
+			el.style.left = (rect.left + rect.width / 2) + 'px';
+			el.style.top  = (rect.top  + rect.height * 0.72) + 'px';
+		}
+		el.style.transform = 'translateX(-50%)';
+		document.body.appendChild(el);
+		setTimeout(() => el.remove(), 1300);
+	}
+	window.CAMP_SYSTEMS.showFloatingReward = showFloatingReward;
+
+	// ── Feature 3: Achievement unlock banner ──────────────────────────────
+	let _bannerTimeout = null;
+	function showAchievementBanner(label) {
+		const existing = document.querySelector('.pk-achievement-banner');
+		if (existing) existing.remove();
+		if (_bannerTimeout) clearTimeout(_bannerTimeout);
+		const el = document.createElement('div');
+		el.className = 'pk-achievement-banner';
+		el.style.animation = 'pk-banner-in 0.3s ease forwards';
+		el.innerHTML =
+			'<div class="pk-achievement-banner-sub">&#x2736; Achievement Unlocked!</div>' +
+			'<div class="pk-achievement-banner-label">' + label + '</div>';
+		document.body.appendChild(el);
+		_bannerTimeout = setTimeout(() => {
+			el.style.animation = 'pk-banner-out 0.3s ease forwards';
+			setTimeout(() => el.remove(), 320);
+		}, 2800);
+	}
+	window.CAMP_SYSTEMS.showAchievementBanner = showAchievementBanner;
+
 	// ── Achievements ────────────────────────────────────────────────────────
 		const Achievements = (() => {
 			const DEFS = [
@@ -380,7 +432,10 @@
 				if (data[id]) return;
 				data[id] = Date.now();
 				save(data);
-				showToast(ico(ICO.achieve) + ' Achievement: ' + (DEFS.find(d => d.id === id)?.label || id));
+				const def = DEFS.find(d => d.id === id);
+				const label = def ? def.label : id;
+				showToast(ico(ICO.achieve) + ' Achievement: ' + label);
+				showAchievementBanner(label);
 			}
 			function increment(id) {
 				const data = load();
@@ -840,8 +895,50 @@
 				if (scene.isFoggy)   return 'fog';
 				return 'clear';
 			},
+			isActive(type) {
+				const scene = window.__campScene;
+				if (!scene) return false;
+				if (type === 'rain') return !!scene.isRaining;
+				if (type === 'snow') return !!scene.isSnowing;
+				if (type === 'fog')  return !!scene.isFoggy;
+				return false;
+			},
 		};
 	window.CAMP_SYSTEMS.WeatherSystem = WeatherSystem;
+
+	// ── Feature 5: Friendship bar above follower ─────────────────────────────
+	function showFriendshipBar(scene, delta) {
+		if (!scene || !scene.follower) return;
+		// Destroy previous bar graphics
+		if (scene._friendshipBar) {
+			try { scene._friendshipBar.destroy(); } catch (_) {}
+			scene._friendshipBar = null;
+		}
+		const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+		const friendship = Math.min(100, Math.max(0, inv.friendship || 0));
+		const pct = friendship / 100;
+		const BAR_W = 30, BAR_H = 4;
+		const fx = scene.follower.x - BAR_W / 2;
+		const fy = scene.follower.y - (scene.follower.displayHeight * scene.follower.originY) - 8;
+		const gfx = scene.add.graphics().setDepth(8);
+		// Background
+		gfx.fillStyle(0x000000, 0.6);
+		gfx.fillRect(fx, fy, BAR_W, BAR_H);
+		// Fill — green → yellow → red based on friendship
+		const fillColor = pct > 0.5 ? 0x40c870 : pct > 0.25 ? 0xf6c84c : 0xe04848;
+		gfx.fillStyle(fillColor, 1);
+		gfx.fillRect(fx, fy, Math.round(BAR_W * pct), BAR_H);
+		scene._friendshipBar = gfx;
+		// Fade out after 2 seconds
+		scene.tweens.add({
+			targets: gfx,
+			alpha: 0,
+			duration: 500,
+			delay: 1500,
+			onComplete: () => { try { gfx.destroy(); } catch (_) {} if (scene._friendshipBar === gfx) scene._friendshipBar = null; },
+		});
+	}
+	window.CAMP_SYSTEMS.showFriendshipBar = showFriendshipBar;
 
 	// ── PokemonOfDay ───────────────────────────────────────────────────────────
 		const PokemonOfDay = (() => {
@@ -3710,9 +3807,13 @@
 				// Stage/form label — only meaningful for eeveelutions.
 				const isEeveelution = typeof formLookup === 'string'; // eeveelutions have string keys
 				const dexNum = typeof formLookup === 'number' ? formLookup : null;
+				const _canEvo = !isEeveelution && dexNum && GEN1_EVOLUTIONS && GEN1_EVOLUTIONS[dexNum];
+				const _evoName = _canEvo ? ((PMD_NAMES && PMD_NAMES[GEN1_EVOLUTIONS[dexNum]]) || ('#' + GEN1_EVOLUTIONS[dexNum])) : null;
 				$('cpForm') && ($('cpForm').textContent = isEeveelution
 					? (inv.eeveeForm === 'eevee' ? 'Stage 1 — can evolve' : 'Stage 2 — terminal evolution')
-					: 'Walking partner · #' + String(dexNum).padStart(3, '0'));
+					: (_canEvo
+						? 'Can evolve → ' + _evoName + ' · #' + String(dexNum).padStart(3, '0')
+						: 'Walking partner · #' + String(dexNum).padStart(3, '0')));
 				const fpct = Math.min(100, Math.round((_slotFriendship / FRIENDSHIP_MAX) * 100));
 				const bar = $('cpFriendshipBar');
 				if (bar) bar.style.width = fpct + '%';
@@ -3728,6 +3829,8 @@
 					const days = Math.floor((Date.now() - _slotSince) / 86400000);
 					const infoLines = [ico('clock-history') + ' ' + days + ' day' + (days !== 1 ? 's' : '') + ' together'];
 					if (inv.friendship >= FRIENDSHIP_MAX && inv.eeveeForm === 'eevee' && inv.stone) infoLines.push(ico(ICO.bolt) + ' Ready to evolve! Feed a berry.');
+					// Hint for non-Eevee Pokémon that can evolve via PC Box
+					if (_canEvo && _evoName) infoLines.push(ico(ICO.bolt) + ' Evolve into ' + _evoName + ' — open <b>PC Box</b> → Evolve button');
 					if (inv.boosts) {
 						const _now = Date.now();
 						if (inv.boosts.rhythmBoost > _now) infoLines.push(ico(ICO.music) + ' Rhythm boost: ' + Math.ceil((inv.boosts.rhythmBoost - _now) / 60000) + 'min left');
@@ -3819,6 +3922,10 @@
 				Inventory.save(inv);
 				DailyQuests.increment('feed');
 				if (inv.friendship >= FRIENDSHIP_MAX) Achievements.unlock('fullFriend');
+				// Feature 2: Floating reward
+				showFloatingReward('+' + feedAmt + ' 🍓');
+				// Feature 5: Friendship bar
+				if (window.__campScene) showFriendshipBar(window.__campScene, feedAmt);
 				if (inv.friendship >= FRIENDSHIP_MAX && sceneRef && typeof sceneRef._triggerEvolution === 'function') {
 					close();
 					sceneRef._triggerEvolution();
@@ -6775,8 +6882,16 @@
 						}
 						this._minimapCache = _offscreen;
 					}
+
+					// ── Feature 1: Footprint trail graphics ───────────────────────────
+					this._footprintGraphics = this.add.graphics().setDepth(1).setScrollFactor(1);
+					this._footprints = [];
+					this._footprintTick = 0;
+
+					// ── Feature 8: Persistent follower friendship HP bar ──────────────
+					this._followerHpBar = this.add.graphics().setDepth(8).setScrollFactor(1);
 				}
-	
+
 				findInteractTarget() {
 					// Pick the tile directly in front of the player (one tile in this.dir),
 					// plus the tile the player is standing on (so door entry also works).
@@ -6973,6 +7088,8 @@
 						DailyQuests.increment('harvest');
 						TrainerLevel.addXP('harvest');
 						Achievements.increment('berryFarmer');
+						// Feature 2: Floating reward for berry harvest
+						showFloatingReward('+1 🍓');
 						Dialog.open('You harvested a ' + berryDef.label + '! (+' + berryDef.friendship + ' friendship)' + replantMsg);
 						return true;
 					}
@@ -7031,8 +7148,9 @@
 						const srcH    = src ? src.height : 0;
 						// Default assumes 8 rows; if this dex has an explicit override,
 						// trust its frameH so the stale check doesn't wrongly invalidate.
-						const expectedH = PMD_FRAME_OVERRIDES[form.dex]
-							? PMD_FRAME_OVERRIDES[form.dex].frameH
+						const _dexOvH = PMD_FRAME_OVERRIDES && PMD_FRAME_OVERRIDES[form.dex];
+						const expectedH = _dexOvH
+							? _dexOvH.frameH
 							: (srcH > 0 ? Math.round(srcH / 8) : 0);
 	
 						// If we can verify the dims and they look correct, reuse the texture.
@@ -7050,7 +7168,8 @@
 										if (c >= 3 && c <= 10) { expectedW = w; break; }
 									}
 								}
-								if (PMD_FRAME_OVERRIDES[form.dex]) expectedW = PMD_FRAME_OVERRIDES[form.dex].frameW;
+								const _dexOvW = PMD_FRAME_OVERRIDES && PMD_FRAME_OVERRIDES[form.dex];
+							if (_dexOvW) expectedW = _dexOvW.frameW;
 							}
 							if (cachedW !== expectedW) {
 								// frameW mismatch — stale texture from old detector; fall through to re-fetch.
@@ -7116,10 +7235,11 @@
 									cols = Math.max(3, Math.round(img.naturalWidth / frameW));
 								}
 								// Explicit override for sheets the detector can't resolve.
-								if (PMD_FRAME_OVERRIDES[form.dex]) {
-									const ov = PMD_FRAME_OVERRIDES[form.dex];
-									frameW = ov.frameW; frameH = ov.frameH; cols = ov.cols;
-								}
+								// Use a null-guarded lookup so a missing/undefined
+								// PMD_FRAME_OVERRIDES (e.g. old cached camp-data.js) never
+								// throws and silently skips the override.
+								const _ov = PMD_FRAME_OVERRIDES && PMD_FRAME_OVERRIDES[form.dex];
+								if (_ov) { frameW = _ov.frameW; frameH = _ov.frameH; cols = _ov.cols; }
 								// Patch the shared form object so _switchFollower reads correct dims.
 								form.frameW = frameW; form.frameH = frameH; form.cols = cols;
 								// Compute proportional scale from Pokédex height vs trainer.
@@ -7289,6 +7409,9 @@
 					inv.lastBerryFed = Date.now();
 					Inventory.save(inv);
 					DailyQuests.increment('feed');
+					// Feature 2: Floating reward, Feature 5: Friendship bar
+					showFloatingReward('+' + FRIENDSHIP_PER_BERRY + ' 💛');
+					if (window.__campScene) showFriendshipBar(window.__campScene, FRIENDSHIP_PER_BERRY);
 					if (inv.friendship >= FRIENDSHIP_MAX) {
 						this._triggerEvolution();
 					} else {
@@ -7838,7 +7961,27 @@
 						if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 					}
 					this.player.setVelocity(vx, vy);
-	
+
+					// ── Feature 1: Footprint trail ────────────────────────────────────
+					if (this._footprintGraphics) {
+						this._footprintTick = (this._footprintTick || 0) + 1;
+						if ((vx !== 0 || vy !== 0) && this._footprintTick % 12 === 0) {
+							if (!this._footprints) this._footprints = [];
+							this._footprints.push({ x: this.player.x, y: this.player.y - 4, age: 0 });
+						}
+						this._footprintGraphics.clear();
+						if (this._footprints) {
+							for (let _fi = this._footprints.length - 1; _fi >= 0; _fi--) {
+								const _fp = this._footprints[_fi];
+								_fp.age++;
+								if (_fp.age >= 20) { this._footprints.splice(_fi, 1); continue; }
+								const _alpha = (1 - _fp.age / 20) * 0.35;
+								this._footprintGraphics.fillStyle(0x885522, _alpha);
+								this._footprintGraphics.fillCircle(_fp.x, _fp.y, 3);
+							}
+						}
+					}
+
 					// Egg step counter
 					if (Math.abs(vx) > 0 || Math.abs(vy) > 0) {
 						this._eggStepAccum = (this._eggStepAccum || 0) + 1;
@@ -8076,6 +8219,36 @@
 						this._followerNameEl.style.top  = fy + 'px';
 					}
 	
+					// ── Feature 6: Weather reactions — follower tint ─────────────────
+					if (this.tick % 60 === 0) {
+						const _isRaining = this.isRaining || this.isSnowing;
+						if (this.follower && _isRaining) {
+							this.follower.setTint(0xaaccff);
+						} else if (this.follower && !_isRaining && !this._followerShiny) {
+							// Only clear tint if not shiny and not Vaporeon surf
+							const _ptile_r2 = Math.floor(this.player.y / TILE);
+							const _ptile_c2 = Math.floor(this.player.x / TILE);
+							const _isWater = this.map[_ptile_r2] && this.map[_ptile_r2][_ptile_c2] === TH2O;
+							if (!_isWater) this.follower.clearTint();
+						}
+					}
+
+					// ── Feature 8: Persistent friendship bar above follower ───────────
+					if (this._followerHpBar && this.follower && this.tick % 10 === 0) {
+						const _inv8 = Inventory.load();
+						const _fr8  = Math.min(100, Math.max(0, _inv8.friendship || 0));
+						const _pct8 = _fr8 / 100;
+						const _BAR_W = 20, _BAR_H = 3;
+						const _bx = this.follower.x - _BAR_W / 2;
+						const _by = this.follower.y - this.follower.displayHeight * this.follower.originY - 6;
+						this._followerHpBar.clear();
+						this._followerHpBar.fillStyle(0x000000, 0.5);
+						this._followerHpBar.fillRect(_bx, _by, _BAR_W, _BAR_H);
+						const _col8 = _pct8 > 0.5 ? 0x40c870 : _pct8 > 0.25 ? 0xf6c84c : 0xe04848;
+						this._followerHpBar.fillStyle(_col8, 0.7);
+						this._followerHpBar.fillRect(_bx, _by, Math.round(_BAR_W * _pct8), _BAR_H);
+					}
+
 					// Walk onto the door → enter the house. The player has to walk at least
 					// two tiles away from the door before the entry trigger re-arms, so a
 					// quick step-off-then-step-back-on doesn't re-fire (which would soft-
