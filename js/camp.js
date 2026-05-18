@@ -416,148 +416,135 @@
 	else wireBatch5Buttons();
 
 	// ── Grouped HUD popups ────────────────────────────────────────────────────
-	function wireGroupedHud() {
-		// Group definitions — map group id → array of {btnId, icon, label}
-		const GROUPS = {
-			trainer:  [
-				{ btnId: 'campTCBtn',      icon: 'bi-person-vcard-fill', label: 'Card',    isLink: true },
-				{ btnId: 'campAchieveBtn', icon: 'bi-award-fill',        label: 'Achieve' },
-			],
-			records:  [
-				{ btnId: 'campDexBtn',       icon: 'bi-book-fill',      label: 'Pokédex' },
-				{ btnId: 'campJournalBtn',   icon: 'bi-book-half',      label: 'Journal' },
-				{ btnId: 'campShinyBtn',     icon: 'bi-stars',          label: 'Shinies' },
-				{ btnId: 'campAlbumBtn',     icon: 'bi-images',         label: 'Album' },
-				{ btnId: 'campGuestbookBtn', icon: 'bi-journal-text',   label: 'Guests' },
-			],
-			camp:     [
-				{ btnId: 'campMapBtn',     icon: 'bi-map-fill',       label: 'Map' },
-				{ btnId: 'campUpgradeBtn', icon: 'bi-hammer',         label: 'Build' },
-				{ btnId: 'campWeeklyBtn',  icon: 'bi-calendar-week',  label: 'Weekly' },
-			],
-			social:   [
-				{ btnId: 'campFriendsBtn', icon: 'bi-people-fill',    label: 'Friends' },
-				{ btnId: 'campRivalBtn',   icon: 'bi-trophy-fill',    label: 'Rival' },
-				{ btnId: 'campShareBtn',   icon: 'bi-share-fill',     label: 'Share' },
-				{ btnId: 'campPostcardBtn',icon: 'bi-envelope-fill',  label: 'Cards' },
-			],
-			settings: [
-				{ btnId: 'campMusicBtn',   icon: 'bi-music-note-beamed', label: 'Music' },
-				{ btnId: 'campPhotoBtn',   icon: 'bi-camera-fill',       label: 'Photo' },
-			],
-			notifs:   [] // opens feed directly — handled separately
-		};
 
-		// Lazily add optional buttons if they exist in the DOM
-		const optionalBtns = {
-			settings: [
-				{ btnId: 'campSaveSlotsBtn', icon: 'bi-floppy-fill',    label: 'Saves' },
-				{ btnId: 'campExportBtn',    icon: 'bi-download',       label: 'Export' },
-				{ btnId: 'campInstallBtn',   icon: 'bi-phone-vibrate',  label: 'Install' },
-			],
-			trainer: [
-				{ btnId: 'campPrestigeBtn',  icon: 'bi-star-fill',      label: 'Prestige' },
-			]
-		};
-		for (const [grp, extras] of Object.entries(optionalBtns)) {
-			for (const e of extras) {
-				if (document.getElementById(e.btnId)) GROUPS[grp].push(e);
-			}
-		}
+})();
 
-		// Create the shared popup element once — append to body to avoid overflow:hidden clip
-		const popup = document.createElement('div');
-		popup.id = 'campGrpPopup';
-		popup.className = 'is-hidden';
-		popup.setAttribute('aria-label', 'HUD submenu');
-		document.body.appendChild(popup);
-		const wrap = document.getElementById('campWrap');
+/* ── Global grouped HUD menu ────────────────────────────────────────────────
+   Exposed as window.__grpMenu so inline onclick handlers in camp.html can
+   call it directly — no IIFE scoping or event-listener timing issues.       */
+(function () {
+	'use strict';
 
-		let activeGrp = null;
+	const GROUPS = {
+		trainer:  [
+			{ id: 'campTCBtn',       icon: 'bi-person-vcard-fill', label: 'Card'    },
+			{ id: 'campAchieveBtn',  icon: 'bi-award-fill',        label: 'Achieve' },
+		],
+		records:  [
+			{ id: 'campDexBtn',        icon: 'bi-book-fill',      label: 'Pokédex' },
+			{ id: 'campJournalBtn',    icon: 'bi-book-half',      label: 'Journal' },
+			{ id: 'campShinyBtn',      icon: 'bi-stars',          label: 'Shinies' },
+			{ id: 'campAlbumBtn',      icon: 'bi-images',         label: 'Album'   },
+			{ id: 'campGuestbookBtn',  icon: 'bi-journal-text',   label: 'Guests'  },
+		],
+		camp:     [
+			{ id: 'campMapBtn',      icon: 'bi-map-fill',        label: 'Map'     },
+			{ id: 'campUpgradeBtn',  icon: 'bi-hammer',          label: 'Build'   },
+			{ id: 'campWeeklyBtn',   icon: 'bi-calendar-week',   label: 'Weekly'  },
+		],
+		social:   [
+			{ id: 'campFriendsBtn',  icon: 'bi-people-fill',     label: 'Friends' },
+			{ id: 'campRivalBtn',    icon: 'bi-trophy-fill',      label: 'Rival'   },
+			{ id: 'campShareBtn',    icon: 'bi-share-fill',       label: 'Share'   },
+			{ id: 'campPostcardBtn', icon: 'bi-envelope-fill',    label: 'Cards'   },
+		],
+		settings: [
+			{ id: 'campMusicBtn',      icon: 'bi-music-note-beamed', label: 'Music'   },
+			{ id: 'campPhotoBtn',      icon: 'bi-camera-fill',       label: 'Photo'   },
+			{ id: 'campSaveSlotsBtn',  icon: 'bi-floppy-fill',       label: 'Saves'   },
+			{ id: 'campExportBtn',     icon: 'bi-download',          label: 'Export'  },
+			{ id: 'campInstallBtn',    icon: 'bi-phone-vibrate',     label: 'Install' },
+		],
+		notifs: [],
+	};
 
-		function closePopup() {
-			popup.classList.add('is-hidden');
-			popup.innerHTML = '';
-			if (activeGrp) {
-				const btnId = 'grp' + activeGrp.charAt(0).toUpperCase() + activeGrp.slice(1);
-				document.getElementById(btnId)?.classList.remove('is-active');
-			}
-			activeGrp = null;
-		}
+	let _popup = null;
+	let _activeGrp = null;
 
-		function openPopup(grpId, anchorBtn) {
-			if (activeGrp === grpId) { closePopup(); return; }
-			closePopup();
-			activeGrp = grpId;
-			anchorBtn.classList.add('is-active');
-
-			const items = GROUPS[grpId] || [];
-			popup.innerHTML = '';
-			for (const item of items) {
-				const origBtn = document.getElementById(item.btnId);
-				const btn = document.createElement('button');
-				btn.className = 'cgp-btn';
-				btn.type = 'button';
-				btn.setAttribute('aria-label', item.label);
-				btn.innerHTML = `<i class="bi ${item.icon}"></i><span class="cgp-label">${item.label}</span>`;
-				btn.addEventListener('click', () => {
-					if (origBtn) origBtn.click();
-					closePopup();
-				});
-				popup.appendChild(btn);
-			}
-
-			// Position popup above the anchor button using viewport coords
-			popup.classList.remove('is-hidden');
-			const rect = anchorBtn.getBoundingClientRect();
-			// Measure popup after making it visible to get correct dimensions
-			popup.style.left = '0px';
-			popup.style.top = '0px';
-			const pW = popup.offsetWidth || 180;
-			const pH = popup.offsetHeight || 120;
-			let left = Math.max(4, rect.left);
-			if (left + pW > window.innerWidth - 4) left = Math.max(4, window.innerWidth - pW - 4);
-			const top = Math.max(4, rect.top - pH - 8);
-			popup.style.left = left + 'px';
-			popup.style.top = top + 'px';
-			popup.style.bottom = 'auto';
-		}
-
-		// Wire group buttons
-		for (const grpId of Object.keys(GROUPS)) {
-			const btnId = 'grp' + grpId.charAt(0).toUpperCase() + grpId.slice(1);
-			const btn = document.getElementById(btnId);
-			if (!btn) continue;
-			btn.addEventListener('click', (e) => {
-				e.stopPropagation();
-				if (grpId === 'notifs') {
-					// Notifs opens feed directly
-					(window.CAMP_SYSTEMS?.NotifFeed || window.CAMP_SYSTEMS?.Notifications)?.open?.();
-					return;
+	function getPopup() {
+		if (!_popup) {
+			_popup = document.createElement('div');
+			_popup.id = 'campGrpPopup';
+			_popup.className = 'is-hidden';
+			document.body.appendChild(_popup);
+			document.addEventListener('click', function (e) {
+				if (_popup && !_popup.contains(e.target) && !e.target.closest('[data-grp]')) {
+					closeMenu();
 				}
-				openPopup(grpId, btn);
+			});
+			document.addEventListener('keydown', function (e) {
+				if (e.key === 'Escape') closeMenu();
 			});
 		}
+		return _popup;
+	}
 
-		// Wire hamburger toggle: on mobile → slide sheet; on desktop → max-width collapse
-		const hamburger = document.getElementById('campBarToggle');
-		if (hamburger) {
-			hamburger.addEventListener('click', () => {
-				const MBS = window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.MobileBottomSheet;
-				if (MBS && window.innerWidth <= 600) {
-					MBS.toggle();
-				}
-				// Desktop collapse still handled by BtnBarToggle in camp-systems.js
-			}, true); // capture phase so this fires before any stopPropagation
+	function closeMenu() {
+		var p = getPopup();
+		p.className = 'is-hidden';
+		p.innerHTML = '';
+		if (_activeGrp) {
+			var grpBtn = document.getElementById('grp' + _activeGrp.charAt(0).toUpperCase() + _activeGrp.slice(1));
+			if (grpBtn) grpBtn.classList.remove('is-active');
+		}
+		_activeGrp = null;
+	}
+
+	window.__grpMenu = function (grpId, anchorBtn) {
+		if (grpId === 'notifs') {
+			var nf = window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.NotifFeed;
+			if (nf && nf.open) nf.open();
+			return;
 		}
 
-		// Close popup on outside click or Escape
-		document.addEventListener('click', (e) => {
-			if (!popup.contains(e.target) && !e.target.closest('.camp-grp-btn')) closePopup();
+		var p = getPopup();
+
+		// Toggle off if same group
+		if (_activeGrp === grpId) { closeMenu(); return; }
+		closeMenu();
+		_activeGrp = grpId;
+		if (anchorBtn) anchorBtn.classList.add('is-active');
+
+		var items = (GROUPS[grpId] || []).filter(function (item) {
+			// Include optional buttons only if they're in the DOM
+			return document.getElementById(item.id);
 		});
-		document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
-	}
-	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireGroupedHud);
-	else wireGroupedHud();
+
+		p.innerHTML = '';
+		items.forEach(function (item) {
+			var btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'cgp-btn';
+			btn.setAttribute('aria-label', item.label);
+			btn.innerHTML = '<i class="bi ' + item.icon + '"></i><span class="cgp-label">' + item.label + '</span>';
+			btn.addEventListener('click', function () {
+				var orig = document.getElementById(item.id);
+				if (orig) orig.click();
+				closeMenu();
+			});
+			p.appendChild(btn);
+		});
+
+		// Show and position above anchor
+		p.className = '';
+		var rect = anchorBtn ? anchorBtn.getBoundingClientRect() : { left: 14, top: window.innerHeight - 80, width: 40, height: 40 };
+		var pW = p.offsetWidth || 180;
+		var pH = p.offsetHeight || 120;
+		var left = Math.max(4, rect.left);
+		if (left + pW > window.innerWidth - 4) left = Math.max(4, window.innerWidth - pW - 4);
+		var top = rect.top - pH - 8;
+		if (top < 4) top = rect.bottom + 8;
+		p.style.left = left + 'px';
+		p.style.top  = top + 'px';
+	};
+
+	// Hamburger: on mobile open the bottom sheet; on desktop let BtnBarToggle handle it
+	window.__campHamburger = function () {
+		var MBS = window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.MobileBottomSheet;
+		if (MBS && window.innerWidth <= 600) {
+			MBS.toggle();
+		}
+		// Desktop: BtnBarToggle already has its own listener on this button
+	};
 
 })();

@@ -189,34 +189,34 @@
 		<!-- Quick-action button bar (bottom-left) -->
 		<div class="camp-btn-bar" id="campBtnBar" aria-hidden="true">
 			<!-- Hamburger toggle — always visible -->
-			<button class="camp-quick-btn camp-bar-toggle" id="campBarToggle" title="Toggle Menu" aria-label="Toggle action bar" type="button">
+			<button class="camp-quick-btn camp-bar-toggle" id="campBarToggle" title="Toggle Menu" aria-label="Toggle action bar" type="button" onclick="window.__campHamburger&&window.__campHamburger()">
 				<span class="camp-bar-toggle-icon">
 					<span></span><span></span><span></span>
 				</span>
 			</button>
 			<!-- All other buttons — hidden when bar is collapsed -->
 			<div class="camp-btn-bar-items" id="campBtnBarItems">
-				<button class="camp-quick-btn camp-grp-btn" id="grpTrainer" data-grp="trainer" type="button" title="Trainer" aria-label="Trainer menu">
+				<button class="camp-quick-btn camp-grp-btn" id="grpTrainer" data-grp="trainer" type="button" title="Trainer" aria-label="Trainer menu" onclick="window.__grpMenu&&window.__grpMenu('trainer',this)">
 					<i class="bi bi-person-fill"></i>
 					<span class="camp-btn-label">Trainer</span>
 				</button>
-				<button class="camp-quick-btn camp-grp-btn" id="grpRecords" data-grp="records" type="button" title="Records" aria-label="Records menu">
+				<button class="camp-quick-btn camp-grp-btn" id="grpRecords" data-grp="records" type="button" title="Records" aria-label="Records menu" onclick="window.__grpMenu&&window.__grpMenu('records',this)">
 					<i class="bi bi-book-fill"></i>
 					<span class="camp-btn-label">Records</span>
 				</button>
-				<button class="camp-quick-btn camp-grp-btn" id="grpCamp" data-grp="camp" type="button" title="Camp" aria-label="Camp menu">
+				<button class="camp-quick-btn camp-grp-btn" id="grpCamp" data-grp="camp" type="button" title="Camp" aria-label="Camp menu" onclick="window.__grpMenu&&window.__grpMenu('camp',this)">
 					<i class="bi bi-map-fill"></i>
 					<span class="camp-btn-label">Camp</span>
 				</button>
-				<button class="camp-quick-btn camp-grp-btn" id="grpSocial" data-grp="social" type="button" title="Social" aria-label="Social menu">
+				<button class="camp-quick-btn camp-grp-btn" id="grpSocial" data-grp="social" type="button" title="Social" aria-label="Social menu" onclick="window.__grpMenu&&window.__grpMenu('social',this)">
 					<i class="bi bi-people-fill"></i>
 					<span class="camp-btn-label">Social</span>
 				</button>
-				<button class="camp-quick-btn camp-grp-btn" id="grpSettings" data-grp="settings" type="button" title="Settings" aria-label="Settings menu">
+				<button class="camp-quick-btn camp-grp-btn" id="grpSettings" data-grp="settings" type="button" title="Settings" aria-label="Settings menu" onclick="window.__grpMenu&&window.__grpMenu('settings',this)">
 					<i class="bi bi-gear-fill"></i>
 					<span class="camp-btn-label">Settings</span>
 				</button>
-				<button class="camp-quick-btn camp-grp-btn camp-notif-btn" id="grpNotifs" data-grp="notifs" type="button" title="Notifications" aria-label="Notifications">
+				<button class="camp-quick-btn camp-grp-btn camp-notif-btn" id="grpNotifs" data-grp="notifs" type="button" title="Notifications" aria-label="Notifications" onclick="window.__grpMenu&&window.__grpMenu('notifs',this)">
 					<i class="bi bi-bell-fill"></i>
 					<span class="camp-notif-badge" id="campNotifBadge" hidden>0</span>
 					<span class="camp-btn-label">Notifs</span>
@@ -692,8 +692,8 @@
 	<script src="js/profile.js" defer></script>
 	<script src="js/trainer-palette.js" defer></script>
 	<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js" defer></script>
-	<script src="js/camp-data.js?v=8" defer></script>
-	<script src="js/camp-systems.js?v=26" defer></script>
-	<script src="js/camp.js?v=27" defer></script>
+	<script src="js/camp-data.js?v=10" defer></script>
+	<script src="js/camp-systems.js?v=28" defer></script>
+	<script src="js/camp.js?v=28" defer></script>
 </body>
 </html>
