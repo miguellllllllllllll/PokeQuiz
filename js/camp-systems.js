@@ -9891,6 +9891,18 @@
 	
 				preload() {
 					this.load.image('player-base', 'Pictures/sprites/calem.png');
+					// Partner-follower PMD walk sheets — required by _buildMarketFollower();
+					// without these the follower renders as a missing-texture box and the
+					// bad animation frames freeze the scene.
+					this.load.spritesheet('eevee',    'Pictures/sprites/eevee.png',    { frameWidth: 40, frameHeight: 48 });
+					this.load.spritesheet('vaporeon', 'Pictures/sprites/vaporeon.png', { frameWidth: 32, frameHeight: 48 });
+					this.load.spritesheet('espeon',   'Pictures/sprites/espeon.png',   { frameWidth: 32, frameHeight: 48 });
+					this.load.spritesheet('umbreon',  'Pictures/sprites/umbreon.png',  { frameWidth: 32, frameHeight: 40 });
+					this.load.spritesheet('flareon',  'Pictures/sprites/flareon.png',  { frameWidth: 32, frameHeight: 40 });
+					this.load.spritesheet('jolteon',  'Pictures/sprites/jolteon.png',  { frameWidth: 32, frameHeight: 40 });
+					this.load.spritesheet('leafeon',  'Pictures/sprites/leafeon.png',  { frameWidth: 32, frameHeight: 48 });
+					this.load.spritesheet('glaceon',  'Pictures/sprites/glaceon.png',  { frameWidth: 32, frameHeight: 40 });
+					this.load.spritesheet('sylveon',  'Pictures/sprites/sylveon.png',  { frameWidth: 32, frameHeight: 48 });
 					// NPC trainer overworld sprites (FRLG 32×32 single-frame images).
 					this.load.image('npc-youngster',     'Pictures/sprites/trainer-youngster.png');
 					this.load.image('npc-camper',        'Pictures/sprites/trainer-camper.png');
@@ -10333,6 +10345,12 @@
 
 						// Bootstrap sprite with Eevee (always preloaded)
 						const bootF = FOLLOWER_FORMS['eevee'];
+						// Bail safely if the sheet failed to preload — building a sprite
+						// on a missing texture would freeze the scene with bad anim frames.
+						if (!this.textures.exists(bootF.sheet)) {
+							console.warn('[MarketFollower] eevee sheet missing — skipping follower');
+							return;
+						}
 						const bCols = bootF.cols || 7;
 						const bRow  = (row) => Array.from({ length: bCols }, (_, i) => row * bCols + i);
 						const bootAnims = [
