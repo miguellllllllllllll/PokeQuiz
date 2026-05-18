@@ -1,0 +1,524 @@
+/* ============================================================
+   personality-quiz.css — "Which Pokémon Are You?" styles
+   ============================================================ */
+
+/* ── Page wrapper ──────────────────────────────────────────── */
+.pq-main {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px 64px;
+  background: radial-gradient(ellipse at 60% 0%, #fff8e1 0%, #f5f5f5 60%);
+}
+
+/* ── Card shell ────────────────────────────────────────────── */
+.pq-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+  width: 100%;
+  max-width: 640px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── ── ── ── ── INTRO SCREEN ── ── ── ── ── */
+.pq-intro {
+  padding: 48px 40px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.pq-intro-balls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pq-intro-ball {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: conic-gradient(var(--poke-red) 0% 50%, white 50% 100%);
+  border: 3px solid #111;
+  position: relative;
+  animation: pq-spin 3s linear infinite;
+}
+.pq-intro-ball:nth-child(2) { animation-delay: -1s; width: 52px; height: 52px; }
+.pq-intro-ball:nth-child(3) { animation-delay: -2s; }
+
+@keyframes pq-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.pq-intro-eyebrow {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--poke-red);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pq-intro-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(14px, 3.5vw, 20px);
+  line-height: 1.5;
+  color: var(--ink, #111);
+  margin: 0;
+}
+
+.pq-intro-sub {
+  font-size: 15px;
+  color: #555;
+  line-height: 1.6;
+  max-width: 420px;
+  margin: 0;
+}
+
+.pq-intro-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pq-meta-chip {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  background: #f0f0f0;
+  border-radius: 20px;
+  padding: 5px 13px;
+}
+
+.pq-start-btn {
+  margin-top: 8px;
+  font-size: 15px;
+  padding: 14px 36px;
+  background: var(--poke-red, #ee1515);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 16px rgba(238,21,21,0.25);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.pq-start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(238,21,21,0.3);
+}
+.pq-start-btn:active { transform: translateY(0); }
+
+/* ── ── ── ── ── QUIZ SCREEN ── ── ── ── ── */
+.pq-quiz {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Progress bar */
+.pq-progress-wrap {
+  padding: 20px 28px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pq-progress-track {
+  flex: 1;
+  height: 6px;
+  background: #eee;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.pq-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--poke-red, #ee1515), #ff6b35);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.pq-progress-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  white-space: nowrap;
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* Question area */
+.pq-question-area {
+  padding: 24px 28px 8px;
+  position: relative;
+  min-height: 80px;
+}
+
+.pq-q-num {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--poke-red, #ee1515);
+  margin-bottom: 10px;
+  letter-spacing: 0.04em;
+}
+
+.pq-q-text {
+  font-size: clamp(17px, 3.5vw, 21px);
+  font-weight: 800;
+  color: var(--ink, #111);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Answer grid */
+.pq-answers {
+  padding: 16px 28px 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pq-answer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  line-height: 1.4;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s, box-shadow 0.15s;
+  text-align: left;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+}
+
+.pq-answer:hover {
+  border-color: var(--poke-yellow, #f0c040);
+  background: #fffde8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(240,192,64,0.2);
+}
+
+.pq-answer.selected {
+  border-color: var(--poke-red, #ee1515);
+  background: #fff5f5;
+  box-shadow: 0 4px 18px rgba(238,21,21,0.15);
+  transform: translateY(-2px);
+}
+
+.pq-answer.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--poke-red, #ee1515);
+}
+
+/* Next button */
+.pq-next-wrap {
+  padding: 16px 28px 28px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pq-next-btn {
+  padding: 13px 28px;
+  background: var(--poke-red, #ee1515);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 14px rgba(238,21,21,0.22);
+  transition: transform 0.12s, box-shadow 0.12s, opacity 0.15s;
+}
+
+.pq-next-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
+}
+
+.pq-next-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(238,21,21,0.28);
+}
+
+.pq-next-btn:not(:disabled):active { transform: translateY(0); }
+
+/* Question slide animation */
+.pq-slide-enter {
+  animation: pq-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pq-slide-exit {
+  animation: pq-slide-out 0.18s ease-in both;
+}
+@keyframes pq-slide-in {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pq-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-24px); }
+}
+
+/* ── ── ── ── ── LOADING SCREEN ── ── ── ── ── */
+.pq-loading {
+  padding: 64px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.pq-loading-ball {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: conic-gradient(var(--poke-red) 0% 50%, white 50% 100%);
+  border: 4px solid #111;
+  animation: pq-spin 0.7s linear infinite;
+}
+
+.pq-loading-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #555;
+  letter-spacing: 0.04em;
+}
+
+.pq-loading-dots span {
+  animation: pq-dot 1.2s infinite;
+  opacity: 0;
+}
+.pq-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.pq-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pq-dot {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* ── ── ── ── ── RESULT SCREEN ── ── ── ── ── */
+.pq-result {
+  padding: 0;
+}
+
+.pq-result-banner {
+  background: linear-gradient(135deg, var(--pq-color, #ee1515) 0%, var(--pq-color2, #ff6b35) 100%);
+  padding: 36px 28px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.pq-result-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='16' fill='none' stroke='%23fff' stroke-width='1' opacity='0.08'/%3E%3Ccircle cx='20' cy='20' r='3' fill='%23fff' opacity='0.07'/%3E%3C/svg%3E") repeat;
+}
+
+.pq-result-eyebrow {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.pq-result-art-wrap {
+  width: 160px;
+  height: 160px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.3));
+  animation: pq-pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.pq-result-art-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+@keyframes pq-pop-in {
+  from { opacity: 0; transform: scale(0.5) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Bottom half of result */
+.pq-result-body {
+  padding: 24px 32px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.pq-result-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(16px, 4vw, 22px);
+  color: var(--ink, #111);
+  margin: 0;
+  animation: pq-fade-up 0.5s 0.25s both;
+}
+
+.pq-result-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--pq-color, #ee1515);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 5px 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  animation: pq-fade-up 0.5s 0.35s both;
+}
+
+.pq-result-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  animation: pq-fade-up 0.5s 0.45s both;
+}
+
+.pq-result-trait {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  background: #f3f3f3;
+  border-radius: 99px;
+  padding: 5px 14px;
+}
+
+.pq-result-desc {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #444;
+  max-width: 480px;
+  margin: 0;
+  animation: pq-fade-up 0.5s 0.55s both;
+}
+
+.pq-result-runnerup {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  animation: pq-fade-up 0.5s 0.65s both;
+}
+
+.pq-result-runnerup strong {
+  color: #555;
+}
+
+.pq-result-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+  animation: pq-fade-up 0.5s 0.75s both;
+}
+
+.pq-btn {
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.pq-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.15); }
+.pq-btn:active { transform: translateY(0); }
+
+.pq-btn-primary {
+  background: var(--poke-red, #ee1515);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(238,21,21,0.25);
+}
+
+.pq-btn-secondary {
+  background: #f0f0f0;
+  color: #222;
+}
+
+/* Divider */
+.pq-result-divider {
+  width: 100%;
+  height: 1px;
+  background: #eee;
+  margin: 0 -32px;
+  width: calc(100% + 64px);
+}
+
+@keyframes pq-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Confetti overlay ──────────────────────────────────────── */
+.pq-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+.pq-confetti-piece {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: pq-confetti-fall linear forwards;
+}
+@keyframes pq-confetti-fall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .pq-main { padding: 16px 8px 48px; }
+  .pq-card { border-radius: 18px; }
+  .pq-intro { padding: 36px 24px 32px; }
+  .pq-answers { grid-template-columns: 1fr; padding: 12px 18px 8px; }
+  .pq-question-area { padding: 20px 18px 8px; }
+  .pq-progress-wrap { padding: 16px 18px 0; }
+  .pq-next-wrap { padding: 14px 18px 22px; }
+  .pq-result-body { padding: 20px 20px 28px; }
+}
