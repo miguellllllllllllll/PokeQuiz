@@ -7204,8 +7204,12 @@
 						sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
 						sprite.setScale(NPC_SPRITE_SCALES[npc.species] || npc.spriteScale);
 						sprite.setDepth(3);
-						const rect = this.add.rectangle(x, y, TILE, TILE);
+						// Invisible static blocker: 2×2 tiles so the player body is
+						// caught from all four directions. refreshBody() ensures AABB is correct.
+						const rect = this.add.rectangle(x, y, TILE * 2, TILE * 2);
 						this.physics.add.existing(rect, true);
+						rect.body.setSize(TILE * 2, TILE * 2);
+						rect.body.refreshBody();
 						npcSolids.add(rect);
 						this.npcByTile[npc.r + ',' + npc.c] = npc;
 					}
@@ -8182,8 +8186,9 @@
 				}
 	
 				applyZoom() {
-					const W = this.scale.width;
-					const H = this.scale.height;
+					const dpr = window.devicePixelRatio || 1;
+					const W = this.scale.width / dpr;
+					const H = this.scale.height / dpr;
 					let s = Math.max(2, Math.floor(Math.min(W / 380, H / 240)));
 					s = Math.min(s, 4);
 					this.cameras.main.setZoom(s);
@@ -9028,8 +9033,9 @@
 				}
 	
 				applyZoom() {
-					const vw = this.scale.width;
-					const vh = this.scale.height;
+					const dpr = window.devicePixelRatio || 1;
+					const vw = this.scale.width / dpr;
+					const vh = this.scale.height / dpr;
 					// Phaser's RESIZE mode can fire onResize before layout settles, leaving
 					// vw/vh at 0 on the very first call. Bail and re-try on the next tick.
 					if (vw <= 0 || vh <= 0) {
@@ -9163,7 +9169,11 @@
 						if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 					}
 					this.player.setVelocity(vx, vy);
-	
+
+					// Partner follower trails the player indoors (method borrowed
+					// from MarketScene via the makeHouseSceneClass patch below).
+					if (this._updateMarketFollower) this._updateMarketFollower(vx, vy);
+
 					const moving = vx !== 0 || vy !== 0;
 					const animKey = this.dirAnimKeys[this.dir];
 					if (moving) {
@@ -9174,7 +9184,7 @@
 						this.player.anims.stop();
 						this.player.setFrame(this.dirIdleFrame[this.dir]);
 					}
-	
+
 					const tc = Math.floor(this.player.x / TILE);
 					const tr = Math.floor(this.player.y / TILE);
 					const onDoor = tc === HOUSE_DOOR_C && tr === HOUSE_DOOR_R;
@@ -9482,8 +9492,9 @@
 				}
 	
 				applyZoom() {
-					const vw = this.scale.width;
-					const vh = this.scale.height;
+					const dpr = window.devicePixelRatio || 1;
+					const vw = this.scale.width / dpr;
+					const vh = this.scale.height / dpr;
 					if (vw <= 0 || vh <= 0) {
 						this.events.once('postupdate', () => this.applyZoom());
 						return;
@@ -9843,8 +9854,12 @@
 						sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
 						sprite.setScale(NPC_SPRITE_SCALES[npc.species] || npc.spriteScale);
 						sprite.setDepth(3);
-						const rect = this.add.rectangle(x, y, TILE, TILE);
+						// Invisible static blocker: 2×2 tiles so the player body is
+						// caught from all four directions. refreshBody() ensures AABB is correct.
+						const rect = this.add.rectangle(x, y, TILE * 2, TILE * 2);
 						this.physics.add.existing(rect, true);
+						rect.body.setSize(TILE * 2, TILE * 2);
+						rect.body.refreshBody();
 						npcSolids.add(rect);
 						this.npcByTile[npc.r + ',' + npc.c] = npc;
 					}
@@ -10191,7 +10206,8 @@
 				onResize() { applyWrapTop(); this.applyZoom(); }
 	
 				applyZoom() {
-					const vw = this.scale.width, vh = this.scale.height;
+					const dpr = window.devicePixelRatio || 1;
+					const vw = this.scale.width / dpr, vh = this.scale.height / dpr;
 					if (vw <= 0 || vh <= 0) {
 						this.events.once('postupdate', () => this.applyZoom());
 						return;
@@ -10429,15 +10445,20 @@
 
 	// ── B2-0: Button bar hamburger toggle ────────────────────────────────────────
 	const BtnBarToggle = (() => {
-		// Bar collapse no longer used — grouped HUD always shows 6 icons.
-		// Keep stub so existing references don't throw.
 		function init() {
-			// Ensure bar is always open; clear any stale closed flag
+			// Always start open; clear any stale flag from old versions
 			const bar = document.getElementById('campBtnBar');
 			if (bar) bar.classList.remove('camp-btn-bar--closed');
 			try { localStorage.removeItem('pokequiz_btnbar_closed'); } catch {}
 		}
-		return { init };
+		function toggle() {
+			const bar = document.getElementById('campBtnBar');
+			if (!bar) return;
+			bar.classList.toggle('camp-btn-bar--closed');
+		}
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+		else init();
+		return { init, toggle };
 	})();
 	window.CAMP_SYSTEMS.BtnBarToggle = BtnBarToggle;
 
@@ -11226,6 +11247,24 @@
 			return base;
 		};
 		return SceneClass;
+	};
+
+	// Fix: HouseScene._buildHouse calls this._buildMarketFollower(), but the
+	// partner-follower methods were only ever defined on MarketScene. Without
+	// them HouseScene.create() throws and the house never loads — you "can't
+	// enter the house". Borrow the follower methods onto the HouseScene
+	// prototype so the partner trails the player indoors, just like outdoors.
+	const _origMakeHouseSceneClass = window.CAMP_SCENES.makeHouseSceneClass;
+	window.CAMP_SCENES.makeHouseSceneClass = function () {
+		const HouseClass = _origMakeHouseSceneClass.apply(this, arguments);
+		if (!HouseClass.prototype._buildMarketFollower || !HouseClass.prototype._updateMarketFollower) {
+			const MarketClass = window.CAMP_SCENES.makeMarketSceneClass();
+			if (!HouseClass.prototype._buildMarketFollower)
+				HouseClass.prototype._buildMarketFollower = MarketClass.prototype._buildMarketFollower;
+			if (!HouseClass.prototype._updateMarketFollower)
+				HouseClass.prototype._updateMarketFollower = MarketClass.prototype._updateMarketFollower;
+		}
+		return HouseClass;
 	};
 
 	// Also patch gate-sign dialog to include badge status + seasonal top
