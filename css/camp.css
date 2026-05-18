@@ -760,6 +760,110 @@ body.camp-body {
 @keyframes cb-screen-in   { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes cb-bg-drift    { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
 @keyframes cb-title-glow  { 0%,100% { text-shadow: 0 0 6px var(--camp-accent), 0 2px 0 #2a1e08; } 50% { text-shadow: 0 0 14px #ffe890, 0 0 22px var(--camp-accent), 0 2px 0 #2a1e08; } }
+
+/* ── Wild encounter intro ────────────────────────────────────────────────── */
+@keyframes cb-flash       { 0%,100% { opacity:0; } 15%,35%,55% { opacity:1; } 25%,45%,65% { opacity:0; } }
+@keyframes cb-poke-enter  { from { transform: translateX(120%) scale(0.6); opacity:0; } to { transform: translateX(0) scale(1); opacity:1; } }
+@keyframes cb-intro-text  { from { opacity:0; transform: translateY(18px); } to { opacity:1; transform: translateY(0); } }
+@keyframes cb-grass-sway  { 0%,100% { transform: rotate(-8deg) translateY(0); } 50% { transform: rotate(8deg) translateY(-4px); } }
+
+.cb-intro {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  background:
+    linear-gradient(180deg, #0a1a08 0%, #163310 40%, #0e2010 100%);
+  border-color: #3a8c28;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.4), 0 0 32px rgba(58,140,40,0.35), 0 22px 56px rgba(0,0,0,0.7);
+}
+
+/* Screen flash overlay */
+.cb-intro-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  animation: cb-flash 0.72s ease-out both;
+}
+
+/* Grass blades at the bottom */
+.cb-intro-grass {
+  position: absolute;
+  bottom: 90px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 0 12px;
+  z-index: 3;
+}
+.cb-intro-grass span {
+  display: block;
+  width: 12px;
+  height: 36px;
+  background: linear-gradient(180deg, #6ecf3e 0%, #3d8a1e 100%);
+  border-radius: 8px 8px 2px 2px;
+  transform-origin: bottom center;
+  animation: cb-grass-sway 0.7s ease-in-out infinite alternate;
+}
+.cb-intro-grass span:nth-child(2) { animation-delay: 0.1s; height: 28px; }
+.cb-intro-grass span:nth-child(3) { animation-delay: 0.2s; height: 42px; }
+.cb-intro-grass span:nth-child(4) { animation-delay: 0.05s; height: 32px; }
+.cb-intro-grass span:nth-child(5) { animation-delay: 0.15s; height: 24px; }
+
+/* Pokémon sprite area */
+.cb-intro-poke {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  z-index: 5;
+  animation: cb-poke-enter 0.55s 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.55));
+}
+.cb-intro-sprite {
+  width: 128px;
+  height: 128px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Bottom text + button */
+.cb-intro-bottom {
+  position: relative;
+  z-index: 6;
+  background: linear-gradient(0deg, rgba(6,14,4,0.97) 60%, transparent 100%);
+  padding: 16px 24px 20px;
+  text-align: left;
+}
+.cb-intro-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(8px, 2.2vw, 11px);
+  color: #e8f8e0;
+  line-height: 1.7;
+  margin: 0 0 12px;
+  animation: cb-intro-text 0.4s 0.9s both;
+}
+.cb-intro-name {
+  color: #f8e840;
+}
+.cb-intro-btn {
+  animation: cb-intro-text 0.4s 1.1s both;
+  background: linear-gradient(180deg, #4cba28, #2a7810);
+  border-color: #6ef040;
+  color: #fff;
+  font-size: 10px;
+  padding: 10px 28px;
+}
+.cb-intro-btn:hover {
+  background: linear-gradient(180deg, #60d838, #3a9820);
+  transform: translateY(-1px);
+}
 @keyframes cb-rim-pulse   { 0%,100% { box-shadow: 0 0 0 4px var(--camp-accent), 0 0 22px rgba(246,200,76,0.5), 0 14px 32px rgba(0,0,0,0.65); } 50% { box-shadow: 0 0 0 4px #ffe890, 0 0 36px rgba(255,232,144,0.85), 0 14px 32px rgba(0,0,0,0.65); } }
 @keyframes cb-zone-pulse  { 0%,100% { box-shadow: inset 0 0 8px rgba(146,255,170,0.45); } 50% { box-shadow: inset 0 0 18px rgba(146,255,170,0.85); } }
 @keyframes cb-cursor-glow { 0%,100% { box-shadow: 0 0 6px var(--camp-accent), 0 0 12px #ffd968; } 50% { box-shadow: 0 0 12px #ffe890, 0 0 22px #ffd968; } }
@@ -1848,7 +1952,7 @@ body.camp-body {
 .pk-btn-xs  { font-size: 7px;  padding: 4px  8px; }
 .pk-btn-full { width: 100%; }
 
-/* ── Quick-action button bar (top-right of camp) ────────────────────────── */
+/* ── Quick-action button bar (bottom-left of camp) ──────────────────────── */
 
 .camp-btn-bar {
   position: absolute;
@@ -1856,8 +1960,69 @@ body.camp-body {
   bottom: 14px;
   display: flex;
   flex-direction: row;
+  align-items: center;
   gap: 8px;
   z-index: 7;
+}
+
+/* Items wrapper — collapses when bar is closed */
+.camp-btn-bar-items {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  max-width: 600px;
+  opacity: 1;
+  transition: max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity   0.22s ease;
+}
+
+/* Collapsed state */
+.camp-btn-bar--closed .camp-btn-bar-items {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Hamburger toggle button ─────────────────────────────────────────────── */
+.camp-bar-toggle {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Three-bar icon made from spans */
+.camp-bar-toggle-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 16px;
+  height: 16px;
+}
+
+.camp-bar-toggle-icon span {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: var(--pk-gold);
+  border-radius: 2px;
+  transition: transform 0.22s ease, opacity 0.18s ease, width 0.18s ease;
+  transform-origin: center;
+}
+
+/* Animate to X when open */
+.camp-btn-bar:not(.camp-btn-bar--closed) .camp-bar-toggle-icon span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.camp-btn-bar:not(.camp-btn-bar--closed) .camp-bar-toggle-icon span:nth-child(2) {
+  opacity: 0;
+  width: 0;
+}
+.camp-btn-bar:not(.camp-btn-bar--closed) .camp-bar-toggle-icon span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .camp-quick-btn {
@@ -2015,6 +2180,7 @@ body.camp-body {
 /* ── Mobile: shrink btn-bar and shift inventory up to clear joystick ───── */
 @media (max-width: 700px) {
   .camp-btn-bar { left: 8px; bottom: 8px; gap: 6px; }
+  .camp-btn-bar-items { gap: 6px; }
   .camp-quick-btn { width: 30px; height: 30px; font-size: 14px; }
   .camp-inventory { bottom: 130px; font-size: 8px; padding: 5px 12px; }
   .camp-controls-hint { display: none; }
@@ -2665,15 +2831,16 @@ body.pk-reduce-motion *::after {
   position: absolute;
   left: 12px;
   bottom: 130px;
-  width: 56px;
-  background: linear-gradient(180deg,rgba(10,14,28,0.92),rgba(6,10,20,0.95));
-  border: 1.5px solid rgba(246,200,76,0.5);
+  width: 64px;
+  background: linear-gradient(180deg,rgba(10,14,28,0.88),rgba(6,10,20,0.92));
+  border: 1.5px solid rgba(246,200,76,0.55);
   border-radius: 10px;
   padding: 6px 4px 4px;
   text-align: center;
   z-index: 20;
   pointer-events: none;
   font-family: 'Press Start 2P', monospace;
+  overflow: hidden;
 }
 .cpw-name {
   font-size: 5px;

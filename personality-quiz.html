@@ -20,7 +20,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/personality-quiz.css?v=2">
+	<link rel="stylesheet" href="css/personality-quiz.css?v=3">
 </head>
 <body class="pq-body">
 
@@ -78,14 +78,18 @@
 	════════════════════════════════════════ -->
 	<div id="pq-runner" hidden>
 		<div class="pq-card" id="pq-card">
-			<div class="pq-accent-bar" id="pq-accent-bar"></div>
 
-			<!-- Progress -->
-			<div class="pq-progress-wrap">
-				<div class="pq-progress-track">
-					<div class="pq-progress-fill" id="pq-progress-fill" style="width:0%"></div>
+			<!-- Coloured topbar with label + counter -->
+			<div class="pq-topbar" id="pq-topbar">
+				<span class="pq-topbar-label" id="pq-topbar-label">QUIZ</span>
+				<span class="pq-topbar-counter" id="pq-topbar-counter">0 / ?</span>
+			</div>
+
+			<!-- XP-style progress bar -->
+			<div class="pq-xp-wrap" id="pq-xp-wrap">
+				<div class="pq-xp-track">
+					<div class="pq-xp-fill" id="pq-xp-fill" style="width:0%"></div>
 				</div>
-				<span class="pq-progress-label" id="pq-progress-label">0 / ?</span>
 			</div>
 
 			<!-- Question -->
@@ -98,9 +102,9 @@
 			<div class="pq-answers pq-slide" id="pq-answers"></div>
 
 			<!-- Controls -->
-			<div class="pq-next-wrap">
-				<button class="pq-back-link" id="pq-back-btn">← Change quiz</button>
-				<button class="pq-next-btn" id="pq-next-btn" disabled>Next →</button>
+			<div class="pq-next-wrap" id="pq-next-wrap">
+				<button class="pq-back-link" id="pq-back-btn">&#8592; Change quiz</button>
+				<button class="pq-next-btn" id="pq-next-btn" disabled>NEXT &#8594;</button>
 			</div>
 
 			<!-- Loading (inside card) -->
@@ -121,26 +125,34 @@
 
 <script src="js/util.js" defer></script>
 <script src="js/profile.js" defer></script>
-<script src="js/personality-data.js?v=2"></script>
+<script src="js/personality-data.js?v=3"></script>
 <script>
 (function () {
   'use strict';
 
-  var DATA     = window.PERSONALITY_DATA;
-  var QUIZZES  = DATA.quizzes;
+  var DATA       = window.PERSONALITY_DATA;
+  var QUIZZES    = DATA.quizzes;
   var QUIZ_ORDER = ['starter', 'type', 'kanto'];
+
+  /* ── Asset URL helpers ─────────────────────────────────────── */
+  function SPRITE_URL(id)  { return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + id + '.png'; }
+  function ARTWORK_URL(id) { return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/' + id + '.png'; }
+  function TYPE_BADGE_URL(typeId) { return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/' + typeId + '.png'; }
 
   /* ── Elements ─────────────────────────────────────────────── */
   var elSel      = document.getElementById('pq-selection');
   var elRunner   = document.getElementById('pq-runner');
   var elCard     = document.getElementById('pq-card');
-  var elAccent   = document.getElementById('pq-accent-bar');
-  var elFill     = document.getElementById('pq-progress-fill');
-  var elLabel    = document.getElementById('pq-progress-label');
+  var elTopbar   = document.getElementById('pq-topbar');
+  var elTopLabel = document.getElementById('pq-topbar-label');
+  var elTopCtr   = document.getElementById('pq-topbar-counter');
+  var elXpFill   = document.getElementById('pq-xp-fill');
+  var elXpWrap   = document.getElementById('pq-xp-wrap');
   var elQNum     = document.getElementById('pq-q-num');
   var elQText    = document.getElementById('pq-q-text');
   var elAnswers  = document.getElementById('pq-answers');
   var elNext     = document.getElementById('pq-next-btn');
+  var elNextWrap = document.getElementById('pq-next-wrap');
   var elBack     = document.getElementById('pq-back-btn');
   var elLoading  = document.getElementById('pq-loading');
   var elLoadBall = document.getElementById('pq-loading-ball');
@@ -150,18 +162,33 @@
   var elConfetti = document.getElementById('pq-confetti');
 
   /* ── Quiz state ───────────────────────────────────────────── */
-  var activeQuiz   = null;
-  var scores       = {};
-  var currentQ     = 0;
-  var selectedIdx  = null;
+  var activeQuiz  = null;
+  var scores      = {};
+  var currentQ    = 0;
+  var selectedIdx = null;
 
   /* ── Build selection grid ─────────────────────────────────── */
   elGrid.innerHTML = QUIZ_ORDER.map(function(id) {
     var q = QUIZZES[id];
-    return '<button class="pq-type-card" style="--card-color:' + q.color + '" data-quiz="' + id + '">' +
-      '<div class="pq-type-card-stripe"></div>' +
+
+    /* Hero sprites / type icons */
+    var showcaseHtml = '';
+    if (q.showcasePokemon) {
+      showcaseHtml = q.showcasePokemon.map(function(pid) {
+        return '<img class="pq-hub-sprite" src="' + SPRITE_URL(pid) + '" alt="" loading="lazy">';
+      }).join('');
+    } else if (q.showcaseTypeIds) {
+      showcaseHtml = q.showcaseTypeIds.map(function(tid) {
+        return '<img class="pq-hub-type-icon" src="' + TYPE_BADGE_URL(tid) + '" alt="" loading="lazy">';
+      }).join('');
+    }
+
+    return '<a class="pq-type-card" style="--card-color:' + q.color + '" href="personality-quiz.html?quiz=' + id + '" data-quiz="' + id + '">' +
+      '<div class="pq-card-hero">' +
+        '<span class="pq-card-hero-label">' + esc(q.label || q.name) + '</span>' +
+        '<div class="pq-card-hero-sprites">' + showcaseHtml + '</div>' +
+      '</div>' +
       '<div class="pq-type-card-body">' +
-        '<div class="pq-type-card-icon">' + q.icon + '</div>' +
         '<div class="pq-type-card-info">' +
           '<p class="pq-type-card-name">' + esc(q.name) + '</p>' +
           '<p class="pq-type-card-desc">' + esc(q.desc) + '</p>' +
@@ -169,19 +196,21 @@
             q.subtitle.split(' · ').map(function(c){ return '<span class="pq-type-chip">' + esc(c) + '</span>'; }).join('') +
           '</div>' +
         '</div>' +
-        '<span class="pq-type-card-arrow">→</span>' +
+        '<span class="pq-type-card-arrow">&#8594;</span>' +
       '</div>' +
-    '</button>';
+    '</a>';
   }).join('');
 
+  /* Intercept clicks to run quiz in-page instead of navigating */
   elGrid.addEventListener('click', function(e) {
-    var btn = e.target.closest('.pq-type-card');
-    if (!btn) return;
-    startQuiz(btn.dataset.quiz);
+    var card = e.target.closest('.pq-type-card');
+    if (!card) return;
+    e.preventDefault();
+    startQuiz(card.dataset.quiz);
   });
 
-  /* ── Check for ?quiz= deep-link ──────────────────────────── */
-  var qs = new URLSearchParams(window.location.search);
+  /* ── Deep-link ?quiz= ────────────────────────────────────── */
+  var qs       = new URLSearchParams(window.location.search);
   var deepLink = qs.get('quiz');
   if (deepLink && QUIZZES[deepLink]) startQuiz(deepLink);
 
@@ -194,16 +223,18 @@
 
     Object.keys(activeQuiz.pokemon).forEach(function(k) { scores[k] = 0; });
 
-    // Apply quiz colour vars to card
+    /* Apply quiz color vars */
     elCard.style.setProperty('--quiz-color', activeQuiz.color);
     elCard.style.setProperty('--quiz-gradient', activeQuiz.gradient);
-    elAccent.style.background = activeQuiz.gradient;
+    elTopbar.style.background = activeQuiz.color;
     elLoadBall.style.setProperty('--quiz-color', activeQuiz.color);
+    elXpFill.style.background = activeQuiz.color;
+    elTopLabel.textContent = activeQuiz.label || activeQuiz.name.toUpperCase();
 
-    // Reset sub-panels
+    /* Reset sub-panels */
     elLoading.hidden = true;
     elResult.hidden  = true;
-    showProgressAndQuiz(true);
+    showQuizContent(true);
 
     elSel.hidden    = true;
     elRunner.hidden = false;
@@ -211,12 +242,13 @@
     renderQuestion(0);
   }
 
-  /* ── Show/hide progress+question+answers ─────────────────── */
-  function showProgressAndQuiz(show) {
-    elFill.parentElement.parentElement.hidden  = !show; // progress wrap
-    elQArea.hidden    = !show;
-    elAnswers.hidden  = !show;
-    elNext.parentElement.hidden = !show;       // next-wrap
+  /* ── Show/hide quiz content panels ───────────────────────── */
+  function showQuizContent(show) {
+    elTopbar.hidden  = !show;
+    elXpWrap.hidden  = !show;
+    elQArea.hidden   = !show;
+    elAnswers.hidden = !show;
+    elNextWrap.hidden = !show;
   }
 
   /* ── Render question ──────────────────────────────────────── */
@@ -228,12 +260,12 @@
     var tot = activeQuiz.questions.length;
     var pct = (idx / tot) * 100;
 
-    elFill.style.width      = pct + '%';
-    elLabel.textContent     = idx + ' / ' + tot;
-    elQNum.textContent      = 'Question ' + (idx + 1) + ' of ' + tot;
-    elNext.textContent      = (idx === tot - 1) ? 'See my result ✨' : 'Next →';
+    elXpFill.style.width  = pct + '%';
+    elTopCtr.textContent  = (idx + 1) + ' / ' + tot;
+    elQNum.textContent    = 'Question ' + (idx + 1) + ' of ' + tot;
+    elNext.textContent    = (idx === tot - 1) ? 'SEE RESULT ✨' : 'NEXT →';
 
-    // Slide in
+    /* Slide animation */
     elQArea.classList.remove('pq-slide');
     elAnswers.classList.remove('pq-slide');
     void elQArea.offsetWidth;
@@ -244,9 +276,9 @@
 
     elAnswers.innerHTML = q.answers.map(function(a, i) {
       return '<button class="pq-answer" data-idx="' + i + '">' +
+        '<span class="pq-cursor">&#9654;</span>' +
         '<span class="pq-answer-emoji">' + (a.emoji || '') + '</span>' +
         '<span class="pq-answer-text">' + esc(a.text) + '</span>' +
-        '<span class="pq-answer-check">✓</span>' +
       '</button>';
     }).join('');
 
@@ -264,7 +296,6 @@
   elNext.addEventListener('click', function() {
     if (selectedIdx === null) return;
 
-    // Accumulate weights
     var answer = activeQuiz.questions[currentQ].answers[selectedIdx];
     Object.keys(answer.weights).forEach(function(pk) {
       scores[pk] = (scores[pk] || 0) + answer.weights[pk];
@@ -275,7 +306,7 @@
     if (currentQ < activeQuiz.questions.length) {
       renderQuestion(currentQ);
     } else {
-      showProgressAndQuiz(false);
+      showQuizContent(false);
       elLoading.hidden = false;
       setTimeout(showResult, 1700);
     }
@@ -283,48 +314,65 @@
 
   /* ── Back to selection ────────────────────────────────────── */
   elBack.addEventListener('click', function() {
-    elRunner.hidden = false;
-    elSel.hidden    = false;
-    elRunner.hidden = true;
-    showProgressAndQuiz(true);
+    elRunner.hidden  = true;
+    elSel.hidden     = false;
+    showQuizContent(true);
     elLoading.hidden = true;
     elResult.hidden  = true;
   });
 
   /* ── Show result ──────────────────────────────────────────── */
   function showResult() {
-    elLoading.hidden = true;
-    elResult.hidden  = false;
+    elLoading.hidden = false;
 
-    // Progress: full
-    elFill.style.width  = '100%';
-    elLabel.textContent = activeQuiz.questions.length + ' / ' + activeQuiz.questions.length;
+    /* Progress: full */
+    elXpFill.style.width  = '100%';
+    elTopCtr.textContent  = activeQuiz.questions.length + ' / ' + activeQuiz.questions.length;
 
-    // Rank
-    var ranked    = Object.keys(scores).sort(function(a,b){ return scores[b]-scores[a]; });
-    var winKey    = ranked[0];
-    var runKey    = ranked[1];
-    var winner    = activeQuiz.pokemon[winKey];
-    var runner    = activeQuiz.pokemon[runKey];
+    /* Rank results */
+    var ranked  = Object.keys(scores).sort(function(a, b) { return scores[b] - scores[a]; });
+    var winKey  = ranked[0];
+    var runKey  = ranked[1];
+    var winner  = activeQuiz.pokemon[winKey];
+    var runner  = activeQuiz.pokemon[runKey];
+    var isType  = activeQuiz.id === 'type';
 
-    var isType    = activeQuiz.id === 'type';
-    var artUrl    = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/' + winner.id + '.png';
-    var runArtUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/' + runner.id + '.png';
+    /* Hero image */
+    var heroHtml;
+    if (isType) {
+      heroHtml = '<img class="pq-result-type-hero" src="' + TYPE_BADGE_URL(winner.typeId) + '" alt="' + esc(winner.typeName) + ' type">';
+    } else {
+      heroHtml = '<div class="pq-result-art-wrap">' +
+        '<img src="' + ARTWORK_URL(winner.id) + '" alt="' + esc(winner.name) + '" ' +
+          'onerror="this.src=\'' + SPRITE_URL(winner.id) + '\'">' +
+      '</div>';
+    }
 
-    var heroHtml = isType
-      ? '<div class="pq-result-type-icon">' + (winner.icon || '✨') + '</div>'
-      : '<div class="pq-result-art-wrap"><img src="' + artUrl + '" alt="' + esc(winner.name) + '" onerror="this.src=\'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + winner.id + '.png\'"></div>';
+    /* Type badge — PokeAPI image for all quizzes */
+    var badgeHtml;
+    if (winner.typeId) {
+      badgeHtml = '<img class="pq-type-badge-img" src="' + TYPE_BADGE_URL(winner.typeId) + '" alt="' + esc(isType ? winner.typeName : winner.type) + ' type">';
+    } else {
+      var badgeLabel = isType ? (winner.icon + ' ' + winner.typeName) : (winner.type + ' Type');
+      badgeHtml = '<span class="pq-result-type-badge" style="--res-color:' + winner.color + ';background:' + winner.color + '">' + esc(badgeLabel) + '</span>';
+    }
 
-    var runnerImgHtml = isType
-      ? '<span style="font-size:20px">' + (runner.icon || '') + '</span>'
-      : '<img src="' + runArtUrl + '" alt="" onerror="this.style.display=\'none\'">';
+    /* Runner-up visual */
+    var runnerVisual;
+    if (isType) {
+      runnerVisual = runner.typeId
+        ? '<img class="pq-runnerup-badge" src="' + TYPE_BADGE_URL(runner.typeId) + '" alt="">'
+        : '<span style="font-size:20px">' + (runner.icon || '') + '</span>';
+    } else {
+      runnerVisual = '<img class="pq-runnerup-sprite" src="' + SPRITE_URL(runner.id) + '" alt="">';
+    }
 
-    var traitsHtml = (winner.traits || []).map(function(t){
+    var traitsHtml = (winner.traits || []).map(function(t) {
       return '<span class="pq-result-trait">' + esc(t) + '</span>';
     }).join('');
 
-    var nameLabel   = isType ? (winner.typeName + ' Type') : winner.name;
-    var badgeLabel  = isType ? (winner.icon + ' ' + winner.typeName) : winner.type + ' Type';
+    var nameLabel  = isType ? (winner.typeName + ' Type') : winner.name;
+    var runnerName = isType ? (runner.typeName + ' Type') : runner.name;
 
     elResult.innerHTML =
       '<div class="pq-result-banner" style="background:' + activeQuiz.gradient + '">' +
@@ -333,19 +381,22 @@
       '</div>' +
       '<div class="pq-result-body">' +
         '<h2 class="pq-result-name">' + esc(nameLabel) + '</h2>' +
-        '<span class="pq-result-type-badge" style="--res-color:' + winner.color + ';background:' + winner.color + '">' + badgeLabel + '</span>' +
+        badgeHtml +
         (traitsHtml ? '<div class="pq-result-traits">' + traitsHtml + '</div>' : '') +
         '<p class="pq-result-desc">' + esc(winner.desc) + '</p>' +
         '<div class="pq-result-divider"></div>' +
         '<div class="pq-result-runnerup">' +
-          runnerImgHtml +
-          'Close second: <strong>' + esc(isType ? runner.typeName + ' Type' : runner.name) + '</strong>' +
+          runnerVisual +
+          '<span>Close second: <strong>' + esc(runnerName) + '</strong></span>' +
         '</div>' +
         '<div class="pq-result-actions">' +
-          '<button class="pq-btn pq-btn-primary" id="pq-replay-btn" style="--res-color:' + winner.color + ';background:' + winner.color + '">↺ Play Again</button>' +
-          '<button class="pq-btn pq-btn-secondary" id="pq-try-other-btn">Try Another Quiz</button>' +
+          '<button class="pq-btn pq-btn-primary" id="pq-replay-btn" style="--res-color:' + winner.color + ';background:' + winner.color + '">&#8635; PLAY AGAIN</button>' +
+          '<button class="pq-btn pq-btn-secondary" id="pq-try-other-btn">TRY ANOTHER</button>' +
         '</div>' +
       '</div>';
+
+    elLoading.hidden = true;
+    elResult.hidden  = false;
 
     document.getElementById('pq-replay-btn').addEventListener('click', function() {
       elResult.hidden = true;
@@ -356,6 +407,7 @@
       elResult.hidden  = true;
       elRunner.hidden  = true;
       elSel.hidden     = false;
+      showQuizContent(true);
     });
 
     spawnConfetti(winner.color);
@@ -367,19 +419,19 @@
     for (var i = 0; i < 60; i++) {
       (function(i) {
         setTimeout(function() {
-          var el = document.createElement('div');
+          var el  = document.createElement('div');
           el.className = 'pq-confetti-piece';
           var size = 6 + Math.random() * 9;
           el.style.cssText = [
-            'left:' + (Math.random()*100) + 'vw',
+            'left:' + (Math.random() * 100) + 'vw',
             'width:' + size + 'px',
             'height:' + size + 'px',
-            'background:' + colors[Math.floor(Math.random()*colors.length)],
+            'background:' + colors[Math.floor(Math.random() * colors.length)],
             'border-radius:' + (Math.random() > 0.5 ? '50%' : '2px'),
-            'animation-duration:' + (1.5 + Math.random()*2) + 's'
+            'animation-duration:' + (1.5 + Math.random() * 2) + 's'
           ].join(';');
           elConfetti.appendChild(el);
-          setTimeout(function(){ if(el.parentNode) el.remove(); }, 3600);
+          setTimeout(function() { if (el.parentNode) el.remove(); }, 3600);
         }, i * 26);
       })(i);
     }
@@ -387,8 +439,8 @@
 
   /* ── Helpers ──────────────────────────────────────────────── */
   function esc(s) {
-    return String(s).replace(/[&<>"']/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
 
