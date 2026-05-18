@@ -56,6 +56,7 @@
 	const NPCS             = (window.CAMP_DATA || {}).NPCS;
 	const BERRY_TYPES      = (window.CAMP_DATA || {}).BERRY_TYPES;
 	const MARKET_NPCS      = (window.CAMP_DATA || {}).MARKET_NPCS;
+	const NPC_SPRITE_SCALES = (window.CAMP_DATA || {}).NPC_SPRITE_SCALES || {};
 	const SHINY_POOL       = (window.CAMP_DATA || {}).SHINY_POOL;
 	const SPRITE_DEFS      = (window.CAMP_DATA || {}).SPRITE_DEFS;
 	const SCALE_MULT       = (window.CAMP_DATA || {}).SCALE_MULT;
@@ -5033,6 +5034,14 @@
 	// Moved here from camp.js so MarketShop (below) can reference it.
 	// ico() and ICO are both defined earlier in this IIFE.
 
+	// Rotating weekly Move Tutor (changes every Monday, same week index as shop)
+	const _WEEKLY_MOVES = [
+		{ name: 'Hyper Beam',   gives: 'tokens', amount: 20, desc: '+20 tokens — raw power!' },
+		{ name: 'Calm Mind',    gives: 'seeds',  amount: 3,  desc: '+3 Berry Seeds for your garden' },
+		{ name: 'Swords Dance', gives: 'berries',amount: 8,  desc: '+8 Berries to share with your partner' },
+		{ name: 'Agility',      gives: 'tokens', amount: 25, desc: '+25 tokens — speed-boost your stash' },
+	];
+
 	// Compute rotating weekly shop (changes every Monday)
 	const _WEEK_IDX = (() => {
 		const d = new Date(); d.setHours(0,0,0,0);
@@ -5092,6 +5101,12 @@
 			],
 		},
 		weekly: { title: _WEEKLY_CONFIGS[_WEEK_IDX].title, items: _WEEKLY_CONFIGS[_WEEK_IDX].items },
+		tutor: {
+			title: '🥋 Move Tutor',
+			items: [
+				{ label: ico(ICO.sparkle) + ' Learn ' + _WEEKLY_MOVES[_WEEK_IDX].name + ' (once/week)', cost: 30, action: 'learnMove' },
+			],
+		},
 		cosmetics: {
 			title: 'Vaporeon Boutique',
 			items: [
@@ -5328,7 +5343,20 @@
 						setStatus(msg);
 						break;
 					}
-					default: setStatus('Unknown action.');
+					case 'learnMove': {
+					const wKey = 'pokequiz_move_tutor_' + _WEEK_IDX;
+					if (localStorage.getItem(wKey)) { setStatus('Already learned this week!'); return; }
+					if ((inv.tokens||0) < 30) { setStatus('Need 30 tokens.'); return; }
+					inv.tokens -= 30;
+					const mv = _WEEKLY_MOVES[_WEEK_IDX];
+					if (mv.gives === 'tokens')  { inv.tokens            = (inv.tokens||0)            + mv.amount; }
+					if (mv.gives === 'seeds')   { inv.seeds             = (inv.seeds||0)             + mv.amount; }
+					if (mv.gives === 'berries') { inv.friendshipBerries = (inv.friendshipBerries||0) + mv.amount; }
+					localStorage.setItem(wKey, '1');
+					setStatus('Learned ' + mv.name + '! ' + mv.desc);
+					break;
+				}
+				default: setStatus('Unknown action.');
 				}
 				Inventory.save(inv);
 				refresh();
@@ -5365,6 +5393,180 @@
 		return { open };
 	})();
 	window.CAMP_SYSTEMS.HallOfFame = HallOfFame;
+
+	// ── ExpeditionBoard ────────────────────────────────────────────────────────
+	const ExpeditionBoard = (() => {
+		const KEY = 'pokequiz_expedition';
+		const TIERS = [
+			{ id: 'quick',   label: 'Quick Trip',  time: '1 hr',  ms: 60*60*1000,       cost: 8,  berries: 2,  seeds: 0, tokens: 8  },
+			{ id: 'trek',    label: 'Trek',        time: '4 hrs', ms: 4*60*60*1000,     cost: 15, berries: 5,  seeds: 1, tokens: 18 },
+			{ id: 'journey', label: 'Journey',     time: '8 hrs', ms: 8*60*60*1000,     cost: 20, berries: 10, seeds: 3, tokens: 30 },
+		];
+		function loadExp() { try { return JSON.parse(localStorage.getItem(KEY)||'null'); } catch { return null; } }
+		function saveExp(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+		function fmtMs(ms) {
+			if (ms <= 0) return 'Ready!';
+			const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+			return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+		}
+		let root = null, openFlag = false;
+		function isOpen() { return openFlag; }
+		function open() { if (openFlag) { close(); return; } openFlag = true; build(); }
+		function close() { openFlag = false; if (root) { root.remove(); root = null; } }
+		function build() {
+			if (root) root.remove();
+			const state = loadExp();
+			const now = Date.now();
+			root = document.createElement('div');
+			root.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)';
+			const box = document.createElement('div');
+			box.style.cssText = 'background:linear-gradient(160deg,#1a2a40,#0d1a2e);border:2px solid #4a6fa5;border-radius:12px;padding:20px;min-width:280px;max-width:340px;color:#e8eaf0;font-family:inherit;text-align:center';
+			const closeBtn = () => { const b = document.createElement('button'); b.textContent = 'Close'; b.style.cssText = 'margin-top:10px;padding:8px 20px;border:0;border-radius:8px;background:#2a3a52;color:#e8eaf0;cursor:pointer;font-family:inherit;display:block;margin:10px auto 0'; b.onclick = close; return b; };
+			if (state && (now - state.startMs) < state.ms) {
+				const tier = TIERS.find(t => t.id === state.id) || TIERS[0];
+				const rem = state.ms - (now - state.startMs);
+				box.innerHTML = '<div style="font-size:20px;margin-bottom:8px">🗺 Expedition Board</div><div style="color:#aec6e8;font-size:11px;margin-bottom:12px">Explorer on a ' + tier.label + '!</div><div style="font-size:28px;margin:10px 0">⏳</div><div style="font-size:13px;color:#ffd968">Returns in: ' + fmtMs(rem) + '</div><div style="font-size:10px;color:#6080a0;margin-top:6px">Haul: 🍇' + tier.berries + ' 🌱' + tier.seeds + ' 💰' + tier.tokens + '</div>';
+				box.appendChild(closeBtn());
+			} else if (state && (now - state.startMs) >= state.ms) {
+				const tier = TIERS.find(t => t.id === state.id) || TIERS[0];
+				box.innerHTML = '<div style="font-size:20px;margin-bottom:8px">🗺 Expedition Board</div><div style="color:#6dbe6d;font-size:12px;margin-bottom:12px">Your explorer has returned!</div><div style="font-size:28px;margin:10px 0">🎒</div><div style="font-size:11px;color:#aec6e8">Haul from ' + tier.label + ':</div><div style="font-size:13px;color:#ffd968;margin:8px 0">🍇 ' + tier.berries + ' · 🌱 ' + tier.seeds + ' · 💰 ' + tier.tokens + '</div>';
+				const claim = document.createElement('button');
+				claim.textContent = '🎒 Claim';
+				claim.style.cssText = 'margin-top:10px;padding:10px 24px;border:0;border-radius:8px;background:linear-gradient(180deg,#ffd968,#d6a83a);color:#2a1e08;cursor:pointer;font-family:inherit;font-size:11px;display:block;margin:10px auto 0';
+				claim.onclick = () => {
+					const inv = Inventory.load();
+					inv.friendshipBerries = (inv.friendshipBerries||0) + tier.berries;
+					inv.seeds  = (inv.seeds||0)  + tier.seeds;
+					inv.tokens = (inv.tokens||0) + tier.tokens;
+					Inventory.save(inv);
+					localStorage.removeItem(KEY);
+					close();
+					Dialog.open('🎒 Expedition complete!\n🍇 +' + tier.berries + ' Berries · 🌱 +' + tier.seeds + ' Seeds · 💰 +' + tier.tokens + ' Tokens');
+				};
+				box.appendChild(claim);
+				box.appendChild(closeBtn());
+			} else {
+				box.innerHTML = '<div style="font-size:20px;margin-bottom:4px">🗺 Expedition Board</div><div style="color:#aec6e8;font-size:10px;margin-bottom:12px">Send your partner on an adventure!</div>';
+				const statusEl = document.createElement('div');
+				statusEl.style.cssText = 'font-size:11px;color:#ffd968;min-height:16px;margin-bottom:8px';
+				box.appendChild(statusEl);
+				TIERS.forEach(tier => {
+					const row = document.createElement('div');
+					row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid rgba(74,111,165,0.3)';
+					row.innerHTML = '<div><div style="font-size:12px">⏱ ' + tier.label + ' <span style=\"color:#666;font-size:10px\">' + tier.time + '</span></div><div style="font-size:10px;color:#6080a0">🍇' + tier.berries + ' 🌱' + tier.seeds + ' 💰' + tier.tokens + '</div></div>';
+					const btn = document.createElement('button');
+					btn.textContent = tier.cost + '🪙';
+					btn.style.cssText = 'padding:7px 12px;border:0;border-radius:6px;background:linear-gradient(180deg,#ffd968,#d6a83a);color:#2a1e08;cursor:pointer;font-family:inherit;font-size:10px;white-space:nowrap';
+					btn.onclick = () => {
+						const inv = Inventory.load();
+						if ((inv.tokens||0) < tier.cost) { statusEl.textContent = 'Need ' + tier.cost + ' tokens!'; return; }
+						inv.tokens -= tier.cost;
+						Inventory.save(inv);
+						saveExp({ id: tier.id, startMs: Date.now(), ms: tier.ms });
+						close();
+						Dialog.open('🗺 ' + tier.label + ' started!\nYour explorer will return in ' + tier.time + '.');
+					};
+					row.appendChild(btn);
+					box.appendChild(row);
+				});
+				box.appendChild(closeBtn());
+			}
+			root.appendChild(box);
+			root.addEventListener('click', e => { if (e.target === root) close(); });
+			document.body.appendChild(root);
+		}
+		return { open, close, isOpen };
+	})();
+	window.CAMP_SYSTEMS.ExpeditionBoard = ExpeditionBoard;
+
+	// ── TreasureExcavation ────────────────────────────────────────────────────────
+	const TreasureExcavation = (() => {
+		const KEY = 'pokequiz_treasure';
+		const DAILY_PICKS = 5, GW = 5, GH = 4;
+		function todayStr() { return new Date().toISOString().slice(0, 10); }
+		function newGrid() {
+			return Array.from({ length: GW * GH }, () => {
+				const r = Math.random();
+				if (r < 0.05) return { type: 'tokens',  amount: 25, label: '💰25' };
+				if (r < 0.15) return { type: 'tokens',  amount: 10, label: '💰10' };
+				if (r < 0.30) return { type: 'berries', amount: 3,  label: '🍇×3' };
+				if (r < 0.45) return { type: 'seeds',   amount: 1,  label: '🌱×1' };
+				if (r < 0.55) return { type: 'tokens',  amount: 5,  label: '💰5'  };
+				return { type: 'empty', label: '🪨' };
+			});
+		}
+		function loadState() {
+			try {
+				const d = JSON.parse(localStorage.getItem(KEY)||'null');
+				if (!d || d.date !== todayStr()) {
+					const s = { date: todayStr(), grid: newGrid(), revealed: [], picks: 0 };
+					localStorage.setItem(KEY, JSON.stringify(s));
+					return s;
+				}
+				return d;
+			} catch { return { date: todayStr(), grid: newGrid(), revealed: [], picks: 0 }; }
+		}
+		function saveState(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+		let root = null, openFlag = false, _s = null, picksEl = null, statusEl = null, gridEl = null;
+		function isOpen() { return openFlag; }
+		function open() { if (openFlag) { close(); return; } openFlag = true; _s = loadState(); render(); }
+		function close() { openFlag = false; if (root) { root.remove(); root = null; } _s = null; }
+		function render() {
+			if (root) root.remove();
+			root = document.createElement('div');
+			root.style.cssText = 'position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)';
+			const box = document.createElement('div');
+			box.style.cssText = 'background:linear-gradient(160deg,#1a1a2e,#0a1a0a);border:2px solid #4a7a4a;border-radius:12px;padding:20px;min-width:310px;color:#e8eaf0;font-family:inherit;text-align:center';
+			const ttl = document.createElement('div'); ttl.style.cssText = 'font-size:20px;margin-bottom:4px'; ttl.textContent = '⛏ Excavation Site'; box.appendChild(ttl);
+			picksEl = document.createElement('div'); picksEl.style.cssText = 'font-size:10px;color:#8aba8a;margin-bottom:4px'; box.appendChild(picksEl);
+			statusEl = document.createElement('div'); statusEl.style.cssText = 'font-size:12px;color:#ffd968;min-height:16px;margin-bottom:10px'; box.appendChild(statusEl);
+			gridEl = document.createElement('div'); gridEl.style.cssText = 'display:grid;grid-template-columns:repeat(' + GW + ',1fr);gap:4px;margin-bottom:14px'; box.appendChild(gridEl);
+			const doneBtn = document.createElement('button'); doneBtn.textContent = 'Done'; doneBtn.style.cssText = 'padding:8px 24px;border:0;border-radius:8px;background:#2a3a52;color:#e8eaf0;cursor:pointer;font-family:inherit'; doneBtn.onclick = close; box.appendChild(doneBtn);
+			root.appendChild(box);
+			root.addEventListener('click', e => { if (e.target === root) close(); });
+			document.body.appendChild(root);
+			updatePicks(); buildGrid();
+		}
+		function updatePicks() { if (picksEl && _s) picksEl.textContent = 'Daily digs: ' + Math.max(0, DAILY_PICKS - _s.picks) + ' remaining'; }
+		function buildGrid() {
+			if (!gridEl || !_s) return;
+			gridEl.innerHTML = '';
+			_s.grid.forEach((cell, idx) => {
+				const tile = document.createElement('button');
+				const rev = _s.revealed.includes(idx);
+				tile.style.cssText = 'width:52px;height:52px;border:0;border-radius:6px;font-size:15px;cursor:' + (rev ? 'default' : 'pointer') + ';font-family:inherit;background:' + (rev ? 'rgba(255,255,255,0.07)' : 'linear-gradient(180deg,#5c4420,#3a2810)') + ';color:' + (rev ? '#777' : '#d4a860');
+				tile.textContent = rev ? cell.label : '🟫';
+				if (!rev) tile.onclick = () => dig(idx);
+				gridEl.appendChild(tile);
+			});
+		}
+		function dig(idx) {
+			if (!_s || _s.picks >= DAILY_PICKS) { if (statusEl) statusEl.textContent = 'No more digs today!'; return; }
+			if (_s.revealed.includes(idx)) return;
+			_s.revealed.push(idx); _s.picks++;
+			saveState(_s);
+			const cell = _s.grid[idx];
+			const inv = Inventory.load();
+			let msg = '';
+			if (cell.type === 'tokens')  { inv.tokens            = (inv.tokens||0)            + cell.amount; msg = '💰 Found ' + cell.amount + ' tokens!'; }
+			else if (cell.type === 'berries') { inv.friendshipBerries = (inv.friendshipBerries||0) + cell.amount; msg = '🍇 Found ' + cell.amount + ' berries!'; }
+			else if (cell.type === 'seeds')   { inv.seeds             = (inv.seeds||0)             + cell.amount; msg = '🌱 Found a Berry Seed!'; }
+			else { msg = '🪨 Just rocks here…'; }
+			Inventory.save(inv);
+			if (statusEl) statusEl.textContent = msg;
+			updatePicks();
+			const tiles = gridEl.querySelectorAll('button');
+			if (tiles[idx]) {
+				tiles[idx].textContent = cell.label;
+				tiles[idx].style.background = 'rgba(255,255,255,0.07)';
+				tiles[idx].style.color = '#777';
+				tiles[idx].style.cursor = 'default';
+				tiles[idx].onclick = null;
+			}
+		}
+		return { open, close, isOpen };
+	})();
+	window.CAMP_SYSTEMS.TreasureExcavation = TreasureExcavation;
 
 	// ── MysteryGift ────────────────────────────────────────────────────────
 		const MysteryGift = (() => {
@@ -6584,6 +6786,15 @@
 
 			set(20, 7, TSG); // weekly vendor sign
 
+			// New feature signs
+			set(24, 8, TSG);   // move tutor sign
+			set(21, 20, TSG);  // expedition board sign
+			set(24, 23, TSG);  // treasure excavation sign
+			set(21, 25, TSG);  // gossip corner sign
+
+			// Decorative rug at excavation site
+			fill(22, 22, 24, 24, TRU);
+
 			return map;
 		}
 	window.CAMP_SYSTEMS.buildMarketMap = buildMarketMap;
@@ -6622,11 +6833,35 @@
 					this.load.spritesheet('leafeon',  'Pictures/sprites/leafeon.png',  { frameWidth: 32, frameHeight: 48 });
 					this.load.spritesheet('glaceon',  'Pictures/sprites/glaceon.png',  { frameWidth: 32, frameHeight: 40 });
 					this.load.spritesheet('sylveon',  'Pictures/sprites/sylveon.png',  { frameWidth: 32, frameHeight: 48 });
-					// NPC trainer overworld sprites (FRLG 32×32 single-frame images).
-					this.load.image('npc-youngster',     'Pictures/sprites/trainer-youngster.png');
-					this.load.image('npc-camper',        'Pictures/sprites/trainer-camper.png');
-					this.load.image('npc-cooltrainer-m', 'Pictures/sprites/trainer-cooltrainer-m.png');
-					this.load.image('npc-picnicker',     'Pictures/sprites/trainer-picnicker.png');
+					// NPC trainer overworld sprites (FRLG/HGSS 32×32 single-frame images).
+					this.load.image('npc-youngster',      'Pictures/sprites/trainer-youngster.png');
+					this.load.image('npc-camper',         'Pictures/sprites/trainer-camper.png');
+					this.load.image('npc-cooltrainer-m',  'Pictures/sprites/trainer-cooltrainer-m.png');
+					this.load.image('npc-cooltrainer-f',  'Pictures/sprites/trainer-cooltrainer-f.png');
+					this.load.image('npc-picnicker',      'Pictures/sprites/trainer-picnicker.png');
+					this.load.image('npc-gentleman',      'Pictures/sprites/trainer-gentleman.png');
+					this.load.image('npc-lady',           'Pictures/sprites/trainer-lady.png');
+					this.load.image('npc-old-lady',       'Pictures/sprites/trainer-old-lady.png');
+					this.load.image('npc-scientist',      'Pictures/sprites/trainer-scientist.png');
+					this.load.image('npc-lass',           'Pictures/sprites/trainer-lass.png');
+					this.load.image('npc-bug-catcher',    'Pictures/sprites/trainer-bug-catcher.png');
+					this.load.image('npc-bird-keeper',    'Pictures/sprites/trainer-bird-keeper.png');
+					this.load.image('npc-fisherman',      'Pictures/sprites/trainer-fisherman.png');
+					this.load.image('npc-black-belt',     'Pictures/sprites/trainer-black-belt.png');
+					this.load.image('npc-beauty',         'Pictures/sprites/trainer-beauty.png');
+					this.load.image('npc-hiker',          'Pictures/sprites/trainer-hiker.png');
+					this.load.image('npc-sailor',         'Pictures/sprites/trainer-sailor.png');
+					this.load.image('npc-super-nerd',     'Pictures/sprites/trainer-super-nerd.png');
+					this.load.image('npc-swimmer-m',      'Pictures/sprites/trainer-swimmer-m.png');
+					this.load.image('npc-swimmer-f',      'Pictures/sprites/trainer-swimmer-f.png');
+					this.load.image('npc-psychic',        'Pictures/sprites/trainer-psychic.png');
+					this.load.image('npc-hex-maniac',     'Pictures/sprites/trainer-hex-maniac.png');
+					this.load.image('npc-ninja-boy',      'Pictures/sprites/trainer-ninja-boy.png');
+					this.load.image('npc-ranger-m',       'Pictures/sprites/trainer-ranger-m.png');
+					this.load.image('npc-ranger-f',       'Pictures/sprites/trainer-ranger-f.png');
+					this.load.image('npc-parasol-lady',   'Pictures/sprites/trainer-parasol-lady.png');
+					this.load.image('npc-ace-trainer-m',  'Pictures/sprites/trainer-ace-trainer-m.png');
+					this.load.image('npc-ace-trainer-f',  'Pictures/sprites/trainer-ace-trainer-f.png');
 					// NOTE: Companion sprite is intentionally NOT preloaded here with Phaser's loader.
 					// The default FOLLOWER_FORMS dims (40×40) are wrong for most PMD sheets.
 					// _buildCamp() bootstraps with Eevee then calls _switchFollower(), which uses
@@ -6967,7 +7202,7 @@
 						const y = npc.r * TILE + TILE/2;
 						const sprite = this.add.sprite(x, y, 'npc-' + npc.species, 0);
 						sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
-						sprite.setScale(npc.spriteScale);
+						sprite.setScale(NPC_SPRITE_SCALES[npc.species] || npc.spriteScale);
 						sprite.setDepth(3);
 						const rect = this.add.rectangle(x, y, TILE, TILE);
 						this.physics.add.existing(rect, true);
@@ -9457,6 +9692,27 @@
 					this.load.image('npc-old-lady',      'Pictures/sprites/trainer-old-lady.png');
 					this.load.image('npc-scientist',     'Pictures/sprites/trainer-scientist.png');
 					this.load.image('npc-cooltrainer-f', 'Pictures/sprites/trainer-cooltrainer-f.png');
+					this.load.image('npc-cooltrainer-m', 'Pictures/sprites/trainer-cooltrainer-m.png');
+					this.load.image('npc-picnicker', 'Pictures/sprites/trainer-picnicker.png');
+					this.load.image('npc-lass', 'Pictures/sprites/trainer-lass.png');
+					this.load.image('npc-bug-catcher', 'Pictures/sprites/trainer-bug-catcher.png');
+					this.load.image('npc-bird-keeper', 'Pictures/sprites/trainer-bird-keeper.png');
+					this.load.image('npc-fisherman', 'Pictures/sprites/trainer-fisherman.png');
+					this.load.image('npc-black-belt', 'Pictures/sprites/trainer-black-belt.png');
+					this.load.image('npc-beauty', 'Pictures/sprites/trainer-beauty.png');
+					this.load.image('npc-hiker', 'Pictures/sprites/trainer-hiker.png');
+					this.load.image('npc-sailor', 'Pictures/sprites/trainer-sailor.png');
+					this.load.image('npc-super-nerd', 'Pictures/sprites/trainer-super-nerd.png');
+					this.load.image('npc-swimmer-m', 'Pictures/sprites/trainer-swimmer-m.png');
+					this.load.image('npc-swimmer-f', 'Pictures/sprites/trainer-swimmer-f.png');
+					this.load.image('npc-psychic', 'Pictures/sprites/trainer-psychic.png');
+					this.load.image('npc-hex-maniac', 'Pictures/sprites/trainer-hex-maniac.png');
+					this.load.image('npc-ninja-boy', 'Pictures/sprites/trainer-ninja-boy.png');
+					this.load.image('npc-ranger-m', 'Pictures/sprites/trainer-ranger-m.png');
+					this.load.image('npc-ranger-f', 'Pictures/sprites/trainer-ranger-f.png');
+					this.load.image('npc-parasol-lady', 'Pictures/sprites/trainer-parasol-lady.png');
+					this.load.image('npc-ace-trainer-m', 'Pictures/sprites/trainer-ace-trainer-m.png');
+					this.load.image('npc-ace-trainer-f', 'Pictures/sprites/trainer-ace-trainer-f.png');
 				}
 	
 				create() {
@@ -9585,7 +9841,7 @@
 						const y = npc.r * TILE + TILE/2;
 						const sprite = this.add.sprite(x, y, 'npc-' + npc.species, 0);
 						sprite.setOrigin(0.5, (npc.frameHeight - 4) / npc.frameHeight);
-						sprite.setScale(npc.spriteScale);
+						sprite.setScale(NPC_SPRITE_SCALES[npc.species] || npc.spriteScale);
 						sprite.setDepth(3);
 						const rect = this.add.rectangle(x, y, TILE, TILE);
 						this.physics.add.existing(rect, true);
@@ -10031,7 +10287,7 @@
 					applyDayNight();
 					Dialog.tick();
 					const dialogOpen = Dialog.isOpen();
-					const shopOpen = MarketShop.isOpen();
+					const shopOpen = MarketShop.isOpen() || ExpeditionBoard.isOpen() || TreasureExcavation.isOpen();
 					const k = this.keys, d = this.dpad;
 					let vx = 0, vy = 0;
 					if (!dialogOpen && !shopOpen) {
@@ -10099,6 +10355,14 @@
 							Dialog.open(lines.join('\n'));
 						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'halloffame') {
 							HallOfFame.open();
+						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'expedition') {
+							ExpeditionBoard.open();
+						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'treasure') {
+							TreasureExcavation.open();
+						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'gossip') {
+							const pool = target.npc.pool || [];
+							const dayIdx = Math.floor(Date.now() / 86400000);
+							Dialog.open(pool[dayIdx % pool.length] || 'Nothing to say today.');
 						} else if (target && target.kind === 'npc') {
 							MarketShop.open(target.npc);
 						} else if (target && target.kind === 'sign') {

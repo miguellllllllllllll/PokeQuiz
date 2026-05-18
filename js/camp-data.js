@@ -815,6 +815,41 @@ window.CAMP_DATA.NPCS = [
 		},
 	];
 
+// ── NPC_SPRITE_SCALES ─────────────────────────────────────────────────────
+// Per-species scale so every NPC's visible character is ~10% shorter than Calem,
+// giving them a natural "slightly smaller" feel in the overworld.
+// Base values were pixel-analysed to match Calem exactly, then multiplied ×0.90.
+window.CAMP_DATA.NPC_SPRITE_SCALES = {
+	'youngster':      0.959,
+	'camper':         0.959,
+	'picnicker':      0.959,
+	'old-lady':       0.959,
+	'bug-catcher':    0.959,
+	'cooltrainer-m':  0.911,
+	'cooltrainer-f':  0.911,
+	'gentleman':      0.911,
+	'lady':           0.911,
+	'scientist':      0.911,
+	'fisherman':      0.911,
+	'hiker':          0.911,
+	'beauty':         0.911,
+	'black-belt':     0.911,
+	'bird-keeper':    0.911,
+	'sailor':         0.911,
+	'ninja-boy':      0.911,
+	'hex-maniac':     0.911,
+	'lass':           0.760,
+	'ace-trainer-m':  0.792,
+	'psychic':        0.792,
+	'super-nerd':     0.729,
+	'parasol-lady':   0.701,
+	'ranger-f':       0.675,
+	'ace-trainer-f':  0.651,
+	'ranger-m':       0.651,
+	'swimmer-m':      1.215,
+	'swimmer-f':      1.139,
+};
+
 // ── BERRY_TYPES ────────────────────────────────────────────────────────
 window.CAMP_DATA.BERRY_TYPES = {
 		pecha:  { label: 'Pecha Berry',  icoKey: 'berry', growMs: 30000,  friendship: 20, sellPrice: 10, color: '#ffaacc' },
@@ -915,6 +950,66 @@ window.CAMP_DATA.MARKET_NPCS = [
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: 'My stock changes every week. Come back Monday for something new!',
 		},
+		{
+			key: 'm-tutor', species: 'black-belt', r: 23, c: 8,
+			label: 'Learn', shopKind: 'tutor',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: 'A new technique is available every week — costs tokens but the power is real!',
+		},
+		{
+			key: 'm-expedition', species: 'hiker', r: 20, c: 20,
+			label: 'Explore', kind: 'expedition',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: 'Send your partner on an adventure! Longer trips bring better rewards.',
+		},
+		{
+			key: 'm-treasure', species: 'pokefan-m', r: 23, c: 23,
+			label: 'Dig', kind: 'treasure',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: "Something's buried all over this field — you get 5 digs a day. Good luck!",
+		},
+		{
+			key: 'm-gossip-a', species: 'twins', r: 22, c: 25,
+			label: 'Chat', kind: 'gossip',
+			spriteScale: 0.89, frameHeight: 32,
+			pool: [
+				'Psst — I heard Gengar is the shadow of a Clefable. Spooky!',
+				'Did you know Snorlax weighs 460 kg? That\'s a LOT of berries.',
+				'The wishing well really does grant wishes — saw it myself!',
+				'Rumour has it the weekly vendor knows things the other shops don\'t.',
+				'Sitrus Berries give huge friendship boosts. Stock up!',
+				'Lottery jackpots happen. 100 tokens — true story!',
+				'They say expedition rewards are different every tier.',
+			],
+		},
+		{
+			key: 'm-gossip-b', species: 'twins', r: 23, c: 25,
+			label: 'Chat', kind: 'gossip',
+			spriteScale: 0.89, frameHeight: 32,
+			pool: [
+				'The Arcane Tower has secrets on every floor — the archivist knows all.',
+				'Berry seeds take time but the harvest is worth it.',
+				'Herbal Tea from the café makes berries grow faster. Interesting…',
+				'The stone vendor says Shiny Stones are the rarest. Eevee loves them.',
+				'Hall of Fame names are real trainers — could yours be up there?',
+				'Daily quests reset every morning. Don\'t miss the bonus tokens.',
+				'Longer expeditions mean better hauls. Be patient!',
+			],
+		},
+		{
+			key: 'm-gossip-c', species: 'ace-trainer-m', r: 22, c: 26,
+			label: 'Chat', kind: 'gossip',
+			spriteScale: 0.89, frameHeight: 32,
+			pool: [
+				'Pro tip: sell berries in bulk — 10 tokens each really adds up.',
+				'Move Tutor changes every week. I learned Swords Dance last week!',
+				'I never skip the Pokémon Center — free healing AND a free berry.',
+				'Dig carefully — I found 25 tokens in one spot over there.',
+				'The café Espresso Shot gives a rhythm token boost. Very powerful.',
+				'Multiple quiz modes train different skills. Don\'t just play one.',
+				'The longer the expedition, the better the loot. Patience, trainer.',
+			],
+		},
 	];
 
 // ── SHINY_POOL ────────────────────────────────────────────────────────
@@ -981,6 +1076,10 @@ window.CAMP_DATA.SIGN_MESSAGES_MARKET = {
 		'5,17':  "🏆 Hall of Fame — the greatest trainers in PokeQuiz history.",
 		'19,17': "⛲ Wishing Well — toss a token, make a wish.",
 		'20,7':  "🔄 Weekly Vendor — rare stock, changes every Monday!",
+	'24,8':  "🥋 Move Tutor — learn a new technique each week!",
+	'21,20': "🗺 Expedition Board — send your partner on adventures!",
+	'24,23': "⛏ Excavation Site — dig for buried treasure daily!",
+	'21,25': "💬 Gossip Corner — hear the latest market rumours.",
 	};
 
 // ── PLANTS_KEY ────────────────────────────────────────────────────────
