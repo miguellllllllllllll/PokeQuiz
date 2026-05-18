@@ -891,6 +891,30 @@ window.CAMP_DATA.MARKET_NPCS = [
 				'"Study hard — the bond between trainer and partner is the greatest knowledge of all."',
 			],
 		},
+		{
+			key: 'm-lottery', species: 'youngster', r: 7, c: 17,
+			label: 'Lottery', shopKind: 'lottery',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: "Try your luck — one ticket per day! Who knows what you'll win!",
+		},
+		{
+			key: 'm-halloffame', species: 'lady', r: 6, c: 17,
+			label: 'Ranks', kind: 'halloffame', shopKind: null,
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: 'The top trainers are enshrined here — will you join them?',
+		},
+		{
+			key: 'm-well', species: 'old-lady', r: 18, c: 18,
+			label: 'Wish', shopKind: 'well',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: 'The well grants one wish per day. Toss a token and see what fate brings!',
+		},
+		{
+			key: 'm-weekly', species: 'scientist', r: 19, c: 7,
+			label: 'Shop', shopKind: 'weekly',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: 'My stock changes every week. Come back Monday for something new!',
+		},
 	];
 
 // ── SHINY_POOL ────────────────────────────────────────────────────────
@@ -954,6 +978,9 @@ window.CAMP_DATA.SIGN_MESSAGES_MARKET = {
 		'12,39': "Jolteon's Café — energizing beverages and treats!",
 		'8,11':  "📋 Notice Board — check your daily quests here!",
 		'23,11': "🗼 Arcane Tower — ancient Pokémon knowledge within.",
+		'5,17':  "🏆 Hall of Fame — the greatest trainers in PokeQuiz history.",
+		'19,17': "⛲ Wishing Well — toss a token, make a wish.",
+		'20,7':  "🔄 Weekly Vendor — rare stock, changes every Monday!",
 	};
 
 // ── PLANTS_KEY ────────────────────────────────────────────────────────

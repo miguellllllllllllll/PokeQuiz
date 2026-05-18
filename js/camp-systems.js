@@ -5293,6 +5293,41 @@
 						setStatus("Nurse Joy gave you a berry! ♥");
 						break;
 					}
+					case 'buyLottery': {
+						const today = new Date().toISOString().slice(0, 10);
+						if (inv.lastLottery === today) { setStatus("Already played today! Come back tomorrow."); return; }
+						if ((inv.tokens||0) < it.cost) { setStatus('Not enough tokens.'); return; }
+						inv.tokens -= it.cost;
+						inv.lastLottery = today;
+						const roll = Math.random();
+						let msg;
+						if      (roll < 0.04) { inv.tokens = (inv.tokens||0) + 100; msg = '🎉 JACKPOT! +100 tokens!'; }
+						else if (roll < 0.09) { const s = ['fire','thunder','leaf','ice','shiny'][Math.floor(Math.random()*5)]; inv.stone = s; msg = '✨ Rare! Won a ' + s.toUpperCase() + ' Stone!'; }
+						else if (roll < 0.22) { inv.seeds = (inv.seeds||0) + 3; msg = '🌱 Won 3 Berry Seeds!'; }
+						else if (roll < 0.47) { inv.tokens = (inv.tokens||0) + 25; msg = '💰 Won 25 tokens!'; }
+						else if (roll < 0.74) { inv.friendshipBerries = (inv.friendshipBerries||0) + 5; msg = '🍇 Won 5 Berries!'; }
+						else                  { inv.tokens = (inv.tokens||0) + 10; msg = '🎟️ Won 10 tokens. Try again tomorrow!'; }
+						setStatus(msg);
+						break;
+					}
+					case 'makeWish': {
+						const today = new Date().toISOString().slice(0, 10);
+						if (inv.lastWish === today) { setStatus('You already made a wish today!'); return; }
+						if ((inv.tokens||0) < 1) { setStatus('You need at least 1 token.'); return; }
+						inv.tokens -= 1;
+						inv.lastWish = today;
+						if (!inv.boosts) inv.boosts = {};
+						const roll = Math.random();
+						let msg;
+						if      (roll < 0.15) { inv.friendshipBerries = (inv.friendshipBerries||0) + 3; msg = '🍇 The well grants 3 Berries!'; }
+						else if (roll < 0.30) { inv.seeds = (inv.seeds||0) + 1; msg = '🌱 The well grants a Berry Seed!'; }
+						else if (roll < 0.50) { inv.tokens = (inv.tokens||0) + 8; msg = '💰 The well returns 8 tokens — lucky!'; }
+						else if (roll < 0.65) { inv.boosts.xpBoost = Date.now() + 30*60*1000; msg = '✨ Wish granted: +XP boost for 30 min!'; }
+						else if (roll < 0.80) { inv.boosts.fastGrow = Date.now() + 60*60*1000; msg = '🌿 Wish granted: fast berry growth for 1 hr!'; }
+						else                  { msg = '💧 The well ripples... nothing today. Try tomorrow.'; }
+						setStatus(msg);
+						break;
+					}
 					default: setStatus('Unknown action.');
 				}
 				Inventory.save(inv);
@@ -5304,6 +5339,32 @@
 			return { open, close, isOpen };
 		})();
 	window.CAMP_SYSTEMS.MarketShop = MarketShop;
+
+	// ── HallOfFame ────────────────────────────────────────────────────────
+	const HallOfFame = (() => {
+		let _fetching = false;
+		function open() {
+			if (_fetching) return;
+			_fetching = true;
+			Dialog.open('🏆 Fetching Hall of Fame…');
+			fetch('/api/leaderboard?game=quiz&limit=5')
+				.then(r => r.json())
+				.then(data => {
+					_fetching = false;
+					const entries = (data.entries || []).slice(0, 5);
+					if (!entries.length) { Dialog.open('The Hall of Fame is empty — be the first!'); return; }
+					const medals = ['🥇','🥈','🥉','4.','5.'];
+					const lines = ['🏆 HALL OF FAME', '─────────────'];
+					entries.forEach((e, i) => {
+						lines.push(medals[i] + ' ' + (e.name || 'Trainer') + ' — ' + (e.score || 0) + ' pts');
+					});
+					Dialog.open(lines.join('\n'));
+				})
+				.catch(() => { _fetching = false; Dialog.open('Rankings unavailable right now.'); });
+		}
+		return { open };
+	})();
+	window.CAMP_SYSTEMS.HallOfFame = HallOfFame;
 
 	// ── MysteryGift ────────────────────────────────────────────────────────
 		const MysteryGift = (() => {
@@ -6516,6 +6577,12 @@
 			fill(15, 10, 20, 13, TBLD);
 			// Tower approach — wide spur connecting south of tower to the N-S spine
 			fill(21, 10, 21, 16, TP);
+
+			// Wishing well — decorative solid at (16,17)-(17,18)
+			fill(16, 17, 17, 18, TBLD);
+			set(19, 17, TSG); // sign south of well
+
+			set(20, 7, TSG); // weekly vendor sign
 
 			return map;
 		}
@@ -9437,6 +9504,7 @@
 					}
 					// Paint the medieval tower art over its TBLD footprint
 					this._drawMarketTower(baseCtx, 10 * TILE, 15 * TILE);
+					this._drawWell(baseCtx, 17 * TILE, 16 * TILE);
 					this.baseTex.refresh();
 					this.add.image(0, 0, 'marketBase').setOrigin(0).setDepth(0);
 	
@@ -9676,6 +9744,61 @@
 
 					// ── Ground-shadow line at base ────────────────────────────────────────
 					r(2, H - 1, W - 4, 1, SHADOW);
+				}
+
+				_drawWell(ctx, px, py) {
+					const W = 32, H = 32;
+					const r = (x, y, w, h, col) => {
+						ctx.fillStyle = col;
+						ctx.fillRect(px + x, py + y, w, h);
+					};
+
+					const STONE  = '#787068';
+					const SHADOW = '#504840';
+					const HILIT  = '#9C9488';
+					const WATER  = '#4488CC';
+					const WATERD = '#1A3060';
+					const WOOD   = '#3A2210';
+					const ROPE   = '#584838';
+					const BUCKET = '#504840';
+					const SHIMMER = '#E8F4FF';
+
+					// Stone rim — outer ring
+					r(0,  8, W, 12, STONE);
+					// Shadow edges on rim
+					r(0,  8, 2, 12, SHADOW);
+					r(W-2, 8, 2, 12, SHADOW);
+					// Highlight top edge of rim
+					r(0,  8, W, 2, HILIT);
+					// Water fill inside rim
+					r(3, 10, W-6, 8, WATER);
+					// Dark water center
+					r(11, 12, 10, 4, WATERD);
+					// Water shimmer
+					r(5,  11, 4, 1, SHIMMER);
+					r(20, 13, 3, 1, SHIMMER);
+
+					// Stone posts left and right
+					r(2,  0,  4, 20, STONE);
+					r(W-6, 0, 4, 20, STONE);
+					// Post highlights
+					r(2,  0,  1, 20, HILIT);
+					r(W-6, 0, 1, 20, HILIT);
+					// Post shadows
+					r(5,  0,  1, 20, SHADOW);
+					r(W-4, 0, 1, 20, SHADOW);
+
+					// Wooden crossbeam
+					r(2,  6, W-4, 2, WOOD);
+
+					// Rope hint (thin vertical from crossbeam)
+					r(W/2 - 1, 8, 2, 4, ROPE);
+
+					// Bucket
+					r(W/2 - 2, 12, 4, 4, BUCKET);
+
+					// Ground shadow at base
+					r(2, 19, W-4, 1, SHADOW);
 				}
 
 				_buildMarketFollower() {
@@ -9974,6 +10097,8 @@
 						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'archivist') {
 							const lines = Array.isArray(target.npc.dialog) ? target.npc.dialog : [target.npc.dialog];
 							Dialog.open(lines.join('\n'));
+						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'halloffame') {
+							HallOfFame.open();
 						} else if (target && target.kind === 'npc') {
 							MarketShop.open(target.npc);
 						} else if (target && target.kind === 'sign') {
