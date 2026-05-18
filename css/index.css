@@ -157,6 +157,14 @@
 	color: var(--muted);
 }
 
+.stat-icon {
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+	display: block;
+	margin-bottom: 2px;
+	filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.15));
+}
+
 .hero-actions {
 	display: flex;
 	gap: 12px;

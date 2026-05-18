@@ -320,4 +320,99 @@
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireQuickSlots);
 	else wireQuickSlots();
 
+	// ── Batch 5 buttons ────────────────────────────────────────────────────────
+	function wireBatch5Buttons() {
+		const CampShare     = (window.CAMP_SYSTEMS || {}).CampShare;
+		const RivalSystem   = (window.CAMP_SYSTEMS || {}).RivalSystem;
+		const FriendList    = (window.CAMP_SYSTEMS || {}).FriendList;
+		const PhotoAlbum    = (window.CAMP_SYSTEMS || {}).PhotoAlbum;
+		const WeeklyChallenge = (window.CAMP_SYSTEMS || {}).WeeklyChallenge;
+		const NotifFeed     = (window.CAMP_SYSTEMS || {}).NotifFeed;
+		const SaveSlots     = (window.CAMP_SYSTEMS || {}).SaveSlots;
+		const SaveIO        = (window.CAMP_SYSTEMS || {}).SaveIO;
+		const Prestige      = (window.CAMP_SYSTEMS || {}).Prestige;
+		const TrainerTitles = (window.CAMP_SYSTEMS || {}).TrainerTitles;
+		const OfflineProgress = (window.CAMP_SYSTEMS || {}).OfflineProgress;
+		const PWAInstall    = (window.CAMP_SYSTEMS || {}).PWAInstall;
+
+		// Share button
+		document.getElementById('campShareBtn')?.addEventListener('click', () => {
+			if (CampShare) CampShare.generate();
+		});
+
+		// Rival button
+		document.getElementById('campRivalBtn')?.addEventListener('click', () => {
+			if (RivalSystem) RivalSystem.challenge();
+		});
+
+		// Friends button
+		document.getElementById('campFriendsBtn')?.addEventListener('click', () => {
+			if (FriendList) FriendList.open();
+		});
+
+		// Photo album button
+		document.getElementById('campAlbumBtn')?.addEventListener('click', () => {
+			if (PhotoAlbum) PhotoAlbum.open();
+		});
+
+		// Weekly challenge button
+		document.getElementById('campWeeklyBtn')?.addEventListener('click', () => {
+			if (WeeklyChallenge) WeeklyChallenge.open();
+		});
+
+		// Notif button — replace with NotifFeed
+		document.getElementById('campNotifBtn')?.addEventListener('click', () => {
+			if (NotifFeed) NotifFeed.open();
+		});
+
+		// PWA install button
+		document.getElementById('campInstallBtn')?.addEventListener('click', () => {
+			if (PWAInstall) PWAInstall.prompt();
+		});
+
+		// Pause menu: Save Slots
+		document.getElementById('campPauseSaveSlots')?.addEventListener('click', () => {
+			const p = document.getElementById('campPause');
+			if (p) p.hidden = true;
+			if (SaveSlots) SaveSlots.open();
+		});
+
+		// Pause menu: Prestige / New Game+
+		document.getElementById('campPausePrestige')?.addEventListener('click', () => {
+			const p = document.getElementById('campPause');
+			if (p) p.hidden = true;
+			if (Prestige) Prestige.open();
+		});
+
+		// Pause menu: Export save
+		document.getElementById('campPauseExport')?.addEventListener('click', () => {
+			const p = document.getElementById('campPause');
+			if (p) p.hidden = true;
+			if (SaveIO) SaveIO.exportSave();
+		});
+
+		// Pause menu: Import save
+		document.getElementById('campPauseImport')?.addEventListener('click', () => {
+			const p = document.getElementById('campPause');
+			if (p) p.hidden = true;
+			document.getElementById('saveImportInput')?.click();
+		});
+		document.getElementById('saveImportInput')?.addEventListener('change', (e) => {
+			const file = e.target.files?.[0];
+			if (file && SaveIO) SaveIO.importSave(file);
+			e.target.value = '';
+		});
+
+		// Auto-checks on load
+		if (RivalSystem)    RivalSystem.autoCheck();
+		if (WeeklyChallenge) WeeklyChallenge.checkProgress();
+		if (TrainerTitles)  TrainerTitles.check();
+		if (OfflineProgress) OfflineProgress.check();
+
+		// Show install button if PWA prompt is available
+		if (PWAInstall) PWAInstall.init();
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireBatch5Buttons);
+	else wireBatch5Buttons();
+
 })();

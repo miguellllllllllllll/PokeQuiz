@@ -132,7 +132,9 @@
 				<div class="games-grid" style="margin-top:16px">
 					<a class="game-card is-available" href="personality-quiz.html?quiz=starter" style="--stagger:0">
 						<span class="game-badge" style="background:#00b894">Personality</span>
-						<div class="game-icon" style="font-size:48px;line-height:1;display:flex;align-items:center;justify-content:center;height:64px">🌿</div>
+						<div class="game-icon" style="--icon-bg: rgba(34,197,94,0.12)">
+							<img class="game-item-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="" width="56" height="56">
+						</div>
 						<strong class="game-title">Which Starter Are You?</strong>
 						<span class="game-desc">Grass, Fire, or Water? Find your Gen 1–3 starter match.</span>
 						<div class="game-chips">
@@ -147,7 +149,9 @@
 					</a>
 					<a class="game-card is-available" href="personality-quiz.html?quiz=type" style="--stagger:1">
 						<span class="game-badge" style="background:#6c5ce7">Personality</span>
-						<div class="game-icon" style="font-size:48px;line-height:1;display:flex;align-items:center;justify-content:center;height:64px">🔮</div>
+						<div class="game-icon" style="--icon-bg: rgba(139,92,246,0.12)">
+							<img class="game-item-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/14.png" alt="" width="56" height="56">
+						</div>
 						<strong class="game-title">Which Type Are You?</strong>
 						<span class="game-desc">Fire, Psychic, Ghost… which of the 10 types fits your personality?</span>
 						<div class="game-chips">
@@ -162,7 +166,9 @@
 					</a>
 					<a class="game-card is-available" href="personality-quiz.html?quiz=kanto" style="--stagger:2">
 						<span class="game-badge" style="background:#ee1515">Personality</span>
-						<div class="game-icon" style="font-size:48px;line-height:1;display:flex;align-items:center;justify-content:center;height:64px">✨</div>
+						<div class="game-icon" style="--icon-bg: rgba(238,21,21,0.12)">
+							<img class="game-item-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" alt="" width="56" height="56">
+						</div>
 						<strong class="game-title">Which Kanto Pok&eacute;mon Are You?</strong>
 						<span class="game-desc">12 questions to find your true Gen 1 Pokémon match.</span>
 						<div class="game-chips">
@@ -208,11 +214,12 @@
 			const QUIZZES = window.POKEQUIZ_QUIZZES || {};
 			const order = ['easy', 'medium', 'hard', 'master'];
 
-			const pokeballByDiff = {
-				Easy:   'pokeball-heal',
-				Medium: 'pokeball-net',
-				Hard:   'pokeball-classic',
-				Master: 'pokeball-master'
+			const ITEM_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/';
+			const iconByDiff = {
+				Easy:   { item: 'poke-ball',    color: 'rgba(34,197,94,0.12)'  },
+				Medium: { item: 'great-ball',   color: 'rgba(59,130,246,0.12)' },
+				Hard:   { item: 'ultra-ball',   color: 'rgba(234,179,8,0.12)'  },
+				Master: { item: 'master-ball',  color: 'rgba(139,92,246,0.12)' }
 			};
 
 			const href = (id, nuzlocke, timed) => {
@@ -226,23 +233,14 @@
 
 			grid.innerHTML = order.filter(k => QUIZZES[k]).map((k, i) => {
 				const q = QUIZZES[k];
-				const ball = pokeballByDiff[q.difficulty] || 'pokeball-classic';
+				const icon = iconByDiff[q.difficulty] || { item: 'poke-ball', color: 'rgba(0,0,0,0.06)' };
 				const chips = (q.chips || []).map(c => `<span class="game-chip">${escapeHtml(c)}</span>`).join('');
-				const masterExtra = q.id === 'master'
-					? `<span class="pb-mletter">M</span><span class="pb-mdot pb-mdot-l"></span><span class="pb-mdot pb-mdot-r"></span>`
-					: '';
 				return `
 					<div class="game-card-wrap" style="--stagger:${i}">
 						<a class="game-card is-available" href="${href(q.id, false, false)}" data-game="quiz-${q.id}" id="card-link-${q.id}">
 							<span class="game-badge">${escapeHtml(q.difficulty)}</span>
-							<div class="game-icon">
-								<div class="pokeball ${ball}" aria-hidden="true">
-									<span class="pb-top"></span>
-									${masterExtra}
-									<span class="pb-belt"></span>
-									<span class="pb-button"></span>
-									<span class="pb-shine"></span>
-								</div>
+							<div class="game-icon" style="--icon-bg: ${icon.color}">
+								<img class="game-item-sprite" src="${ITEM_BASE}${icon.item}.png" alt="" width="56" height="56">
 							</div>
 							<strong class="game-title">${escapeHtml(q.name)}</strong>
 							<span class="game-desc">${escapeHtml(q.description)}</span>

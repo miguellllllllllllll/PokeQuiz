@@ -2921,3 +2921,138 @@ body.pk-reduce-motion *::after {
 .upgrade-desc { font-size: 6px; color: var(--pk-muted); }
 .upgrade-badge { font-size: 7px; color: #44cc88; white-space: nowrap; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   BATCH 5 — NEW FEATURES
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Trainer Title Badge ─────────────────────────────────────────────────── */
+#trainerTitleBadge {
+  position: absolute;
+  top: 56px;
+  right: 12px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 5px;
+  color: #f6c84c;
+  background: rgba(10,14,28,0.82);
+  border: 1px solid rgba(246,200,76,0.35);
+  border-radius: 5px;
+  padding: 3px 7px;
+  z-index: 20;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+/* ── Meteor Shower Overlay ─────────────────────────────────────────────── */
+#campMeteorShower {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 6;
+  overflow: hidden;
+}
+.meteor-streak {
+  position: absolute;
+  width: 2px;
+  height: 60px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 100%);
+  transform: rotate(30deg);
+  animation: meteor-fall linear infinite;
+  transform-origin: top center;
+}
+@keyframes meteor-fall {
+  0%   { transform: rotate(30deg) translateY(-100px); opacity: 0; }
+  10%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: rotate(30deg) translateY(120vh); opacity: 0; }
+}
+
+/* ── Aurora Borealis Overlay ──────────────────────────────────────────── */
+#campAurora {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 45%;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(180deg,
+    rgba(0,255,100,0.18) 0%,
+    rgba(100,0,255,0.14) 40%,
+    rgba(0,200,180,0.12) 70%,
+    transparent 100%);
+  animation: aurora-shimmer 8s ease-in-out infinite alternate;
+}
+@keyframes aurora-shimmer {
+  0%   { opacity: 0.6; background-position: 0% 50%; }
+  50%  { opacity: 1.0; background-position: 100% 50%; }
+  100% { opacity: 0.7; background-position: 50% 100%; }
+}
+
+/* ── Sliding door transition ──────────────────────────────────────────── */
+.camp-fade {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 50;
+  pointer-events: none;
+  display: flex;
+}
+.camp-door-left,
+.camp-door-right {
+  width: 50%;
+  height: 100%;
+  background: #000;
+  transition: transform 0.35s cubic-bezier(0.77,0,0.18,1);
+  flex-shrink: 0;
+}
+.camp-door-left  { transform-origin: left;  }
+.camp-door-right { transform-origin: right; }
+.camp-fade.camp-door-open .camp-door-left  { transform: translateX(-100%); }
+.camp-fade.camp-door-open .camp-door-right { transform: translateX(100%); }
+.camp-fade.is-hidden { display: none; }
+
+/* ── Colorblind mode ──────────────────────────────────────────────────── */
+.cb-colorblind {
+  filter: url(#cb-deuteranopia);
+}
+
+/* ── Mobile bottom sheet ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .camp-btn-bar-items.camp-mobile-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10,14,28,0.97);
+    border-radius: 16px 16px 0 0;
+    padding: 12px;
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.34,1.1,0.64,1);
+    z-index: 40;
+    border-top: 1px solid rgba(246,200,76,0.25);
+  }
+  .camp-btn-bar-items.camp-mobile-sheet.camp-mobile-sheet--open {
+    transform: translateY(0);
+  }
+}
+
+/* ── Notif Drawer (full list) ─────────────────────────────────────────── */
+#notifDrawer {
+  position: absolute;
+  top: 0; right: 0;
+  width: min(300px, 90vw);
+  height: 100%;
+  z-index: 80;
+  background: rgba(8,12,24,0.98);
+  border-left: 1px solid rgba(246,200,76,0.2);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+}
+#notifDrawer:not([hidden]) {
+  transform: translateX(0);
+}
+
+

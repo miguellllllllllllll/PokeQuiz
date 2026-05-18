@@ -5032,6 +5032,36 @@
 	// ── Market vendor shop inventories ───────────────────────────────────────────
 	// Moved here from camp.js so MarketShop (below) can reference it.
 	// ico() and ICO are both defined earlier in this IIFE.
+
+	// Compute rotating weekly shop (changes every Monday)
+	const _WEEK_IDX = (() => {
+		const d = new Date(); d.setHours(0,0,0,0);
+		d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // roll back to Monday
+		return Math.floor(d.getTime() / 604800000) % 4;
+	})();
+	const _WEEKLY_CONFIGS = [
+		{ title: "🌟 Wanderer's Stock",  items: [
+			{ label: ico(ICO.gem)   + ' Shiny Stone',    cost: 45, action: 'buyStone',  key: 'shiny'               },
+			{ label: ico(ICO.seed)  + ' Seed Trio',       cost: 12, action: 'cafeBuy', gives: 'seed',   amount: 3  },
+			{ label: ico(ICO.berry) + ' Berry Haul',       cost: 20, action: 'cafeBuy', gives: 'berry',  amount: 10 },
+		]},
+		{ title: "🏔️ Cave Merchant",      items: [
+			{ label: ico(ICO.snow)  + ' Ice Stone',       cost: 40, action: 'buyStone',  key: 'ice'                 },
+			{ label: ico(ICO.berry) + ' Berry Basket',    cost: 18, action: 'cafeBuy', gives: 'berry',  amount: 8  },
+			{ label: ico(ICO.token) + ' Token Boost',     cost: 25, action: 'cafeBuy', gives: 'tokens', amount: 35 },
+		]},
+		{ title: "🌿 Forest Trader",      items: [
+			{ label: ico(ICO.tree)  + ' Leaf Stone',      cost: 40, action: 'buyStone',  key: 'leaf'                },
+			{ label: ico(ICO.seed)  + ' Mega Seed Pack',  cost: 15, action: 'cafeBuy', gives: 'seed',   amount: 4  },
+			{ label: ico(ICO.berry) + ' Berry Surplus',   cost: 22, action: 'cafeBuy', gives: 'berry',  amount: 12 },
+		]},
+		{ title: "⚡ Sky Merchant",       items: [
+			{ label: ico(ICO.bolt)  + ' Thunder Stone',   cost: 40, action: 'buyStone',  key: 'thunder'             },
+			{ label: ico(ICO.token) + ' Token Jackpot',   cost: 35, action: 'cafeBuy', gives: 'tokens', amount: 55 },
+			{ label: ico(ICO.egg)   + ' Mystery Egg',     cost: 50, action: 'buyEgg'                               },
+		]},
+	];
+
 	const MARKET_SHOPS = {
 		general: {
 			title: "Pikachu's Mart",
@@ -5049,6 +5079,19 @@
 				{ label: ico(ICO.seed)  + ' Berry Seed',        cost: 5,  action: 'buySeed' },
 			],
 		},
+		lottery: {
+			title: '🎰 Daily Lottery',
+			items: [
+				{ label: ico(ICO.star) + ' Scratch Ticket (once/day)', cost: 5, action: 'buyLottery' }
+			],
+		},
+		well: {
+			title: '⛲ Wishing Well',
+			items: [
+				{ label: ico(ICO.sparkle) + ' Make a Wish (1 token, once/day)', cost: 1, action: 'makeWish' }
+			],
+		},
+		weekly: { title: _WEEKLY_CONFIGS[_WEEK_IDX].title, items: _WEEKLY_CONFIGS[_WEEK_IDX].items },
 		cosmetics: {
 			title: 'Vaporeon Boutique',
 			items: [
@@ -10829,6 +10872,723 @@
 			}
 			_orig.call(this, msg);
 		};
+	})();
+
+	// ══════════════════════════════════════════════════════════════════════════
+	// BATCH 5 — NEW FEATURES
+	// ══════════════════════════════════════════════════════════════════════════
+
+	// ── CampEvents (meteor shower + aurora borealis) ───────────────────────────
+	const CampEvents = (() => {
+		function _seedRng(seed) {
+			let s = seed >>> 0;
+			s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+			s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+			return ((s ^ (s >>> 16)) >>> 0) / 0xFFFFFFFF;
+		}
+		function _dateKey() { return new Date().toISOString().slice(0, 10); }
+		function _numericDateSeed() { return parseInt(_dateKey().replace(/-/g, ''), 10); }
+		function _showMeteor() {
+			if (document.getElementById('campMeteorShower')) return;
+			const el = document.createElement('div');
+			el.id = 'campMeteorShower';
+			for (let i = 0; i < 15; i++) {
+				const streak = document.createElement('div');
+				streak.className = 'meteor-streak';
+				streak.style.cssText = 'left:' + (Math.random()*110-10) + '%;top:' + (Math.random()*60-20) + '%;animation-delay:' + (Math.random()*6) + 's;animation-duration:' + (0.6+Math.random()*0.8) + 's';
+				el.appendChild(streak);
+			}
+			document.getElementById('campWrap')?.appendChild(el);
+			showToast('🌠 A meteor shower is happening!');
+			setTimeout(() => el.remove(), 90000);
+		}
+		function _showAurora() {
+			if (document.getElementById('campAurora')) return;
+			const el = document.createElement('div');
+			el.id = 'campAurora';
+			document.getElementById('campWrap')?.appendChild(el);
+			showToast('🌌 Northern lights appear over camp!');
+		}
+		function check(scene) {
+			const hour = new Date().getHours();
+			const month = new Date().getMonth();
+			const isWinter = month === 11 || month === 0 || month === 1;
+			const dateKey = _dateKey();
+			const seed = _numericDateSeed();
+			if (hour >= 22) {
+				const meteorKey = 'pokequiz_meteor_' + dateKey;
+				if (!localStorage.getItem(meteorKey)) {
+					try { localStorage.setItem(meteorKey, '1'); } catch (_) {}
+					if (_seedRng(seed) < 0.20) _showMeteor();
+				}
+			}
+			if (isWinter && hour >= 22) {
+				const weatherType = WeatherSystem.currentType(scene);
+				if (weatherType === 'clear') {
+					const auroraKey = 'pokequiz_aurora_' + dateKey;
+					if (!localStorage.getItem(auroraKey)) {
+						try { localStorage.setItem(auroraKey, '1'); } catch (_) {}
+						if (_seedRng(seed + 777) < 0.10) _showAurora();
+					}
+				}
+			}
+		}
+		return { check };
+	})();
+	window.CAMP_SYSTEMS.CampEvents = CampEvents;
+
+	// ── SeasonalSprites ────────────────────────────────────────────────────────
+	const SeasonalSprites = {
+		apply(scene) {
+			const month = new Date().getMonth();
+			const isWinter = month === 11 || month === 0 || month === 1;
+			const isSummer = month >= 5 && month <= 7;
+			if (isWinter) {
+				[[2,3],[2,37],[26,3],[26,39],[14,1]].forEach(([r,c]) => {
+					const g = scene.add.graphics().setDepth(1.9);
+					const x = c*TILE+TILE/2, y = r*TILE+TILE/2;
+					g.fillStyle(0xFFFFFF, 0.7); g.fillCircle(x, y, 4);
+					g.fillStyle(0xEEEEFF, 0.5); g.fillCircle(x+4, y+1, 3); g.fillCircle(x-3, y+2, 2.5);
+				});
+			}
+			if (isSummer) {
+				[[18,20],[20,21],[18,22]].forEach(([r,c]) => {
+					const g = scene.add.graphics().setDepth(1.9);
+					const x = c*TILE+TILE/2, y = r*TILE+TILE/2;
+					g.fillStyle(0x228B22, 1); g.fillRect(x-1, y+2, 2, 8);
+					g.fillStyle(0xFFDD00, 1);
+					for (let a = 0; a < 8; a++) { const ang = (a/8)*Math.PI*2; g.fillCircle(x+Math.cos(ang)*4, y+Math.sin(ang)*4, 2.5); }
+					g.fillStyle(0x8B4513, 1); g.fillCircle(x, y, 3);
+				});
+			}
+		},
+	};
+	window.CAMP_SYSTEMS.SeasonalSprites = SeasonalSprites;
+
+	// ── OfflineProgress ────────────────────────────────────────────────────────
+	const OfflineProgress = (() => {
+		const KEY = 'pokequiz_last_visit';
+		const WEATHER_FLAVOUR = { rain:'It rained while you were away.', snow:'Snow fell while you were gone.', fog:'A foggy mist settled over camp.', clear:'The sun shone over camp.' };
+		function check() {
+			const now = Date.now();
+			let last = 0;
+			try { last = parseInt(localStorage.getItem(KEY) || '0', 10); } catch (_) {}
+			try { localStorage.setItem(KEY, String(now)); } catch (_) {}
+			if (!last || (now - last) < 8 * 3600000) return;
+			const hoursAway = Math.round((now - last) / 3600000);
+			const scene = window.__campScene;
+			const weather = scene ? WeatherSystem.currentType(scene) : 'clear';
+			const weatherMsg = WEATHER_FLAVOUR[weather] || WEATHER_FLAVOUR.clear;
+			const plants = Plants.load();
+			const growMs = (window.CAMP_DATA || {}).GROW_MS || 60000;
+			const grownCount = plants.filter(p => (now - p.plantedAt) >= growMs).length;
+			const berryMsg = grownCount > 0 ? 'Your berries grew while you were away!' : 'Your berries need a bit more time.';
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : null;
+			let partnerMsg = '';
+			if (inv && (inv.companionId || inv.companion || inv.eeveeForm)) {
+				const partnerName = inv.nickname || (inv.companionId ? ((window.CAMP_DATA || {}).PMD_NAMES || {})[inv.companionId] : null) || 'your partner';
+				inv.friendship = Math.min(100, (inv.friendship || 0) + 5);
+				try { Inventory.save(inv); } catch (_) {}
+				partnerMsg = partnerName + ' missed you! (+5 friendship)';
+			}
+			const msg = 'You were away for ' + hoursAway + ' hour' + (hoursAway !== 1 ? 's' : '') + '! ' + weatherMsg + ' ' + berryMsg + (partnerMsg ? ' ' + partnerMsg : '');
+			setTimeout(() => Dialog.open(msg), 1200);
+		}
+		return { check };
+	})();
+	window.CAMP_SYSTEMS.OfflineProgress = OfflineProgress;
+
+	// ── CampShare ─────────────────────────────────────────────────────────────
+	const CampShare = (() => {
+		function _b64url(str) { return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,''); }
+		function _unb64url(str) { try { return atob(str.replace(/-/g,'+').replace(/_/g,'/')); } catch { return null; } }
+		function generate() {
+			const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+			const trainerName = localStorage.getItem('pokequiz_trainer_name') || 'Trainer';
+			const partner = inv.eeveeForm || (inv.companionId ? ((window.CAMP_DATA || {}).PMD_NAMES || {})[inv.companionId] : 'Eevee') || 'Eevee';
+			const decor = (inv.cosmetics && inv.cosmetics.decor || []).slice(0,3);
+			let streak = 0;
+			try { const s = (typeof Stats !== 'undefined') ? Stats.load() : {}; streak = s.loginStreak || 0; } catch (_) {}
+			const data = JSON.stringify({ n: trainerName, p: partner, r: 1, d: decor, s: streak });
+			const encoded = _b64url(data);
+			const url = window.location.origin + window.location.pathname + '?visit=' + encoded;
+			try { navigator.clipboard.writeText(url); showToast('🔗 Camp link copied!'); } catch (_) { showToast('Link: ' + url); }
+			return url;
+		}
+		function receive() {
+			const params = new URLSearchParams(window.location.search);
+			const visitData = params.get('visit');
+			if (!visitData) return;
+			const raw = _unb64url(visitData);
+			if (!raw) return;
+			let parsed;
+			try { parsed = JSON.parse(raw); } catch { return; }
+			const modal = document.getElementById('campVisitModal');
+			if (!modal) return;
+			modal.hidden = false;
+			const nameEl = modal.querySelector('#visitModalName');
+			const pokeEl = modal.querySelector('#visitModalPoke');
+			const ratingEl = modal.querySelector('#visitModalRating');
+			if (nameEl) nameEl.textContent = parsed.n || 'Trainer';
+			if (pokeEl) pokeEl.textContent = parsed.p || 'Eevee';
+			if (ratingEl) ratingEl.textContent = '★'.repeat(Math.min(5, Math.max(1, parsed.r || 1)));
+		}
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(receive, 500));
+		else setTimeout(receive, 500);
+		return { generate, receive };
+	})();
+	window.CAMP_SYSTEMS.CampShare = CampShare;
+
+	// ── RivalSystem ────────────────────────────────────────────────────────────
+	const RivalSystem = (() => {
+		const RIVALS = ['Red','Blue','Leaf','May','Dawn','Lucas','Ethan','Lyra'];
+		const GAMES   = ['wordle','silhouette','type','stats','sprint','memory','connections','evo'];
+		const GAME_LABELS = { wordle:'PokéWordle', silhouette:'Silhouette', type:'Type Quiz', stats:'Stats Quiz', sprint:'Sprint', memory:'Memory', connections:'Connections', evo:'Evolution' };
+		function _seedRng(s) { let x=s>>>0; x=Math.imul(x^(x>>>16),0x45d9f3b); return ((x^(x>>>16))>>>0)/0xFFFFFFFF; }
+		function getDaily() {
+			const day = Math.floor(Date.now()/86400000);
+			const gIdx = Math.floor(_seedRng(day*7+2)*GAMES.length);
+			return { name:RIVALS[Math.floor(_seedRng(day*7+1)*RIVALS.length)], game:GAMES[gIdx], gameLabel:GAME_LABELS[GAMES[gIdx]]||'Quiz', score:Math.floor(60+_seedRng(day*7+3)*36) };
+		}
+		function challenge() {
+			const rival = getDaily();
+			const dateKey = new Date().toISOString().slice(0,10);
+			const beatKey = 'pokequiz_rival_beat_' + dateKey;
+			const beaten = !!localStorage.getItem(beatKey);
+			const myBest = parseInt(localStorage.getItem('pokequiz_' + rival.game + '_best') || '0', 10);
+			const iBeaten = myBest > rival.score;
+			if (iBeaten && !beaten) {
+				try { localStorage.setItem(beatKey, '1'); } catch (_) {}
+				const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+				inv.tokens = (inv.tokens||0)+50;
+				try { (typeof Inventory !== 'undefined') && Inventory.save(inv); } catch (_) {}
+				Dialog.open('You beat Rival ' + rival.name + ' on ' + rival.gameLabel + '! (' + myBest + ' vs ' + rival.score + ') +50 tokens!');
+			} else if (iBeaten) {
+				Dialog.open('You already beat Rival ' + rival.name + ' today! (' + myBest + ' vs ' + rival.score + ')');
+			} else {
+				Dialog.open('Rival ' + rival.name + ' scored ' + rival.score + ' on ' + rival.gameLabel + '! Your best: ' + (myBest||0) + '. Beat it to earn 50 tokens!');
+			}
+		}
+		function autoCheck() {
+			const rival = getDaily();
+			const dateKey = new Date().toISOString().slice(0,10);
+			const beatKey = 'pokequiz_rival_beat_' + dateKey;
+			if (localStorage.getItem(beatKey)) return;
+			const myBest = parseInt(localStorage.getItem('pokequiz_' + rival.game + '_best') || '0', 10);
+			if (myBest > rival.score) {
+				try { localStorage.setItem(beatKey, '1'); } catch (_) {}
+				const inv = (typeof Inventory !== 'undefined') ? Inventory.load() : {};
+				inv.tokens = (inv.tokens||0)+50;
+				try { (typeof Inventory !== 'undefined') && Inventory.save(inv); } catch (_) {}
+				setTimeout(() => showToast('🏆 You beat Rival ' + rival.name + '! +50 tokens!'), 2000);
+			}
+		}
+		return { getDaily, challenge, autoCheck };
+	})();
+	window.CAMP_SYSTEMS.RivalSystem = RivalSystem;
+
+	// ── FriendList ─────────────────────────────────────────────────────────────
+	const FriendList = (() => {
+		const KEY = 'pokequiz_friends';
+		const MAX = 10;
+		function load() { try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch { return []; } }
+		function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (_) {} }
+		function _parseName(url) {
+			try { const params=new URLSearchParams(new URL(url).search); const tc=params.get('tc'); if(!tc)return null; const raw=atob(tc.replace(/-/g,'+').replace(/_/g,'/')); const data=JSON.parse(raw); return data.name||data.n||null; } catch { return null; }
+		}
+		function open() { const p=document.getElementById('friendsPanel'); if(!p)return; p.hidden=false; _render(p); }
+		function _render(panel) {
+			const friends=load(), body=panel.querySelector('#friendsPanelBody');
+			if(!body)return; body.innerHTML='';
+			if(friends.length===0){const e=document.createElement('div');e.style.cssText='font-size:7px;color:var(--pk-muted);text-align:center;padding:14px 0';e.textContent='No friends yet. Add one below!';body.appendChild(e);}
+			friends.forEach((url,i)=>{
+				const name=_parseName(url)||'Trainer #'+(i+1);
+				const row=document.createElement('div');
+				row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--pk-border);border-radius:7px;margin-bottom:6px';
+				row.innerHTML='<span style="flex:1;font-size:8px;color:var(--pk-text)">'+name+'</span><a href="'+url+'" class="pk-btn pk-btn-xs pk-btn-gold" style="text-decoration:none;font-size:6px">Visit</a><button class="pk-btn pk-btn-xs pk-btn-dark friend-remove" data-idx="'+i+'" style="font-size:6px">Remove</button>';
+				body.appendChild(row);
+			});
+			body.querySelectorAll('.friend-remove').forEach(btn=>{
+				btn.addEventListener('click',()=>{const idx=parseInt(btn.dataset.idx,10);const list=load();list.splice(idx,1);save(list);_render(panel);});
+			});
+		}
+		function addFromInput(url) {
+			if(!url||!url.includes('trainer-card')){showToast('Paste a Trainer Card URL!');return;}
+			const list=load(); if(list.includes(url)){showToast('Already in friends list!');return;} if(list.length>=MAX){showToast('Friends list full!');return;}
+			list.push(url);save(list);showToast('Friend added!');
+			const panel=document.getElementById('friendsPanel'); if(panel&&!panel.hidden)_render(panel);
+		}
+		const _wire = () => {
+			document.getElementById('friendAddBtn')?.addEventListener('click',()=>{const i=document.getElementById('friendAddInput');addFromInput(i?.value?.trim());if(i)i.value='';});
+			document.getElementById('friendsClose')?.addEventListener('click',()=>{const p=document.getElementById('friendsPanel');if(p)p.hidden=true;});
+		};
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_wire);else _wire();
+		return { open, addFromInput, load, save };
+	})();
+	window.CAMP_SYSTEMS.FriendList = FriendList;
+
+	// ── Prestige ───────────────────────────────────────────────────────────────
+	const Prestige = (() => {
+		const KEY = 'pokequiz_prestige_count';
+		function getCount() { try{return parseInt(localStorage.getItem(KEY)||'0',10);}catch{return 0;} }
+		function isEligible() {
+			const achData=(typeof Achievements!=='undefined')?Achievements.getAll():{defs:[],unlocked:{}};
+			const unlockedCount=Object.keys(achData.unlocked).filter(k=>!k.startsWith('__count_')).length;
+			const level=(typeof TrainerLevel!=='undefined')?TrainerLevel.getLevel():1;
+			return unlockedCount>=20&&level>=20;
+		}
+		function apply() {
+			if(!isEligible()){showToast('Not eligible for Prestige yet!');return;}
+			const inv=(typeof Inventory!=='undefined')?Inventory.load():{};
+			inv.tokens=0;inv.seeds=0;inv.oranSeeds=0;inv.premiumSeeds=0;inv.friendshipBerries=0;
+			try{(typeof Inventory!=='undefined')&&Inventory.save(inv);}catch(_){}
+			const newCount=getCount()+1;
+			try{localStorage.setItem(KEY,String(newCount));}catch(_){}
+			showToast('⭐'.repeat(newCount)+' Prestige '+newCount+'! A new journey begins!');
+			_updateBadge();
+		}
+		function _updateBadge() {
+			const count=getCount(),badge=document.getElementById('trainerLevelBadge');
+			if(!badge||count===0)return;
+			badge.dataset.prestige='⭐'.repeat(Math.min(count,5));
+		}
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_updateBadge);else _updateBadge();
+		return { isEligible, apply, getCount };
+	})();
+	window.CAMP_SYSTEMS.Prestige = Prestige;
+
+	// ── DexRewards ─────────────────────────────────────────────────────────────
+	const DexRewards = (() => {
+		const KEY = 'pokequiz_dex_rewards';
+		const MILESTONES = [
+			{n:25,  tokens:100,  ach:null,       label:'Novice Collector', item:null},
+			{n:50,  tokens:200,  ach:null,        label:null,               item:'shinyCharm'},
+			{n:100, tokens:500,  ach:'dex100',    label:'Century Trainer',  item:null},
+			{n:151, tokens:1000, ach:'dexMaster', label:'Pokédex Master',   item:null},
+		];
+		function load() { try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];} }
+		function check() {
+			const dexData=(typeof Pokedex!=='undefined')?Pokedex.getData?.():null;
+			const caughtCount=dexData?new Set(dexData.caught||[]).size:0;
+			const claimed=load();
+			MILESTONES.forEach(m=>{
+				if(caughtCount>=m.n&&!claimed.includes(m.n)){
+					claimed.push(m.n);
+					try{localStorage.setItem(KEY,JSON.stringify(claimed));}catch(_){}
+					const inv=(typeof Inventory!=='undefined')?Inventory.load():{};
+					inv.tokens=(inv.tokens||0)+m.tokens;
+					if(m.item==='shinyCharm')inv.shinyCharm=true;
+					try{(typeof Inventory!=='undefined')&&Inventory.save(inv);}catch(_){}
+					setTimeout(()=>{
+						showFloatingReward('+'+m.tokens+' tokens!');
+						if(m.ach)(typeof Achievements!=='undefined')&&Achievements.unlock(m.ach);
+						if(m.label)showAchievementBanner(m.label);
+						showToast('📚 Pokédex milestone: '+m.n+' caught! +'+m.tokens+' tokens!'+(m.item==='shinyCharm'?' Shiny Charm obtained!':''));
+					},500);
+				}
+			});
+		}
+		return { check };
+	})();
+	window.CAMP_SYSTEMS.DexRewards = DexRewards;
+
+	// ── PartnerStats ──────────────────────────────────────────────────────────
+	const PartnerStats = (() => {
+		const STAT_NAMES = ['ATK','DEF','SPD','SP.ATK','SP.DEF','HP'];
+		const BASE_STATS = { eevee:[55,50,55,45,65,55],vaporeon:[65,60,65,110,95,130],flareon:[130,60,65,95,110,65],jolteon:[65,60,130,110,95,65],espeon:[130,60,110,130,95,65],umbreon:[65,110,65,60,110,95],leafeon:[110,130,95,60,65,65],glaceon:[60,110,65,130,110,65],sylveon:[65,65,60,110,130,95] };
+		const TRAIN_COST = 10;
+		function _key(dexId) { return 'pokequiz_partner_stats_'+dexId; }
+		function getStats(dexId, formKey) { try{return JSON.parse(localStorage.getItem(_key(dexId))||'null')||[...(BASE_STATS[formKey||'eevee']||[50,50,50,50,50,50])];}catch{return[50,50,50,50,50,50];} }
+		function trainStat(dexId, formKey, statIdx) {
+			const inv=(typeof Inventory!=='undefined')?Inventory.load():{};
+			if((inv.tokens||0)<TRAIN_COST){showToast('Need 10 tokens to train!');return false;}
+			inv.tokens-=TRAIN_COST;
+			try{(typeof Inventory!=='undefined')&&Inventory.save(inv);}catch(_){}
+			const stats=getStats(dexId,formKey);
+			stats[statIdx]=Math.min(255,stats[statIdx]+5);
+			try{localStorage.setItem(_key(dexId),JSON.stringify(stats));}catch(_){}
+			return stats;
+		}
+		function renderPanel(container, dexId, formKey) {
+			if(!container)return;
+			const stats=getStats(dexId,formKey);
+			container.innerHTML='';
+			const title=document.createElement('div');title.style.cssText='font-size:7px;color:var(--pk-gold);margin-bottom:8px';title.textContent='TRAINING STATS';container.appendChild(title);
+			STAT_NAMES.forEach((name,i)=>{
+				const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:5px';
+				const lbl=document.createElement('span');lbl.style.cssText='font-size:6px;color:var(--pk-muted);width:38px;flex-shrink:0';lbl.textContent=name;
+				const barWrap=document.createElement('div');barWrap.style.cssText='flex:1;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden';
+				const bar=document.createElement('div');
+				const pct=Math.round((stats[i]/255)*100);
+				const col=stats[i]>=100?'#50dd88':stats[i]>=60?'#f6c84c':'#f06868';
+				bar.style.cssText='width:'+pct+'%;height:100%;background:'+col+';border-radius:3px';
+				barWrap.appendChild(bar);
+				const val=document.createElement('span');val.style.cssText='font-size:6px;color:#e8eaf0;width:22px;text-align:right';val.textContent=stats[i];
+				const trainBtn=document.createElement('button');trainBtn.className='pk-btn pk-btn-xs pk-btn-dark';trainBtn.style.cssText='font-size:6px;padding:2px 6px';trainBtn.textContent='+';trainBtn.title='Train '+name+' ('+TRAIN_COST+' tokens)';
+				trainBtn.addEventListener('click',()=>{const ns=trainStat(dexId,formKey,i);if(ns)renderPanel(container,dexId,formKey);});
+				row.appendChild(lbl);row.appendChild(barWrap);row.appendChild(val);row.appendChild(trainBtn);container.appendChild(row);
+			});
+		}
+		return { getStats, trainStat, renderPanel };
+	})();
+	window.CAMP_SYSTEMS.PartnerStats = PartnerStats;
+
+	// ── TrainerTitles ─────────────────────────────────────────────────────────
+	const TrainerTitles = (() => {
+		const TITLES = [
+			{id:'shinyHunter',label:'Shiny Hunter', check:(s)=>(s.totalShinies||0)>=3},
+			{id:'scholar',    label:'Scholar',      check:(s)=>(s.bestQuizScore||0)>=80},
+			{id:'veteran',    label:'Veteran',      check:(s)=>(s.loginStreak||0)>=14},
+			{id:'fisherKing', label:'Fisher King',  check:(s)=>(s.totalCatches||0)>=20},
+			{id:'berryFarmer',label:'Berry Farmer', check:(s)=>(s.totalHarvests||0)>=30},
+			{id:'berryMaster',label:'Berry Master', check:(s)=>(s.totalBerriesFed||0)>=50},
+		];
+		function getCurrent() { const s=(typeof Stats!=='undefined')?Stats.load():{}; for(const t of TITLES){if(t.check(s))return t;} return null; }
+		function getAll() { const s=(typeof Stats!=='undefined')?Stats.load():{}; return TITLES.map(t=>({...t,earned:t.check(s)})); }
+		function updateHUD() { const el=document.getElementById('trainerTitleBadge');if(!el)return;const t=getCurrent();el.textContent=t?t.label:'';el.hidden=!t; }
+		function check() { const t=getCurrent();if(!t)return;try{localStorage.setItem('pokequiz_trainer_title',t.id);}catch(_){}updateHUD(); }
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(check,800));else setTimeout(check,800);
+		return { getCurrent, getAll, updateHUD, check };
+	})();
+	window.CAMP_SYSTEMS.TrainerTitles = TrainerTitles;
+
+	// ── PhotoAlbum ─────────────────────────────────────────────────────────────
+	const PhotoAlbum = (() => {
+		const KEY = 'pokequiz_photo_album';
+		const MAX = 10;
+		function load() { try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];} }
+		function save(album) { try{localStorage.setItem(KEY,JSON.stringify(album));}catch(_){} }
+		function saveToAlbum(dataUrl) {
+			const album=load();
+			if(album.length>=MAX){showToast('Album full! (max '+MAX+' photos)');return;}
+			album.unshift({url:dataUrl,ts:Date.now()});save(album);showToast('📸 Photo saved to album!');
+		}
+		function open() { const p=document.getElementById('photoAlbumPanel');if(!p)return;p.hidden=false;_render(p); }
+		function _render(panel) {
+			const album=load(),body=panel.querySelector('#photoAlbumGrid');
+			if(!body)return;body.innerHTML='';
+			if(album.length===0){body.innerHTML='<div style="font-size:7px;color:var(--pk-muted);text-align:center;padding:18px 0">No photos yet!</div>';return;}
+			album.forEach((photo,i)=>{
+				const cell=document.createElement('div');cell.style.cssText='position:relative;cursor:pointer;border-radius:6px;overflow:hidden;border:1px solid var(--pk-border)';
+				const img=document.createElement('img');img.src=photo.url;img.style.cssText='width:100%;height:80px;object-fit:cover;display:block';
+				img.addEventListener('click',()=>_viewFull(photo.url));
+				const del=document.createElement('button');del.style.cssText='position:absolute;top:3px;right:3px;background:rgba(200,0,0,0.8);border:none;padding:2px 5px;font-size:7px;border-radius:4px;cursor:pointer;color:#fff';del.textContent='✕';
+				del.addEventListener('click',(e)=>{e.stopPropagation();const a=load();a.splice(i,1);save(a);_render(panel);});
+				cell.appendChild(img);cell.appendChild(del);body.appendChild(cell);
+			});
+		}
+		function _viewFull(url) {
+			const ex=document.getElementById('photoFullView');if(ex)ex.remove();
+			const overlay=document.createElement('div');overlay.id='photoFullView';overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:900;display:flex;align-items:center;justify-content:center;cursor:pointer';
+			const img=document.createElement('img');img.src=url;img.style.cssText='max-width:90%;max-height:90%;border-radius:8px;border:2px solid var(--pk-gold)';
+			overlay.appendChild(img);overlay.addEventListener('click',()=>overlay.remove());document.body.appendChild(overlay);
+		}
+		const _wire=()=>{document.getElementById('photoAlbumClose')?.addEventListener('click',()=>{const p=document.getElementById('photoAlbumPanel');if(p)p.hidden=true;});};
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_wire);else _wire();
+		return { open, saveToAlbum, load };
+	})();
+	window.CAMP_SYSTEMS.PhotoAlbum = PhotoAlbum;
+
+	// ── Villagers ─────────────────────────────────────────────────────────────
+	const Villagers = (() => {
+		function _rng(s){let x=s>>>0;x=Math.imul(x^(x>>>16),0x45d9f3b);return((x^(x>>>16))>>>0);}
+		const DEFS = [
+			{id:'lily',name:'Picnicker Lily',sprite:'npc-picnicker',row:5,col:3,
+				unlockKey:()=>{const s=(typeof Stats!=='undefined')?Stats.load():{};return(s.loginStreak||0)>=7;},
+				dialogues:["The flowers remind me of Floaroma Town!","Have you tried growing Oran Berries?","I heard a wild Eevee was spotted nearby!","Beautiful weather today! Perfect for a picnic.","Your camp is really coming along nicely!"]},
+			{id:'tom',name:'Hiker Tom',sprite:'npc-camper',row:3,col:14,
+				unlockKey:()=>{const inv=(typeof Inventory!=='undefined')?Inventory.load():{};return(inv.totalBerriesFed||0)>=50;},
+				dialogues:["I've scaled Mt. Coronet and THIS camp still impresses me!","Berries? I eat those for breakfast on long hikes.","The fishing spot nearby is great!","Any good curry recipes?","Keep training hard! That's the hiker way!"]},
+			{id:'sora',name:'Scientist Sora',sprite:'npc-scientist',row:8,col:10,
+				unlockKey:()=>{const dex=(typeof Pokedex!=='undefined')?Pokedex.getData?.():null;return dex?new Set(dex.caught||[]).size>=25:false;},
+				dialogues:["Fascinating! A wild Pokémon ecosystem right here!","I'm studying how Eevee adapts to environments.","Did you know Porygon was created from code?","Your Pokédex data is invaluable!","Keep catching Pokémon — science demands it!"]},
+		];
+		function apply(scene) {
+			if(!scene||!scene.add)return;
+			const dayNum=Math.floor(Date.now()/86400000);
+			DEFS.forEach(def=>{
+				if(!def.unlockKey())return;
+				const dialogIdx=_rng(dayNum+def.id.length)%def.dialogues.length;
+				const dialogue=def.dialogues[dialogIdx];
+				const x=def.col*TILE+TILE/2,y=def.row*TILE+TILE/2;
+				let npcSprite;
+				if(scene.textures.exists(def.sprite)){npcSprite=scene.add.image(x,y,def.sprite).setDepth(3).setOrigin(0.5,1).setScale(1.2);}
+				else{npcSprite=scene.add.text(x,y,'🧑',{fontSize:'16px'}).setDepth(3).setOrigin(0.5,1);}
+				scene.add.text(x,y-22,def.name,{fontFamily:'"Press Start 2P"',fontSize:'4px',color:'#f6c84c',stroke:'#000',strokeThickness:2}).setDepth(4).setOrigin(0.5,1);
+				if(!scene.npcByTile)scene.npcByTile={};
+				scene.npcByTile[def.row+','+def.col]={kind:'villager',label:'Talk',name:def.name,message:dialogue,sprite:npcSprite};
+			});
+		}
+		return { apply };
+	})();
+	window.CAMP_SYSTEMS.Villagers = Villagers;
+
+	// ── GardenExpansion ────────────────────────────────────────────────────────
+	const GardenExpansion = (() => {
+		const KEY = 'pokequiz_garden_plots';
+		const COST = 150;
+		const EXTRA_TILES = [[[21,14],[21,15],[21,16]],[[22,14],[22,15],[22,16]],[[23,14],[23,15],[23,16]]];
+		function getPlotCount(){try{return Math.max(1,Math.min(4,parseInt(localStorage.getItem(KEY)||'1',10)));}catch{return 1;}}
+		function buy(){
+			const current=getPlotCount();if(current>=4){showToast('Already at max garden plots!');return false;}
+			const inv=(typeof Inventory!=='undefined')?Inventory.load():{};
+			if((inv.tokens||0)<COST){showToast('Need 150 tokens to buy a plot!');return false;}
+			inv.tokens-=COST;try{(typeof Inventory!=='undefined')&&Inventory.save(inv);}catch(_){}
+			const newCount=current+1;try{localStorage.setItem(KEY,String(newCount));}catch(_){}
+			showToast('🌱 Garden expanded! Plot '+newCount+' unlocked!');return true;
+		}
+		function getExtraTiles(){const count=getPlotCount(),tiles=[];for(let i=0;i<count-1;i++){(EXTRA_TILES[i]||[]).forEach(([r,c])=>tiles.push(r+','+c));}return tiles;}
+		return{getPlotCount,buy,getExtraTiles,COST};
+	})();
+	window.CAMP_SYSTEMS.GardenExpansion = GardenExpansion;
+
+	// ── NotifFeed ──────────────────────────────────────────────────────────────
+	const NotifFeed = (() => {
+		const KEY = 'pokequiz_notif_feed';
+		const MAX = 20;
+		function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch{return[];}}
+		function save(feed){try{localStorage.setItem(KEY,JSON.stringify(feed));}catch(_){}}
+		function push(text,icon){
+			const feed=load();feed.unshift({text,icon:icon||'bell-fill',ts:Date.now()});
+			if(feed.length>MAX)feed.length=MAX;save(feed);
+			const badge=document.getElementById('campNotifBadge');
+			const unread=parseInt(badge?.dataset.unread||'0',10)+1;
+			if(badge){badge.dataset.unread=String(unread);badge.textContent=unread;badge.hidden=false;}
+		}
+		function markRead(){const badge=document.getElementById('campNotifBadge');if(badge){badge.dataset.unread='0';badge.hidden=true;}}
+		function open(){
+			const drawer=document.getElementById('notifDrawer');
+			if(!drawer){_legacyOpen();return;}
+			drawer.hidden=!drawer.hidden;
+			if(!drawer.hidden){_renderDrawer(drawer);markRead();}
+		}
+		function _legacyOpen(){
+			const existing=document.getElementById('notifDropdown');if(existing){existing.remove();return;}
+			const feed=load();
+			const dropdown=document.createElement('div');dropdown.id='notifDropdown';
+			dropdown.style.cssText='position:absolute;top:44px;right:8px;z-index:200;background:rgba(10,14,28,0.97);border:1px solid rgba(246,200,76,0.28);border-radius:8px;padding:8px 12px;min-width:240px;max-width:300px;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.5)';
+			dropdown.innerHTML=feed.length===0?'<div style="font-size:7px;color:var(--pk-muted);padding:4px 0">No notifications yet!</div>':
+				feed.map(n=>'<div style="display:flex;align-items:flex-start;gap:6px;font-size:7px;color:#e8eaf0;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><i class="bi bi-'+(n.icon||'bell-fill')+'" style="color:var(--pk-gold);flex-shrink:0;margin-top:1px"></i><span>'+n.text+'</span></div>').join('');
+			const campWrap=document.getElementById('campWrap')||document.body;campWrap.appendChild(dropdown);
+			markRead();
+			function dismiss(e){const btn=document.getElementById('campNotifBtn');if(!dropdown.contains(e.target)&&e.target!==btn){dropdown.remove();document.removeEventListener('click',dismiss,true);}}
+			setTimeout(()=>document.addEventListener('click',dismiss,true),0);
+		}
+		function _renderDrawer(drawer){
+			const feed=load(),body=drawer.querySelector('#notifDrawerBody');if(!body)return;body.innerHTML='';
+			if(feed.length===0){body.innerHTML='<div style="font-size:7px;color:var(--pk-muted);padding:8px 0;text-align:center">No notifications yet!</div>';return;}
+			feed.forEach(n=>{
+				const row=document.createElement('div');row.style.cssText='display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06)';
+				const ts=new Date(n.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+				row.innerHTML='<i class="bi bi-'+(n.icon||'bell-fill')+'" style="color:var(--pk-gold);flex-shrink:0;margin-top:1px"></i><div style="flex:1"><div style="font-size:7px;color:#e8eaf0">'+n.text+'</div><div style="font-size:6px;color:var(--pk-muted);margin-top:2px">'+ts+'</div></div>';
+				body.appendChild(row);
+			});
+		}
+		const _wire=()=>{document.getElementById('notifDrawerClose')?.addEventListener('click',()=>{const d=document.getElementById('notifDrawer');if(d)d.hidden=true;});};
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_wire);else _wire();
+		return{push,markRead,open,load};
+	})();
+	window.CAMP_SYSTEMS.NotifFeed = NotifFeed;
+
+	// ── WeeklyChallenge ────────────────────────────────────────────────────────
+	const WeeklyChallenge = (() => {
+		const OBJECTIVES=[
+			{id:'berries', label:'Feed 10 berries',        stat:'totalBerriesFed',target:10},
+			{id:'harvest', label:'Harvest 15 berries',      stat:'totalHarvests',  target:15},
+			{id:'fish',    label:'Catch 3 fish',            stat:'totalCatches',   target:3},
+			{id:'rhythm',  label:'Win 3 rhythm battles',    stat:'rhythmWins',     target:3},
+			{id:'dig',     label:'Dig 3 treasures',         stat:'totalDigs',      target:3},
+			{id:'shiny',   label:'Find 1 shiny Pokémon',    stat:'totalShinies',   target:1},
+			{id:'market',  label:'Visit market 3 times',    stat:'marketVisits',   target:3},
+			{id:'befriend',label:'Befriend 5 wild Pokémon', stat:'wildBefriended', target:5},
+		];
+		const REWARD_TOKENS=200;
+		function _isoWeek(){const d=new Date(),jan4=new Date(d.getFullYear(),0,4);const wn=Math.ceil((((d-jan4)/86400000)+jan4.getDay()+1)/7);return d.getFullYear()+'-W'+String(wn).padStart(2,'0');}
+		function _weekKey(){return 'pokequiz_weekly_'+_isoWeek();}
+		function getCurrent(){const s=_isoWeek().replace(/\D/g,'');return OBJECTIVES[(parseInt(s,10)>>>0)%OBJECTIVES.length];}
+		function _loadData(){try{return JSON.parse(localStorage.getItem(_weekKey())||'{"progress":0,"done":false}');}catch{return{progress:0,done:false};}}
+		function _saveData(d){try{localStorage.setItem(_weekKey(),JSON.stringify(d));}catch(_){}}
+		function getProgress(){const obj=getCurrent(),data=_loadData();return{objective:obj,progress:data.progress||0,done:!!data.done};}
+		function checkProgress(){
+			const obj=getCurrent(),data=_loadData();if(data.done)return;
+			const stats=(typeof Stats!=='undefined')?Stats.load():{};
+			data.progress=Math.min(obj.target,stats[obj.stat]||0);
+			if(data.progress>=obj.target){
+				data.done=true;_saveData(data);
+				const inv=(typeof Inventory!=='undefined')?Inventory.load():{};inv.tokens=(inv.tokens||0)+REWARD_TOKENS;
+				try{(typeof Inventory!=='undefined')&&Inventory.save(inv);}catch(_){}
+				(typeof Achievements!=='undefined')&&Achievements.unlock('weekly_1');
+				setTimeout(()=>{showToast('🗓️ Weekly Challenge Complete! +'+REWARD_TOKENS+' tokens!');NotifFeed.push('Weekly Challenge complete! +'+REWARD_TOKENS+' tokens!','calendar-week-fill');},1000);
+			}else{_saveData(data);}
+		}
+		function open(){const p=document.getElementById('weeklyPanel');if(!p)return;p.hidden=false;_renderPanel(p);}
+		function _renderPanel(panel){
+			const{objective,progress,done}=getProgress(),body=panel.querySelector('#weeklyPanelBody');if(!body)return;
+			const pct=Math.min(100,Math.round((progress/objective.target)*100));
+			body.innerHTML='<div style="font-size:7px;color:var(--pk-muted);margin-bottom:10px">Week of '+_isoWeek()+'</div><div style="font-size:9px;color:var(--pk-gold);margin-bottom:8px">'+objective.label+'</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+(done?'#50dd88':'#f6c84c')+';border-radius:4px"></div></div><span style="font-size:7px;color:#e8eaf0;flex-shrink:0">'+progress+'/'+objective.target+'</span></div>'+(done?'<div style="font-size:7px;color:#50dd88">✓ Completed! Reward claimed.</div>':'<div style="font-size:7px;color:var(--pk-muted)">Reward: '+REWARD_TOKENS+' tokens</div>');
+		}
+		const _wire=()=>{document.getElementById('weeklyClose')?.addEventListener('click',()=>{const p=document.getElementById('weeklyPanel');if(p)p.hidden=true;});};
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_wire);else _wire();
+		return{getCurrent,getProgress,checkProgress,open};
+	})();
+	window.CAMP_SYSTEMS.WeeklyChallenge = WeeklyChallenge;
+
+	// ── SaveSlots ──────────────────────────────────────────────────────────────
+	const SaveSlots = (() => {
+		const NUM_SLOTS=3;
+		function _getAllKeys(){const k=[];for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key&&key.startsWith('pokequiz_')&&!key.startsWith('pokequiz_slot'))k.push(key);}return k;}
+		function _slotPrefix(n){return 'pokequiz_slot'+n+'_';}
+		function saveToSlot(n){
+			const prefix=_slotPrefix(n);
+			_getAllKeys().forEach(k=>{try{const v=localStorage.getItem(k);if(v!==null)localStorage.setItem(prefix+k,v);}catch(_){}});
+			const inv=(typeof Inventory!=='undefined')?Inventory.load():{};
+			const meta={name:localStorage.getItem('pokequiz_trainer_name')||'Trainer',level:(typeof TrainerLevel!=='undefined')?TrainerLevel.getLevel():1,partner:inv.eeveeForm||'Eevee',ts:Date.now()};
+			try{localStorage.setItem(prefix+'__meta__',JSON.stringify(meta));}catch(_){}
+			showToast('💾 Saved to Slot '+n+'!');
+		}
+		function loadFromSlot(n){
+			const prefix=_slotPrefix(n),allKeys=[];
+			for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(prefix)&&!k.endsWith('__meta__'))allKeys.push(k);}
+			if(allKeys.length===0){showToast('Slot '+n+' is empty!');return;}
+			_getAllKeys().forEach(k=>{try{localStorage.removeItem(k);}catch(_){}});
+			allKeys.forEach(k=>{const mk=k.slice(prefix.length);try{const v=localStorage.getItem(k);if(v!==null)localStorage.setItem(mk,v);}catch(_){}});
+			showToast('📂 Loaded Slot '+n+'! Reloading…');setTimeout(()=>window.location.reload(),1000);
+		}
+		function deleteSlot(n){
+			const prefix=_slotPrefix(n),toDelete=[];
+			for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(prefix))toDelete.push(k);}
+			toDelete.forEach(k=>{try{localStorage.removeItem(k);}catch(_){}});showToast('🗑️ Slot '+n+' deleted.');
+		}
+		function getSlotMeta(n){try{return JSON.parse(localStorage.getItem(_slotPrefix(n)+'__meta__')||'null');}catch{return null;}}
+		function open(){const p=document.getElementById('saveSlotsPanel');if(!p)return;p.hidden=false;_renderPanel(p);}
+		function _renderPanel(panel){
+			const body=panel.querySelector('#saveSlotsPanelBody');if(!body)return;body.innerHTML='';
+			for(let i=1;i<=NUM_SLOTS;i++){
+				const meta=getSlotMeta(i);
+				const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--pk-border);border-radius:8px;margin-bottom:8px';
+				const info=document.createElement('div');info.style.flex='1';
+				const slotTitle=document.createElement('div');slotTitle.style.cssText='font-size:8px;color:var(--pk-gold)';slotTitle.textContent='Slot '+i;info.appendChild(slotTitle);
+				if(meta){const d=document.createElement('div');d.style.cssText='font-size:6px;color:var(--pk-muted);margin-top:3px';d.textContent=meta.name+' · Lv.'+meta.level+' · '+meta.partner+' · '+new Date(meta.ts).toLocaleDateString();info.appendChild(d);}
+				else{const e=document.createElement('div');e.style.cssText='font-size:6px;color:var(--pk-faint);margin-top:3px';e.textContent='Empty';info.appendChild(e);}
+				const btns=document.createElement('div');btns.style.cssText='display:flex;gap:4px;flex-shrink:0';
+				const saveBtn=document.createElement('button');saveBtn.className='pk-btn pk-btn-xs pk-btn-gold';saveBtn.textContent='Save';saveBtn.addEventListener('click',()=>{saveToSlot(i);_renderPanel(panel);});
+				const loadBtn=document.createElement('button');loadBtn.className='pk-btn pk-btn-xs pk-btn-dark';loadBtn.textContent='Load';loadBtn.disabled=!meta;loadBtn.addEventListener('click',()=>{if(meta)loadFromSlot(i);});
+				const delBtn=document.createElement('button');delBtn.className='pk-btn pk-btn-xs';delBtn.style.background='rgba(180,30,30,0.7)';delBtn.textContent='✕';delBtn.disabled=!meta;delBtn.addEventListener('click',()=>{if(meta){deleteSlot(i);_renderPanel(panel);}});
+				btns.appendChild(saveBtn);btns.appendChild(loadBtn);btns.appendChild(delBtn);row.appendChild(info);row.appendChild(btns);body.appendChild(row);
+			}
+		}
+		const _wire=()=>{document.getElementById('saveSlotsClose')?.addEventListener('click',()=>{const p=document.getElementById('saveSlotsPanel');if(p)p.hidden=true;});};
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_wire);else _wire();
+		return{open,saveToSlot,loadFromSlot,deleteSlot,getSlotMeta};
+	})();
+	window.CAMP_SYSTEMS.SaveSlots = SaveSlots;
+
+	// ── SaveIO ─────────────────────────────────────────────────────────────────
+	const SaveIO = (() => {
+		function exportSave(){
+			const data={};
+			for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('pokequiz_')){try{data[k]=localStorage.getItem(k);}catch(_){}}}
+			const json=JSON.stringify(data,null,2),blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob);
+			const a=document.createElement('a');a.href=url;a.download='pokequiz-save-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+			URL.revokeObjectURL(url);showToast('💾 Save exported!');
+		}
+		function importSave(json){
+			let data;try{data=JSON.parse(json);}catch{showToast('Invalid save file!');return;}
+			const overlay=document.createElement('div');overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center';
+			const box=document.createElement('div');box.style.cssText='background:var(--pk-bg,#0a1220);border:2px solid var(--pk-gold,#f6c84c);border-radius:10px;padding:20px;max-width:320px;font-family:"Press Start 2P",monospace;text-align:center';
+			box.innerHTML='<div style="font-size:8px;color:#f6c84c;margin-bottom:12px">Import Save</div><div style="font-size:7px;color:#c8d8f0;margin-bottom:16px">This will overwrite your current save. Continue?</div><div style="display:flex;gap:8px;justify-content:center"><button id="_importYes" class="pk-btn pk-btn-gold pk-btn-sm">Yes, Import</button><button id="_importNo" class="pk-btn pk-btn-dark pk-btn-sm">Cancel</button></div>';
+			overlay.appendChild(box);document.body.appendChild(overlay);
+			document.getElementById('_importYes').addEventListener('click',()=>{Object.entries(data).forEach(([k,v])=>{if(k.startsWith('pokequiz_'))try{localStorage.setItem(k,v);}catch(_){}});overlay.remove();showToast('✅ Save imported! Reloading…');setTimeout(()=>window.location.reload(),1000);});
+			document.getElementById('_importNo').addEventListener('click',()=>overlay.remove());
+		}
+		const _wire=()=>{document.getElementById('saveImportInput')?.addEventListener('change',(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>importSave(ev.target.result);r.readAsText(f);});};
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_wire);else _wire();
+		return{exportSave,importSave};
+	})();
+	window.CAMP_SYSTEMS.SaveIO = SaveIO;
+
+	// ── PWAInstall ─────────────────────────────────────────────────────────────
+	const PWAInstall = (() => {
+		let _deferredPrompt=null;
+		window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();_deferredPrompt=e;const btn=document.getElementById('campInstallBtn');if(btn)btn.hidden=false;});
+		function prompt(){if(!_deferredPrompt)return;_deferredPrompt.prompt();_deferredPrompt.userChoice.then(()=>{_deferredPrompt=null;const btn=document.getElementById('campInstallBtn');if(btn)btn.hidden=true;});}
+		const _wire=()=>{document.getElementById('campInstallBtn')?.addEventListener('click',prompt);};
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_wire);else _wire();
+		return{prompt};
+	})();
+	window.CAMP_SYSTEMS.PWAInstall = PWAInstall;
+
+	// ── MobileBottomSheet ──────────────────────────────────────────────────────
+	const MobileBottomSheet = (() => {
+		let _open=false;
+		function init(){
+			const bar=document.getElementById('campBtnBarItems');
+			if(!bar)return;
+			function applyMobile(){if(window.innerWidth<=600){bar.classList.add('camp-mobile-sheet');}else{bar.classList.remove('camp-mobile-sheet');bar.classList.remove('camp-mobile-sheet--open');_open=false;}}
+			applyMobile();window.addEventListener('resize',applyMobile);
+		}
+		function toggle(){const bar=document.getElementById('campBtnBarItems');if(!bar||!bar.classList.contains('camp-mobile-sheet'))return;_open=!_open;bar.classList.toggle('camp-mobile-sheet--open',_open);}
+		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+		return{toggle,init};
+	})();
+	window.CAMP_SYSTEMS.MobileBottomSheet = MobileBottomSheet;
+
+	// ── Colorblind Mode patch ─────────────────────────────────────────────────
+	(function(){
+		const _origApply=AccessibilitySettings.apply;
+		function _ensureFilter(){
+			if(document.getElementById('cb-deuteranopia-filter'))return;
+			const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+			svg.id='cb-deuteranopia-filter';svg.setAttribute('style','position:absolute;width:0;height:0;overflow:hidden');
+			svg.innerHTML='<defs><filter id="cb-deuteranopia"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.700 0.300 0 0 0  0 0.300 0.700 0 0  0 0 0 1 0"/></filter></defs>';
+			document.body.appendChild(svg);
+		}
+		AccessibilitySettings.apply=function(cfg){_origApply.call(this,cfg);if(cfg.colorblind){_ensureFilter();document.body.classList.add('cb-colorblind');}else{document.body.classList.remove('cb-colorblind');}};
+		AccessibilitySettings.apply(AccessibilitySettings.load());
+	})();
+
+	// ── Patch setupPauseMenu for new buttons ──────────────────────────────────
+	(function(){
+		const _origSetup=window.CAMP_SYSTEMS.setupPauseMenu;
+		window.CAMP_SYSTEMS.setupPauseMenu=function(game){
+			_origSetup(game);
+			const panel=document.getElementById('campPause');
+			if(!panel||panel.dataset.b5Wired)return;
+			panel.dataset.b5Wired='1';
+			const observer=new MutationObserver(()=>{
+				const body=document.querySelector('#accessPanel .pk-modal-body');
+				if(!body||body.dataset.cbAdded)return;
+				body.dataset.cbAdded='1';
+				const cfg=AccessibilitySettings.load();
+				const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--pk-border);border-radius:8px';
+				row.innerHTML='<div><div style="font-size:9px;color:var(--pk-text)">Colorblind Mode</div><div style="font-size:7px;color:var(--pk-muted);margin-top:2px">Deuteranopia filter</div></div>';
+				const btn=document.createElement('button');btn.className='pk-btn pk-btn-sm '+(cfg.colorblind?'pk-btn-gold':'pk-btn-dark');btn.style.minWidth='44px';btn.textContent=cfg.colorblind?'On':'Off';
+				btn.addEventListener('click',()=>{const nv=AccessibilitySettings.toggle('colorblind');btn.className='pk-btn pk-btn-sm '+(nv?'pk-btn-gold':'pk-btn-dark');btn.textContent=nv?'On':'Off';});
+				row.appendChild(btn);body.appendChild(row);
+			});
+			const acPanel=document.getElementById('accessPanel');
+			if(acPanel)observer.observe(acPanel,{childList:true,subtree:true});
+			document.getElementById('campPauseSaveSlots')?.addEventListener('click',()=>{panel.hidden=true;SaveSlots.open();});
+			document.getElementById('campPausePrestige')?.addEventListener('click',()=>{
+				panel.hidden=true;
+				if(Prestige.isEligible()){if(confirm('Prestige now? You keep Pokémon, Pokédex, and achievements but lose tokens/seeds/berries.'))Prestige.apply();}
+				else{Dialog.open('Complete all achievements and reach Trainer Level 20 to Prestige!');}
+			});
+			document.getElementById('campPauseExport')?.addEventListener('click',()=>SaveIO.exportSave());
+			document.getElementById('campPauseImport')?.addEventListener('click',()=>document.getElementById('saveImportInput')?.click());
+		};
+	})();
+
+	// ── Sound additions ────────────────────────────────────────────────────────
+	(function(){
+		const _s=window.CAMP_SYSTEMS.Sound;
+		let _sCtx=null;
+		function _ensure(){try{if(!_sCtx)_sCtx=new(window.AudioContext||window.webkitAudioContext)();if(_sCtx.state==='suspended')_sCtx.resume();}catch(e){_sCtx=null;}return _sCtx;}
+		function _on(){return _s&&_s.isEnabled?.();}
+		_s.footstep=function(){if(!_on())return;const c=_ensure();if(!c)return;const osc=c.createOscillator(),g=c.createGain();osc.connect(g).connect(c.destination);osc.frequency.value=220;osc.type='triangle';const t=c.currentTime;g.gain.setValueAtTime(0.05,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.015);osc.start(t);osc.stop(t+0.02);};
+		_s.dig=function(){if(!_on())return;const c=_ensure();if(!c)return;const osc=c.createOscillator(),g=c.createGain();osc.connect(g).connect(c.destination);osc.frequency.value=80;osc.type='square';const t=c.currentTime;g.gain.setValueAtTime(0.08,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);osc.start(t);osc.stop(t+0.14);};
+		_s.transition=function(){if(!_on())return;const c=_ensure();if(!c)return;const osc=c.createOscillator(),g=c.createGain();osc.connect(g).connect(c.destination);osc.type='sawtooth';const t=c.currentTime;osc.frequency.setValueAtTime(400,t);osc.frequency.exponentialRampToValueAtTime(100,t+0.2);g.gain.setValueAtTime(0.04,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);osc.start(t);osc.stop(t+0.22);};
+		_s.villagerGreet=function(){if(!_on())return;const c=_ensure();if(!c)return;[523,659,784].forEach((freq,i)=>{const osc=c.createOscillator(),g=c.createGain();osc.connect(g).connect(c.destination);osc.frequency.value=freq;osc.type='triangle';const t=c.currentTime+i*0.08;g.gain.setValueAtTime(0.05,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.08);osc.start(t);osc.stop(t+0.1);});};
 	})();
 
 })();

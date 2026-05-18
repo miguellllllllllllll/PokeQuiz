@@ -23,7 +23,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/camp.css?v=11">
+	<link rel="stylesheet" href="css/camp.css?v=12">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body class="camp-body">
@@ -180,6 +180,9 @@
 		<!-- Trainer level badge -->
 		<div class="camp-level-badge" id="trainerLevelBadge" aria-hidden="true" title="Trainer Level">Lv.1</div>
 
+		<!-- Trainer title badge -->
+		<div class="camp-title-badge" id="trainerTitleBadge" aria-hidden="true" hidden></div>
+
 		<!-- Camp star rating badge -->
 		<div class="camp-rating-badge" id="campRatingGate" aria-hidden="true" title="Camp Rating"></div>
 
@@ -209,6 +212,12 @@
 				<button class="camp-quick-btn" id="campUpgradeBtn" title="Camp Upgrades" aria-label="Camp Upgrades" type="button"><i class="bi bi-hammer"></i></button>
 				<button class="camp-quick-btn" id="campMapBtn" title="Mini-map (M)" aria-label="Toggle Mini-map" type="button"><i class="bi bi-map-fill"></i></button>
 				<button class="camp-quick-btn" id="campHudToggle" title="Compact HUD" aria-label="Toggle Compact HUD" type="button"><i class="bi bi-chevron-right"></i></button>
+				<button class="camp-quick-btn" id="campShareBtn" title="Share Camp" aria-label="Share Camp" type="button"><i class="bi bi-share-fill"></i></button>
+				<button class="camp-quick-btn" id="campRivalBtn" title="Rival Challenge" aria-label="Rival Challenge" type="button"><i class="bi bi-trophy-fill"></i></button>
+				<button class="camp-quick-btn" id="campFriendsBtn" title="Friends" aria-label="Friends" type="button"><i class="bi bi-people-fill"></i></button>
+				<button class="camp-quick-btn" id="campAlbumBtn" title="Photo Album" aria-label="Photo Album" type="button"><i class="bi bi-images"></i></button>
+				<button class="camp-quick-btn" id="campWeeklyBtn" title="Weekly Challenge" aria-label="Weekly Challenge" type="button"><i class="bi bi-calendar-week"></i></button>
+				<button class="camp-quick-btn" id="campInstallBtn" title="Install App" aria-label="Install App" type="button" hidden><i class="bi bi-phone-vibrate"></i></button>
 			</div>
 		</div>
 
@@ -552,6 +561,84 @@
 			</div>
 		</div>
 
+		<!-- Camp Visit Modal -->
+		<div id="campVisitModal" class="pk-backdrop" hidden role="dialog" aria-label="Camp Visit">
+			<div class="pk-modal pk-modal-sm">
+				<div class="pk-modal-head">
+					<span class="pk-modal-title"><i class="bi bi-house-fill"></i> VISITING CAMP</span>
+					<button class="pk-close" onclick="document.getElementById('campVisitModal').hidden=true" type="button"><i class="bi bi-x-lg"></i></button>
+				</div>
+				<div class="pk-modal-body" style="text-align:center;padding:18px 0">
+					<div style="font-size:8px;color:var(--pk-gold);margin-bottom:8px">You're viewing <span id="visitModalName">Trainer</span>'s camp!</div>
+					<div style="font-size:7px;color:#c8d8f0;margin-bottom:6px">Their partner: <span id="visitModalPoke">Eevee</span></div>
+					<div style="font-size:10px;color:#f6c84c;margin-bottom:14px" id="visitModalRating">★</div>
+					<button class="pk-btn pk-btn-gold pk-btn-sm" onclick="document.getElementById('campVisitModal').hidden=true">Close</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Friends Panel -->
+		<div id="friendsPanel" class="pk-drawer" hidden role="dialog" aria-label="Friends">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-people-fill"></i> FRIENDS</span>
+				<button id="friendsClose" class="pk-close" type="button"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="friendsPanelBody" style="margin-bottom:12px"></div>
+				<div style="display:flex;gap:8px;margin-top:10px">
+					<input id="friendAddInput" type="text" class="cp-nickname-input" style="flex:1;font-size:7px" placeholder="Paste Trainer Card URL…">
+					<button id="friendAddBtn" class="pk-btn pk-btn-gold pk-btn-sm">Add</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Photo Album Panel -->
+		<div id="photoAlbumPanel" class="pk-drawer" hidden role="dialog" aria-label="Photo Album">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-images"></i> PHOTO ALBUM</span>
+				<button id="photoAlbumClose" class="pk-close" type="button"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="photoAlbumGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+			</div>
+		</div>
+
+		<!-- Weekly Challenge Panel -->
+		<div id="weeklyPanel" class="pk-drawer" hidden role="dialog" aria-label="Weekly Challenge">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-calendar-week"></i> WEEKLY CHALLENGE</span>
+				<button id="weeklyClose" class="pk-close" type="button"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="weeklyPanelBody"></div>
+			</div>
+		</div>
+
+		<!-- Notification Drawer -->
+		<div id="notifDrawer" class="pk-drawer" hidden role="dialog" aria-label="Notifications">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-bell-fill"></i> NOTIFICATIONS</span>
+				<button id="notifDrawerClose" class="pk-close" type="button"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="notifDrawerBody"></div>
+			</div>
+		</div>
+
+		<!-- Save Slots Panel -->
+		<div id="saveSlotsPanel" class="pk-drawer" hidden role="dialog" aria-label="Save Slots">
+			<div class="pk-drawer-head">
+				<span class="pk-drawer-title"><i class="bi bi-floppy-fill"></i> SAVE SLOTS</span>
+				<button id="saveSlotsClose" class="pk-close" type="button"><i class="bi bi-x-lg"></i></button>
+			</div>
+			<div class="pk-drawer-body">
+				<div id="saveSlotsPanelBody"></div>
+			</div>
+		</div>
+
+		<!-- Hidden file input for import save -->
+		<input type="file" id="saveImportInput" accept=".json" style="display:none">
+
 		<!-- Pause menu (Escape) -->
 		<div class="camp-pause" id="campPause" hidden role="dialog" aria-modal="true">
 			<div class="camp-pause-panel">
@@ -562,6 +649,10 @@
 				<button class="camp-pause-btn" id="campPauseMystery" type="button"><i class="bi bi-gift-fill" aria-hidden="true"></i> Mystery Gift</button>
 				<button class="camp-pause-btn" id="campPauseBadges" type="button"><i class="bi bi-award-fill" aria-hidden="true"></i> Gym Badges</button>
 				<button class="camp-pause-btn" id="campPauseAccess" type="button"><i class="bi bi-universal-access" aria-hidden="true"></i> Accessibility</button>
+				<button class="camp-pause-btn" id="campPauseSaveSlots" type="button"><i class="bi bi-floppy-fill" aria-hidden="true"></i> Save Slots</button>
+				<button class="camp-pause-btn" id="campPausePrestige" type="button"><i class="bi bi-stars" aria-hidden="true"></i> Prestige</button>
+				<button class="camp-pause-btn" id="campPauseExport" type="button"><i class="bi bi-box-arrow-up" aria-hidden="true"></i> Export Save</button>
+				<button class="camp-pause-btn" id="campPauseImport" type="button"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Import Save</button>
 				<a class="camp-pause-btn camp-pause-btn--alt" href="camp.html">Return to Camp</a>
 				<div class="camp-pause-save-time" id="campPauseSaveTime"></div>
 				<div class="camp-pause-hint">Press Esc to resume</div>
@@ -575,6 +666,6 @@
 	<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js" defer></script>
 	<script src="js/camp-data.js?v=6" defer></script>
 	<script src="js/camp-systems.js?v=23" defer></script>
-	<script src="js/camp.js?v=24" defer></script>
+	<script src="js/camp.js?v=25" defer></script>
 </body>
 </html>
