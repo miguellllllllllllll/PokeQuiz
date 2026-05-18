@@ -3905,6 +3905,38 @@
 				if (openFlag) openFlag = false;
 				return false;
 			}
+			// Evolve a wild (non-Eevee) partner in-place.
+			// Called when max friendship is reached by berry-feeding — same UX trigger as Eevee.
+			function _doWildEvolution(inv, companionKey, companionDex, nextEvoDex) {
+				const _oldName = (PMD_NAMES && PMD_NAMES[companionDex]) || ('#' + companionDex);
+				const _newName = (PMD_NAMES && PMD_NAMES[nextEvoDex]) || ('#' + nextEvoDex);
+				// Update the active party slot's form
+				const _ai = inv.partyActive || 0;
+				const _slot = (inv.party || [])[_ai];
+				if (_slot) _slot.form = nextEvoDex;
+				// Update the top-level companion reference
+				inv.companionForm = nextEvoDex;
+				Inventory.save(inv);
+				// Switch the follower sprite immediately
+				window.__campScene?._switchFollower(nextEvoDex, { silent: true });
+				// Mark Pokédex and XP
+				if (typeof Pokedex !== 'undefined') Pokedex.markSeen(nextEvoDex);
+				TrainerLevel.addXP('evolve');
+				Achievements.unlock('firstEvol');
+				// Flash overlay (same as Eevee evolution)
+				const _fl = document.createElement('div');
+				_fl.style.cssText = 'position:fixed;inset:0;z-index:9999;background:white;opacity:0;pointer-events:none;transition:opacity 0.18s';
+				document.body.appendChild(_fl);
+				setTimeout(() => { _fl.style.opacity = '0.9'; }, 50);
+				setTimeout(() => { _fl.style.opacity = '0'; }, 320);
+				setTimeout(() => { _fl.style.opacity = '0.5'; }, 520);
+				setTimeout(() => { _fl.style.opacity = '0'; }, 720);
+				setTimeout(() => { if (_fl.parentNode) _fl.remove(); }, 1400);
+				showToast(ico(ICO.bolt) + ' ' + _oldName + ' evolved into ' + _newName + '!');
+				setStatus(ico(ICO.bolt) + ' ' + _oldName + ' evolved into ' + _newName + '!', 'good');
+				refresh();
+			}
+
 			function feed(sceneRef) {
 				const inv = Inventory.load();
 				if (inv.eeveeForm && inv.eeveeForm !== 'eevee') {
@@ -3926,11 +3958,26 @@
 				showFloatingReward('+' + feedAmt + ' 🍓');
 				// Feature 5: Friendship bar
 				if (window.__campScene) showFriendshipBar(window.__campScene, feedAmt);
+
+				// ── Non-Eevee evolution: same trigger as Eevee (max friendship + berry) ──
+				const _ck = inv.companionForm;
+				const _cd = dexFromKey(_ck);
+				const _nextEvo = GEN1_EVOLUTIONS && typeof _cd === 'number' && GEN1_EVOLUTIONS[_cd];
+				if (_nextEvo && inv.friendship >= FRIENDSHIP_MAX) {
+					close();
+					_doWildEvolution(inv, _ck, _cd, _nextEvo);
+					return;
+				}
+
+				// ── Eevee evolution: needs max friendship (stone handled in scene) ──
 				if (inv.friendship >= FRIENDSHIP_MAX && sceneRef && typeof sceneRef._triggerEvolution === 'function') {
 					close();
 					sceneRef._triggerEvolution();
 				} else {
-					setStatus('Eevee gobbled a berry. +' + feedAmt + ' Friendship!', 'good');
+					// Companion name for the status message
+					const _pName = _cd && PMD_NAMES ? PMD_NAMES[_cd] : null;
+					const _partnerLabel = _pName || (FOLLOWER_FORMS[inv.eeveeForm || 'eevee'] || {}).displayName || 'Partner';
+					setStatus(_partnerLabel + ' gobbled a berry. +' + feedAmt + ' Friendship!', 'good');
 					refresh();
 				}
 			}
@@ -7401,7 +7448,9 @@
 						return;
 					}
 					if ((inv.friendshipBerries || 0) <= 0) {
-						Dialog.open('Eevee looks hungry, but you have no Friendship Berries.');
+						const _pName2 = dexFromKey(inv.companionForm);
+						const _pLabel = (typeof _pName2 === 'number' && PMD_NAMES && PMD_NAMES[_pName2]) || 'Partner';
+						Dialog.open(_pLabel + ' looks hungry, but you have no Friendship Berries.');
 						return;
 					}
 					inv.friendshipBerries -= 1;
@@ -7409,14 +7458,52 @@
 					inv.lastBerryFed = Date.now();
 					Inventory.save(inv);
 					DailyQuests.increment('feed');
-					// Feature 2: Floating reward, Feature 5: Friendship bar
+					// Floating reward + friendship bar
 					showFloatingReward('+' + FRIENDSHIP_PER_BERRY + ' 💛');
 					if (window.__campScene) showFriendshipBar(window.__campScene, FRIENDSHIP_PER_BERRY);
 					if (inv.friendship >= FRIENDSHIP_MAX) {
-						this._triggerEvolution();
+						// Check for non-Eevee wild evolution first
+						const _ck2 = inv.companionForm;
+						const _cd2 = dexFromKey(_ck2);
+						const _ne2 = GEN1_EVOLUTIONS && typeof _cd2 === 'number' && GEN1_EVOLUTIONS[_cd2];
+						if (_ne2) {
+							this._triggerWildEvolution(_cd2, _ne2);
+						} else {
+							this._triggerEvolution();
+						}
 					} else {
-						Dialog.open('Eevee gobbled the berry! Friendship is now ' + inv.friendship + ' / ' + FRIENDSHIP_MAX + '.');
+						const _dn = dexFromKey(inv.companionForm);
+						const _pLabel2 = (typeof _dn === 'number' && PMD_NAMES && PMD_NAMES[_dn]) || 'Partner';
+						Dialog.open(_pLabel2 + ' gobbled the berry! Friendship: ' + inv.friendship + ' / ' + FRIENDSHIP_MAX + '.');
 					}
+				}
+
+				_triggerWildEvolution(fromDex, nextEvoDex) {
+					const inv = Inventory.load();
+					const _oldName = (PMD_NAMES && PMD_NAMES[fromDex]) || ('#' + fromDex);
+					const _newName = (PMD_NAMES && PMD_NAMES[nextEvoDex]) || ('#' + nextEvoDex);
+					// Update party slot
+					const _ai = inv.partyActive || 0;
+					const _slot = (inv.party || [])[_ai];
+					if (_slot) _slot.form = nextEvoDex;
+					inv.companionForm = nextEvoDex;
+					Inventory.save(inv);
+					// Switch follower sprite in-place (no page reload needed)
+					this._switchFollower(nextEvoDex, { silent: true });
+					Pokedex.markSeen(nextEvoDex);
+					TrainerLevel.addXP('evolve');
+					Achievements.unlock('firstEvol');
+					Sound.evolve();
+					// Flash overlay (same style as Eevee)
+					const _flash2 = document.createElement('div');
+					_flash2.style.cssText = 'position:fixed;inset:0;z-index:9999;background:white;opacity:0;pointer-events:none;transition:opacity 0.18s';
+					document.body.appendChild(_flash2);
+					setTimeout(() => { _flash2.style.opacity = '0.9'; }, 50);
+					setTimeout(() => { _flash2.style.opacity = '0'; }, 320);
+					setTimeout(() => { _flash2.style.opacity = '0.5'; }, 520);
+					setTimeout(() => { _flash2.style.opacity = '0'; }, 720);
+					setTimeout(() => { if (_flash2.parentNode) _flash2.remove(); }, 1400);
+					Dialog.open(_oldName + ' is glowing! It evolved into ' + _newName + '!');
 				}
 	
 				_pickEvolutionForm() {

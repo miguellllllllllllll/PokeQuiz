@@ -613,13 +613,63 @@ window.CAMP_DATA.POKEMON_HEIGHTS = [
 
 
 // ── PMD_FRAME_OVERRIDES ────────────────────────────────────────────────────────
+// Sprites where the smallest-divisor auto-detector picks the wrong frameW.
+// All values verified by pixel-level alpha-column analysis of the actual
+// PMD SpriteCollab Walk-Anim.png files (each sheet = 8 rows × cols frames).
 window.CAMP_DATA.PMD_FRAME_OVERRIDES = {
-		129: { frameW: 56, frameH: 40, cols: 4 }, // Magikarp — 224×320
-		10:  { frameW: 24, frameH: 32, cols: 4 }, // Caterpie — 96×256
-		13:  { frameW: 24, frameH: 40, cols: 4 }, // Weedle   — 96×320
-		50:  { frameW: 24, frameH: 40, cols: 5 }, // Diglett  — 120×320
-		19:  { frameW: 56, frameH: 40, cols: 6 }, // Rattata  — 336×320
-	};
+	// Gen-1 entries confirmed by pixel analysis (frame boundary detection)
+	  1: { frameW: 40, frameH:  40, cols:  6 }, // Bulbasaur   240×320  (24×10 wrong)
+	  6: { frameW: 40, frameH:  48, cols:  4 }, // Charizard   160×384  (32×5  wrong)
+	 10: { frameW: 32, frameH:  32, cols:  3 }, // Caterpie     96×256  (24×4  wrong)
+	 12: { frameW: 32, frameH:  56, cols: 12 }, // Butterfree  384×448  (48×8  wrong)
+	 13: { frameW: 32, frameH:  40, cols:  3 }, // Weedle       96×320  (24×4  wrong)
+	 20: { frameW: 40, frameH:  48, cols:  6 }, // Raticate    240×384  (24×10 wrong)
+	 22: { frameW: 40, frameH:  64, cols:  6 }, // Fearow      240×512  (24×10 wrong)
+	 23: { frameW: 40, frameH:  48, cols:  6 }, // Ekans       240×384  (24×10 wrong)
+	 24: { frameW: 40, frameH:  56, cols:  6 }, // Arbok       240×448  (24×10 wrong)
+	 26: { frameW: 40, frameH:  48, cols:  4 }, // Raichu      160×384  (32×5  wrong)
+	 29: { frameW: 40, frameH:  48, cols:  7 }, // Nidoran♀    280×384  (28×10 wrong)
+	 32: { frameW: 40, frameH:  48, cols:  6 }, // Nidoran♂    240×384  (24×10 wrong)
+	 33: { frameW: 40, frameH:  40, cols:  4 }, // Nidorino    160×320  (32×5  wrong)
+	 34: { frameW: 40, frameH:  48, cols:  4 }, // Nidoking    160×384  (32×5  wrong)
+	 38: { frameW: 40, frameH:  40, cols:  4 }, // Ninetales   160×320  (32×5  wrong)
+	 42: { frameW: 40, frameH:  64, cols:  8 }, // Golbat      320×512  (32×10 wrong)
+	 49: { frameW: 40, frameH:  48, cols: 12 }, // Venomoth    480×384  (48×10 wrong)
+	 50: { frameW: 40, frameH:  40, cols:  3 }, // Diglett     120×320  (24×5  wrong)
+	 51: { frameW: 56, frameH:  48, cols:  3 }, // Dugtrio     168×384  (24×7  wrong)
+	 62: { frameW: 40, frameH:  40, cols:  4 }, // Poliwrath   160×320  (32×5  wrong)
+	 64: { frameW: 40, frameH:  40, cols:  4 }, // Kadabra     160×320  (32×5  wrong)
+	 78: { frameW: 40, frameH:  56, cols:  4 }, // Rapidash    160×448  (32×5  wrong)
+	 86: { frameW: 32, frameH:  40, cols:  7 }, // Seel        224×320  (28×8  wrong)
+	 87: { frameW: 40, frameH:  48, cols:  7 }, // Dewgong     280×384  (28×10 wrong)
+	 88: { frameW: 32, frameH:  32, cols:  6 }, // Grimer      192×256  (24×8  wrong)
+	 89: { frameW: 48, frameH:  40, cols:  5 }, // Muk         240×320  (24×10 wrong)
+	 91: { frameW: 32, frameH:  48, cols:  6 }, // Cloyster    192×384  (24×8  wrong)
+	 92: { frameW: 48, frameH:  64, cols: 12 }, // Gastly      576×512  (64×9  wrong)
+	 95: { frameW: 88, frameH: 112, cols:  4 }, // Onix        352×896  (fallback wrong)
+	 97: { frameW: 40, frameH:  40, cols:  4 }, // Hypno       160×320  (32×5  wrong)
+	101: { frameW: 32, frameH:  40, cols:  7 }, // Electrode   224×320  (28×8  wrong)
+	103: { frameW: 40, frameH:  48, cols:  4 }, // Exeggutor   160×384  (32×5  wrong)
+	106: { frameW: 40, frameH:  48, cols:  4 }, // Hitmonlee   160×384  (32×5  wrong)
+	113: { frameW: 32, frameH:  32, cols:  3 }, // Chansey      96×256  (24×4  wrong)
+	114: { frameW: 32, frameH:  48, cols:  6 }, // Tangela     192×384  (24×8  wrong)
+	115: { frameW: 40, frameH:  56, cols:  4 }, // Kangaskhan  160×448  (32×5  wrong)
+	123: { frameW: 40, frameH:  48, cols:  4 }, // Scyther     160×384  (32×5  wrong)
+	125: { frameW: 40, frameH:  56, cols:  4 }, // Electabuzz  160×448  (32×5  wrong)
+	128: { frameW: 40, frameH:  56, cols:  7 }, // Tauros      280×448  (28×10 wrong)
+	129: { frameW: 32, frameH:  40, cols:  7 }, // Magikarp    224×320  (28×8  wrong, prev override 56×4 ALSO wrong)
+	130: { frameW: 88, frameH: 128, cols:  4 }, // Gyarados    352×1024 (fallback wrong)
+	131: { frameW: 48, frameH:  56, cols:  4 }, // Lapras      192×448  (24×8  wrong)
+	133: { frameW: 40, frameH:  48, cols:  7 }, // Eevee (PMD) 280×384  (28×10 wrong — PMD #133, not the local sprite)
+	139: { frameW: 40, frameH:  40, cols:  4 }, // Omastar     160×320  (32×5  wrong)
+	141: { frameW: 40, frameH:  48, cols:  8 }, // Kabutops    320×384  (32×10 wrong)
+	142: { frameW: 40, frameH:  64, cols:  4 }, // Aerodactyl  160×512  (32×5  wrong)
+	145: { frameW: 56, frameH:  96, cols:  4 }, // Zapdos      224×768  (28×8  wrong)
+	146: { frameW: 80, frameH:  96, cols:  4 }, // Moltres     320×768  (32×10 wrong)
+	149: { frameW: 40, frameH:  56, cols:  4 }, // Dragonite   160×448  (32×5  wrong)
+	150: { frameW: 48, frameH:  56, cols:  6 }, // Mewtwo      288×448  (32×9  wrong)
+	151: { frameW: 40, frameH:  64, cols:  6 }, // Mew         240×512  (24×10 wrong)
+};
 
 
 // ── WALLPAPER_BG ────────────────────────────────────────────────────────
