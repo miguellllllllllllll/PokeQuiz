@@ -6366,10 +6366,17 @@
 			for (let r=0;r<MARKET_H;r++){ set(r,0,TTR); set(r,1,TTR); set(r,MARKET_W-1,TTR); set(r,MARKET_W-2,TTR); }
 			for (let c = MARKET_NORTH_C - 1; c <= MARKET_NORTH_C + 1; c++) { set(0,c,TG); set(1,c,TG); }
 	
-			// Vertical road from the north entry into the plaza
-			for (let r=0;r<=MARKET_H-5;r++) set(r, MARKET_NORTH_C, TP);
-			// East-west cross path through the plaza
-			for (let c=5;c<=MARKET_W-6;c++) set(11, c, TP);
+			// ── Road network ────────────────────────────────────────────────────────
+			// Main N-S spine — 3 tiles wide (matches the north tree-gap cols 14-16)
+			for (let r = 0; r <= 24; r++) { set(r,14,TP); set(r,15,TP); set(r,16,TP); }
+			// Main E-W boulevard — 2 tiles wide, col 3 to col 39 (stops at Café wall)
+			for (let c = 3; c <= 39; c++) { set(10,c,TP); set(11,c,TP); }
+			// North stall spurs — bridge row 9 gap between stall pads (row 8) and boulevard (row 10)
+			fill(9, 9, 9, 13, TP);    // NW stall → spine
+			fill(9, 17, 9, 20, TP);   // NE stall → spine
+			// South stall spurs — bridge row 12 gap between boulevard (row 11) and stall pads (row 13)
+			fill(12, 9, 12, 13, TP);  // SW stall → spine
+			fill(12, 17, 12, 20, TP); // SE stall → spine
 	
 			// Cobblestone pads in front of each vendor stall
 			const stallPads = [
@@ -6401,14 +6408,10 @@
 				if (map[r][c] === TG || map[r][c] === TG2) set(r,c,TBSH);
 			});
 	
-			// Cobblestone feature plaza bottom-center
-			fill(17, 13, 18, 16, TP);
-	
-			// Extra bottom-area decorations in the new rows (19–25)
-			[[19,5,TBSH],[19,10,TBSH],[19,20,TBSH],[19,25,TBSH]].forEach(([r,c,t]) => set(r,c,t));
+			// Bottom-area decorations (south of boulevard)
+			[[19,5,TBSH],[19,20,TBSH],[19,25,TBSH]].forEach(([r,c,t]) => set(r,c,t));
 			[[20,7,TFR],[20,9,TFY],[20,21,TFR],[20,23,TFY]].forEach(([r,c,t]) => set(r,c,t));
-			fill(22, 13, 23, 16, TP); // second cobblestone plaza at the south end
-			[[21,12,TFY],[21,17,TFR],[24,12,TFR],[24,17,TFY]].forEach(([r,c,t]) => set(r,c,t));
+			[[21,18,TFY],[24,18,TFR]].forEach(([r,c,t]) => set(r,c,t));
 			[[23,4,TBSH],[23,25,TBSH]].forEach(([r,c,t]) => set(r,c,t));
 	
 			// Signs in front of each stall — text comes from SIGN_MESSAGES_MARKET
@@ -6465,8 +6468,8 @@
 			// ── Medieval Tower — centre of lower grass lot (rows 15–20, cols 10–13) ──
 			// Overwrites any flower/bush tiles that landed here — the tower wins.
 			fill(15, 10, 20, 13, TBLD);
-			// Small cobblestone approach path leading south from the tower entrance
-			set(21, 11, TP); set(21, 12, TP);
+			// Tower approach — wide spur connecting south of tower to the N-S spine
+			fill(21, 10, 21, 16, TP);
 
 			return map;
 		}
