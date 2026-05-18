@@ -2052,6 +2052,14 @@ body.camp-body {
   transform: scale(1.08);
 }
 
+/* Quick-action buttons are fixed-size icon buttons — the text label would
+   overflow and overlap into a scribbled blob. Hide it by default (the
+   button keeps title + aria-label for accessibility); the expanded mobile
+   bottom sheet re-shows it with a proper column layout. */
+.camp-btn-label {
+  display: none;
+}
+
 /* ── Quest row (inside quest drawer) ───────────────────────────────────── */
 .pk-quest-row {
   padding: 10px 12px;
@@ -3043,6 +3051,22 @@ body.pk-reduce-motion *::after {
   }
   .camp-btn-bar-items.camp-mobile-sheet.camp-mobile-sheet--open {
     transform: translateY(0);
+  }
+  /* Inside the expanded sheet there is room for labels — give each button a
+     full-width icon-over-label card layout instead of the 36px icon chip. */
+  .camp-btn-bar-items.camp-mobile-sheet .camp-quick-btn {
+    width: 100%;
+    height: auto;
+    min-height: 56px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 4px;
+  }
+  .camp-btn-bar-items.camp-mobile-sheet .camp-btn-label {
+    display: block;
+    font-size: 8px;
+    line-height: 1.2;
+    letter-spacing: 0.3px;
   }
 }
 
