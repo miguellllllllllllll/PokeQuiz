@@ -10197,16 +10197,14 @@
 						return;
 					}
 					const roomW = MARKET_W * TILE, roomH = MARKET_H * TILE;
-					// Fit the entire market into the viewport — no min-zoom floor so it
-					// always fits on phones, capped at 4× on large screens.
-					let s = Math.min(vw / roomW, vh / roomH);
-					s = Math.max(0.25, Math.min(s, 4));
+					// Match the camp scene zoom formula: same pixel-density feel,
+					// integer steps, min 2×, max 4×. Camera follows the player,
+					// clipped to the market bounds — same as camp area.
+					let s = Math.max(2, Math.floor(Math.min(vw / 380, vh / 240)));
+					s = Math.min(s, 4);
 					const cam = this.cameras.main;
 					cam.setZoom(s);
 					cam.setBounds(0, 0, roomW, roomH);
-					// If the player is loaded, the camera is following them — just update
-					// zoom and let Phaser re-center on the player. Otherwise fall back to
-					// map center (initial load before player exists).
 					if (!this.player) cam.centerOn(roomW / 2, roomH / 2);
 				}
 	
@@ -10431,25 +10429,13 @@
 
 	// ── B2-0: Button bar hamburger toggle ────────────────────────────────────────
 	const BtnBarToggle = (() => {
-		const KEY = 'pokequiz_btnbar_closed';
-		let closed = false;
-		function apply() {
-			const bar = document.getElementById('campBtnBar');
-			if (!bar) return;
-			if (closed) bar.classList.add('camp-btn-bar--closed');
-			else        bar.classList.remove('camp-btn-bar--closed');
-		}
+		// Bar collapse no longer used — grouped HUD always shows 6 icons.
+		// Keep stub so existing references don't throw.
 		function init() {
-			try { closed = localStorage.getItem(KEY) === '1'; } catch {}
-			apply();
-			const btn = document.getElementById('campBarToggle');
-			if (btn) {
-				btn.addEventListener('click', () => {
-					closed = !closed;
-					try { localStorage.setItem(KEY, closed ? '1' : '0'); } catch {}
-					apply();
-				});
-			}
+			// Ensure bar is always open; clear any stale closed flag
+			const bar = document.getElementById('campBtnBar');
+			if (bar) bar.classList.remove('camp-btn-bar--closed');
+			try { localStorage.removeItem('pokequiz_btnbar_closed'); } catch {}
 		}
 		return { init };
 	})();
@@ -11198,7 +11184,6 @@
 				// Init new systems after camp is built
 				QuickSlotBar.init();
 				Minimap.init();
-				BtnBarToggle.init();
 				HudCompact.init();
 				TreasureDig.init(this);
 				Journal.autoLog();

@@ -1979,12 +1979,8 @@ body.camp-body {
               opacity   0.22s ease;
 }
 
-/* Collapsed state */
-.camp-btn-bar--closed .camp-btn-bar-items {
-  max-width: 0;
-  opacity: 0;
-  pointer-events: none;
-}
+/* Collapsed state — disabled (grouped HUD always shows icons) */
+/* .camp-btn-bar--closed .camp-btn-bar-items { } */
 
 /* ── Hamburger toggle button ─────────────────────────────────────────────── */
 .camp-bar-toggle {
