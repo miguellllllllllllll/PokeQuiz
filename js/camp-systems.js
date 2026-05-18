@@ -2381,7 +2381,9 @@
 						const slotDex = typeof slot.form === 'number' ? slot.form : parseInt(String(slot.form).split(':')[0]);
 						const nextEvo = GEN1_EVOLUTIONS && !isNaN(slotDex) ? GEN1_EVOLUTIONS[slotDex] : null;
 						const nextEvoName = nextEvo ? formName(nextEvo) : null;
+						const slotSpriteUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + slotDex + '.png';
 						card.innerHTML =
+							'<img src="' + slotSpriteUrl + '" style="width:40px;height:40px;image-rendering:pixelated;display:block;margin:0 auto 2px" alt="">' +
 							'<div class="pk-box-slot-name">' + (i === activeIdx ? ico(ICO.star) + ' ' : '') + shown + '</div>' +
 							'<div class="pk-box-slot-sub" style="font-size:6px;color:var(--pk-muted)">' +
 								(slot.nickname ? dn + ' · ' : '') + '&#9829; ' + (slot.friendship || 0) +
@@ -2441,11 +2443,16 @@
 							'padding:6px 8px;border:1px solid var(--pk-border);border-radius:var(--pk-radius-sm);' +
 							'background:rgba(255,255,255,0.02)';
 						const dn = formName(slot.form);
+						const pcDex = typeof slot.form === 'number' ? slot.form : parseInt(String(slot.form).split(':')[0]);
+						const pcSpriteUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + pcDex + '.png';
 						row.innerHTML =
+							'<div style="display:flex;align-items:center;gap:6px">' +
+							'<img src="' + pcSpriteUrl + '" style="width:32px;height:32px;image-rendering:pixelated;flex-shrink:0" alt="">' +
 							'<div>' +
 							'<div style="font-size:7px;color:var(--pk-text)">' + (slot.nickname || dn) +
 								(slot.nickname ? ' <span style="color:var(--pk-faint);font-size:6px">(' + dn + ')</span>' : '') + '</div>' +
 							'<div style="font-size:6px;color:var(--pk-muted)">&#9829; ' + (slot.friendship || 0) + '</div>' +
+							'</div>' +
 							'</div>';
 						const partyFull = party.filter(Boolean).length >= PARTY_MAX;
 						const btnWrap = document.createElement('div');
@@ -4028,7 +4035,9 @@
 					const SPRITE_CDN = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
 
 					function makeCell(key, label, isActive, dimmed) {
-						const form = FOLLOWER_FORMS ? FOLLOWER_FORMS[key] : null;
+						// Compound keys like "129:2" encode dexId:slot — extract numeric dexId for lookups
+						const numId = typeof key === 'number' ? key : parseInt(String(key).split(':')[0], 10);
+						const form = FOLLOWER_FORMS ? (FOLLOWER_FORMS[key] || FOLLOWER_FORMS[numId]) : null;
 						const cell = document.createElement('button');
 						cell.type = 'button';
 						cell.className = 'partner-pick-cell' + (isActive ? ' is-active' : '') + (dimmed ? ' is-unseen' : '');
@@ -4046,9 +4055,8 @@
 								'background-position:0 0;' +
 								'width:' + fW + 'px;height:' + PICK_H + 'px"></div>';
 						} else {
-							// PokeAPI static fallback for numeric keys with no form data
-							const dexId = typeof key === 'string' ? key : Number(String(key).split(':')[0]);
-							spriteHTML = '<img src="' + SPRITE_CDN + dexId + '.png" style="width:' + PICK_H + 'px;height:' + PICK_H + 'px;image-rendering:pixelated" alt="">';
+							// PokeAPI static fallback — use numId (never the raw compound key string)
+							spriteHTML = '<img src="' + SPRITE_CDN + numId + '.png" style="width:' + PICK_H + 'px;height:' + PICK_H + 'px;image-rendering:pixelated" alt="">';
 						}
 						cell.innerHTML = spriteHTML + '<div class="partner-pick-name">' + (label || key) + '</div>';
 						cell.addEventListener('click', () => {
@@ -8512,6 +8520,9 @@
 					this.player.setDepth(3);
 					this.player.body.setSize(10, 6);
 					this.player.body.setOffset((22-10)/2, 38-8);
+
+					// Partner follower sprite
+					this._buildMarketFollower();
 	
 					this.solids = this.physics.add.staticGroup();
 					for (let r = 0; r < HOUSE_H; r++) {
@@ -9485,7 +9496,138 @@
 						if (this._locEl && this._prevLocText) this._locEl.textContent = this._prevLocText;
 					});
 				}
-	
+
+				_buildMarketFollower() {
+					try {
+						const inv = Inventory.load();
+						const formKey = inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee');
+						const dexId   = dexFromKey(formKey);
+						const form    = FOLLOWER_FORMS[dexId] || FOLLOWER_FORMS['eevee'];
+
+						// Trail history — follower is 8 frames behind player
+						this._followerHistory = Array(8).fill({ x: this.player.x, y: this.player.y });
+						this._followerDir     = 0;
+
+						// Bootstrap sprite with Eevee (always preloaded)
+						const bootF = FOLLOWER_FORMS['eevee'];
+						const bCols = bootF.cols || 7;
+						const bRow  = (row) => Array.from({ length: bCols }, (_, i) => row * bCols + i);
+						const bootAnims = [
+							['mkt-eevee-s', bRow(0), 0],
+							['mkt-eevee-w', bRow(6), 6 * bCols],
+							['mkt-eevee-n', bRow(4), 4 * bCols],
+							['mkt-eevee-e', bRow(2), 2 * bCols],
+						];
+						for (const [key, frames] of bootAnims) {
+							if (!this.anims.exists(key))
+								this.anims.create({ key, frameRate: 10, repeat: -1,
+									frames: this.anims.generateFrameNumbers(bootF.sheet, { frames }) });
+						}
+						this._followerAnimKeys  = bootAnims.map(([k]) => k);
+						this._followerIdleFrame = bootAnims.map(([,,idle]) => idle);
+
+						const scaleMult = SCALE_MULT[((inv.cosmetics) || {}).partnerScale] ?? 1;
+						this.follower = this.add.sprite(this.player.x, this.player.y, bootF.sheet, this._followerIdleFrame[0]);
+						this.follower.setOrigin(0.5, bootF.originY);
+						this.follower.setScale(bootF.scale * scaleMult);
+						this._followerScaleMult = scaleMult;
+						this.follower.setDepth(2.9);
+						if (Partner.loadShiny()) this.follower.setTint(0xffd080);
+
+						// Async-load real companion sprite if it differs from Eevee
+						if (form.url && dexId !== 133 && formKey !== 'eevee') {
+							const img = new window.Image();
+							img.crossOrigin = 'anonymous';
+							img.onload = () => {
+								if (!this.follower || !this.game) return;
+								this.game.events.once('step', () => {
+									if (!this.follower || !this.game) return;
+									const sheet = form.sheet;
+									if (!this.textures.exists(sheet)) {
+										let frameH = Math.round(img.naturalHeight / 8);
+										const stdW = [24,28,32,36,40,48,56,64];
+										let frameW = frameH, cols = 4;
+										for (const w of stdW) {
+											if (img.naturalWidth % w === 0) {
+												const c = img.naturalWidth / w;
+												if (c >= 3 && c <= 10) { frameW = w; cols = c; break; }
+											}
+										}
+										const _ov = PMD_FRAME_OVERRIDES && PMD_FRAME_OVERRIDES[form.dex];
+										if (_ov) { frameW = _ov.frameW; frameH = _ov.frameH; cols = _ov.cols; }
+										form.frameW = frameW; form.frameH = frameH; form.cols = cols;
+										if (form.dex && POKEMON_HEIGHTS[form.dex]) {
+											const tv = 35 * Math.sqrt(POKEMON_HEIGHTS[form.dex] / 1.7);
+											form.scale = Math.min(1.1, Math.max(0.40, tv / frameH));
+										}
+										try { this.textures.addSpriteSheet(sheet, img, { frameWidth: frameW, frameHeight: frameH }); }
+										catch(_e) { /* texture may already exist from camp scene */ }
+									}
+									// Build market-prefixed anims so they don't clash with camp's
+									const pf   = 'mkt' + (form.dex || dexId) + '-';
+									const c2   = form.cols || 4;
+									const rF   = (row) => Array.from({ length: c2 }, (_, i) => row * c2 + i);
+									const aDefs = [
+										[pf+'s', rF(0), 0],
+										[pf+'w', rF(6), 6*c2],
+										[pf+'n', rF(4), 4*c2],
+										[pf+'e', rF(2), 2*c2],
+									];
+									for (const [key, frames] of aDefs) {
+										if (this.anims.exists(key)) this.anims.remove(key);
+										try { this.anims.create({ key, frameRate: 10, repeat: -1,
+												frames: this.anims.generateFrameNumbers(sheet, { frames }) }); }
+										catch(_e) {}
+									}
+									this._followerAnimKeys  = aDefs.map(([k]) => k);
+									this._followerIdleFrame = aDefs.map(([,,idle]) => idle);
+									if (this.follower) {
+										this.follower.anims.stop();
+										this.follower.setTexture(sheet, this._followerIdleFrame[this._followerDir || 0]);
+										this.follower.setOrigin(0.5, form.originY);
+										this.follower.setScale(form.scale * (this._followerScaleMult || 1));
+										if (Partner.loadShiny()) this.follower.setTint(0xffd080);
+									}
+								});
+							};
+							img.onerror = () => {}; // keep Eevee on failure
+							img.src = form.url;
+						}
+						this.events.once('shutdown', () => {
+							if (this.follower) { this.follower.destroy(); this.follower = null; }
+						});
+					} catch(e) {
+						console.warn('[MarketFollower] init failed:', e);
+					}
+				}
+
+				_updateMarketFollower(vx, vy) {
+					if (!this.follower || !this._followerHistory) return;
+					// Push player's current position into history ring, pop oldest
+					this._followerHistory.push({ x: this.player.x, y: this.player.y });
+					if (this._followerHistory.length > 8) this._followerHistory.shift();
+					const pos = this._followerHistory[0];
+					this.follower.x = pos.x;
+					this.follower.y = pos.y + 4; // slight offset to appear behind player
+
+					const moving = vx !== 0 || vy !== 0;
+					if (moving) {
+						if      (vy > 0) this._followerDir = 0;
+						else if (vx < 0) this._followerDir = 1;
+						else if (vy < 0) this._followerDir = 2;
+						else if (vx > 0) this._followerDir = 3;
+						const key = this._followerAnimKeys && this._followerAnimKeys[this._followerDir];
+						if (key && (!this.follower.anims.isPlaying || this.follower.anims.currentAnim?.key !== key))
+							this.follower.anims.play(key, true);
+					} else {
+						this.follower.anims.stop();
+						if (this._followerIdleFrame) {
+							const f = this._followerIdleFrame[this._followerDir];
+							if (f != null) this.follower.setFrame(f);
+						}
+					}
+				}
+
 				onResize() { applyWrapTop(); this.applyZoom(); }
 	
 				applyZoom() {
@@ -9596,6 +9738,7 @@
 						if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 					}
 					this.player.setVelocity(vx, vy);
+					this._updateMarketFollower(vx, vy);
 	
 					const moving = vx !== 0 || vy !== 0;
 					const animKey = this.dirAnimKeys[this.dir];
@@ -9710,6 +9853,32 @@
 	// ══════════════════════════════════════════════════════════════════════════════
 	// BATCH 2 — HUD / GUI
 	// ══════════════════════════════════════════════════════════════════════════════
+
+	// ── B2-0: Button bar hamburger toggle ────────────────────────────────────────
+	const BtnBarToggle = (() => {
+		const KEY = 'pokequiz_btnbar_closed';
+		let closed = false;
+		function apply() {
+			const bar = document.getElementById('campBtnBar');
+			if (!bar) return;
+			if (closed) bar.classList.add('camp-btn-bar--closed');
+			else        bar.classList.remove('camp-btn-bar--closed');
+		}
+		function init() {
+			try { closed = localStorage.getItem(KEY) === '1'; } catch {}
+			apply();
+			const btn = document.getElementById('campBarToggle');
+			if (btn) {
+				btn.addEventListener('click', () => {
+					closed = !closed;
+					try { localStorage.setItem(KEY, closed ? '1' : '0'); } catch {}
+					apply();
+				});
+			}
+		}
+		return { init };
+	})();
+	window.CAMP_SYSTEMS.BtnBarToggle = BtnBarToggle;
 
 	// ── B2-1: Compact HUD mode ────────────────────────────────────────────────────
 	const HudCompact = (() => {
@@ -10561,6 +10730,7 @@
 				PartnerWidget.init();
 				QuickSlotBar.init();
 				Minimap.init();
+				BtnBarToggle.init();
 				HudCompact.init();
 				TreasureDig.init(this);
 				Journal.autoLog();

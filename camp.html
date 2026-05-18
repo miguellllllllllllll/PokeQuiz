@@ -23,7 +23,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/camp.css?v=7">
+	<link rel="stylesheet" href="css/camp.css?v=9">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body class="camp-body">
@@ -183,24 +183,33 @@
 		<!-- Camp star rating badge -->
 		<div class="camp-rating-badge" id="campRatingGate" aria-hidden="true" title="Camp Rating"></div>
 
-		<!-- Quick-action button bar (top-right) -->
-		<div class="camp-btn-bar" aria-hidden="true">
-			<a class="camp-quick-btn" id="campTCBtn" href="trainer-card.html" title="Trainer Card" aria-label="Open Trainer Card"><i class="bi bi-person-vcard-fill"></i></a>
-			<button class="camp-quick-btn" id="campDexBtn" title="Pokédex (D)" aria-label="Pokédex" type="button"><i class="bi bi-book-fill"></i></button>
-			<button class="camp-quick-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements" type="button"><i class="bi bi-award-fill"></i></button>
-			<button class="camp-quick-btn" id="campPostcardBtn" title="Postcards" aria-label="Postcards" type="button"><i class="bi bi-envelope-fill"></i></button>
-			<button class="camp-quick-btn" id="campPhotoBtn" title="Photo Mode (F)" aria-label="Take Photo" type="button"><i class="bi bi-camera-fill"></i></button>
-			<button class="camp-quick-btn" id="campMusicBtn" title="Toggle Music" aria-label="Toggle Music" type="button"><i class="bi bi-music-note-beamed"></i></button>
-			<button class="camp-quick-btn" id="campShinyBtn" title="Shiny Collection" aria-label="Shiny Collection" type="button">✨</button>
-			<button class="camp-quick-btn camp-notif-btn" id="campNotifBtn" title="Notifications" aria-label="Notifications" type="button">
-				<i class="bi bi-bell-fill"></i>
-				<span class="camp-notif-badge" id="campNotifBadge" hidden>0</span>
+		<!-- Quick-action button bar (bottom-left) -->
+		<div class="camp-btn-bar" id="campBtnBar" aria-hidden="true">
+			<!-- Hamburger toggle — always visible -->
+			<button class="camp-quick-btn camp-bar-toggle" id="campBarToggle" title="Toggle Menu" aria-label="Toggle action bar" type="button">
+				<span class="camp-bar-toggle-icon">
+					<span></span><span></span><span></span>
+				</span>
 			</button>
-			<button class="camp-quick-btn" id="campGuestbookBtn" title="Guestbook" aria-label="Guestbook" type="button"><i class="bi bi-journal-text"></i></button>
-			<button class="camp-quick-btn" id="campJournalBtn" title="Journal" aria-label="Camp Journal" type="button"><i class="bi bi-book-half"></i></button>
-			<button class="camp-quick-btn" id="campUpgradeBtn" title="Camp Upgrades" aria-label="Camp Upgrades" type="button"><i class="bi bi-hammer"></i></button>
-			<button class="camp-quick-btn" id="campMapBtn" title="Mini-map (M)" aria-label="Toggle Mini-map" type="button"><i class="bi bi-map-fill"></i></button>
-			<button class="camp-quick-btn" id="campHudToggle" title="Compact HUD" aria-label="Toggle Compact HUD" type="button"><i class="bi bi-chevron-right"></i></button>
+			<!-- All other buttons — hidden when bar is collapsed -->
+			<div class="camp-btn-bar-items" id="campBtnBarItems">
+				<a class="camp-quick-btn" id="campTCBtn" href="trainer-card.html" title="Trainer Card" aria-label="Open Trainer Card"><i class="bi bi-person-vcard-fill"></i></a>
+				<button class="camp-quick-btn" id="campDexBtn" title="Pokédex (D)" aria-label="Pokédex" type="button"><i class="bi bi-book-fill"></i></button>
+				<button class="camp-quick-btn" id="campAchieveBtn" title="Achievements" aria-label="Achievements" type="button"><i class="bi bi-award-fill"></i></button>
+				<button class="camp-quick-btn" id="campPostcardBtn" title="Postcards" aria-label="Postcards" type="button"><i class="bi bi-envelope-fill"></i></button>
+				<button class="camp-quick-btn" id="campPhotoBtn" title="Photo Mode (F)" aria-label="Take Photo" type="button"><i class="bi bi-camera-fill"></i></button>
+				<button class="camp-quick-btn" id="campMusicBtn" title="Toggle Music" aria-label="Toggle Music" type="button"><i class="bi bi-music-note-beamed"></i></button>
+				<button class="camp-quick-btn" id="campShinyBtn" title="Shiny Collection" aria-label="Shiny Collection" type="button">✨</button>
+				<button class="camp-quick-btn camp-notif-btn" id="campNotifBtn" title="Notifications" aria-label="Notifications" type="button">
+					<i class="bi bi-bell-fill"></i>
+					<span class="camp-notif-badge" id="campNotifBadge" hidden>0</span>
+				</button>
+				<button class="camp-quick-btn" id="campGuestbookBtn" title="Guestbook" aria-label="Guestbook" type="button"><i class="bi bi-journal-text"></i></button>
+				<button class="camp-quick-btn" id="campJournalBtn" title="Journal" aria-label="Camp Journal" type="button"><i class="bi bi-book-half"></i></button>
+				<button class="camp-quick-btn" id="campUpgradeBtn" title="Camp Upgrades" aria-label="Camp Upgrades" type="button"><i class="bi bi-hammer"></i></button>
+				<button class="camp-quick-btn" id="campMapBtn" title="Mini-map (M)" aria-label="Toggle Mini-map" type="button"><i class="bi bi-map-fill"></i></button>
+				<button class="camp-quick-btn" id="campHudToggle" title="Compact HUD" aria-label="Toggle Compact HUD" type="button"><i class="bi bi-chevron-right"></i></button>
+			</div>
 		</div>
 
 		<!-- Partner portrait widget (bottom-left, above touch pad) -->
@@ -451,6 +460,21 @@
 
 		<!-- Wild-encounter overlay: spinning wheel → minigame → result -->
 		<div class="camp-battle" id="campBattle" hidden>
+			<!-- Wild Pokémon encounter intro — shown before the minigame wheel -->
+			<div class="cb-screen cb-intro" data-screen="intro" hidden>
+				<div class="cb-intro-flash" id="cbIntroFlash" aria-hidden="true"></div>
+				<div class="cb-intro-grass" aria-hidden="true">
+					<span></span><span></span><span></span><span></span><span></span>
+				</div>
+				<div class="cb-intro-poke" id="cbIntroPoke">
+					<img class="cb-intro-sprite" id="cbIntroSprite" alt="">
+				</div>
+				<div class="cb-intro-bottom">
+					<p class="cb-intro-text">A wild <strong class="cb-intro-name" id="cbIntroName">Pokémon</strong> appeared!</p>
+					<button class="cb-btn cb-intro-btn" id="cbIntroBtn" type="button">Battle!</button>
+				</div>
+			</div>
+
 			<!-- Spinning wheel — picks which minigame to play -->
 			<div class="cb-screen cb-wheel" data-screen="wheel">
 				<h2 class="cb-title">A Wild Encounter!</h2>
@@ -551,7 +575,7 @@
 	<script src="js/trainer-palette.js" defer></script>
 	<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js" defer></script>
 	<script src="js/camp-data.js?v=5" defer></script>
-	<script src="js/camp-systems.js?v=15" defer></script>
+	<script src="js/camp-systems.js?v=18" defer></script>
 	<script src="js/camp.js?v=24" defer></script>
 </body>
 </html>
