@@ -84,8 +84,17 @@
 	grid-template-columns: 1fr 1fr;
 }
 
+@media (max-width: 640px) {
+	.evo-chain-display { gap: 6px; padding: 16px 10px; }
+	.evo-slot { min-width: 0; padding: 10px 8px; }
+	.evo-slot img { width: 56px; height: 56px; }
+	.evo-arrow { font-size: 11px; }
+	.evo-slot-name { font-size: 10px; }
+}
+
 @media (max-width: 420px) {
 	.pz-answers.evo-grid {
 		grid-template-columns: 1fr;
 	}
+	.evo-slot img { width: 48px; height: 48px; }
 }

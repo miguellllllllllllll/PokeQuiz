@@ -296,10 +296,19 @@
 
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 
-@media (max-width: 540px) {
+@media (max-width: 640px) {
 	.inf-card { padding: 20px 16px; }
 	.inf-streak { font-size: 28px; }
 	.inf-question { font-size: 17px; }
 	.inf-final-streak { font-size: 40px; }
 	.inf-gameover { padding: 28px 16px 22px; }
+	.inf-answer { min-height: 44px; }
+	.inf-actions .btn { min-height: 44px; }
+	.inf-header { padding-bottom: 14px; margin-bottom: 20px; }
+}
+
+@media (max-width: 480px) {
+	.inf-streak { font-size: 24px; }
+	.inf-final-streak { font-size: 34px; }
+	.inf-answer { font-size: 14px; padding: 12px 14px; gap: 10px; }
 }

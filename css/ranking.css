@@ -82,8 +82,15 @@
 
 @media (max-width: 640px) {
 	.lb-tab-label { display: none; }
-	.lb-tab { padding: 9px 12px; }
+	.lb-tab { padding: 11px 14px; min-height: 44px; }
 	.lb-tab-icon { font-size: 18px; }
+	.ranking-header { gap: 8px; }
+	.ranking-header h1 { font-size: 22px; }
+	.ranking-pokeball { width: 220px; right: -80px; top: -80px; }
+	.ranking-actions { flex-direction: column; }
+	.ranking-actions .btn { width: 100%; min-height: 44px; }
+	.lb-mode-tab { min-height: 44px; }
+	.season-pill { min-height: 38px; }
 }
 
 .leaderboard-wrap {

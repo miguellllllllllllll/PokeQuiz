@@ -496,3 +496,26 @@
 	text-align: center;
 	margin-top: 4px;
 }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+	.puzzle-card { max-width: 100%; }
+	.puzzle-inner { padding: 0; }
+	.prompt-area { padding: 18px 14px; }
+	.prompt-text { font-size: 15px; }
+	.game-header { gap: 10px; }
+	.streak-group { gap: 14px; }
+	.choice-btn { padding: 13px 12px; min-height: 44px; }
+	.choices-grid { gap: 8px; }
+	.tab-btn { font-size: 11px; padding: 12px 6px; min-height: 44px; }
+	.controls-row .btn, .over-actions .btn { min-height: 44px; }
+	.over-stats { gap: 22px; }
+	.pokemon-emoji { font-size: 46px; }
+}
+
+@media (max-width: 480px) {
+	.over-num { font-size: 26px; }
+	.mode-card { padding: 20px 14px; }
+	.mode-icon { font-size: 30px; }
+}

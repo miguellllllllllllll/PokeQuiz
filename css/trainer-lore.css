@@ -344,7 +344,19 @@
 	}
 	.lore-body { padding: 22px 18px; }
 }
+@media (max-width: 640px) {
+	.lore-portrait h1 { font-size: 17px; }
+	.lore-sprite { height: 150px; }
+	.lore-meta { grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+	.lore-body h2 { font-size: 11px; }
+	.team-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+	.related-grid { grid-template-columns: 1fr; }
+	.cta-btn { min-height: 44px; flex: 1 1 auto; justify-content: center; }
+}
+
 @media (max-width: 480px) {
 	.lore-prevnext { width: 100%; justify-content: space-between; }
+	.lore-step { min-height: 44px; }
 	.lore-step span { display: none; }
+	.lore-meta { grid-template-columns: 1fr; }
 }

@@ -595,10 +595,10 @@
 
 /* ── Mobile ───────────────────────────────────────────────────────────────── */
 
-@media (max-width: 540px) {
+@media (max-width: 640px) {
 	.pz-title { font-size: 18px; }
 	.pz-question { font-size: 16px; }
-	.pz-answer { font-size: 14px; padding: 12px 14px; gap: 10px; }
+	.pz-answer { font-size: 14px; padding: 12px 14px; gap: 10px; min-height: 44px; }
 	.pz-answer-letter { width: 28px; height: 28px; font-size: 10px; }
 	.pz-stats { gap: 20px; }
 	.pz-stat-num { font-size: 16px; }
@@ -607,4 +607,15 @@
 	.pz-rs-num { font-size: 22px; }
 	.pz-streak-display { font-size: 32px; }
 	.pz-mode-grid { grid-template-columns: 1fr 1fr; }
+	.pz-controls { justify-content: stretch; }
+	.pz-controls .btn { flex: 1; min-height: 44px; }
+	.pz-result-actions .btn { min-height: 44px; }
+	.pz-toast { max-width: min(92vw, 320px); }
+}
+
+@media (max-width: 480px) {
+	.pz-mode-grid { grid-template-columns: 1fr; }
+	.pz-result-score { font-size: 34px; }
+	.pz-result-stats { gap: 16px; }
+	.pz-stats { gap: 14px; }
 }

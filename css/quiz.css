@@ -301,6 +301,22 @@
 	flex-wrap: wrap;
 }
 
+@media (max-width: 640px) {
+	.quiz-meta { gap: 10px; margin-bottom: 16px; padding-bottom: 14px; }
+	.progress { max-width: none; min-width: 0; width: 100%; }
+	.quiz-stage { min-height: 0; }
+	.answer { min-height: 44px; }
+	.quiz-controls { justify-content: stretch; }
+	.quiz-controls .btn { flex: 1 1 auto; min-height: 44px; }
+	.results { padding: 22px 16px; }
+	.results-actions { flex-direction: column; }
+	.results-actions .btn { width: 100%; min-height: 44px; }
+	.challenge-banner { margin: -28px -16px 16px -16px; padding: 10px 14px; }
+	.nuzlocke-title { font-size: 15px; }
+	.nuzlocke-num { font-size: 38px; }
+	.pq-toast { max-width: 92vw; }
+}
+
 @media (max-width: 520px) {
 	.question { font-size: 18px; }
 	.answer { font-size: 14px; padding: 12px 14px; }

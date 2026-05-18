@@ -517,3 +517,29 @@
 .back-link:hover {
 	color: var(--poke-red);
 }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+	.puzzle-card { padding: 18px 14px; }
+	.puzzle-pokeball { width: 240px; right: -90px; top: -90px; }
+	.game-header { gap: 10px; }
+	.streak-group { gap: 14px; }
+	.stat-num { font-size: 16px; }
+	.moves-area { padding: 16px 14px; }
+	.move-chip { font-size: 12px; padding: 8px 13px; }
+	.choice-btn { min-height: 44px; }
+	.hc-submit,
+	.guess-input { min-height: 44px; }
+	.over-stats { gap: 22px; }
+	.over-num { font-size: 26px; }
+	.game-over-inner h2 { font-size: 18px; }
+	.controls-row .btn,
+	.over-actions .btn { flex: 1 1 auto; min-height: 44px; }
+	.token-pop { right: 12px; bottom: 16px; }
+}
+
+@media (max-width: 480px) {
+	.mode-title-big { font-size: 17px; }
+	.over-num { font-size: 22px; }
+}

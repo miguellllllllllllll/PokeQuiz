@@ -341,10 +341,20 @@
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
 	.badges-hero {
-		padding: 26px 22px;
+		padding: 24px 18px;
 	}
 
 	.badges-title {
 		font-size: 18px;
 	}
+
+	.badges-case { gap: 10px; }
+	.badge-slot-inner { padding: 16px 10px 14px; min-height: 140px; }
+	.tip-row { gap: 12px; padding: 12px 10px; }
+	.tip-emoji { font-size: 22px; flex: 0 0 26px; }
+}
+
+@media (max-width: 360px) {
+	.badges-title { font-size: 15px; }
+	.badge-emoji { font-size: 34px; }
 }

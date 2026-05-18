@@ -84,7 +84,14 @@
 	filter: drop-shadow(0 4px 0 rgba(0,0,0,0.18));
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
+	.dex-screen { padding: 20px 16px 18px; }
 	.dex-text { font-size: 19px; }
 	.dex-sprite { width: 110px; height: 110px; }
+}
+
+@media (max-width: 480px) {
+	.dex-text { font-size: 17px; }
+	.dex-sprite { width: 96px; height: 96px; }
+	.dex-meta { flex-wrap: wrap; gap: 6px; }
 }

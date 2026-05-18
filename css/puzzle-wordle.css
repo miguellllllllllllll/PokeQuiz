@@ -331,12 +331,27 @@
 
 /* ── Mobile ─────────────────────────────────────────────────────────────── */
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
 	.pzw-silhouette { width: 90px; height: 90px; }
-	.hint-cell { min-width: 38px; padding: 6px 6px; font-size: 10px; }
+	.hint-cell-outer { min-width: 40px; }
+	.hint-cell { min-width: 40px; padding: 6px 5px; font-size: 10px; }
 	.hint-cell .hint-emoji { font-size: 13px; }
 	.hint-cell .hint-val { font-size: 9px; }
+	.wordle-table { min-width: 420px; }
+	.wordle-table thead th { padding: 8px 6px; }
+	.wordle-table tbody td { padding: 8px 6px; }
 	.wordle-table tbody td:first-child { font-size: 12px; }
 	.pzw-result-sprite { width: 90px; height: 90px; }
 	.pzw-result-sprite-wrap { width: 90px; height: 90px; }
+	/* keep submit button from clipping input text */
+	.wordle-input { padding-right: 96px; min-height: 44px; }
+	.wordle-guess-btn { min-height: 36px; }
+}
+
+@media (max-width: 480px) {
+	.hint-cell-outer { min-width: 34px; }
+	.hint-cell { min-width: 34px; padding: 5px 3px; }
+	.hint-cell .hint-emoji { font-size: 12px; }
+	.hint-cell .hint-val { font-size: 8px; }
+	.wordle-table { min-width: 360px; }
 }

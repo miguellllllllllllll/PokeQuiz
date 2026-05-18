@@ -547,10 +547,35 @@
 
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 
+@media (max-width: 640px) {
+	.puzzle-card { padding: 18px 14px; }
+	.puzzle-pokeball { width: 240px; right: -90px; top: -90px; }
+	.intro-rules { padding: 16px 16px; }
+	.leader-card { padding: 18px 16px; }
+	.results-area { padding: 18px 14px; }
+	.matrix-table { font-size: 11px; }
+	.matrix-table td { padding: 8px 6px; }
+	.matrix-table th:first-child { min-width: 90px; }
+	.matrix-table td:first-child { font-size: 12px; }
+	.pool-mon { min-height: 44px; }
+	.battle-btn { font-size: 14px; padding: 14px 24px; }
+	.final-screen h2 { font-size: 18px; }
+	.total-score-box { max-width: 100%; }
+	.controls-row .btn,
+	.final-actions .btn { flex: 1 1 auto; min-height: 44px; }
+	.token-pop { right: 12px; bottom: 16px; }
+}
+
 @media (max-width: 540px) {
 	.leader-card { flex-direction: column; text-align: center; padding: 18px 16px; }
 	.leader-emoji { font-size: 44px; }
 	.leader-team { justify-content: center; }
 	.total-num { font-size: 36px; }
 	.total-score-box { padding: 24px 20px; }
+}
+
+@media (max-width: 420px) {
+	.pool-grid { grid-template-columns: 1fr 1fr; }
+	.matrix-table { font-size: 10px; }
+	.matrix-table th { font-size: 7px; }
 }

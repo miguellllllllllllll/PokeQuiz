@@ -114,7 +114,14 @@
 	border-top: 2px dashed rgba(0,0,0,0.06);
 }
 
+@media (max-width: 640px) {
+	.radio { min-height: 44px; }
+	.form-pokeball { width: 240px; right: -80px; bottom: -80px; }
+	.form-actions { flex-direction: column; }
+	.form-actions .btn { width: 100%; min-height: 44px; }
+}
+
 @media (max-width: 520px) {
-	.form-inner { padding: 24px; }
+	.form-inner { padding: 24px 18px; }
 	.field.two-col { grid-template-columns: 1fr; }
 }

@@ -1170,3 +1170,28 @@
 	.streak-tile.big { padding: 14px 20px; }
 	.streak-tile.big .stat-num { font-size: 24px; }
 }
+
+@media (max-width: 640px) {
+	.puzzle-inner { padding: 20px 16px; }
+	.mode-select { padding: 28px 16px; }
+	.back-link { position: static; margin-bottom: 16px; }
+	.mode-title-big { font-size: 20px; }
+	.mode-select .lede { font-size: 14px; }
+	.mode-grid { grid-template-columns: 1fr; gap: 16px; }
+	.mode-card { padding: 20px 16px 18px; }
+	.diff-pill { font-size: 7px; padding: 5px 9px; }
+	.mode-art { height: 96px; }
+	.guess-form { flex-direction: column; }
+	.guess-input { width: 100%; }
+	.np-btn, .game-over-actions .btn, .puzzle-controls .btn { min-height: 44px; }
+	.game-over-stats { gap: 10px; }
+	.game-over-msg { font-size: 14px; }
+	.streak-milestone { font-size: 24px; padding: 12px 20px; }
+}
+
+@media (max-width: 480px) {
+	.silhouette-frame { width: 100%; max-width: 240px; height: auto; aspect-ratio: 1; }
+	.mode-stats { grid-template-columns: 1fr 1fr; }
+	.reveal-name { font-size: 14px; }
+	.game-over.is-defeat h1 { font-size: 26px; }
+}

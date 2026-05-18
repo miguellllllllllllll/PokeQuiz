@@ -3095,3 +3095,176 @@ body.pk-reduce-motion *::after {
 @media (max-width: 600px) {
   #campGrpPopup { grid-template-columns: repeat(3, 1fr); max-width: 92vw; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE PANEL POLISH — phone usability (375px-class screens)
+   All rules below are mobile-only and must not affect the desktop layout.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Shared: no panel may exceed the viewport ──────────────────────────── */
+
+  /* Centered modal-style overlays (Partner, Mart, Battle, Pause, Shiny). */
+  .cp-panel,
+  .cm-panel,
+  .cb-screen,
+  .camp-pause-panel,
+  .shiny-modal-inner,
+  .shiny-catch-inner {
+    max-width: min(96vw, 460px);
+    width: 100%;
+    max-height: 90dvh;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Trim the dark padding so the panel itself gets the real estate. */
+  .camp-partner,
+  .camp-mart,
+  .camp-battle,
+  .camp-pause { padding: 10px; }
+
+  /* ── Partner Pokémon panel (#campPartner) ──────────────────────────────── */
+  .cp-panel { padding: 18px 14px 14px; }
+  .cp-close { top: 6px; right: 6px; width: 36px; height: 36px; font-size: 20px; }
+  .cp-title { font-size: 12px; margin-bottom: 12px; padding-right: 34px; }
+  .cp-card { flex-direction: row; gap: 10px; text-align: left; }
+  .cp-actions { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cp-actions .cb-btn,
+  .cp-actions .cb-btn.cp-btn-alt {
+    min-height: 44px;
+    font-size: 8px;
+    padding: 8px 6px;
+    width: 100%;
+    margin: 0;
+  }
+  .cp-nickname-row { flex-wrap: wrap; }
+  .cp-nickname-input { min-height: 40px; font-size: 10px; }
+
+  /* ── Pikachu's Mart (#campMart) ────────────────────────────────────────── */
+  .cm-panel { max-height: 90dvh; max-height: 90vh; }
+  .cm-panel-head { padding: 14px 14px 10px; }
+  .cm-panel-body { padding: 0 14px 14px; }
+  .cm-tabs { flex-wrap: wrap; }
+  .cm-tab { min-height: 40px; font-size: 7px; flex: 1 0 22%; }
+  .cm-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .cm-row-name { min-width: 0; }
+  .cm-row .cb-btn,
+  .cm-row .cm-action {
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    font-size: 8px !important;
+  }
+  .cm-cosm-row { flex-direction: column; }
+  .cm-cosm-btn { width: 100%; min-height: 44px; font-size: 8px; }
+  .cm-leave { width: 100%; min-height: 44px; }
+
+  /* ── Wild-encounter battle (#campBattle) ───────────────────────────────── */
+  .cb-screen { padding: 18px 14px; }
+  .cb-title { font-size: 13px; margin-bottom: 14px; }
+  .cb-btn { min-height: 44px; font-size: 10px; padding: 11px 16px; }
+  .cb-intro { min-height: 260px; }
+  .cb-intro-sprite { width: 96px; height: 96px; }
+  .cb-wheel-rim { width: min(78vw, 240px); height: min(78vw, 240px); }
+  .cb-card-hand { gap: 10px; }
+  .cb-card-card { min-width: 96px; min-height: 44px; }
+  .cb-rps-buttons { flex-direction: column; align-items: stretch; }
+  .cb-rps-btn { min-width: 0; width: 100%; min-height: 48px; }
+  .cb-rhythm-tap-btn { min-height: 56px; }
+  .cb-sketch-stage { width: 140px; height: 140px; }
+  .cb-sketch-img { width: 108px; height: 108px; }
+  .cb-sketch-buttons { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cb-sketch-btn { min-height: 44px; }
+
+  /* ── Pause menu (#campPause) ───────────────────────────────────────────── */
+  .camp-pause-panel {
+    min-width: 0;
+    width: 100%;
+    max-width: min(96vw, 320px);
+    padding: 18px 16px 16px;
+  }
+  .camp-pause-title { position: sticky; top: -18px; background: rgba(12,10,24,0.99); padding: 8px 0; margin: -4px 0 10px; z-index: 2; }
+  .camp-pause-btn { min-height: 44px; font-size: 9px; }
+
+  /* ── Room editor (#campRoomEditor) ─────────────────────────────────────── */
+  .camp-room-editor { align-items: flex-end; }
+  .cre-panel {
+    width: 100vw;
+    max-height: 80dvh;
+    max-height: 80vh;
+    border-left: none;
+    border-top: 2px solid var(--camp-accent);
+  }
+  .cre-close { width: 40px; height: 40px; font-size: 17px; }
+  .cre-btn,
+  .cre-btn--cancel,
+  .cre-btn--rotate { min-height: 40px; padding: 8px 10px; }
+  .camp-room-edit-btn { min-height: 40px; padding: 8px 14px; }
+
+  /* ── Quest board + drawer-style panels (.pk-drawer) ───────────────────── */
+  /* questPanel, achievePanel, friendsPanel, photoAlbumPanel, weeklyPanel,
+     notifDrawer, saveSlotsPanel — full-width sliding drawers. */
+  .pk-drawer,
+  #notifDrawer {
+    width: min(96vw, 340px);
+    max-height: 100dvh;
+    max-height: 100vh;
+  }
+  .pk-drawer-body { padding: 12px 12px 24px; }
+  .pk-close { font-size: 20px; padding: 6px 8px; min-width: 40px; min-height: 40px; }
+  #photoAlbumGrid { grid-template-columns: repeat(2, 1fr); }
+  #friendAddInput { min-height: 40px; }
+
+  /* ── Modal-style panels (.pk-modal) — Pokedex, PC Box, Mystery Gift,
+     Achievements, Trainer Level, Camp Rating, Postcard, Camp Visit, etc. ── */
+  .pk-modal,
+  .pk-modal-sm,
+  .pk-modal-lg {
+    width: min(96vw, 460px);
+    max-height: 90dvh;
+    max-height: 90vh;
+  }
+  .pk-modal-body { padding: 12px 14px 16px; }
+  .pk-btn { min-height: 40px; }
+  .pk-btn-sm { min-height: 38px; }
+
+  /* ── Shiny encounter modals ────────────────────────────────────────────── */
+  .shiny-modal-inner { padding: 22px 16px 18px; }
+  .shiny-title { font-size: 11px; }
+  .shiny-btn-catch,
+  .shiny-btn-flee { min-height: 44px; flex: 1 1 auto; }
+  .shiny-answer-btn { min-height: 44px; }
+  .shiny-catch-inner { padding: 22px 18px; }
+  .shiny-catch-opts { grid-template-columns: 1fr; }
+  .shiny-catch-opt { min-height: 44px; }
+
+  /* ── Grouped corner HUD popup ──────────────────────────────────────────── */
+  #campGrpPopup { max-width: 96vw; }
+  .cgp-btn { min-height: 48px; }
+
+  /* ── Dialog box + interaction prompt ───────────────────────────────────── */
+  .camp-dialog {
+    width: min(96vw, 680px);
+    bottom: 14px;
+    font-size: 10px;
+    padding: 12px 14px 20px;
+    max-height: 40dvh;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+  .camp-dialog-text { min-height: 44px; }
+  .camp-prompt { font-size: 8px; padding: 3px 7px; max-width: 90vw; }
+}
+
+/* ── Very small phones ─────────────────────────────────────────────────── */
+@media (max-width: 400px) {
+  .cp-actions { grid-template-columns: 1fr; }
+  .cm-tab { flex-basis: 45%; }
+  .cb-sketch-buttons { grid-template-columns: 1fr; }
+  .cb-wheel-slice span { font-size: 9px; }
+  .pk-drawer,
+  #notifDrawer { width: 100vw; }
+  .camp-dialog { font-size: 9px; }
+}

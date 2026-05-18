@@ -844,6 +844,11 @@
 		font-size: 22px;
 		flex: 0 0 28px;
 	}
+
+	.tc-share-row { justify-content: stretch; }
+	.tc-share-btn { width: 100%; justify-content: center; min-height: 44px; }
+	.tc-stat-tile { padding: 16px; gap: 12px; }
+	.tc-share-toast { white-space: normal; max-width: 88vw; text-align: center; }
 }
 
 /* ── Share button & banner ───────────────────────────────────────────────── */

@@ -138,7 +138,12 @@
 	100% { box-shadow: 0 6px 0 var(--poke-black), 0 0 0 6px rgba(59, 76, 202, 0.2); }
 }
 
-@media (max-width: 520px) {
-	.play-cry-btn { width: 108px; height: 108px; }
-	.play-cry-icon { font-size: 22px; }
+@media (max-width: 640px) {
+	.play-cry-btn { width: 112px; height: 112px; }
+	.play-cry-icon { font-size: 24px; }
+}
+
+@media (max-width: 480px) {
+	.play-cry-btn { width: 100px; height: 100px; }
+	.play-cry-icon { font-size: 20px; }
 }

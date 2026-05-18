@@ -467,10 +467,24 @@
 
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 
-@media (max-width: 540px) {
+@media (max-width: 640px) {
 	.sp-card { padding: 20px 16px; }
 	.sp-sprite { width: 120px; height: 120px; }
 	.sp-results-sprite { width: 120px; height: 120px; }
 	.sp-score-display { font-size: 36px; }
 	.sp-round { padding: 20px 16px; }
+	.sp-title { font-size: 19px; }
+	.sp-q { font-size: 16px; }
+	.sp-choice { min-height: 44px; }
+	.sp-text-input { min-height: 44px; }
+	.sp-text-submit { min-height: 44px; }
+	.sp-results { padding: 28px 16px 24px; }
+	.sp-results-actions .btn { flex: 1 1 auto; min-height: 44px; }
+}
+
+@media (max-width: 480px) {
+	.sp-round-title { font-size: 11px; }
+	.sp-score-display { font-size: 30px; }
+	.sp-results-name { font-size: 13px; }
+	.sp-choice { grid-template-columns: 30px 1fr; gap: 10px; padding: 12px; }
 }
