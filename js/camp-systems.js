@@ -6416,6 +6416,9 @@
 	
 			// Signs in front of each stall — text comes from SIGN_MESSAGES_MARKET
 			[[9,7],[9,22],[16,7],[16,22]].forEach(([r,c]) => set(r,c,TSG));
+			// Notice board sign (west of board NPC) and Arcane Tower sign (south approach)
+			set(8, 11, TSG);  // notice board
+			set(23, 11, TSG); // arcane tower
 	
 			// ── Pokémon Center (cols 30–37, rows 3–9) ─────────────────────────────
 			// Interior floor first — walls are stamped on top so they win
@@ -9923,6 +9926,11 @@
 							Dialog.advance();
 						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'contest') {
 							Contests.open();
+						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'quests') {
+							DailyQuests.open();
+						} else if (target && target.kind === 'npc' && target.npc && target.npc.kind === 'archivist') {
+							const lines = Array.isArray(target.npc.dialog) ? target.npc.dialog : [target.npc.dialog];
+							Dialog.open(lines.join('\n'));
 						} else if (target && target.kind === 'npc') {
 							MarketShop.open(target.npc);
 						} else if (target && target.kind === 'sign') {

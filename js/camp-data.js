@@ -874,6 +874,23 @@ window.CAMP_DATA.MARKET_NPCS = [
 			spriteScale: 0.89, frameHeight: 32,
 			dialog: ['Welcome to the Contest Hall! Show off your partner\'s talents!', 'Ribbons are forever — come compete!'],
 		},
+		{
+			key: 'm-noticeboard', species: 'camper', r: 8, c: 12,
+			label: 'Quests', shopKind: null, kind: 'quests',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: 'Daily quests reset every morning. Complete them all for a big token bonus!',
+		},
+		{
+			key: 'm-archivist', species: 'gentleman', r: 22, c: 12,
+			label: 'Talk', shopKind: null, kind: 'archivist',
+			spriteScale: 0.89, frameHeight: 32,
+			dialog: [
+				'Archivist: "Ah, a visitor to the Arcane Tower."',
+				'"Built long ago by scholars who believed Pokémon held the secrets of the universe."',
+				'"They filled this tower with every Pokémon fact ever recorded."',
+				'"Study hard — the bond between trainer and partner is the greatest knowledge of all."',
+			],
+		},
 	];
 
 // ── SHINY_POOL ────────────────────────────────────────────────────────
@@ -935,6 +952,8 @@ window.CAMP_DATA.SIGN_MESSAGES_MARKET = {
 		'16,22': "Stone Vendor — evolution stones for the worthy.",
 		'10,31': "Pokémon Center — free healing and a complimentary berry!",
 		'12,39': "Jolteon's Café — energizing beverages and treats!",
+		'8,11':  "📋 Notice Board — check your daily quests here!",
+		'23,11': "🗼 Arcane Tower — ancient Pokémon knowledge within.",
 	};
 
 // ── PLANTS_KEY ────────────────────────────────────────────────────────
