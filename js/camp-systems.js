@@ -6462,11 +6462,11 @@
 			// Sign just outside the café entrance on the south side of the path
 			set(12, 39, TSG);
 
-			// ── Medieval Tower — bottom-left quadrant (rows 16–21, cols 3–6) ──
+			// ── Medieval Tower — centre of lower grass lot (rows 15–20, cols 10–13) ──
 			// Overwrites any flower/bush tiles that landed here — the tower wins.
-			fill(16, 3, 21, 6, TBLD);
+			fill(15, 10, 20, 13, TBLD);
 			// Small cobblestone approach path leading south from the tower entrance
-			set(22, 4, TP); set(22, 5, TP);
+			set(21, 11, TP); set(21, 12, TP);
 
 			return map;
 		}
@@ -9387,7 +9387,7 @@
 						}
 					}
 					// Paint the medieval tower art over its TBLD footprint
-					this._drawMarketTower(baseCtx, 3 * TILE, 16 * TILE);
+					this._drawMarketTower(baseCtx, 10 * TILE, 15 * TILE);
 					this.baseTex.refresh();
 					this.add.image(0, 0, 'marketBase').setOrigin(0).setDepth(0);
 	
@@ -10041,49 +10041,6 @@
 	window.CAMP_SYSTEMS.HudCompact = HudCompact;
 
 	// ── B2-2: Partner Portrait Widget ────────────────────────────────────────────
-	const PartnerWidget = (() => {
-		let el = null, timer = null;
-		function init() {
-			el = document.getElementById('campPartnerWidget');
-			if (!el) return;
-			update();
-			timer = setInterval(update, 2000);
-		}
-		function update() {
-			if (!el) return;
-			try {
-				const inv = Inventory.load();
-				const companionKey = inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee');
-				const formLookup = (window.CAMP_SYSTEMS.dexFromKey || (k => k))(companionKey);
-				const form = FOLLOWER_FORMS ? (FOLLOWER_FORMS[formLookup] || FOLLOWER_FORMS.eevee) : null;
-				const friendship = inv.friendship || 0;
-				const hearts = Math.round((friendship / 100) * 5);
-				const name = (form && form.displayName) || 'Eevee';
-				const activeSlot = (inv.party || [])[inv.partyActive || 0];
-				const nick = (activeSlot && activeSlot.nickname) || '';
-				const displayName = nick || name;
-
-				let spriteHTML = '';
-				if (form) {
-					const PS = 2;
-					const imgUrl = form.url ? form.url : ('Pictures/sprites/' + form.sheet + '.png');
-					spriteHTML = '<div style="' +
-						'background-image:url(\'' + imgUrl + '\');' +
-						'background-position:0 0;' +
-						'background-size:' + (form.frameW * form.cols * PS) + 'px ' + (form.frameH * 8 * PS) + 'px;' +
-						'width:' + (form.frameW * PS) + 'px;height:' + (form.frameH * PS) + 'px;' +
-						'image-rendering:pixelated;margin:0 auto 2px"></div>';
-				}
-				const heartStr = '♥'.repeat(hearts) + '<span style="opacity:0.3">' + '♥'.repeat(5 - hearts) + '</span>';
-				el.innerHTML = spriteHTML +
-					'<div class="cpw-name">' + displayName + '</div>' +
-					'<div class="cpw-hearts">' + heartStr + '</div>';
-			} catch (e) {}
-		}
-		function destroy() { if (timer) { clearInterval(timer); timer = null; } }
-		return { init, update, destroy };
-	})();
-	window.CAMP_SYSTEMS.PartnerWidget = PartnerWidget;
 
 	// ── B2-3: Quick-slot bar ──────────────────────────────────────────────────────
 	const QuickSlotBar = (() => {
@@ -10796,7 +10753,6 @@
 			origCreate.call(this);
 			try {
 				// Init new systems after camp is built
-				PartnerWidget.init();
 				QuickSlotBar.init();
 				Minimap.init();
 				BtnBarToggle.init();
