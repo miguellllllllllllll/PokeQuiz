@@ -3449,7 +3449,7 @@
 	// Self-contained canvas-overlay minigame; does not touch the Phaser scenes.
 	// Your partner Pokémon fights alongside you, auto-firing at nearby foes.
 		const TowerDungeon = (() => {
-			let W = 320, H = 240; const WALL = 16, MAX_ROOM = 8;
+			let W = 560, H = 560, VW = 320, VH = 240; const WALL = 16, MAX_ROOM = 8;
 			let root = null, cv = null, ctx = null, raf = null, openFlag = false;
 			let S = null;
 			const keys = {};
@@ -3500,9 +3500,9 @@
 				const vw = Math.max(300, window.innerWidth || 360);
 				const vh = Math.max(300, window.innerHeight || 540);
 				const ar = vw / vh;
-				if (ar >= 1) { W = 480; H = Math.round(480 / ar); }
-				else { H = 480; W = Math.round(480 * ar); }
-				if (cv) { cv.width = W; cv.height = H; }
+				if (ar >= 1) { VW = 380; VH = Math.round(380 / ar); }
+				else { VH = 380; VW = Math.round(380 * ar); }
+				if (cv) { cv.width = VW; cv.height = VH; }
 				if (ctx) ctx.imageSmoothingEnabled = false;
 			}
 			function ensure() {
@@ -3552,7 +3552,7 @@
 					const shooter = S.room >= 3 && Math.random() < 0.35;
 					S.enemies.push({
 						x: WALL + 24 + Math.random() * (W - 2 * WALL - 48),
-						y: WALL + 20 + Math.random() * (H / 2 - WALL - 20),
+						y: WALL + 24 + Math.random() * (H - 2 * WALL - 120),
 						hp: shooter ? 2 : 2 + Math.floor(S.room / 3),
 						r: 7, shooter, cd: 50 + Math.random() * 70,
 						spd: shooter ? 0.45 : 0.62 + Math.random() * 0.3, hurt: 0,
@@ -3644,7 +3644,11 @@
 			}
 			function draw() {
 				const t = S.tick;
-				ctx.fillStyle = "#0e0b16"; ctx.fillRect(0, 0, W, H);
+				// camera follows the player, clamped to the room bounds
+				const camX = Math.max(0, Math.min(W - VW, S.px - VW / 2));
+				const camY = Math.max(0, Math.min(H - VH, S.py - VH / 2));
+				ctx.fillStyle = "#0e0b16"; ctx.fillRect(0, 0, VW, VH);
+				ctx.save(); ctx.translate(-camX, -camY);
 				// floor — dungeon stone tiles
 				for (let y = WALL; y < H - WALL; y += 16) {
 					for (let x = WALL; x < W - WALL; x += 16) {
@@ -3782,12 +3786,13 @@
 				// particles
 				for (const p of S.fx) { ctx.globalAlpha = Math.min(1, p.life / 9); ctx.fillStyle = p.col; ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3); }
 				ctx.globalAlpha = 1;
+				ctx.restore();
 				// vignette
-				const vg = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 210);
+				const vg = ctx.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * 0.28, VW / 2, VH / 2, Math.max(VW, VH) * 0.72);
 				vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.5)");
-				ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+				ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
 				// HUD
-				ctx.fillStyle = "rgba(10,8,18,0.7)"; ctx.fillRect(0, 0, W, 16);
+				ctx.fillStyle = "rgba(10,8,18,0.7)"; ctx.fillRect(0, 0, VW, 16);
 				for (let i = 0; i < S.maxHp; i++) {
 					const hx = 5 + i * 12, hy = 4, on = i < S.hp;
 					ctx.fillStyle = on ? "#ff4d63" : "#332b48";
@@ -3796,21 +3801,21 @@
 					if (on) { ctx.fillStyle = "#ff8a98"; ctx.fillRect(hx + 1, hy + 2, 2, 2); }
 				}
 				ctx.font = "8px monospace"; ctx.textAlign = "right";
-				ctx.fillStyle = "#ffe060"; ctx.fillText("ROOM " + S.room + "/" + MAX_ROOM, W - 6, 11);
+				ctx.fillStyle = "#ffe060"; ctx.fillText("ROOM " + S.room + "/" + MAX_ROOM, VW - 6, 11);
 				ctx.textAlign = "center";
-				if (S.enemies.length) { ctx.fillStyle = "#c8a0ff"; ctx.fillText(S.enemies.length + " foes", W / 2, 11); }
-				else { ctx.fillStyle = "#7ad07a"; ctx.fillText("CLEAR \u2014 GO UP", W / 2, 11); }
+				if (S.enemies.length) { ctx.fillStyle = "#c8a0ff"; ctx.fillText(S.enemies.length + " foes", VW / 2, 11); }
+				else { ctx.fillStyle = "#7ad07a"; ctx.fillText("CLEAR \u2014 GO UP", VW / 2, 11); }
 				if (S.result) {
-					ctx.fillStyle = "rgba(6,4,12,0.8)"; ctx.fillRect(0, 0, W, H);
+					ctx.fillStyle = "rgba(6,4,12,0.8)"; ctx.fillRect(0, 0, VW, VH);
 					ctx.textAlign = "center";
 					const win = S.result === "win";
 					ctx.fillStyle = win ? "#ffe060" : "#ff7a8a"; ctx.font = "15px monospace";
-					ctx.fillText(win ? "TOWER CLEARED!" : "DEFEATED", W / 2, H / 2 - 12);
+					ctx.fillText(win ? "TOWER CLEARED!" : "DEFEATED", VW / 2, VH / 2 - 12);
 					ctx.fillStyle = "#cfc6ee"; ctx.font = "8px monospace";
-					ctx.fillText("Rooms cleared: " + (S.room - 1), W / 2, H / 2 + 10);
-					ctx.fillText("Tap LEAVE to collect rewards", W / 2, H / 2 + 26);
+					ctx.fillText("Rooms cleared: " + (S.room - 1), VW / 2, VH / 2 + 10);
+					ctx.fillText("Tap LEAVE to collect rewards", VW / 2, VH / 2 + 26);
 				}
-				if (S.flash > 0) { ctx.fillStyle = "rgba(255,40,60," + (S.flash / 26) + ")"; ctx.fillRect(0, 0, W, H); }
+				if (S.flash > 0) { ctx.fillStyle = "rgba(255,40,60," + (S.flash / 26) + ")"; ctx.fillRect(0, 0, VW, VH); }
 			}
 			function loop() {
 				if (!openFlag) return;
