@@ -3457,6 +3457,38 @@
 				eevee:'#c89860', vaporeon:'#5aa0e0', jolteon:'#f0d040', flareon:'#f08030',
 				espeon:'#d080d0', umbreon:'#5a5a80', leafeon:'#80c050', glaceon:'#90d0e0', sylveon:'#f0a0c0',
 			};
+			// Sprite cache — reuse the player's trainer sheet + the partner's
+			// follower spritesheet (both already shipped game assets).
+			let dunImgPlayer = null, dunImgPartner = null, dunPartnerMeta = null, dunPartnerForm = null;
+			function loadSprites() {
+				if (!dunImgPlayer) {
+					const raw = new Image();
+					raw.onload = () => {
+						try {
+							const c = document.createElement("canvas"); c.width = raw.width; c.height = raw.height;
+							const cx = c.getContext("2d");
+							if (window.TrainerPalette && window.TrainerPalette.recolor) {
+								window.TrainerPalette.recolor(raw, window.TrainerPalette.load(), cx,
+									window.TrainerPalette.loadBody && window.TrainerPalette.loadBody());
+							} else { cx.drawImage(raw, 0, 0); }
+							dunImgPlayer = c;
+						} catch (_e) { dunImgPlayer = raw; }
+					};
+					raw.src = "Pictures/sprites/calem.png";
+				}
+				const inv = Inventory.load();
+				const form = (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || "eevee"));
+				const local = { eevee:1, vaporeon:1, espeon:1, umbreon:1, flareon:1, jolteon:1, leafeon:1, glaceon:1, sylveon:1 };
+				const useForm = local[form] ? form : "eevee";
+				if (dunPartnerForm !== useForm) {
+					dunPartnerForm = useForm;
+					dunPartnerMeta = (FOLLOWER_FORMS && FOLLOWER_FORMS[useForm]) || { sheet: useForm, cols: 7, frameW: 40, frameH: 48 };
+					dunImgPartner = null;
+					const pi = new Image();
+					pi.onload = () => { dunImgPartner = pi; };
+					pi.src = "Pictures/sprites/" + dunPartnerMeta.sheet + ".png";
+				}
+			}
 			function onKey(e) {
 				if (!openFlag) return;
 				const k = e.key.toLowerCase();
@@ -3542,6 +3574,7 @@
 				S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + my * SP));
 				// Partner trails the player and assists with auto-fire.
 				S.partner.x += (S.px - 15 - S.partner.x) * 0.12;
+				S.moving = !!(mx || my);
 				if (mx || my) { S.faceX = mx; S.faceY = my; S.walkPhase += 0.35; }
 				if (S.pMuzzle > 0) S.pMuzzle--;
 				if (S.partnerMuzzle > 0) S.partnerMuzzle--;
@@ -3683,39 +3716,58 @@
 						ctx.beginPath(); ctx.arc(e.x + 3.2, e.y - 0.6, 1, 0, 7); ctx.fill();
 					}
 				}
-				// partner Pokemon
+				// partner Pokemon — real follower sprite when loaded, else drawn
 				{
 					const px = S.partner.x, py = S.partner.y + Math.sin(t * 0.12) * 1.5;
-					const fl = Math.cos(S.partnerAim || 0) >= 0 ? 1 : -1;
-					ctx.fillStyle = S.pColor;
-					ctx.beginPath(); ctx.moveTo(px - 5, py - 3); ctx.lineTo(px - 7, py - 9); ctx.lineTo(px - 1, py - 5); ctx.closePath(); ctx.fill();
-					ctx.beginPath(); ctx.moveTo(px + 5, py - 3); ctx.lineTo(px + 7, py - 9); ctx.lineTo(px + 1, py - 5); ctx.closePath(); ctx.fill();
-					ctx.beginPath(); ctx.moveTo(px - fl * 5, py + 2); ctx.lineTo(px - fl * 11, py - 1); ctx.lineTo(px - fl * 5, py + 5); ctx.closePath(); ctx.fill();
-					ctx.beginPath(); ctx.arc(px, py, 6.5, 0, 7); ctx.fill();
-					ctx.fillStyle = "rgba(255,255,255,0.55)";
-					ctx.beginPath(); ctx.ellipse(px, py + 2, 4, 3, 0, 0, 7); ctx.fill();
-					ctx.fillStyle = "#ffffff";
-					ctx.beginPath(); ctx.arc(px + fl * 1.6 - 2, py - 1, 1.9, 0, 7); ctx.fill();
-					ctx.beginPath(); ctx.arc(px + fl * 1.6 + 2, py - 1, 1.9, 0, 7); ctx.fill();
-					ctx.fillStyle = "#1a1020";
-					ctx.beginPath(); ctx.arc(px + fl * 1.6 - 1.4, py - 1, 1, 0, 7); ctx.fill();
-					ctx.beginPath(); ctx.arc(px + fl * 1.6 + 2.6, py - 1, 1, 0, 7); ctx.fill();
+					let drew = false;
+					if (dunImgPartner && dunPartnerMeta) {
+						const m = dunPartnerMeta, cols = m.cols || 4, fw = m.frameW || 40, fh = m.frameH || 48;
+						const aa = (((S.partnerAim || Math.PI / 2) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+						let row;
+						if (aa < Math.PI / 4 || aa >= 7 * Math.PI / 4) row = 2;
+						else if (aa < 3 * Math.PI / 4) row = 0;
+						else if (aa < 5 * Math.PI / 4) row = 6;
+						else row = 4;
+						const fr = Math.floor(t / 12) % 2;
+						const sc = 17 / fh, w = fw * sc, h = fh * sc;
+						try { ctx.drawImage(dunImgPartner, (fr % cols) * fw, row * fh, fw, fh, px - w / 2, py - h + 6, w, h); drew = true; } catch (_e) {}
+					}
+					if (!drew) {
+						const fl = Math.cos(S.partnerAim || 0) >= 0 ? 1 : -1;
+						ctx.fillStyle = S.pColor;
+						ctx.beginPath(); ctx.moveTo(px - 5, py - 3); ctx.lineTo(px - 7, py - 9); ctx.lineTo(px - 1, py - 5); ctx.closePath(); ctx.fill();
+						ctx.beginPath(); ctx.moveTo(px + 5, py - 3); ctx.lineTo(px + 7, py - 9); ctx.lineTo(px + 1, py - 5); ctx.closePath(); ctx.fill();
+						ctx.beginPath(); ctx.arc(px, py, 6.5, 0, 7); ctx.fill();
+						ctx.fillStyle = "#ffffff";
+						ctx.beginPath(); ctx.arc(px + fl * 1.6 - 2, py - 1, 1.9, 0, 7); ctx.fill();
+						ctx.beginPath(); ctx.arc(px + fl * 1.6 + 2, py - 1, 1.9, 0, 7); ctx.fill();
+						ctx.fillStyle = "#1a1020";
+						ctx.beginPath(); ctx.arc(px + fl * 1.6 - 1.4, py - 1, 1, 0, 7); ctx.fill();
+						ctx.beginPath(); ctx.arc(px + fl * 1.6 + 2.6, py - 1, 1, 0, 7); ctx.fill();
+					}
 					if (S.partnerMuzzle > 0) { ctx.fillStyle = "rgba(255,255,210,0.85)"; ctx.beginPath(); ctx.arc(px + Math.cos(S.partnerAim) * 8, py + Math.sin(S.partnerAim) * 8, 3.5, 0, 7); ctx.fill(); }
 				}
-				// player — little adventurer
+				// player — real trainer sprite when loaded, else drawn
 				if (!(S.invuln > 0 && (t >> 2) % 2)) {
-					const px = S.px, bob = Math.abs(Math.sin(S.walkPhase)) * 1.5;
-					const py = S.py - bob, fl = S.faceX < 0 ? -1 : 1;
-					ctx.fillStyle = "#3a2e6a";
-					ctx.fillRect(px - 4, py + 3, 3, 5); ctx.fillRect(px + 1, py + 3, 3, 5);
-					ctx.fillStyle = "#5b8fd6"; ctx.fillRect(px - 5, py - 4, 10, 9);
-					ctx.fillStyle = "#6fa3e6"; ctx.fillRect(px - 5, py - 4, 10, 2);
-					ctx.fillStyle = "#e8c79a"; ctx.fillRect(px - 4, py - 11, 8, 8);
-					ctx.fillStyle = "#c8362f"; ctx.fillRect(px - 5, py - 13, 10, 4); ctx.fillRect(px - 4, py - 16, 8, 3);
-					ctx.fillStyle = "#1a1020"; ctx.fillRect(px - 2 + fl, py - 8, 1.6, 2);
-					ctx.fillStyle = "#caa86a"; ctx.fillRect(px + fl * 4, py - 2, fl * 6, 2.4);
-					ctx.fillStyle = "#3a2e1a"; ctx.fillRect(px + fl * 9, py - 2.6, fl * 2.4, 3.6);
-					if (S.pMuzzle > 0) { ctx.fillStyle = "rgba(255,240,170,0.9)"; ctx.beginPath(); ctx.arc(px + Math.cos(S.pAim) * 11, py - 1 + Math.sin(S.pAim) * 11, 4, 0, 7); ctx.fill(); }
+					const px = S.px, py = S.py;
+					let drew = false;
+					if (dunImgPlayer) {
+						const dir = Math.abs(S.faceX) > Math.abs(S.faceY) ? (S.faceX < 0 ? 1 : 3) : (S.faceY < 0 ? 2 : 0);
+						const seq = [1, 0, 2, 0];
+						const fr = S.moving ? seq[Math.floor(S.walkPhase) % 4] : 0;
+						const sf = dir * 3 + fr;
+						const sc = 0.6, w = 22 * sc, h = 38 * sc;
+						try { ctx.drawImage(dunImgPlayer, (sf % 3) * 22, Math.floor(sf / 3) * 38, 22, 38, px - w / 2, py - h + 7, w, h); drew = true; } catch (_e) {}
+					}
+					if (!drew) {
+						const bob = Math.abs(Math.sin(S.walkPhase)) * 1.5, py2 = py - bob, fl = S.faceX < 0 ? -1 : 1;
+						ctx.fillStyle = "#3a2e6a"; ctx.fillRect(px - 4, py2 + 3, 3, 5); ctx.fillRect(px + 1, py2 + 3, 3, 5);
+						ctx.fillStyle = "#5b8fd6"; ctx.fillRect(px - 5, py2 - 4, 10, 9);
+						ctx.fillStyle = "#e8c79a"; ctx.fillRect(px - 4, py2 - 11, 8, 8);
+						ctx.fillStyle = "#c8362f"; ctx.fillRect(px - 5, py2 - 13, 10, 4); ctx.fillRect(px - 4, py2 - 16, 8, 3);
+						ctx.fillStyle = "#1a1020"; ctx.fillRect(px - 2 + fl, py2 - 8, 1.6, 2);
+					}
+					if (S.pMuzzle > 0) { ctx.fillStyle = "rgba(255,240,170,0.9)"; ctx.beginPath(); ctx.arc(px + Math.cos(S.pAim) * 11, py - 9 + Math.sin(S.pAim) * 11, 4, 0, 7); ctx.fill(); }
 				}
 				// particles
 				for (const p of S.fx) { ctx.globalAlpha = Math.min(1, p.life / 9); ctx.fillStyle = p.col; ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3); }
@@ -3767,6 +3819,7 @@
 					faceX: 0, faceY: 1, pMuzzle: 0, partnerMuzzle: 0, walkPhase: 0,
 					result: null, endTimer: 0, tick: 0, flash: 0,
 				};
+				loadSprites();
 				newRoom();
 				root.hidden = false;
 				openFlag = true;
