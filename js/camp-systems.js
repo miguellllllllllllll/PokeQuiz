@@ -12296,9 +12296,8 @@
 			for(const[r,c] of [[4,5],[4,6],[5,5],[4,14],[4,15],[5,15],[10,8],[10,9],[11,8],[10,17],[10,18],[11,17]]) s(r,c,TCVW);
 			// Fossil spots
 			for(const[r,c] of [[4,9],[7,4],[7,17],[12,7],[12,15]]) s(r,c,TCVFS);
-			// Exit tiles — south wall, 2-wide so the walk-on trigger is easy to hit
-			s(CH-3,10,TCVXT); s(CH-3,11,TCVXT);
-			s(CH-2,10,TCVXT); s(CH-2,11,TCVXT);
+			// Exit tiles — north wall, 2-wide for easy walk-through
+			s(1,10,TCVXT); s(1,11,TCVXT);
 			return m;
 		}
 	window.CAMP_SYSTEMS.buildCaveMap = buildCaveMap;
@@ -12414,9 +12413,9 @@
 					mkAnim('cv-walk-north', [7, 6, 8, 6]);
 					mkAnim('cv-walk-east',  [10, 9, 11, 9]);
 
-					// Spawn at south entrance, facing north (walking into the cave)
+					// Spawn at north exit, facing south (walking into the cave)
 					const spawnC = Math.floor(CAVE_W / 2);
-					const spawnR = CAVE_H - 4; // row 14 — just above exit tiles
+					const spawnR = 2; // row 2 — just below north exit tiles
 					this.player = this.physics.add.sprite(spawnC*TILE + TILE/2, spawnR*TILE + TILE/2, 'player-cave', 0);
 					this.player.setOrigin(0.5, 36/38);
 					this.player.setScale(0.75);
@@ -12474,13 +12473,13 @@
 					this.events.once('shutdown', () => Music.stop());
 					this.events.once('shutdown', () => { if (this._wildSpawner) { this._wildSpawner.destroyAll(); this._wildSpawner = null; } });
 
-					this.dir = 2; // face north — entered from south
+					this.dir = 0; // face south — entered from north
 					this.dirAnimKeys = ['cv-walk-south', 'cv-walk-west', 'cv-walk-north', 'cv-walk-east'];
 					this.dirIdleFrame = [0, 3, 6, 9];
 					this.player.setFrame(this.dirIdleFrame[this.dir]);
 					this.didTransition = false;
 					this.armedForExit = false;
-					this._exitArmed = false; // arms once player moves away from south exit
+					this._exitArmed = false; // arms once player moves away from north exit
 					this.DIR_VEC = [[0,1],[-1,0],[0,-1],[1,0]];
 
 					this._promptEl  = document.getElementById('campPrompt');
@@ -12699,11 +12698,11 @@
 					}
 					this.player.setVelocity(vx, vy);
 
-					// Walk-on south exit — arm once player moves away from spawn row,
+					// Walk-on north exit — arm once player moves south of spawn row,
 					// then auto-transition when they walk back onto the TCVXT tiles.
-					if (tr < CAVE_H - 4) this._exitArmed = true;
+					if (tr > 3) this._exitArmed = true;
 					if (!this.didTransition && this._exitArmed &&
-					    tr >= CAVE_H - 3 && (this.map[tr]?.[tc] === TCVXT)) {
+					    tr <= 1 && (this.map[tr]?.[tc] === TCVXT)) {
 						this.didTransition = true;
 						if (pe) pe.hidden = true;
 						safeSceneStart(this, 'camp', { from: 'cave' });
