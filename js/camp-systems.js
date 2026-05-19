@@ -4117,6 +4117,8 @@
 				root.querySelectorAll('.cb-screen').forEach(el => {
 					el.hidden = el.dataset.screen !== screen;
 				});
+				// Dismiss mobile nav sheet so it can't block battle taps
+				MobileBottomSheet.close();
 			}
 			function hideAll() {
 				const root = $('campBattle');
@@ -7156,16 +7158,37 @@
 
 	// ── setupTouchPad ────────────────────────────────────────────────────────
 		function setupTouchPad() {
+			// Helper: close mobile nav sheet whenever a gameplay button is pressed
+			const _closeMBS = () => MobileBottomSheet.close();
+
 			[['capInteract','interact'],['capPartner','partner'],['capFaceoff','faceoff']].forEach(([id, action]) => {
-				document.getElementById(id)?.addEventListener('pointerdown', (e) => {
+				const el = document.getElementById(id);
+				if (!el) return;
+				el.addEventListener('pointerdown', (e) => {
 					e.preventDefault();
+					_closeMBS();
 					TouchActions.fire(action);
 				});
+				// touchstart fallback for browsers where pointerdown is unreliable on overlays
+				el.addEventListener('touchstart', (e) => {
+					e.preventDefault();
+					_closeMBS();
+					TouchActions.fire(action);
+				}, { passive: false });
 			});
-			document.getElementById('capMenu')?.addEventListener('pointerdown', (e) => {
-				e.preventDefault();
-				__S._pauseToggleFn?.();
-			});
+			const menuEl = document.getElementById('capMenu');
+			if (menuEl) {
+				menuEl.addEventListener('pointerdown', (e) => {
+					e.preventDefault();
+					_closeMBS();
+					__S._pauseToggleFn?.();
+				});
+				menuEl.addEventListener('touchstart', (e) => {
+					e.preventDefault();
+					_closeMBS();
+					__S._pauseToggleFn?.();
+				}, { passive: false });
+			}
 
 			// ── Swipe gestures on the game canvas to open HUD panels ─────────────
 			// Swipe left  → Pokédex   Swipe right → Partner
@@ -14584,8 +14607,9 @@
 			applyMobile();window.addEventListener('resize',applyMobile);
 		}
 		function toggle(){const bar=document.getElementById('campBtnBarItems');if(!bar||!bar.classList.contains('camp-mobile-sheet'))return;_open=!_open;bar.classList.toggle('camp-mobile-sheet--open',_open);}
+		function close(){const bar=document.getElementById('campBtnBarItems');if(!bar||!_open)return;_open=false;bar.classList.remove('camp-mobile-sheet--open');}
 		if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-		return{toggle,init};
+		return{toggle,close,init};
 	})();
 	window.CAMP_SYSTEMS.MobileBottomSheet = MobileBottomSheet;
 
