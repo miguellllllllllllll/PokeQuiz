@@ -12333,24 +12333,43 @@
 					this.map = buildCaveMap();
 					const W = CAVE_W * TILE, H = CAVE_H * TILE;
 
-					// ── Tile canvas texture (DOM canvas → addCanvas) ─────────────────
-					// createCanvas() + refresh() produces an invisible Image in WebGL
-					// mode with pixelArt:true — unknown Phaser 3.88 CanvasTexture bug.
-					// Using a plain DOM canvas passed to addCanvas() is more reliable.
-					if (!W || !H) throw new Error('caveBase size NaN — TILE=' + TILE);
-					const tileCanvas = document.createElement('canvas');
-					tileCanvas.width = W; tileCanvas.height = H;
-					const tileCtx = tileCanvas.getContext('2d');
-					tileCtx.imageSmoothingEnabled = false;
+					// ── Tile rendering — Rectangle GameObjects ───────────────────────
+					// Both createCanvas+refresh and addCanvas produce invisible Images in
+					// this WebGL scene (pixelArt:true, Phaser 3.88 — unknown pipeline bug).
+					// Rectangle uses Phaser's Shape pipeline, confirmed working (same as fog).
+					// Diagnostic log left in so console reveals texture state post-mortem.
+					console.log('[cave] TILE=' + TILE + ' map=' + CAVE_W + 'x' + CAVE_H + ' (' + W + 'x' + H + 'px)');
+					const _cvCol = (t) => {
+						if (t === TCVF)  return 0x9898b8;
+						if (t === TCVW)  return 0x2c2020;
+						if (t === TCVFS) return 0x3a3045;
+						if (t === TCVXT) return 0x4a2e18;
+						return 0x5a5070;
+					};
+					this._tileRects = [];
+					for (let r = 0; r < CAVE_H; r++) {
+						this._tileRects[r] = [];
+						for (let c = 0; c < CAVE_W; c++) {
+							const _r = this.add.rectangle(
+								c * TILE + TILE / 2, r * TILE + TILE / 2, TILE, TILE, _cvCol(this.map[r][c])
+							).setDepth(0);
+							this._tileRects[r][c] = _r;
+						}
+					}
+					// Highlight pass — inner bevel on floor tiles (second rect, lighter)
 					for (let r = 0; r < CAVE_H; r++)
 						for (let c = 0; c < CAVE_W; c++)
-							drawTile(tileCtx, this.map[r][c], c * TILE, r * TILE, 0);
-					try { this.textures.remove('caveBase'); } catch (_) {}
-					this.textures.addCanvas('caveBase', tileCanvas);
-					this._tileCanvas = tileCanvas;
-					this._tileCtx = tileCtx;
-					this.baseTex = this.textures.get('caveBase'); // kept for compat
-					this._tileImg = this.add.image(0, 0, 'caveBase').setOrigin(0).setDepth(0);
+							if (this.map[r][c] === TCVF)
+								this.add.rectangle(
+									c * TILE + TILE / 2, r * TILE + TILE / 2, TILE - 2, TILE - 2, 0xb0b0cc
+								).setDepth(0);
+					// Fossil-spot gem highlight
+					for (let r = 0; r < CAVE_H; r++)
+						for (let c = 0; c < CAVE_W; c++)
+							if (this.map[r][c] === TCVFS)
+								this.add.rectangle(
+									c * TILE + TILE / 2, r * TILE + TILE / 2, 6, 6, 0x8070a0
+								).setDepth(1);
 
 					// Flashlight fog — pure Phaser Graphics, no DOM canvas needed.
 					// Drawn in screen space (scrollFactor 0), above everything else.
@@ -12646,10 +12665,9 @@
 								inv.tokens = (inv.tokens || 0) + 25;
 								localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
 								this.map[tileR][tileC] = TCVF;
-								if (this._tileCtx) {
-									this._tileCtx.imageSmoothingEnabled = false;
-									drawTile(this._tileCtx, TCVF, tileC * TILE, tileR * TILE, 0);
-									if (this.textures.exists('caveBase')) this.textures.get('caveBase').refresh();
+								// Update the Rectangle tile to show floor colour
+								if (this._tileRects[tileR] && this._tileRects[tileR][tileC]) {
+									this._tileRects[tileR][tileC].setFillStyle(0x9898b8);
 								}
 							} catch (_) {}
 							Dialog.open('⛏️ You chipped away at the rock and found a fossil!\n+25 tokens!');
@@ -12717,7 +12735,7 @@
 						'CAVE\n' +
 						'tile  ' + tc + ',' + tr + '\n' +
 						'dir   ' + ['S','W','N','E'][this.dir] + '\n' +
-						'tex   ' + (this._tileCanvas ? this._tileCanvas.width + 'x' + this._tileCanvas.height : 'null') + '\n' +
+						'rects ' + (this._tileRects ? CAVE_W + 'x' + CAVE_H : 'null') + '\n' +
 						'trans ' + this.didTransition + '\n' +
 						'dlg   ' + dialogOpen + '\n' +
 						(Debug.lastError ? 'ERR ' + Debug.lastError : '')
