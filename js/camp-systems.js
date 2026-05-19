@@ -6483,8 +6483,8 @@
 			set(MAP_H-1, 28, TP); set(MAP_H-2, 28, TP); set(MAP_H-3, 28, TP);
 			set(MAP_H-3, 27, TSG);
 
-			// Cave entrance (north-west wall area, cols 4-5, rows 0-1)
-			set(0,4,TP); set(0,5,TP); set(1,4,TP); set(1,5,TP);
+			// Cave entrance (south-west, cols 4-5 — override TTR south wall like beach)
+			set(MAP_H-1,4,TP); set(MAP_H-1,5,TP); set(MAP_H-2,4,TP); set(MAP_H-2,5,TP);
 
 			return map;
 		}
@@ -7900,7 +7900,7 @@
 					const spawnTileR = this.spawnFrom === 'house'  ? 12
 					                 : this.spawnFrom === 'market' ? MAP_H - 2
 					                 : this.spawnFrom === 'beach'  ? MAP_H - 2
-					                 : this.spawnFrom === 'cave'   ? 2   // just below cave entrance (rows 0–1, cols 4–5)
+					                 : this.spawnFrom === 'cave'   ? MAP_H - 3   // just above south cave entrance
 					                 : 14;
 					const spawnTileC = this.spawnFrom === 'beach' ? 28
 					                 : this.spawnFrom === 'cave'  ? 4    // left column of cave entrance
@@ -8002,8 +8002,8 @@
 					WeatherSystem.check(this);
 					if (this.isFoggy) this.fogOverlay.setAlpha(0.32);
 	
-					// Face south (into camp) from house/cave; north (into camp) from market/beach
-					this.dir = (this.spawnFrom === 'market' || this.spawnFrom === 'beach') ? 2 : 0;
+					// Face south from house; north from market/beach/cave (emerged from south wall)
+					this.dir = (this.spawnFrom === 'market' || this.spawnFrom === 'beach' || this.spawnFrom === 'cave') ? 2 : 0;
 					this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
 					// Idle frame index per direction (frame 0 of each row)
 					this.dirIdleFrame = [0, 3, 6, 9];
@@ -9710,10 +9710,10 @@
 						safeSceneStart(this, 'beach', { from: 'camp' });
 					}
 
-					// Cave entrance transition — north cols 4-5, rows 0-1
-					const onCaveEntrance = tr <= 1 && (tc === 4 || tc === 5);
+					// Cave entrance transition — south cols 4-5, rows MAP_H-2 to MAP_H-1
+					const onCaveEntrance = tr >= MAP_H - 2 && (tc === 4 || tc === 5);
 					if (this.armedForCave == null) this.armedForCave = (this.spawnFrom !== 'cave');
-					const distFromCave = tr + Math.max(0, tc < 4 ? 4 - tc : tc > 5 ? tc - 5 : 0);
+					const distFromCave = (MAP_H - 1 - tr) + Math.max(0, tc < 4 ? 4 - tc : tc > 5 ? tc - 5 : 0);
 					if (distFromCave >= 2) this.armedForCave = true;
 					if (this.armedForCave && onCaveEntrance && !this.didTransition) {
 						this.didTransition = true;
@@ -12296,9 +12296,9 @@
 			for(const[r,c] of [[4,5],[4,6],[5,5],[4,14],[4,15],[5,15],[10,8],[10,9],[11,8],[10,17],[10,18],[11,17]]) s(r,c,TCVW);
 			// Fossil spots
 			for(const[r,c] of [[4,9],[7,4],[7,17],[12,7],[12,15]]) s(r,c,TCVFS);
-			// Exit tile — north wall, same end as the entrance so the cave is
-			// a single-entrance dead-end you explore south and walk back out north.
-			s(1,CW/2|0,TCVXT);
+			// Exit tiles — south wall, 2-wide so the walk-on trigger is easy to hit
+			s(CH-3,10,TCVXT); s(CH-3,11,TCVXT);
+			s(CH-2,10,TCVXT); s(CH-2,11,TCVXT);
 			return m;
 		}
 	window.CAMP_SYSTEMS.buildCaveMap = buildCaveMap;
@@ -12414,9 +12414,9 @@
 					mkAnim('cv-walk-north', [7, 6, 8, 6]);
 					mkAnim('cv-walk-east',  [10, 9, 11, 9]);
 
-					// Spawn at top-center entrance, facing south (walking into the cave)
+					// Spawn at south entrance, facing north (walking into the cave)
 					const spawnC = Math.floor(CAVE_W / 2);
-					const spawnR = 2;
+					const spawnR = CAVE_H - 4; // row 14 — just above exit tiles
 					this.player = this.physics.add.sprite(spawnC*TILE + TILE/2, spawnR*TILE + TILE/2, 'player-cave', 0);
 					this.player.setOrigin(0.5, 36/38);
 					this.player.setScale(0.75);
@@ -12474,12 +12474,13 @@
 					this.events.once('shutdown', () => Music.stop());
 					this.events.once('shutdown', () => { if (this._wildSpawner) { this._wildSpawner.destroyAll(); this._wildSpawner = null; } });
 
-					this.dir = 0;
+					this.dir = 2; // face north — entered from south
 					this.dirAnimKeys = ['cv-walk-south', 'cv-walk-west', 'cv-walk-north', 'cv-walk-east'];
 					this.dirIdleFrame = [0, 3, 6, 9];
 					this.player.setFrame(this.dirIdleFrame[this.dir]);
 					this.didTransition = false;
 					this.armedForExit = false;
+					this._exitArmed = false; // arms once player moves away from south exit
 					this.DIR_VEC = [[0,1],[-1,0],[0,-1],[1,0]];
 
 					this._promptEl  = document.getElementById('campPrompt');
@@ -12633,8 +12634,7 @@
 					// Show prompt
 					const pe = this._promptEl, lbl = this._promptLbl;
 					let promptLabel = null;
-					if (facingTile === TCVXT) promptLabel = 'Exit';
-					else if (facingTile === TCVFS) promptLabel = 'Dig';
+					if (facingTile === TCVFS) promptLabel = 'Dig';
 					if (pe && lbl) {
 						if (!dialogOpen && promptLabel) {
 							lbl.textContent = promptLabel;
@@ -12654,16 +12654,6 @@
 					if (ePressed) {
 						if (dialogOpen) {
 							Dialog.advance();
-						} else if (facingTile === TCVXT) {
-							if (!this.didTransition) {
-								this.didTransition = true;
-								// Walking north back out of the cave — face north on exit so
-								// the sprite matches the south-facing camp spawn (just emerged)
-								this.dir = 2;
-								this.player.setFrame(this.dirIdleFrame[2]);
-								if (pe) pe.hidden = true;
-								safeSceneStart(this, 'camp', { from: 'cave' });
-							}
 						} else if (facingTile === TCVFS && this.map[tileR] && this.map[tileR][tileC] === TCVFS) {
 							showToast('⛏️ Found a fossil! +25 tokens');
 							try {
@@ -12708,6 +12698,16 @@
 						if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 					}
 					this.player.setVelocity(vx, vy);
+
+					// Walk-on south exit — arm once player moves away from spawn row,
+					// then auto-transition when they walk back onto the TCVXT tiles.
+					if (tr < CAVE_H - 4) this._exitArmed = true;
+					if (!this.didTransition && this._exitArmed &&
+					    tr >= CAVE_H - 3 && (this.map[tr]?.[tc] === TCVXT)) {
+						this.didTransition = true;
+						if (pe) pe.hidden = true;
+						safeSceneStart(this, 'camp', { from: 'cave' });
+					}
 
 					const moving = vx !== 0 || vy !== 0;
 					const animKey = this.dirAnimKeys[this.dir];
