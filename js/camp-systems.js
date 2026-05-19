@@ -11126,15 +11126,21 @@
 						.rectangle(0, 0, BEACH_W * TILE, BEACH_H * TILE, 0xff7a3c, 0)
 						.setOrigin(0).setDepth(20);
 
-					// Ambient Wingull — drifting birds drawn with graphics.
+					// Ambient Wingull — drifting pixel-art birds that flap their wings.
 					this._gulls = [];
 					for (let i = 0; i < 3; i++) {
 						const g = this.add.graphics().setDepth(19);
 						g._gx = Math.random() * BEACH_W * TILE;
 						g._gy = (2 + Math.random() * 5) * TILE;
 						g._gspd = 0.25 + Math.random() * 0.35;
+						g._gphase = i * 3;
 						this._gulls.push(g);
 					}
+
+					// Wailmer breaching far out on the horizon water, blowing a spout.
+					this._wailmer = this.add.graphics().setDepth(0.7);
+					this._wailmerX = BEACH_W * TILE * 0.4;
+					this._wailmerY = 17 * TILE;
 
 					// Seashells — collectible sprites scattered on the dry sand.
 					this._shells = [];
@@ -11171,12 +11177,36 @@
 					addSpot(9, 24, 'tide_pool',   'Search');
 					addSpot(3, 20, 'beach_shack', 'Shop');
 
-					// Beach Shack hut graphic.
+					// ── Beach Shack — a proper thatched-roof hut ───────────────────
 					const hut = this.add.graphics().setDepth(2.6);
-					const hx = 20 * TILE, hy = 3 * TILE;
-					hut.fillStyle(0x8a5a2c, 1); hut.fillRect(hx + 1, hy + 5, 14, 9);
-					hut.fillStyle(0xc0863e, 1); hut.fillRect(hx - 1, hy, 18, 6);
-					hut.fillStyle(0x3a2410, 1); hut.fillRect(hx + 6, hy + 9, 4, 5);
+					const hx = 19 * TILE + 2, hy = 2 * TILE + 6; // top-left of the hut
+					// shadow
+					hut.fillStyle(0x000000, 0.18); hut.fillEllipse(hx + 20, hy + 32, 44, 9);
+					// support posts
+					hut.fillStyle(0x6e4622, 1);
+					hut.fillRect(hx + 3, hy + 14, 4, 18);
+					hut.fillRect(hx + 33, hy + 14, 4, 18);
+					// back wall / counter
+					hut.fillStyle(0xcaa36a, 1); hut.fillRect(hx + 5, hy + 15, 30, 14);
+					hut.fillStyle(0xb98f55, 1); hut.fillRect(hx + 5, hy + 24, 30, 5); // counter top
+					hut.fillStyle(0x8a6a3c, 1);
+					for (let p = 0; p < 6; p++) hut.fillRect(hx + 7 + p * 5, hy + 16, 1, 8); // plank lines
+					// thatched palm roof — overhanging, layered fronds
+					hut.fillStyle(0x9c7a30, 1);
+					hut.fillTriangle(hx - 4, hy + 16, hx + 44, hy + 16, hx + 20, hy - 6);
+					hut.fillStyle(0xc6a042, 1);
+					hut.fillTriangle(hx - 2, hy + 13, hx + 42, hy + 13, hx + 20, hy - 3);
+					hut.fillStyle(0xe0bd5c, 1);
+					hut.fillTriangle(hx + 2, hy + 9, hx + 38, hy + 9, hx + 20, hy + 1);
+					// roof ridge palm tuft
+					hut.fillStyle(0x3d6b22, 1);
+					hut.fillCircle(hx + 20, hy - 6, 4);
+					hut.fillCircle(hx + 16, hy - 4, 3); hut.fillCircle(hx + 24, hy - 4, 3);
+					// shells on the counter
+					hut.fillStyle(0xf3d9b0, 1); hut.fillCircle(hx + 11, hy + 23, 2.5);
+					hut.fillStyle(0xe0a6c0, 1); hut.fillCircle(hx + 11, hy + 23, 1.4);
+					hut.fillStyle(0xf3d9b0, 1); hut.fillCircle(hx + 29, hy + 23, 2.5);
+					hut.fillStyle(0xd98f86, 1); hut.fillCircle(hx + 29, hy + 23, 1.4);
 
 					this._sandcastleG = this.add.graphics().setDepth(2.5);
 					this._renderSandcastle();
@@ -11200,6 +11230,35 @@
 					g.fillStyle(0xc99a5a, 1); g.fillRect(x - 6, y + 5, 12, 2);
 				}
 
+				// Original pixel-art Wingull — white seabird with blue-grey wings and
+				// an orange beak; `flap` toggles the wing pose for a flight cycle.
+				_drawWingull(g, x, y, flap) {
+					g.clear();
+					const px = (c, a, b, w, h) => { g.fillStyle(c, 1); g.fillRect(Math.round(x + a), Math.round(y + b), w, h); };
+					// body + head (white)
+					px(0xffffff, -3, -1, 6, 4);
+					px(0xffffff,  2, -3, 4, 4);
+					// blue-grey crest/back
+					px(0x5c8fce, -3, -2, 5, 2);
+					px(0x5c8fce,  2, -3, 3, 1);
+					// orange beak
+					px(0xf2a13a,  6, -1, 3, 2);
+					// eye
+					px(0x202830,  4, -1, 1, 1);
+					// wings — up vs down pose
+					if (flap) {
+						px(0xffffff, -6, -5, 4, 2);
+						px(0xffffff, -3, -3, 3, 2);
+						px(0x5c8fce, -6, -5, 2, 1);
+					} else {
+						px(0xffffff, -7,  1, 5, 2);
+						px(0xffffff, -3,  2, 3, 2);
+						px(0x5c8fce, -7,  2, 2, 1);
+					}
+					// tail
+					px(0xffffff, -5, -1, 2, 3);
+				}
+
 				_updateBeachFeatures() {
 					this._beachTick = (this._beachTick || 0) + 1;
 					const clock = (performance.now() / 1000) % 360;
@@ -11213,19 +11272,44 @@
 						this._sunsetOverlay.setAlpha(a);
 					}
 
-					// Drift the Wingull flock.
+					// Drift the Wingull flock — proper little pixel birds that flap.
 					if (this._gulls) {
 						for (const g of this._gulls) {
 							g._gx += g._gspd;
 							if (g._gx > BEACH_W * TILE + 24) { g._gx = -24; g._gy = (2 + Math.random() * 5) * TILE; }
-							const wob = Math.sin(this._beachTick * 0.08 + g._gx * 0.05) * 2;
-							g.clear();
-							g.lineStyle(1.5, 0xffffff, 0.9);
-							g.beginPath();
-							g.moveTo(g._gx - 5, g._gy + wob);
-							g.lineTo(g._gx, g._gy - 2 + wob);
-							g.lineTo(g._gx + 5, g._gy + wob);
-							g.strokePath();
+							const wob = Math.sin(this._beachTick * 0.07 + g._gx * 0.05) * 2;
+							const flap = Math.floor(this._beachTick / 9 + (g._gphase || 0)) % 2 === 0;
+							this._drawWingull(g, g._gx, g._gy + wob, flap);
+						}
+					}
+
+					// Wailmer breaching the horizon — body bobs, spout sprays on a cycle.
+					if (this._wailmer) {
+						const w = this._wailmer;
+						const x = this._wailmerX, y = this._wailmerY;
+						const bob = Math.sin(this._beachTick * 0.04) * 2;
+						w.clear();
+						// rounded blue back breaching the water
+						w.fillStyle(0x2d6fb0, 1); w.fillEllipse(x, y + bob, 34, 17);
+						w.fillStyle(0x3f86c8, 1); w.fillEllipse(x, y - 2 + bob, 28, 12);
+						w.fillStyle(0xbfe0f0, 0.7); w.fillEllipse(x - 6, y - 5 + bob, 9, 4); // sheen
+						// yellow eye-spot patches (Wailmer marking)
+						w.fillStyle(0xe8c34a, 1);
+						w.fillCircle(x - 9, y - 1 + bob, 2.5);
+						w.fillCircle(x + 9, y - 1 + bob, 2.5);
+						// water line in front so it reads as half-submerged
+						w.fillStyle(0x2c6cae, 0.85); w.fillRect(x - 20, y + 6 + bob, 40, 6);
+						// animated blow-hole spout
+						const phase = (this._beachTick % 150);
+						if (phase < 46) {
+							const up = phase < 23 ? phase / 23 : 1 - (phase - 23) / 23;
+							const sh = 4 + up * 18;
+							w.fillStyle(0xdff1fb, 0.9);
+							w.fillRect(x - 2, y - 7 + bob - sh, 4, sh);
+							w.fillStyle(0xffffff, 0.95);
+							w.fillCircle(x, y - 8 + bob - sh, 3 + up * 2);
+							w.fillCircle(x - 4, y - 6 + bob - sh * 0.7, 2);
+							w.fillCircle(x + 4, y - 6 + bob - sh * 0.7, 2);
 						}
 					}
 
