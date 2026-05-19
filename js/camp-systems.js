@@ -3829,14 +3829,37 @@
 				// pickups
 				for (const p of S.pickups) {
 					const by = p.y + Math.sin((t + p.bob * 20) * 0.1) * 3;
-					const col = p.kind === "heart" ? "#ff5a6a" : p.kind === "rapid" ? "#ffd24a" : "#ff8ad0";
+					if (p.kind === "restpad") {
+						ctx.globalAlpha = 0.3 + Math.sin(t * 0.08) * 0.12; ctx.fillStyle = "#7ad0ff";
+						ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 7, 0, 7); ctx.fill();
+						ctx.globalAlpha = 1;
+						ctx.fillStyle = "#1c3850"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+						ctx.fillStyle = "#7ad0ff"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r - 4, 0, 7); ctx.fill();
+						ctx.fillStyle = "#eaffff";
+						ctx.fillRect(p.x - 2, p.y - 8, 4, 16); ctx.fillRect(p.x - 8, p.y - 2, 16, 4);
+						continue;
+					}
+					if (p.kind === "shop") {
+						ctx.fillStyle = "#241f3a"; ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+						ctx.fillStyle = "#ffd24a"; ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, 3);
+						const gl = p.item === "heal" ? "#ff5a6a" : p.item === "energy" ? "#7ad0ff" : "#ffe060";
+						ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(p.x, p.y - 1, 6, 0, 7); ctx.fill();
+						ctx.fillStyle = "#1a1426"; ctx.font = "8px monospace"; ctx.textAlign = "center";
+						ctx.fillText(p.item === "heal" ? "+" : p.item === "energy" ? "E" : "R", p.x, p.y + 2);
+						ctx.fillStyle = "#ffd24a"; ctx.font = "7px monospace";
+						ctx.fillText(p.cost + " SD", p.x, p.y + p.r + 9);
+						continue;
+					}
+					const col = p.kind === "heart" ? "#ff5a6a" : p.kind === "rapid" ? "#ffd24a"
+						: p.kind === "maxhp" ? "#ff8ad0" : "#ffe060";
 					ctx.globalAlpha = 0.4; ctx.fillStyle = col;
 					ctx.beginPath(); ctx.arc(p.x, by, p.r + 4, 0, 7); ctx.fill();
 					ctx.globalAlpha = 1;
 					ctx.fillStyle = "#1a1426"; ctx.beginPath(); ctx.arc(p.x, by, p.r, 0, 7); ctx.fill();
 					ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p.x, by, p.r - 2, 0, 7); ctx.fill();
 					ctx.fillStyle = "#ffffff"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-					ctx.fillText(p.kind === "heart" ? "+" : p.kind === "rapid" ? "F" : "U", p.x, by + 3);
+					ctx.fillText(p.kind === "heart" ? "+" : p.kind === "rapid" ? "F"
+						: p.kind === "maxhp" ? "U" : "R", p.x, by + 3);
 				}
 				// enemies
 				for (const e of S.enemies) {
@@ -3960,10 +3983,28 @@
 				if (S.roomType === "boss" && S.enemies.length) { ctx.fillStyle = "#ff7a8a"; ctx.fillText("BOSS FIGHT", VW / 2, 11); }
 				else if (S.roomType === "treasure" && S.pickups.length) { ctx.fillStyle = "#9effa0"; ctx.fillText("TREASURE ROOM", VW / 2, 11); }
 				else if (S.enemies.length) { ctx.fillStyle = "#c8a0ff"; ctx.fillText(S.enemies.length + " foes", VW / 2, 11); }
+				else if (S.roomType === "rest") { ctx.fillStyle = "#7ad0ff"; ctx.fillText("REST ROOM", VW / 2, 11); }
+				else if (S.roomType === "shop") { ctx.fillStyle = "#ffd24a"; ctx.fillText("SHOP", VW / 2, 11); }
 				else { ctx.fillStyle = "#7ad07a"; ctx.fillText("CLEAR \u2014 GO UP", VW / 2, 11); }
+				// floor progress bar (1..8, boss floors marked)
+				for (let i = 1; i <= MAX_ROOM; i++) {
+					const fx = VW / 2 - MAX_ROOM * 5 + (i - 1) * 10;
+					const isBoss = (i === 4 || i === MAX_ROOM);
+					ctx.fillStyle = i < S.room ? "#7ad07a" : i === S.room ? "#ffe060" : "#3a3158";
+					if (isBoss && i >= S.room) ctx.fillStyle = i === S.room ? "#ff7a8a" : "#5a3045";
+					ctx.fillRect(fx, 19, 8, 6);
+				}
+				// energy bar (partner special) + Stardust counter
+				ctx.fillStyle = "#1a1830"; ctx.fillRect(6, 29, 92, 7);
+				ctx.fillStyle = "#46c8e0"; ctx.fillRect(6, 29, 92 * Math.max(0, S.energy / S.maxEnergy), 7);
+				ctx.strokeStyle = "#5a4a8a"; ctx.lineWidth = 1; ctx.strokeRect(6, 29, 92, 7);
+				ctx.fillStyle = (S.energy >= 45 ? "#bff0fa" : "#6a7a90"); ctx.font = "6px monospace"; ctx.textAlign = "left";
+				ctx.fillText("ENERGY \u2014 E", 9, 34.5);
+				ctx.fillStyle = "#ffd24a"; ctx.font = "8px monospace"; ctx.textAlign = "right";
+				ctx.fillText("STARDUST " + S.stardust, VW - 6, 35);
 				{ const boss = S.enemies.find(e => e.boss);
 				  if (boss) {
-					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 22;
+					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 42;
 					ctx.fillStyle = "rgba(10,8,18,0.85)"; ctx.fillRect(bx - 3, byy - 2, bw + 6, 12);
 					ctx.fillStyle = "#3a2030"; ctx.fillRect(bx, byy, bw, 8);
 					ctx.fillStyle = "#ff4d63"; ctx.fillRect(bx, byy, bw * Math.max(0, boss.hp / boss.maxHp), 8);
@@ -4001,7 +4042,7 @@
 					result: null, endTimer: 0, tick: 0, flash: 0, roomType: 'combat', rapid: false,
 					energy: 60, maxEnergy: 100, novaCd: 0, stardust: 0,
 					relics: [], kills: 0, rollT: 0, rollVx: 0, rollVy: 0,
-					tapDir: '', tapT: -99, ePrev: false,
+					tapDir: '', tapT: -99, ePrev: true,
 				};
 				loadSprites();
 				newRoom();
