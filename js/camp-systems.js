@@ -118,7 +118,7 @@
 	// Defined here so scene classes (makeSceneClass etc.) can call Debug.render().
 	// camp.js wires the backtick toggle key; the HUD element is shared.
 	const Debug = {
-		on: true,
+		on: false,
 		el: null,
 		lastError: '',
 		ensure() {
@@ -3462,6 +3462,21 @@
 				eevee:'#c89860', vaporeon:'#5aa0e0', jolteon:'#f0d040', flareon:'#f08030',
 				espeon:'#d080d0', umbreon:'#5a5a80', leafeon:'#80c050', glaceon:'#90d0e0', sylveon:'#f0a0c0',
 			};
+			const FORM_NOVA = {
+				eevee:'#e8d0a0', vaporeon:'#4aa8f0', jolteon:'#f8e050', flareon:'#ff7038',
+				espeon:'#e070e0', umbreon:'#7060a0', leafeon:'#70d040', glaceon:'#a0e8ff', sylveon:'#ffa0d8',
+			};
+			const RELICS = {
+				shellbell: { name:'Shell Bell',  desc:'Heal 1 HP every 4 kills' },
+				lucky:     { name:'Lucky Egg',   desc:'Double Stardust drops' },
+				guard:     { name:'Guard Spec',  desc:'Longer invulnerability' },
+				power:     { name:'Power Band',  desc:'+1 shot damage' },
+				swift:     { name:'Quick Claw',  desc:'Faster fire rate' },
+			};
+			function randomRelic(owned) {
+				const pool = Object.keys(RELICS).filter(k => owned.indexOf(k) < 0);
+				return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+			}
 			// Sprite cache — reuse the player's trainer sheet + the partner's
 			// follower spritesheet (both already shipped game assets).
 			let dunImgPlayer = null, dunImgPartner = null, dunPartnerMeta = null, dunPartnerForm = null;
@@ -3552,14 +3567,30 @@
 			function newRoom() {
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
-				S.roomType = (S.room >= MAX_ROOM) ? 'boss' : (S.room === 4) ? 'treasure' : 'combat';
+				// Floor plan: combat, with a treasure / rest / shop room and
+				// bosses on floors 4 and 8 (Soul-Knight-style room variety).
+				S.roomType = (S.room === 4 || S.room >= MAX_ROOM) ? 'boss'
+					: (S.room === 3) ? 'treasure'
+					: (S.room === 6) ? 'rest'
+					: (S.room === 7) ? 'shop'
+					: 'combat';
 				if (S.roomType === 'treasure') {
 					S.doorOpen = true;
-					const kinds = ['heart', 'rapid', 'maxhp'];
-					for (let i = 0; i < 3; i++)
-						S.pickups.push({ x: W / 2 - 64 + i * 64, y: H / 2, kind: kinds[i], r: 9, bob: i * 2 });
+					const rk = randomRelic(S.relics);
+					S.pickups.push({ x: W / 2, y: H / 2, kind: 'relic', relic: rk, r: 11, bob: 0 });
+					S.pickups.push({ x: W / 2 - 70, y: H / 2, kind: 'heart', r: 8, bob: 1 });
+					S.pickups.push({ x: W / 2 + 70, y: H / 2, kind: 'maxhp', r: 9, bob: 3 });
+				} else if (S.roomType === 'rest') {
+					S.doorOpen = true;
+					S.pickups.push({ x: W / 2, y: H / 2, kind: 'restpad', r: 18, bob: 0 });
+				} else if (S.roomType === 'shop') {
+					S.doorOpen = true;
+					const rk = randomRelic(S.relics);
+					S.pickups.push({ x: W / 2 - 80, y: H / 2, kind: 'shop', item: 'heal',   cost: 8,  r: 13, bob: 0 });
+					S.pickups.push({ x: W / 2,      y: H / 2, kind: 'shop', item: 'energy', cost: 6,  r: 13, bob: 0 });
+					S.pickups.push({ x: W / 2 + 80, y: H / 2, kind: 'shop', item: 'relic', relic: rk, cost: 14, r: 13, bob: 0 });
 				} else if (S.roomType === 'boss') {
-					const bhp = 56 + S.room * 6;
+					const bhp = 56 + S.room * 7;
 					S.enemies.push({
 						x: W / 2, y: WALL + 96, hp: bhp, maxHp: bhp,
 						r: 22, boss: true, shooter: true, cd: 70,
@@ -3572,9 +3603,9 @@
 						S.enemies.push({
 							x: WALL + 24 + Math.random() * (W - 2 * WALL - 48),
 							y: WALL + 24 + Math.random() * (H - 2 * WALL - 120),
-							hp: shooter ? 2 : 2 + Math.floor(S.room / 3),
+							hp: (shooter ? 2 : 2 + Math.floor(S.room / 3)) + Math.floor(S.room / 4),
 							r: 7, shooter, cd: 50 + Math.random() * 70,
-							spd: shooter ? 0.45 : 0.62 + Math.random() * 0.3, hurt: 0,
+							spd: shooter ? 0.45 : 0.62 + Math.random() * 0.3 + S.room * 0.03, hurt: 0,
 						});
 					}
 				}
@@ -3593,15 +3624,31 @@
 				if (S.flash > 0) S.flash--;
 				if (S.invuln > 0) S.invuln--;
 				if (S.result) { S.endTimer++; return; }
-				let mx = 0, my = 0;
-				if (keys['arrowleft'] || keys['a']) mx -= 1;
-				if (keys['arrowright'] || keys['d']) mx += 1;
-				if (keys['arrowup'] || keys['w']) my -= 1;
-				if (keys['arrowdown'] || keys['s']) my += 1;
-				if (mx && my) { mx *= 0.707; my *= 0.707; }
-				const SP = 1.8;
-				S.px = Math.max(WALL + 7, Math.min(W - WALL - 7, S.px + mx * SP));
-				S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + my * SP));
+				const kL = keys['arrowleft'] || keys['a'], kR = keys['arrowright'] || keys['d'];
+				const kU = keys['arrowup'] || keys['w'], kD = keys['arrowdown'] || keys['s'];
+				let mx = (kR ? 1 : 0) - (kL ? 1 : 0), my = (kD ? 1 : 0) - (kU ? 1 : 0);
+				// double-tap a direction to dodge-roll (brief invincibility)
+				if (!S._pk) S._pk = {};
+				const edge = (cur, name, vx, vy) => {
+					if (cur && !S._pk[name]) {
+						if (S.tapDir === name && S.tick - S.tapT < 16 && S.rollT <= 0) {
+							S.rollT = 13; S.rollVx = vx * 4.6; S.rollVy = vy * 4.6;
+						}
+						S.tapDir = name; S.tapT = S.tick;
+					}
+					S._pk[name] = cur;
+				};
+				edge(kL, 'L', -1, 0); edge(kR, 'R', 1, 0); edge(kU, 'U', 0, -1); edge(kD, 'D', 0, 1);
+				const SP = 1.85;
+				if (S.rollT > 0) {
+					S.rollT--; S.invuln = Math.max(S.invuln, 2);
+					S.px = Math.max(WALL + 7, Math.min(W - WALL - 7, S.px + S.rollVx));
+					S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + S.rollVy));
+				} else {
+					if (mx && my) { mx *= 0.707; my *= 0.707; }
+					S.px = Math.max(WALL + 7, Math.min(W - WALL - 7, S.px + mx * SP));
+					S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + my * SP));
+				}
 				// Partner follows the player path via a position-history trail.
 				S.ptrail.push({ x: S.px, y: S.py });
 				if (S.ptrail.length > 18) S.ptrail.shift();
@@ -3617,9 +3664,23 @@
 					_p.x += _p.vx; _p.y += _p.vy; _p.vx *= 0.88; _p.vy *= 0.88; _p.life--;
 					if (_p.life <= 0) S.fx.splice(_i, 1);
 				}
+				// partner special — press E to release a type-themed energy nova
+				if (S.novaCd > 0) S.novaCd--;
+				if (S.energy < S.maxEnergy) S.energy = Math.min(S.maxEnergy, S.energy + 0.13);
+				const eDown = !!keys["e"];
+				if (eDown && !S.ePrev && S.energy >= 45 && S.novaCd <= 0 && S.enemies.length) {
+					S.energy -= 45; S.novaCd = 24; S.partnerMuzzle = 9;
+					const nd = 2 + (S.relics.indexOf("power") >= 0 ? 1 : 0);
+					for (let k = 0; k < 16; k++) {
+						const aa = k / 16 * Math.PI * 2;
+						S.bullets.push({ x: S.partner.x, y: S.partner.y, vx: Math.cos(aa) * 3.7, vy: Math.sin(aa) * 3.7, dmg: nd, col: S.novaColor, r: 4 });
+					}
+					for (let k = 0; k < 12; k++) S.fx.push({ x: S.partner.x, y: S.partner.y, vx: (Math.random()-0.5)*7, vy: (Math.random()-0.5)*7, life: 15, col: S.novaColor });
+				}
+				S.ePrev = eDown;
 				if (S.fireCd > 0) S.fireCd--;
 				const tgt = nearest(S.px, S.py, S.enemies);
-				if (tgt && S.fireCd <= 0) { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, 1, '#ffe060'); S.fireCd = S.rapid ? 14 : 26;
+				if (tgt && S.fireCd <= 0) { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, 1 + (S.relics.indexOf('power') >= 0 ? 1 : 0), '#ffe060'); S.fireCd = S.rapid ? 14 : 26;
 					S.pAim = Math.atan2(tgt.y - S.py, tgt.x - S.px); S.pMuzzle = 5; }
 				if (S.partnerCd > 0) S.partnerCd--;
 				const ptgt = nearest(S.partner.x, S.partner.y, S.enemies);
@@ -3632,7 +3693,13 @@
 					for (const e of S.enemies) {
 						if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) {
 							e.hp -= b.dmg; e.hurt = 6; hit = true;
-							if (e.hp <= 0 && !e.boss && Math.random() < 0.2) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
+							if (e.hp <= 0 && !e._dead) {
+								e._dead = true;
+								S.stardust += (e.boss ? 12 : 1) * (S.relics.indexOf("lucky") >= 0 ? 2 : 1);
+								S.kills++;
+								if (S.relics.indexOf("shellbell") >= 0 && S.kills % 4 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
+								if (!e.boss && Math.random() < 0.2) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
+							}
 							for (let _k = 0; _k < 5; _k++) S.fx.push({ x: b.x, y: b.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 9 + Math.random()*6, col: e.hp <= 0 ? '#ffd060' : '#ffffff' });
 							break;
 						}
@@ -3645,7 +3712,7 @@
 					const a = Math.atan2(S.py - e.y, S.px - e.x);
 					e.x += Math.cos(a) * e.spd; e.y += Math.sin(a) * e.spd;
 					if ((e.x - S.px) ** 2 + (e.y - S.py) ** 2 < (e.r + 7) ** 2 && S.invuln <= 0) {
-						S.hp--; S.invuln = 52; S.flash = 8;
+						S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8;
 					}
 					if (e.shooter) { e.cd--; if (e.cd <= 0) {
 						if (e.boss) {
@@ -3660,18 +3727,34 @@
 					const b = S.ebullets[i]; b.x += b.vx; b.y += b.vy;
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.ebullets.splice(i, 1); continue; }
 					if ((b.x - S.px) ** 2 + (b.y - S.py) ** 2 < (b.r + 7) ** 2 && S.invuln <= 0) {
-						S.hp--; S.invuln = 52; S.flash = 8; S.ebullets.splice(i, 1);
+						S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; S.ebullets.splice(i, 1);
 					}
 				}
 				for (let i = S.pickups.length - 1; i >= 0; i--) {
 					const p = S.pickups[i];
-					if ((p.x - S.px) ** 2 + (p.y - S.py) ** 2 < (p.r + 9) ** 2) {
-						if (p.kind === "heart") S.hp = Math.min(S.maxHp, S.hp + 1);
-						else if (p.kind === "maxhp") { S.maxHp++; S.hp = S.maxHp; }
-						else if (p.kind === "rapid") S.rapid = true;
-						for (let k = 0; k < 9; k++) S.fx.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 13, col: "#9effa0" });
-						S.pickups.splice(i, 1);
+					if ((p.x - S.px) ** 2 + (p.y - S.py) ** 2 >= (p.r + 9) ** 2) continue;
+					// shop pad — needs Stardust; skip if the player cannot afford it
+					if (p.kind === "shop" && S.stardust < p.cost) continue;
+					let fxCol = "#9effa0";
+					if (p.kind === "heart") S.hp = Math.min(S.maxHp, S.hp + 1);
+					else if (p.kind === "maxhp") { S.maxHp++; S.hp = S.maxHp; }
+					else if (p.kind === "rapid") S.rapid = true;
+					else if (p.kind === "relic") {
+						if (p.relic) { S.relics.push(p.relic); if (p.relic === "swift") S.rapid = true;
+							showToast("Relic: " + RELICS[p.relic].name + " \u2014 " + RELICS[p.relic].desc); }
+						fxCol = "#ffe060";
+					} else if (p.kind === "restpad") {
+						S.hp = S.maxHp; S.energy = S.maxEnergy; fxCol = "#7ad0ff";
+					} else if (p.kind === "shop") {
+						S.stardust -= p.cost;
+						if (p.item === "heal") S.hp = Math.min(S.maxHp, S.hp + 3);
+						else if (p.item === "energy") S.energy = S.maxEnergy;
+						else if (p.item === "relic" && p.relic) { S.relics.push(p.relic); if (p.relic === "swift") S.rapid = true;
+							showToast("Bought relic: " + RELICS[p.relic].name); }
+						fxCol = "#ffd24a";
 					}
+					for (let k = 0; k < 10; k++) S.fx.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 14, col: fxCol });
+					S.pickups.splice(i, 1);
 				}
 				if (S.enemies.length === 0) {
 					S.doorOpen = true;
@@ -3911,10 +3994,14 @@
 				S = {
 					room: 1, hp: 6, maxHp: 6, px: W / 2, py: H - 40,
 					partner: { x: W / 2 - 15, y: H - 30 }, pColor: FORM_COLOR[form] || '#c89860',
+					novaColor: FORM_NOVA[form] || '#e8d0a0',
 					bullets: [], ebullets: [], enemies: [], fx: [], pickups: [], ptrail: [],
 					fireCd: 0, partnerCd: 0, invuln: 0, doorOpen: false,
 					faceX: 0, faceY: 1, pMuzzle: 0, partnerMuzzle: 0, walkPhase: 0,
 					result: null, endTimer: 0, tick: 0, flash: 0, roomType: 'combat', rapid: false,
+					energy: 60, maxEnergy: 100, novaCd: 0, stardust: 0,
+					relics: [], kills: 0, rollT: 0, rollVx: 0, rollVy: 0,
+					tapDir: '', tapT: -99, ePrev: false,
 				};
 				loadSprites();
 				newRoom();
