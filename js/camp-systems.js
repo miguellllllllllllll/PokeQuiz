@@ -12333,9 +12333,20 @@
 					this.map = buildCaveMap();
 					const W = CAVE_W * TILE, H = CAVE_H * TILE;
 
-					// Draw tiles with native Phaser Graphics (no canvas-texture upload needed)
-					this._tileGfx = this.add.graphics().setDepth(0);
-					this._drawCaveTiles();
+					// ── Tile canvas texture ──────────────────────────────────────────
+					// Canvas texture + refresh() was verified working via GL readPixels.
+					// Phaser Graphics fillRect silently fails to render in this scene
+					// (unknown Phaser 3.88 issue), so we keep the canvas-texture path.
+					try { this.textures.remove('caveBase'); } catch (_) {}
+					this.baseTex = this.textures.createCanvas('caveBase', W, H);
+					if (!this.baseTex) throw new Error('createCanvas null');
+					const baseCtx = this.baseTex.getContext();
+					baseCtx.imageSmoothingEnabled = false;
+					for (let r = 0; r < CAVE_H; r++)
+						for (let c = 0; c < CAVE_W; c++)
+							drawTile(baseCtx, this.map[r][c], c * TILE, r * TILE, 0);
+					this.baseTex.refresh();
+					this._tileImg = this.add.image(0, 0, 'caveBase').setOrigin(0).setDepth(0);
 
 					// Flashlight fog — pure Phaser Graphics, no DOM canvas needed.
 					// Drawn in screen space (scrollFactor 0), above everything else.
@@ -12631,7 +12642,12 @@
 								inv.tokens = (inv.tokens || 0) + 25;
 								localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
 								this.map[tileR][tileC] = TCVF;
-								this._drawCaveTiles();
+								if (this.baseTex) {
+									const ctx = this.baseTex.getContext();
+									ctx.imageSmoothingEnabled = false;
+									drawTile(ctx, TCVF, tileC * TILE, tileR * TILE, 0);
+									this.baseTex.refresh();
+								}
 							} catch (_) {}
 							Dialog.open('⛏️ You chipped away at the rock and found a fossil!\n+25 tokens!');
 						} else if (!this._inWildEncounter && this._wildSpawner) {
