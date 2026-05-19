@@ -17,8 +17,8 @@
 	// ── Tile IDs ────────────────────────────────────────────────────────────────
 	// These must be defined here (not just in camp.js) because buildMap, drawTile,
 	// canWalkOn, and all four scene classes reference them and live in this file.
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25,TBLD=26,TSA=27,TSA2=28,TSHO=29,TBWT=30,TPIER=31,TPALM=32,TROCKB=33,TSHL=34;
-	const SOLID    = new Set([TW,TR,TR2,TRP,TWN,TH2O,TTR,TTR2,TFN,TIW,TSG,TBSH,TBED,TBKS,TBLD,TBWT,TPALM,TROCKB]);
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25,TBLD=26,TSA=27,TSA2=28,TSHO=29,TBWT=30,TPIER=31,TPALM=32,TROCKB=33,TSHL=34,TCVF=35,TCVW=36,TCVFS=37,TCVXT=38;
+	const SOLID    = new Set([TW,TR,TR2,TRP,TWN,TH2O,TTR,TTR2,TFN,TIW,TSG,TBSH,TBED,TBKS,TBLD,TBWT,TPALM,TROCKB,TCVW]);
 	const ANIMATED = new Set([TWN,TH2O,TCR]);
 
 	// ── Scene constants ──────────────────────────────────────────────────────────
@@ -6483,13 +6483,16 @@
 			set(MAP_H-1, 28, TP); set(MAP_H-2, 28, TP); set(MAP_H-3, 28, TP);
 			set(MAP_H-3, 27, TSG);
 
+			// Cave entrance (north-west wall area, cols 4-5, rows 0-1)
+			set(0,4,TP); set(0,5,TP); set(1,4,TP); set(1,5,TP);
+
 			return map;
 		}
 	window.CAMP_SYSTEMS.buildMap = buildMap;
 
 	// ── drawTile ────────────────────────────────────────────────────────
 		function drawTile(ctx, t, x, y, tick) {
-			const d = TILE;
+			const d = TILE, S = TILE;
 			switch(t) {
 				case TG:
 					ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
@@ -6984,6 +6987,10 @@
 					ctx.fillStyle='#D05878'; // center point
 					ctx.fillRect(x+8,y+8,1,1);
 					break;
+				case TCVF: ctx.fillStyle='#7c7c94'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#8c8ca8'; ctx.fillRect(x+1,y+1,S-2,S-2); ctx.fillStyle='#6c6c80'; ctx.fillRect(x,y,1,1); ctx.fillRect(x+S-1,y+S-1,1,1); break;
+				case TCVW: ctx.fillStyle='#2c2020'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#3c2c24'; ctx.fillRect(x+1,y+1,S-2,S-2); ctx.fillStyle='#5c4030'; for(var _i=0;_i<3;_i++){ctx.fillRect(x+2+_i*4,y+3,3,3);} ctx.fillStyle='#7a5840'; ctx.fillRect(x+2,y+3,2,2); break;
+				case TCVFS: ctx.fillStyle='#3a3045'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#8070a0'; ctx.fillRect(x+5,y+5,6,6); ctx.fillStyle='#b0a0c8'; ctx.fillRect(x+6,y+6,4,4); break;
+				case TCVXT: ctx.fillStyle='#4a2e18'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#ffcb05'; ctx.fillRect(x+S/2-2,y+3,4,S-6); ctx.fillRect(x+3,y+S/2-1,S-6,3); break;
 				default:
 					ctx.fillStyle='#78A840'; ctx.fillRect(x,y,d,d);
 			}
@@ -7511,6 +7518,122 @@
 		}
 	window.CAMP_SYSTEMS.buildMarketMap = buildMarketMap;
 
+	// ── WildSpawner ──────────────────────────────────────────────────────────────
+	class WildSpawner {
+		constructor(mapGrid, tileSize) {
+			this.map = mapGrid;
+			this.T = tileSize;
+			this.wilds = [];
+			this.MAX = 4;
+			this._pool = [1,4,7,25,39,52,54,58,60,63,69,74,77,79,81,88,90,92,96,98,100,102,104,113,116,118,120,128,131,133,143];
+		}
+
+		_walkable(r, c, inv) {
+			const t = (this.map[r]||[])[c];
+			return t !== undefined && canWalkOn(t, inv);
+		}
+
+		spawnAll(inv) {
+			const candidates = [];
+			for (let r=2; r<this.map.length-2; r++)
+				for (let c=2; c<(this.map[0]||[]).length-2; c++)
+					if (this._walkable(r,c,inv)) candidates.push({r,c});
+			const picks = [];
+			const tmp = [...candidates];
+			for (let i=0; i<this.MAX && tmp.length; i++) {
+				const idx = Math.floor(Math.random()*tmp.length);
+				picks.push(tmp.splice(idx,1)[0]);
+			}
+			for (const p of picks) {
+				const dex = this._pool[Math.floor(Math.random()*this._pool.length)];
+				this._spawn(dex, p.r, p.c);
+			}
+		}
+
+		_spawn(dexNum, row, col) {
+			const T=this.T, x=col*T+T/2, y=row*T+T/2;
+			const names=(window.CAMP_DATA||{}).PMD_NAMES||[];
+			const name=names[dexNum]||('Pokemon '+dexNum);
+			const wrap=document.getElementById('campWrap');
+			if (!wrap) return;
+			const el=document.createElement('div');
+			el.style.cssText='position:absolute;left:0;top:0;width:32px;height:32px;pointer-events:none;z-index:5;transition:left 0.25s,top 0.25s;';
+			const img=document.createElement('img');
+			const pad=String(dexNum).padStart(4,'0');
+			img.src=`https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${pad}/Idle/Down/0001.png`;
+			img.style.cssText='width:32px;height:32px;image-rendering:pixelated;';
+			img.onerror=()=>{img.style.display='none';};
+			const badge=document.createElement('div');
+			badge.style.cssText='position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:11px;display:none;filter:drop-shadow(0 1px 2px #000);';
+			badge.textContent='❗';
+			el.appendChild(img); el.appendChild(badge);
+			wrap.appendChild(el);
+			const w={el,badge,img,dexNum,name,worldX:x,worldY:y,row,col,moveTimer:0,moveInterval:2500+Math.random()*2500,near:false};
+			this.wilds.push(w);
+		}
+
+		update(player, cam) {
+			if (!cam||!player) return;
+			const zoom=cam.zoom, ox=cam.scrollX, oy=cam.scrollY;
+			for (const w of this.wilds) {
+				w.moveTimer += 16;
+				if (w.moveTimer>w.moveInterval) {
+					w.moveTimer=0; w.moveInterval=2500+Math.random()*2500;
+					const dirs=[{dr:-1,dc:0},{dr:1,dc:0},{dr:0,dc:-1},{dr:0,dc:1}];
+					const d=dirs[Math.floor(Math.random()*4)];
+					const nr=w.row+d.dr, nc=w.col+d.dc;
+					if (this._walkable(nr,nc,null)) {
+						w.row=nr; w.col=nc;
+						w.worldX=nc*this.T+this.T/2; w.worldY=nr*this.T+this.T/2;
+					}
+				}
+				const sx=(w.worldX-ox)*zoom, sy=(w.worldY-oy)*zoom;
+				w.el.style.left=(sx-16)+'px'; w.el.style.top=(sy-16)+'px';
+				w.el.style.transform=`scale(${Math.max(1,zoom/2)})`;
+				const dx=Math.abs(w.worldX-player.x), dy=Math.abs(w.worldY-player.y);
+				const near=dx<this.T*2.5 && dy<this.T*2.5;
+				if (near!==w.near) { w.near=near; w.badge.style.display=near?'block':'none'; }
+			}
+		}
+
+		getNearby(px, py) {
+			for (const w of this.wilds) {
+				if (Math.abs(w.worldX-px)<this.T*2.5 && Math.abs(w.worldY-py)<this.T*2.5) return w;
+			}
+			return null;
+		}
+
+		remove(w) {
+			const i=this.wilds.indexOf(w); if(i>=0) this.wilds.splice(i,1);
+			if(w.el) w.el.remove();
+		}
+
+		destroyAll() { for(const w of this.wilds) if(w.el) w.el.remove(); this.wilds=[]; }
+	}
+
+	function showWildEncounter(wild, onFlee, onCatch) {
+		const m=document.getElementById('wildModal');
+		if (!m) { if(onFlee) onFlee(); return; }
+		const pad=String(wild.dexNum).padStart(4,'0');
+		document.getElementById('wildModalImg').src=`https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${pad}/Idle/Down/0001.png`;
+		document.getElementById('wildModalName').textContent=wild.name.toUpperCase();
+		m.hidden=false;
+		document.getElementById('wildFleeBtn').onclick=()=>{m.hidden=true; if(onFlee) onFlee();};
+		document.getElementById('wildCatchBtn').onclick=()=>{
+			m.hidden=true;
+			try {
+				const inv=JSON.parse(localStorage.getItem('pokequiz_inventory')||'{}');
+				const balls=inv.pokeballs||inv.pokeball||inv['poke-ball']||0;
+				if (balls<=0) { showToast('No Poké Balls! Buy some at the Mart.'); if(onFlee) onFlee(); return; }
+				const k=inv.pokeballs!==undefined?'pokeballs':(inv['poke-ball']!==undefined?'poke-ball':'pokeball');
+				inv[k]=Math.max(0,(inv[k]||0)-1);
+				localStorage.setItem('pokequiz_inventory',JSON.stringify(inv));
+			} catch {}
+			if(onCatch) onCatch();
+		};
+	}
+	window.CAMP_SYSTEMS.showWildEncounter = showWildEncounter;
+
 	// ── buildBeachMap ────────────────────────────────────────────────────────
 		function buildBeachMap() {
 			const map = Array.from({ length: BEACH_H }, () => new Array(BEACH_W).fill(TSA));
@@ -7640,6 +7763,7 @@
 				}
 	
 				create() {
+					if (window.__campLoadHide) window.__campLoadHide();
 					console.log('[CampScene] create()');
 					if (typeof window !== 'undefined') window.__campScene = this;
 					try {
@@ -7802,10 +7926,15 @@
 						}
 					}
 					this.physics.add.collider(this.player, this.solids);
-	
+
+					// Wild Pokémon spawner
+					this._wildSpawner = new WildSpawner(this.map, TILE);
+					this._wildSpawner.spawnAll(Inventory.load());
+					this._inWildEncounter = false;
+
 					this.physics.world.setBounds(0, 0, W, H);
 					this.player.setCollideWorldBounds(true);
-	
+
 					this.cameras.main.setBounds(0, 0, W, H);
 					this.cameras.main.startFollow(this.player, true, 1, 1);
 					this.cameras.main.setBackgroundColor('#68A028');
@@ -7813,7 +7942,13 @@
 					this.applyZoom();
 					this.scale.on('resize', this.onResize, this);
 					this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
-	
+
+					setTimeout(function() {
+						if (window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.CampTutorial) {
+							window.CAMP_SYSTEMS.CampTutorial.show();
+						}
+					}, 1500);
+
 					__S._sceneKeyboard = this.input.keyboard;
 					this.keys = this.input.keyboard.addKeys({
 						up: Phaser.Input.Keyboard.KeyCodes.UP,
@@ -7836,7 +7971,8 @@
 					setupPauseMenu(this.game);
 					Music.start('camp');
 					this.events.once('shutdown', () => Music.stop());
-	
+					this.events.once('shutdown', () => { if (this._wildSpawner) { this._wildSpawner.destroyAll(); this._wildSpawner = null; } });
+
 					// Apply saved accent colour immediately so chrome is correct before
 					// the player interacts with anything.
 					const _startInv = Inventory.load();
@@ -9092,7 +9228,8 @@
 								: 'Scythe holstered.');
 						}
 					}
-					if (Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact')) {
+					this.justPressedE = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
+					if (this.justPressedE) {
 						if (dialogOpen) Dialog.advance();
 						else if (ShinyEncounters.checkInteract(this)) {
 							ShinyEncounters.openCatchModal(this);
@@ -9214,7 +9351,29 @@
 							return;
 						}
 					}
-	
+
+					// Wild encounter check (E near a visible wild Pokémon)
+					if (this.justPressedE && !this._inWildEncounter && this._wildSpawner) {
+						const _ww = this._wildSpawner.getNearby(this.player.x, this.player.y);
+						if (_ww) {
+							this._inWildEncounter = true;
+							showWildEncounter(_ww,
+								() => { this._inWildEncounter = false; },
+								() => {
+									this._wildSpawner.remove(_ww);
+									this._inWildEncounter = false;
+									try {
+										const box=JSON.parse(localStorage.getItem('pokequiz_pc_box')||'[]');
+										box.push({id:_ww.dexNum,name:_ww.name,caught:Date.now()});
+										localStorage.setItem('pokequiz_pc_box',JSON.stringify(box));
+									} catch {}
+									if (window.CAMP_SYSTEMS.DexGroupRewards) window.CAMP_SYSTEMS.DexGroupRewards.markSeen(_ww.dexNum);
+									showToast('Caught ' + _ww.name + '! Added to PC Box. 🎉');
+								}
+							);
+						}
+					}
+
 					let vx = 0, vy = 0;
 					if (!dialogOpen) {
 						if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
@@ -9546,6 +9705,19 @@
 						this.didTransition = true;
 						safeSceneStart(this, 'beach', { from: 'camp' });
 					}
+
+					// Cave entrance transition — north cols 4-5, rows 0-1
+					const onCaveEntrance = tr <= 1 && (tc === 4 || tc === 5);
+					if (this.armedForCave == null) this.armedForCave = (this.spawnFrom !== 'cave');
+					const distFromCave = tr + Math.max(0, tc < 4 ? 4 - tc : tc > 5 ? tc - 5 : 0);
+					if (distFromCave >= 2) this.armedForCave = true;
+					if (this.armedForCave && onCaveEntrance && !this.didTransition) {
+						this.didTransition = true;
+						safeSceneStart(this, 'cave', { from: 'camp' });
+					}
+
+					// Wild spawner position update
+					if (this._wildSpawner) this._wildSpawner.update(this.player, this.cameras.main);
 
 					Debug.render(
 						'CAMP\n' +
@@ -12109,6 +12281,409 @@
 		}
 	window.CAMP_SCENES.makeBeachSceneClass = makeBeachSceneClass;
 
+	// ── buildCaveMap ────────────────────────────────────────────────────────────
+		function buildCaveMap() {
+			const CH=18, CW=22;
+			const m=Array.from({length:CH},()=>new Array(CW).fill(TCVW));
+			const s=(r,c,t)=>{if(r>=0&&r<CH&&c>=0&&c<CW)m[r][c]=t;};
+			// Main floor area
+			for(let r=2;r<CH-2;r++) for(let c=2;c<CW-2;c++) s(r,c,TCVF);
+			// Rocky pillars
+			for(const[r,c] of [[4,5],[4,6],[5,5],[4,14],[4,15],[5,15],[10,8],[10,9],[11,8],[10,17],[10,18],[11,17]]) s(r,c,TCVW);
+			// Fossil spots
+			for(const[r,c] of [[4,9],[7,4],[7,17],[12,7],[12,15]]) s(r,c,TCVFS);
+			// Exit tile (south center)
+			s(CH-2,CW/2|0,TCVXT); s(CH-3,CW/2|0,TCVXT);
+			return m;
+		}
+	window.CAMP_SYSTEMS.buildCaveMap = buildCaveMap;
+
+	// ── makeCaveSceneClass ────────────────────────────────────────────────────────
+		function makeCaveSceneClass() {
+			const CAVE_W = 22, CAVE_H = 18;
+			return class CaveScene extends Phaser.Scene {
+				constructor() { super({ key: 'cave' }); }
+
+				init(data) {
+					this.spawnFrom = (data && data.from) || null;
+				}
+
+				preload() {
+					this.load.image('player-base', 'Pictures/sprites/calem.png');
+				}
+
+				create() {
+					if (window.__campLoadHide) window.__campLoadHide();
+					console.log('[CaveScene] create()');
+					try {
+						this._buildCave();
+					} catch (e) {
+						console.error('[CaveScene] create failed:', e);
+						Debug.lastError = 'CaveScene.create: ' + e.message;
+					}
+				}
+
+				_buildCave() {
+					this.tick = 0;
+					this.map = buildCaveMap();
+					const W = CAVE_W * TILE, H = CAVE_H * TILE;
+
+					const grabCanvasTex = (key) => {
+						const existing = this.textures.exists(key) ? this.textures.get(key) : null;
+						if (existing && typeof existing.getContext === 'function') return existing;
+						if (existing) { try { this.textures.remove(key); } catch (_) {} }
+						return this.textures.createCanvas(key, W, H);
+					};
+					this.baseTex = grabCanvasTex('caveBase');
+					if (!this.baseTex) throw new Error('createCanvas returned null for cave texture');
+					const baseCtx = this.baseTex.getContext();
+					baseCtx.imageSmoothingEnabled = false;
+					for (let r = 0; r < CAVE_H; r++) {
+						for (let c = 0; c < CAVE_W; c++) {
+							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
+						}
+					}
+					this.baseTex.refresh();
+					this.add.image(0, 0, 'caveBase').setOrigin(0).setDepth(0);
+
+					// Fog / flashlight overlay — use screen-space (scrollFactor 0)
+					this._fog = this.add.graphics().setDepth(100).setScrollFactor(0);
+
+					// Palette-swap player sprite
+					try {
+						const baseImg = this.textures.get('player-base').getSourceImage();
+						const pw = baseImg.width, ph = baseImg.height;
+						this._playerCanvas = document.createElement('canvas');
+						this._playerCanvas.width = pw; this._playerCanvas.height = ph;
+						this._playerCtx = this._playerCanvas.getContext('2d');
+						const applyPalette = () => {
+							if (window.TrainerPalette) {
+								window.TrainerPalette.recolor(baseImg, window.TrainerPalette.load(), this._playerCtx, window.TrainerPalette.loadBody && window.TrainerPalette.loadBody());
+							} else {
+								this._playerCtx.clearRect(0, 0, pw, ph);
+								this._playerCtx.drawImage(baseImg, 0, 0);
+							}
+						};
+						applyPalette();
+						if (!this.textures.exists('player-cave')) {
+							this.textures.addSpriteSheet('player-cave', this._playerCanvas, { frameWidth: 22, frameHeight: 38 });
+						} else {
+							this.textures.get('player-cave').refresh();
+						}
+					} catch (e) { console.error('[CaveScene] palette swap failed:', e); }
+
+					const mkAnim = (key, frames) => {
+						if (this.anims.exists(key)) this.anims.remove(key);
+						this.anims.create({ key, frameRate: 6, repeat: -1,
+							frames: this.anims.generateFrameNumbers('player-cave', { frames }) });
+					};
+					mkAnim('cv-walk-south', [1, 0, 2, 0]);
+					mkAnim('cv-walk-west',  [4, 3, 5, 3]);
+					mkAnim('cv-walk-north', [7, 6, 8, 6]);
+					mkAnim('cv-walk-east',  [10, 9, 11, 9]);
+
+					// Spawn player near top-center
+					const spawnC = Math.floor(CAVE_W / 2);
+					const spawnR = 2;
+					this.player = this.physics.add.sprite(spawnC*TILE + TILE/2, spawnR*TILE + TILE/2, 'player-cave', 0);
+					this.player.setOrigin(0.5, 36/38);
+					this.player.setScale(0.75);
+					this.player.setDepth(3);
+					this.player.body.setSize(10, 6);
+					this.player.body.setOffset((22-10)/2, 38-8);
+
+					// Solid tiles
+					this.solids = this.physics.add.staticGroup();
+					for (let r = 0; r < CAVE_H; r++) {
+						for (let c = 0; c < CAVE_W; c++) {
+							if (SOLID.has(this.map[r][c])) {
+								const rect = this.add.rectangle(c*TILE + TILE/2, r*TILE + TILE/2, TILE, TILE);
+								this.physics.add.existing(rect, true);
+								this.solids.add(rect);
+							}
+						}
+					}
+					this.physics.add.collider(this.player, this.solids);
+
+					// Wild Pokémon (cave-appropriate pool)
+					this._wildSpawner = new WildSpawner(this.map, TILE);
+					this._wildSpawner._pool = [92,93,96,97,66,67,74,75];
+					this._wildSpawner.spawnAll(null);
+					this._inWildEncounter = false;
+
+					this.physics.world.setBounds(0, 0, W, H);
+					this.player.setCollideWorldBounds(true);
+					// No cam.setBounds / startFollow — Phaser's bounds clamping with zoom > 1
+					// allows negative scrollY (≈ -(screenH-roomH)/2) which parks the camera
+					// completely off-map. We do manual clamping in update() instead.
+					this.cameras.main.setBackgroundColor('#080810');
+					this.cameras.main.setRoundPixels(true);
+					this.applyZoom();
+					this.scale.on('resize', this.onResize, this);
+					this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
+
+					__S._sceneKeyboard = this.input.keyboard;
+					this.keys = this.input.keyboard.addKeys({
+						up: Phaser.Input.Keyboard.KeyCodes.UP,
+						down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+						left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+						right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+						w: Phaser.Input.Keyboard.KeyCodes.W,
+						a: Phaser.Input.Keyboard.KeyCodes.A,
+						s: Phaser.Input.Keyboard.KeyCodes.S,
+						d: Phaser.Input.Keyboard.KeyCodes.D,
+						interact: Phaser.Input.Keyboard.KeyCodes.E,
+					});
+					this.dpad = { up:false, down:false, left:false, right:false };
+					this.setupJoystick();
+					setupPauseMenu(this.game);
+					Music.start('camp');
+					this.events.once('shutdown', () => Music.stop());
+					this.events.once('shutdown', () => { if (this._wildSpawner) { this._wildSpawner.destroyAll(); this._wildSpawner = null; } });
+
+					this.dir = 0;
+					this.dirAnimKeys = ['cv-walk-south', 'cv-walk-west', 'cv-walk-north', 'cv-walk-east'];
+					this.dirIdleFrame = [0, 3, 6, 9];
+					this.player.setFrame(this.dirIdleFrame[this.dir]);
+					this.didTransition = false;
+					this.armedForExit = false;
+					this.DIR_VEC = [[0,1],[-1,0],[0,-1],[1,0]];
+
+					this._promptEl  = document.getElementById('campPrompt');
+					this._promptLbl = document.getElementById('campPromptLabel');
+					this._locEl = document.querySelector('.camp-location-name');
+					if (this._locEl) {
+						this._prevLocText = this._locEl.textContent;
+						this._locEl.textContent = 'UNDERGROUND CAVE';
+					}
+					this.events.once('shutdown', () => {
+						if (this._promptEl) this._promptEl.hidden = true;
+						if (this._locEl && this._prevLocText) this._locEl.textContent = this._prevLocText;
+					});
+				}
+
+				onResize() { applyWrapTop(); this.applyZoom(); }
+
+				applyZoom() {
+					const W = this.scale.width, H = this.scale.height;
+					if (W <= 0 || H <= 0) { this.events.once('postupdate', () => this.applyZoom()); return; }
+					const roomW = CAVE_W * TILE, roomH = CAVE_H * TILE;
+					let s = Math.ceil(Math.max(W / roomW, H / roomH));
+					s = Math.max(2, Math.min(s, 4));
+					const cam = this.cameras.main;
+					cam.setZoom(s);
+					// No setBounds — we clamp manually in update(). Snap camera to player now.
+					const px = this.player ? this.player.x : roomW / 2;
+					const py = this.player ? this.player.y : roomH / 2;
+					const vw = W / s, vh = H / s;
+					cam.scrollX = Math.max(0, Math.min(roomW - vw, px - vw / 2));
+					cam.scrollY = Math.max(0, Math.min(roomH - vh, py - vh / 2));
+				}
+
+				setupJoystick() {
+					const base = document.getElementById('joystickBase');
+					const knob = document.getElementById('joystickKnob');
+					if (!base || !knob) return;
+					base.__campDpad = this.dpad;
+					if (base.dataset.wired) return;
+					base.dataset.wired = '1';
+					const RADIUS = 42, DEAD = 0.18;
+					let active = false, pointerId = null;
+					const reset = () => {
+						active = false; pointerId = null;
+						const d = base.__campDpad;
+						if (d) { d.up = d.down = d.left = d.right = false; }
+						knob.style.transform = 'translate(-50%,-50%)';
+					};
+					const applyJoy = (dx, dy) => {
+						const d = base.__campDpad;
+						if (!d) return;
+						const dist = Math.sqrt(dx*dx + dy*dy);
+						const clamp = Math.min(dist, RADIUS);
+						const nx = dist > 0 ? dx/dist : 0, ny = dist > 0 ? dy/dist : 0;
+						knob.style.transform = `translate(calc(-50% + ${nx*clamp}px), calc(-50% + ${ny*clamp}px))`;
+						const fx = dist > 0 ? dx/Math.max(dist, RADIUS) : 0;
+						const fy = dist > 0 ? dy/Math.max(dist, RADIUS) : 0;
+						d.left = fx < -DEAD; d.right = fx > DEAD;
+						d.up   = fy < -DEAD; d.down  = fy > DEAD;
+					};
+					base.addEventListener('pointerdown', e => {
+						if (active) return;
+						active = true; pointerId = e.pointerId;
+						base.setPointerCapture(e.pointerId); e.preventDefault();
+						const r = base.getBoundingClientRect();
+						applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+					});
+					base.addEventListener('pointermove', e => {
+						if (!active || e.pointerId !== pointerId) return;
+						e.preventDefault();
+						const r = base.getBoundingClientRect();
+						applyJoy(e.clientX - r.left - r.width/2, e.clientY - r.top - r.height/2);
+					});
+					['pointerup','pointercancel'].forEach(ev => base.addEventListener(ev, e => {
+						if (e.pointerId !== pointerId) return;
+						e.preventDefault(); reset();
+					}));
+				}
+
+				update() {
+					if (!this.player) return;
+					this.tick++;
+					if (this.didTransition) { this.player.setVelocity(0, 0); return; }
+					Dialog.tick();
+					const dialogOpen = Dialog.isOpen();
+					const k = this.keys, d = this.dpad;
+
+					// Flashlight fog effect (screen-space coords)
+					if (this._fog && this.player) {
+						const cam = this.cameras.main;
+						const SW = this.scale.width, SH = this.scale.height;
+						// Convert player world pos → screen pos
+						const sx = (this.player.x - cam.scrollX) * cam.zoom;
+						const sy = (this.player.y - cam.scrollY) * cam.zoom;
+						const R = Math.round(72 * cam.zoom); // flashlight radius in screen px
+						this._fog.clear();
+						this._fog.fillStyle(0x000000, 0.55);
+						// 4 rects around the light hole, clamped to screen bounds
+						const top_h = Math.max(0, sy - R);
+						const bot_y = Math.min(SH, sy + R);
+						const bot_h = Math.max(0, SH - bot_y);
+						const mid_y = sy - R, mid_h = Math.max(0, R * 2);
+						const left_w = Math.max(0, sx - R);
+						const right_x = Math.min(SW, sx + R);
+						const right_w = Math.max(0, SW - right_x);
+						this._fog.fillRect(0,      0,       SW,      top_h);           // top
+						this._fog.fillRect(0,      mid_y,   left_w,  mid_h);           // left
+						this._fog.fillRect(right_x, mid_y,  right_w, mid_h);           // right
+						this._fog.fillRect(0,      bot_y,   SW,      bot_h);           // bottom
+						// Fill 4 corners of the circular area (approximation)
+						const cr = Math.round(R * 0.29); // corner filler ~sin(45°) gap
+						this._fog.fillRect(0,        mid_y,        cr,  mid_h);
+						this._fog.fillRect(SW - cr,  mid_y,        cr,  mid_h);
+					}
+
+					const tc = Math.floor(this.player.x / TILE);
+					const tr = Math.floor(this.player.y / TILE);
+					const [dvx, dvy] = this.DIR_VEC[this.dir];
+					const tileR = tr + dvy, tileC = tc + dvx;
+					const facingTile = this.map[tileR] && this.map[tileR][tileC];
+
+					// Show prompt
+					const pe = this._promptEl, lbl = this._promptLbl;
+					let promptLabel = null;
+					if (facingTile === TCVXT) promptLabel = 'Exit';
+					else if (facingTile === TCVFS) promptLabel = 'Dig';
+					if (pe && lbl) {
+						if (!dialogOpen && promptLabel) {
+							lbl.textContent = promptLabel;
+							pe.hidden = false;
+							const cam = this.cameras.main;
+							const sx = (this.player.x - cam.worldView.x) * cam.zoom;
+							const sy = (this.player.y - cam.worldView.y) * cam.zoom;
+							pe.style.left = sx + 'px';
+							pe.style.top  = Math.min(sy, this.scale.height - 180) + 'px';
+							pe.style.transform = 'translate(-50%, calc(-100% - 12px))';
+						} else {
+							pe.hidden = true;
+						}
+					}
+
+					const ePressed = Phaser.Input.Keyboard.JustDown(k.interact) || TouchActions.consume('interact');
+					if (ePressed) {
+						if (dialogOpen) {
+							Dialog.advance();
+						} else if (facingTile === TCVXT) {
+							if (!this.didTransition) {
+								this.didTransition = true;
+								if (pe) pe.hidden = true;
+								safeSceneStart(this, 'camp', { from: 'cave' });
+							}
+						} else if (facingTile === TCVFS && this.map[tileR] && this.map[tileR][tileC] === TCVFS) {
+							showToast('⛏️ Found a fossil! +25 tokens');
+							try {
+								const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+								inv.tokens = (inv.tokens || 0) + 25;
+								localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+								this.map[tileR][tileC] = TCVF;
+								const ctx = this.baseTex.getContext();
+								ctx.imageSmoothingEnabled = false;
+								drawTile(ctx, TCVF, tileC * TILE, tileR * TILE, 0);
+								this.baseTex.refresh();
+							} catch (_) {}
+							Dialog.open('⛏️ You chipped away at the rock and found a fossil!\n+25 tokens!');
+						} else if (!this._inWildEncounter && this._wildSpawner) {
+							const _ww = this._wildSpawner.getNearby(this.player.x, this.player.y);
+							if (_ww) {
+								this._inWildEncounter = true;
+								showWildEncounter(_ww,
+									() => { this._inWildEncounter = false; },
+									() => {
+										this._wildSpawner.remove(_ww);
+										this._inWildEncounter = false;
+										try {
+											const box = JSON.parse(localStorage.getItem('pokequiz_pc_box') || '[]');
+											box.push({id:_ww.dexNum, name:_ww.name, caught:Date.now()});
+											localStorage.setItem('pokequiz_pc_box', JSON.stringify(box));
+										} catch {}
+										if (window.CAMP_SYSTEMS.DexGroupRewards) window.CAMP_SYSTEMS.DexGroupRewards.markSeen(_ww.dexNum);
+										showToast('Caught ' + _ww.name + '! Added to PC Box. 🎉');
+									}
+								);
+							}
+						}
+					}
+
+					let vx = 0, vy = 0;
+					if (!dialogOpen) {
+						if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
+						if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
+						if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
+						if (k.right.isDown || k.d.isDown || d.right) { vx =  SPEED; this.dir = 3; }
+						if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+					}
+					this.player.setVelocity(vx, vy);
+
+					const moving = vx !== 0 || vy !== 0;
+					const animKey = this.dirAnimKeys[this.dir];
+					if (moving) {
+						if (!this.player.anims.isPlaying || this.player.anims.currentAnim?.key !== animKey) {
+							this.player.anims.play(animKey, true);
+						}
+					} else {
+						this.player.anims.stop();
+						this.player.setFrame(this.dirIdleFrame[this.dir]);
+					}
+
+					// Wild spawner update
+					if (this._wildSpawner) this._wildSpawner.update(this.player, this.cameras.main);
+
+					// Manual camera follow — keeps player centered within map bounds without
+					// Phaser's startFollow+setBounds negative-scroll bug (zoom > 1).
+					{
+						const cam = this.cameras.main;
+						const s = cam.zoom;
+						if (s > 0) {
+							const vw = this.scale.width / s;
+							const vh = this.scale.height / s;
+							const roomW = CAVE_W * TILE, roomH = CAVE_H * TILE;
+							cam.scrollX = Math.max(0, Math.min(roomW - vw, this.player.x - vw / 2));
+							cam.scrollY = Math.max(0, Math.min(roomH - vh, this.player.y - vh / 2));
+						}
+					}
+
+					Debug.render(
+						'CAVE\n' +
+						'tile  ' + tc + ',' + tr + '\n' +
+						'dir   ' + ['S','W','N','E'][this.dir] + '\n' +
+						'trans ' + this.didTransition + '\n' +
+						'dlg   ' + dialogOpen + '\n' +
+						(Debug.lastError ? 'ERR ' + Debug.lastError : '')
+					);
+				}
+			};
+		}
+	window.CAMP_SCENES.makeCaveSceneClass = makeCaveSceneClass;
+
 	// ── SeasonalRewards ────────────────────────────────────────────────────────
 	const SeasonalRewards = (() => {
 		async function check() {
@@ -12369,7 +12944,10 @@
 			const cx = spotC * t + t / 2, cy = spotR * t + t / 2;
 			const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.006);
 			sparkleGfx.fillStyle(0xffee44, pulse);
-			sparkleGfx.fillStar(cx, cy, 4, 3, 6);
+			// Phaser 3.88 has no fillStar — draw a 4-point star manually via fillPoints
+			{ const pts=[], outerR=6, innerR=3, numPts=4;
+			  for(let i=0;i<numPts*2;i++){const a=(i*Math.PI/numPts)-Math.PI/2;const r=(i%2===0)?outerR:innerR;pts.push({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});}
+			  sparkleGfx.fillPoints(pts,true); }
 		}
 		function updateSparkle() { _drawSparkle(); }
 		function tryDig(pr, pc) {
@@ -14594,6 +15172,166 @@
 		return { startBattle, getWins, NPC_DATA };
 	})();
 	window.CAMP_SYSTEMS.TrainerBattles = TrainerBattles;
+
+	// ── CampTutorial ──────────────────────────────────────────────────────────
+	const CampTutorial = (() => {
+		const KEY = 'pokequiz_tutorial_v1';
+		const STEPS = [
+			'Use WASD or Arrow Keys to walk around camp.',
+			'Press E near signs, NPCs, or objects to interact.',
+			'Press P to open your partner Pokémon panel.',
+			'Head south through the gate to reach the Market.',
+			'Plant seeds in the garden and come back later to harvest!',
+		];
+		let overlay = null, step = 0;
+
+		function show() {
+			if (localStorage.getItem(KEY)) return;
+			step = 0;
+			if (!overlay) {
+				overlay = document.createElement('div');
+				overlay.id = 'campTutorialOverlay';
+				overlay.style.cssText = 'position:fixed;inset:0;z-index:8500;display:flex;align-items:flex-end;justify-content:center;padding-bottom:80px;pointer-events:none;';
+				document.body.appendChild(overlay);
+			}
+			_render();
+		}
+
+		function _render() {
+			if (!overlay) return;
+			overlay.innerHTML = '<div style="background:rgba(10,10,20,0.92);border:2px solid #ffcb05;border-radius:12px;padding:16px 22px;max-width:340px;width:90%;font-family:\'Press Start 2P\',monospace;font-size:8px;color:#fff;line-height:1.7;pointer-events:auto;text-align:center;">'
+				+ '<div style="color:#ffcb05;margin-bottom:10px;">HOW TO PLAY (' + (step+1) + '/' + STEPS.length + ')</div>'
+				+ '<div style="margin-bottom:14px;">' + STEPS[step] + '</div>'
+				+ '<div style="display:flex;gap:8px;justify-content:center;">'
+				+ '<button onclick="window.CAMP_SYSTEMS.CampTutorial.skip()" style="background:#333;color:#aaa;border:1px solid #555;border-radius:6px;padding:6px 12px;font-family:\'Press Start 2P\',monospace;font-size:7px;cursor:pointer;">Skip</button>'
+				+ '<button onclick="window.CAMP_SYSTEMS.CampTutorial.next()" style="background:#ffcb05;color:#111;border:none;border-radius:6px;padding:6px 12px;font-family:\'Press Start 2P\',monospace;font-size:7px;cursor:pointer;">' + (step < STEPS.length - 1 ? 'Next >' : 'Done!') + '</button>'
+				+ '</div></div>';
+		}
+
+		function next() {
+			step++;
+			if (step >= STEPS.length) {
+				skip();
+			} else {
+				_render();
+			}
+		}
+
+		function skip() {
+			localStorage.setItem(KEY, '1');
+			if (overlay) { overlay.remove(); overlay = null; }
+		}
+
+		return { show, next, skip };
+	})();
+	window.CAMP_SYSTEMS.CampTutorial = CampTutorial;
+
+	// ── DexGroupRewards ──────────────────────────────────────────────────────
+	// Handles group-completion rewards (Starters, Birds, Eeveelutions, etc.)
+	// DexRewards (above) handles total-caught milestones.
+	const DexGroupRewards = (() => {
+		const KEY_SEEN = 'pokequiz_dex_seen';
+		const KEY_CLAIMED = 'pokequiz_dex_rewards_claimed';
+
+		const GROUPS = [
+			{
+				id: 'kanto_starters',
+				label: 'Kanto Starters',
+				dex: [1, 4, 7],
+				tokens: 50,
+				badge: 'Starter Fan'
+			},
+			{
+				id: 'legendary_birds',
+				label: 'Legendary Birds',
+				dex: [144, 145, 146],
+				tokens: 100,
+				badge: 'Bird Keeper'
+			},
+			{
+				id: 'eeveelutions',
+				label: 'Eeveelutions',
+				dex: [134, 135, 136, 196, 197, 470, 471, 700],
+				tokens: 80,
+				badge: 'Eevee Expert'
+			},
+			{
+				id: 'kanto_starter_lines',
+				label: 'Kanto Starter Lines',
+				dex: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+				tokens: 75,
+				badge: 'Kanto Champion'
+			},
+		];
+
+		function _loadSeen() {
+			try { return JSON.parse(localStorage.getItem(KEY_SEEN) || '[]'); } catch(e) { return []; }
+		}
+
+		function _loadClaimed() {
+			try { return JSON.parse(localStorage.getItem(KEY_CLAIMED) || '[]'); } catch(e) { return []; }
+		}
+
+		function markSeen(dexNum) {
+			const seen = _loadSeen();
+			if (!seen.includes(dexNum)) {
+				seen.push(dexNum);
+				localStorage.setItem(KEY_SEEN, JSON.stringify(seen));
+				_checkRewards();
+			}
+		}
+
+		function _checkRewards() {
+			const seen = _loadSeen();
+			const claimed = _loadClaimed();
+			GROUPS.forEach(g => {
+				if (claimed.includes(g.id)) return;
+				const complete = g.dex.every(n => seen.includes(n));
+				if (!complete) return;
+				claimed.push(g.id);
+				localStorage.setItem(KEY_CLAIMED, JSON.stringify(claimed));
+				// Grant tokens
+				try {
+					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+					inv.tokens = (inv.tokens || 0) + g.tokens;
+					localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+				} catch(e) {}
+				// Toast + achievement
+				if (window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.showToast) {
+					window.CAMP_SYSTEMS.showToast('Dex Reward: ' + g.label + '! +' + g.tokens + ' tokens', 4000);
+				}
+				if (window.CAMP_SYSTEMS && window.CAMP_SYSTEMS.Achievements) {
+					window.CAMP_SYSTEMS.Achievements.unlock(g.badge);
+				}
+			});
+		}
+
+		function getProgress() {
+			const seen = _loadSeen();
+			const claimed = _loadClaimed();
+			return GROUPS.map(g => ({
+				id: g.id,
+				label: g.label,
+				total: g.dex.length,
+				seen: g.dex.filter(n => seen.includes(n)).length,
+				claimed: claimed.includes(g.id),
+				tokens: g.tokens,
+			}));
+		}
+
+		function _seedPartner() {
+			try {
+				const pData = JSON.parse(localStorage.getItem('pokequiz_partner') || 'null');
+				if (pData && pData.dex) markSeen(pData.dex);
+			} catch(e) {}
+		}
+
+		// Seed on load
+		_seedPartner();
+
+		return { markSeen, getProgress, _checkRewards };
+	})();
+	window.CAMP_SYSTEMS.DexGroupRewards = DexGroupRewards;
 
 	// ── Sound additions ────────────────────────────────────────────────────────
 	(function(){

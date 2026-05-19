@@ -52,6 +52,7 @@
 	const makeUpstairsSceneClass = (window.CAMP_SCENES || {}).makeUpstairsSceneClass;
 	const makeMarketSceneClass   = (window.CAMP_SCENES || {}).makeMarketSceneClass;
 	const makeBeachSceneClass    = (window.CAMP_SCENES || {}).makeBeachSceneClass;
+	const makeCaveSceneClass     = (window.CAMP_SCENES || {}).makeCaveSceneClass;
 
 	// ── Universal ESC-to-close ────────────────────────────────────────────────────
 	document.addEventListener('keydown', (e) => {
@@ -128,24 +129,63 @@
 		const UpstairsClass  = makeUpstairsSceneClass();
 		const MarketClass    = makeMarketSceneClass();
 		const BeachClass     = makeBeachSceneClass();
+		const CaveClass      = makeCaveSceneClass ? makeCaveSceneClass() : null;
+
+		const _allScenes = (list) => CaveClass ? [...list, CaveClass] : list;
 
 		let sceneList;
-		if      (boot.scene === 'house')    sceneList = [HouseClass,    CampClass, UpstairsClass, MarketClass, BeachClass];
-		else if (boot.scene === 'upstairs') sceneList = [UpstairsClass, CampClass, HouseClass,    MarketClass, BeachClass];
-		else if (boot.scene === 'market')   sceneList = [MarketClass,   CampClass, HouseClass,    UpstairsClass, BeachClass];
-		else if (boot.scene === 'beach')    sceneList = [BeachClass,    CampClass, HouseClass,    UpstairsClass, MarketClass];
-		else                                sceneList = [CampClass,      HouseClass, UpstairsClass, MarketClass, BeachClass];
+		if      (boot.scene === 'house')    sceneList = _allScenes([HouseClass,    CampClass, UpstairsClass, MarketClass, BeachClass]);
+		else if (boot.scene === 'upstairs') sceneList = _allScenes([UpstairsClass, CampClass, HouseClass,    MarketClass, BeachClass]);
+		else if (boot.scene === 'market')   sceneList = _allScenes([MarketClass,   CampClass, HouseClass,    UpstairsClass, BeachClass]);
+		else if (boot.scene === 'beach')    sceneList = _allScenes([BeachClass,    CampClass, HouseClass,    UpstairsClass, MarketClass]);
+		// Cave boot: CaveClass is first (auto-started); do NOT use _allScenes() here
+		// because _allScenes appends CaveClass again → duplicate 'cave' key crashes Phaser.
+		else if (boot.scene === 'cave')     sceneList = [CaveClass || CampClass, CampClass, HouseClass, UpstairsClass, MarketClass, BeachClass];
+		else                                sceneList = _allScenes([CampClass, HouseClass, UpstairsClass, MarketClass, BeachClass]);
 
-		new Phaser.Game({
-			type: Phaser.AUTO,
-			parent: 'campWrap',
-			backgroundColor: '#68A028',
-			pixelArt: true,
-			roundPixels: true,
-			scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
-			physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-			scene: sceneList,
-		});
+		// Define hide-fn BEFORE Phaser.Game() so create() can always call it,
+		// even on the rare edge where the first scene boots synchronously.
+		const _ls = document.getElementById('campLoadingScreen');
+		if (_ls) {
+			window.__campLoadHide = function() {
+				_ls.style.transition = 'opacity 0.4s';
+				_ls.style.opacity = '0';
+				setTimeout(function(){ _ls.remove(); }, 450);
+				window.__campLoadHide = null;
+			};
+			// Safety-net: force-hide after 20 s in case create() never fires
+			setTimeout(function() {
+				if (window.__campLoadHide) {
+					console.warn('[Camp] Loading screen safety-net triggered after 20 s');
+					window.__campLoadHide();
+				}
+			}, 20000);
+		}
+
+		try {
+			window.__phaserGame = new Phaser.Game({
+				type: Phaser.AUTO,
+				parent: 'campWrap',
+				backgroundColor: '#68A028',
+				pixelArt: true,
+				roundPixels: true,
+				render: { preserveDrawingBuffer: true },
+				loader: { maxParallelDownloads: 64 },
+				scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
+				physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+				scene: sceneList,
+			});
+		} catch (e) {
+			console.error('[Camp] Phaser.Game() threw:', e);
+			if (window.__campLoadHide) window.__campLoadHide();
+			const wrap = document.getElementById('campWrap');
+			if (wrap) {
+				const err = document.createElement('div');
+				err.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#f55;font-family:monospace;font-size:12px;padding:16px;text-align:center;';
+				err.textContent = 'Camp failed to start: ' + e.message;
+				wrap.appendChild(err);
+			}
+		}
 
 		if (window.location.hash)
 			history.replaceState(null, '', window.location.pathname + window.location.search);
