@@ -12532,6 +12532,8 @@
 					this.didTransition = false;
 					this.armedForExit = false;
 					this._exitArmed = false; // arms once player moves away from north exit
+					// Cache Flash ownership so the fog doesn't hit localStorage 60fps
+					this._flashOwned = !!(Inventory.load().hasFlash);
 					this.DIR_VEC = [[0,1],[-1,0],[0,-1],[1,0]];
 
 					this._promptEl  = document.getElementById('campPrompt');
@@ -12649,29 +12651,28 @@
 					const dialogOpen = Dialog.isOpen();
 					const k = this.keys, d = this.dpad;
 
-					// Flashlight fog — Phaser Graphics circular strip mask (screen space).
-					// Draws horizontal 2-px strips leaving a clean circular torch hole.
-					// Pure Phaser WebGL — no DOM canvas, no z-index issues.
+					const tc = Math.floor(this.player.x / TILE);
+					const tr = Math.floor(this.player.y / TILE);
+
+					// Flashlight fog — drawn AFTER tc/tr are computed so radius is valid.
+					// Draws horizontal 3-px strips leaving a circular torch hole (screen space).
 					if (this._fog && this.player) {
 						const cam = this.cameras.main;
 						const SW = this.scale.width, SH = this.scale.height;
 						const sx = Math.round((this.player.x - cam.scrollX) * cam.zoom);
 						const sy = Math.round((this.player.y - cam.scrollY) * cam.zoom);
-						const inv = Inventory.load();
-						const _hasFlash = !!(inv && inv.hasFlash);
+						const _hasFlash = !!(this._flashOwned);
 						// Torch radius: Flash HM = full 128; no Flash = shrinks deeper in cave (row-based)
 						const _baseR = _hasFlash ? 128 : Math.max(52, 96 - Math.floor(tr / CAVE_H * 44));
 						const R  = Math.round(_baseR * cam.zoom); // torch radius (screen px)
-						const STEP = 3; // strip height in px — 3px = pixel-art feel
+						const STEP = 3;
 						this._fog.clear();
 						this._fog.fillStyle(0x000000, 0.92);
 						for (let py = 0; py < SH; py += STEP) {
 							const dy = (py + STEP * 0.5) - sy;
 							if (Math.abs(dy) >= R) {
-								// fully outside circle — dark strip
 								this._fog.fillRect(0, py, SW, STEP);
 							} else {
-								// partially lit — draw fog left and right of the circle edge
 								const dx = Math.sqrt(R * R - dy * dy);
 								const lx = Math.round(sx - dx);
 								const rx = Math.round(sx + dx);
@@ -12680,9 +12681,6 @@
 							}
 						}
 					}
-
-					const tc = Math.floor(this.player.x / TILE);
-					const tr = Math.floor(this.player.y / TILE);
 					const [dvx, dvy] = this.DIR_VEC[this.dir];
 					const tileR = tr + dvy, tileC = tc + dvx;
 					const facingTile = this.map[tileR] && this.map[tileR][tileC];
