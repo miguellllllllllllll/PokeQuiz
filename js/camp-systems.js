@@ -12440,11 +12440,12 @@
 
 					this.physics.world.setBounds(0, 0, W, H);
 					this.player.setCollideWorldBounds(true);
-					// No cam.setBounds / startFollow — Phaser's bounds clamping with zoom > 1
-					// allows negative scrollY (≈ -(screenH-roomH)/2) which parks the camera
-					// completely off-map. We do manual clamping in update() instead.
 					this.cameras.main.setBackgroundColor('#080810');
 					this.cameras.main.setRoundPixels(true);
+					// Match the same pattern as HouseScene / UpstairsScene:
+					// setBounds + startFollow BEFORE applyZoom so worldView is correct.
+					this.cameras.main.setBounds(0, 0, W, H);
+					this.cameras.main.startFollow(this.player, true, 1, 1);
 					this.applyZoom();
 					this.scale.on('resize', this.onResize, this);
 					this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
@@ -12532,12 +12533,8 @@
 					s = Math.max(2, Math.min(s, 4));
 					const cam = this.cameras.main;
 					cam.setZoom(s);
-					// No setBounds — we clamp manually in update(). Snap camera to player now.
-					const px = this.player ? this.player.x : roomW / 2;
-					const py = this.player ? this.player.y : roomH / 2;
-					const vw = W / s, vh = H / s;
-					cam.scrollX = Math.max(0, Math.min(roomW - vw, px - vw / 2));
-					cam.scrollY = Math.max(0, Math.min(roomH - vh, py - vh / 2));
+					cam.setBounds(0, 0, roomW, roomH);
+					// startFollow is established in _buildCave — applyZoom only adjusts zoom/bounds.
 				}
 
 				setupJoystick() {
@@ -12718,18 +12715,7 @@
 					if (this._wildSpawner) this._wildSpawner.update(this.player, this.cameras.main);
 
 					// Manual camera follow — keeps player centered within map bounds without
-					// Phaser's startFollow+setBounds negative-scroll bug (zoom > 1).
-					{
-						const cam = this.cameras.main;
-						const s = cam.zoom;
-						if (s > 0) {
-							const vw = this.scale.width / s;
-							const vh = this.scale.height / s;
-							const roomW = CAVE_W * TILE, roomH = CAVE_H * TILE;
-							cam.scrollX = Math.max(0, Math.min(roomW - vw, this.player.x - vw / 2));
-							cam.scrollY = Math.max(0, Math.min(roomH - vh, this.player.y - vh / 2));
-						}
-					}
+					// Camera scroll is managed by startFollow + setBounds in applyZoom().
 
 					Debug.render(
 						'CAVE\n' +
