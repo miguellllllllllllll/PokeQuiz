@@ -3445,6 +3445,235 @@
 		})();
 	window.CAMP_SYSTEMS.BeachShack = BeachShack;
 
+	// ── TowerDungeon — original top-down roguelike inside the marketplace tower ──
+	// Self-contained canvas-overlay minigame; does not touch the Phaser scenes.
+	// Your partner Pokémon fights alongside you, auto-firing at nearby foes.
+		const TowerDungeon = (() => {
+			const W = 320, H = 240, WALL = 16, MAX_ROOM = 8;
+			let root = null, cv = null, ctx = null, raf = null, openFlag = false;
+			let S = null;
+			const keys = {};
+			const FORM_COLOR = {
+				eevee:'#c89860', vaporeon:'#5aa0e0', jolteon:'#f0d040', flareon:'#f08030',
+				espeon:'#d080d0', umbreon:'#5a5a80', leafeon:'#80c050', glaceon:'#90d0e0', sylveon:'#f0a0c0',
+			};
+			function onKey(e) {
+				if (!openFlag) return;
+				const k = e.key.toLowerCase();
+				if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+				keys[k] = (e.type === 'keydown');
+				if (e.type === 'keydown' && k === 'escape') exit();
+			}
+			function ensure() {
+				if (root) return;
+				root = document.createElement('div');
+				root.id = 'towerDungeon';
+				root.hidden = true;
+				root.style.cssText = 'position:fixed;inset:0;z-index:120;background:#07060f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:monospace;touch-action:none';
+				cv = document.createElement('canvas');
+				cv.width = W; cv.height = H;
+				cv.style.cssText = 'image-rendering:pixelated;width:min(94vw,560px);height:auto;border:3px solid #4a3a7a;border-radius:6px;background:#15101f';
+				ctx = cv.getContext('2d');
+				ctx.imageSmoothingEnabled = false;
+				root.appendChild(cv);
+				const wrap = document.createElement('div');
+				wrap.style.cssText = 'display:flex;gap:26px;align-items:center';
+				const pad = document.createElement('div');
+				pad.style.cssText = 'display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:5px';
+				const mk = (label, key, gc, gr) => {
+					const b = document.createElement('button');
+					b.textContent = label; b.type = 'button';
+					b.style.cssText = 'grid-column:' + gc + ';grid-row:' + gr + ';font-size:18px;border-radius:9px;border:2px solid #5a4a8a;background:#2a2440;color:#cfc6ee;touch-action:none';
+					b.addEventListener('pointerdown', e => { e.preventDefault(); keys[key] = true; });
+					['pointerup','pointercancel','pointerleave'].forEach(ev =>
+						b.addEventListener(ev, e => { e.preventDefault(); keys[key] = false; }));
+					pad.appendChild(b);
+				};
+				mk('↑','arrowup',2,1); mk('←','arrowleft',1,2);
+				mk('→','arrowright',3,2); mk('↓','arrowdown',2,3);
+				wrap.appendChild(pad);
+				const leave = document.createElement('button');
+				leave.textContent = 'LEAVE'; leave.type = 'button';
+				leave.style.cssText = 'font-size:11px;padding:14px 18px;border-radius:9px;border:2px solid #5a4a8a;background:#2a2440;color:#cfc6ee';
+				leave.addEventListener('click', exit);
+				wrap.appendChild(leave);
+				root.appendChild(wrap);
+				document.body.appendChild(root);
+				window.addEventListener('keydown', onKey);
+				window.addEventListener('keyup', onKey);
+			}
+			function newRoom() {
+				S.doorOpen = false;
+				S.bullets = []; S.ebullets = []; S.enemies = [];
+				const n = 2 + Math.min(7, S.room + 1);
+				for (let i = 0; i < n; i++) {
+					const shooter = S.room >= 3 && Math.random() < 0.35;
+					S.enemies.push({
+						x: WALL + 24 + Math.random() * (W - 2 * WALL - 48),
+						y: WALL + 20 + Math.random() * (H / 2 - WALL - 20),
+						hp: shooter ? 2 : 2 + Math.floor(S.room / 3),
+						r: 7, shooter, cd: 50 + Math.random() * 70,
+						spd: shooter ? 0.45 : 0.62 + Math.random() * 0.3, hurt: 0,
+					});
+				}
+			}
+			function nearest(x, y, list) {
+				let best = null, bd = 1e9;
+				for (const e of list) { const d = (e.x - x) ** 2 + (e.y - y) ** 2; if (d < bd) { bd = d; best = e; } }
+				return best;
+			}
+			function shoot(list, x, y, tx, ty, spd, dmg, col) {
+				const a = Math.atan2(ty - y, tx - x);
+				list.push({ x, y, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, dmg, col, r: 3 });
+			}
+			function step() {
+				S.tick++;
+				if (S.flash > 0) S.flash--;
+				if (S.invuln > 0) S.invuln--;
+				if (S.result) { S.endTimer++; return; }
+				let mx = 0, my = 0;
+				if (keys['arrowleft'] || keys['a']) mx -= 1;
+				if (keys['arrowright'] || keys['d']) mx += 1;
+				if (keys['arrowup'] || keys['w']) my -= 1;
+				if (keys['arrowdown'] || keys['s']) my += 1;
+				if (mx && my) { mx *= 0.707; my *= 0.707; }
+				const SP = 1.8;
+				S.px = Math.max(WALL + 7, Math.min(W - WALL - 7, S.px + mx * SP));
+				S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + my * SP));
+				// Partner trails the player and assists with auto-fire.
+				S.partner.x += (S.px - 15 - S.partner.x) * 0.12;
+				S.partner.y += (S.py + 4 - S.partner.y) * 0.12;
+				if (S.fireCd > 0) S.fireCd--;
+				const tgt = nearest(S.px, S.py, S.enemies);
+				if (tgt && S.fireCd <= 0) { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, 1, '#ffe060'); S.fireCd = 26; }
+				if (S.partnerCd > 0) S.partnerCd--;
+				const ptgt = nearest(S.partner.x, S.partner.y, S.enemies);
+				if (ptgt && S.partnerCd <= 0) { shoot(S.bullets, S.partner.x, S.partner.y, ptgt.x, ptgt.y, 3.0, 1, S.pColor); S.partnerCd = 36; }
+				for (let i = S.bullets.length - 1; i >= 0; i--) {
+					const b = S.bullets[i]; b.x += b.vx; b.y += b.vy;
+					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.bullets.splice(i, 1); continue; }
+					let hit = false;
+					for (const e of S.enemies) {
+						if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) { e.hp -= b.dmg; e.hurt = 6; hit = true; break; }
+					}
+					if (hit) S.bullets.splice(i, 1);
+				}
+				S.enemies = S.enemies.filter(e => e.hp > 0);
+				for (const e of S.enemies) {
+					if (e.hurt > 0) e.hurt--;
+					const a = Math.atan2(S.py - e.y, S.px - e.x);
+					e.x += Math.cos(a) * e.spd; e.y += Math.sin(a) * e.spd;
+					if ((e.x - S.px) ** 2 + (e.y - S.py) ** 2 < (e.r + 7) ** 2 && S.invuln <= 0) {
+						S.hp--; S.invuln = 52; S.flash = 8;
+					}
+					if (e.shooter) { e.cd--; if (e.cd <= 0) { shoot(S.ebullets, e.x, e.y, S.px, S.py, 2.0, 1, '#ff5a7a'); e.cd = 90 + Math.random() * 70; } }
+				}
+				for (let i = S.ebullets.length - 1; i >= 0; i--) {
+					const b = S.ebullets[i]; b.x += b.vx; b.y += b.vy;
+					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.ebullets.splice(i, 1); continue; }
+					if ((b.x - S.px) ** 2 + (b.y - S.py) ** 2 < (b.r + 7) ** 2 && S.invuln <= 0) {
+						S.hp--; S.invuln = 52; S.flash = 8; S.ebullets.splice(i, 1);
+					}
+				}
+				if (S.enemies.length === 0) {
+					S.doorOpen = true;
+					if (S.py < WALL + 12 && Math.abs(S.px - W / 2) < 14) {
+						S.room++;
+						if (S.room > MAX_ROOM) { S.result = 'win'; }
+						else { newRoom(); S.px = W / 2; S.py = H - 40; }
+					}
+				}
+				if (S.hp <= 0) S.result = 'lose';
+			}
+			function draw() {
+				ctx.fillStyle = '#15101f'; ctx.fillRect(0, 0, W, H);
+				ctx.fillStyle = '#241c33'; ctx.fillRect(WALL, WALL, W - 2 * WALL, H - 2 * WALL);
+				ctx.fillStyle = '#2c2240';
+				for (let y = WALL; y < H - WALL; y += 20)
+					for (let x = WALL; x < W - WALL; x += 20)
+						if (((x / 20) + (y / 20)) % 2 < 1) ctx.fillRect(x, y, 20, 20);
+				ctx.fillStyle = '#3a3158';
+				ctx.fillRect(0, 0, W, WALL); ctx.fillRect(0, H - WALL, W, WALL);
+				ctx.fillRect(0, 0, WALL, H); ctx.fillRect(W - WALL, 0, WALL, H);
+				ctx.fillStyle = S.doorOpen ? '#7ad07a' : '#5a3a2a';
+				ctx.fillRect(W / 2 - 14, 0, 28, WALL);
+				for (const b of S.bullets) { ctx.fillStyle = b.col; ctx.fillRect(b.x - 2, b.y - 2, 4, 4); }
+				for (const b of S.ebullets) { ctx.fillStyle = b.col; ctx.fillRect(b.x - 2, b.y - 2, 4, 4); }
+				for (const e of S.enemies) {
+					ctx.fillStyle = e.hurt > 0 ? '#ffffff' : (e.shooter ? '#c84a7a' : '#7a4ac8');
+					ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, 7); ctx.fill();
+					ctx.fillStyle = '#101018'; ctx.fillRect(e.x - 3, e.y - 2, 2, 2); ctx.fillRect(e.x + 1, e.y - 2, 2, 2);
+				}
+				ctx.fillStyle = S.pColor;
+				ctx.beginPath(); ctx.arc(S.partner.x, S.partner.y, 6, 0, 7); ctx.fill();
+				ctx.fillStyle = '#fff'; ctx.fillRect(S.partner.x - 2, S.partner.y - 2, 1, 1); ctx.fillRect(S.partner.x + 1, S.partner.y - 2, 1, 1);
+				if (!(S.invuln > 0 && (S.tick >> 2) % 2)) {
+					ctx.fillStyle = '#e8e0ff'; ctx.fillRect(S.px - 5, S.py - 7, 10, 12);
+					ctx.fillStyle = '#3a3158'; ctx.fillRect(S.px - 5, S.py - 7, 10, 3);
+				}
+				for (let i = 0; i < S.maxHp; i++) {
+					ctx.fillStyle = i < S.hp ? '#ff5a6a' : '#3a3158';
+					ctx.fillRect(4 + i * 11, 3, 9, 9);
+				}
+				ctx.font = '8px monospace'; ctx.textAlign = 'left';
+				ctx.fillStyle = '#ffe060'; ctx.fillText('ROOM ' + S.room + '/' + MAX_ROOM, W - 96, 11);
+				if (S.enemies.length) { ctx.fillStyle = '#c8a0ff'; ctx.fillText(S.enemies.length + ' FOES LEFT', W - 96, 23); }
+				else { ctx.fillStyle = '#7ad07a'; ctx.fillText('CLEAR! GO UP', W - 96, 23); }
+				if (S.result) {
+					ctx.fillStyle = 'rgba(0,0,0,0.74)'; ctx.fillRect(0, 0, W, H);
+					ctx.textAlign = 'center';
+					ctx.fillStyle = S.result === 'win' ? '#ffe060' : '#ff7a8a';
+					ctx.font = '15px monospace';
+					ctx.fillText(S.result === 'win' ? 'TOWER CLEARED!' : 'DEFEATED', W / 2, H / 2 - 12);
+					ctx.fillStyle = '#cfc6ee'; ctx.font = '8px monospace';
+					ctx.fillText('Rooms cleared: ' + (S.room - 1), W / 2, H / 2 + 10);
+					ctx.fillText('Tap LEAVE to collect rewards', W / 2, H / 2 + 26);
+				}
+				if (S.flash > 0) { ctx.fillStyle = 'rgba(255,40,60,' + (S.flash / 26) + ')'; ctx.fillRect(0, 0, W, H); }
+			}
+			function loop() {
+				if (!openFlag) return;
+				try { step(); draw(); } catch (e) { console.warn('[TowerDungeon]', e); }
+				raf = requestAnimationFrame(loop);
+			}
+			function start() {
+				ensure();
+				const inv = Inventory.load();
+				const form = (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee'));
+				S = {
+					room: 1, hp: 6, maxHp: 6, px: W / 2, py: H - 40,
+					partner: { x: W / 2 - 15, y: H - 30 }, pColor: FORM_COLOR[form] || '#c89860',
+					bullets: [], ebullets: [], enemies: [],
+					fireCd: 0, partnerCd: 0, invuln: 0, doorOpen: false,
+					result: null, endTimer: 0, tick: 0, flash: 0,
+				};
+				newRoom();
+				root.hidden = false;
+				openFlag = true;
+				if (raf) cancelAnimationFrame(raf);
+				loop();
+			}
+			function exit() {
+				if (!openFlag) return;
+				openFlag = false;
+				if (raf) { cancelAnimationFrame(raf); raf = null; }
+				if (root) root.hidden = true;
+				const cleared = Math.max(0, (S ? S.room : 1) - 1);
+				if (cleared > 0) {
+					const inv = Inventory.load();
+					const tok = cleared * 6 + (S && S.result === 'win' ? 30 : 0);
+					const ber = Math.floor(cleared / 2);
+					inv.tokens = (inv.tokens || 0) + tok;
+					inv.friendshipBerries = (inv.friendshipBerries || 0) + ber;
+					Inventory.save(inv);
+					try { TrainerLevel.addXP('quest'); } catch (_) {}
+					showToast('Tower run — ' + cleared + ' room' + (cleared === 1 ? '' : 's') + ' cleared · +' + tok + ' tokens' + (ber ? ', +' + ber + ' berries' : ''));
+				}
+			}
+			return { start, exit, isOpen: () => openFlag };
+		})();
+	window.CAMP_SYSTEMS.TowerDungeon = TowerDungeon;
+
 	// ── Battle ────────────────────────────────────────────────────────
 		const Battle = (() => {
 			const TYPES = ['fire', 'water', 'grass'];
@@ -10648,6 +10877,11 @@
 						const msg = SIGN_MESSAGES_MARKET[fr + ',' + fc];
 						if (msg) return { kind: 'sign', message: msg };
 					}
+					// Arcane Tower — face its stone footprint (rows 15-20, cols 10-13)
+					// to enter the dungeon crawl.
+					if (t === TBLD && fr >= 15 && fr <= 20 && fc >= 10 && fc <= 13) {
+						return { kind: 'tower', label: 'Enter' };
+					}
 					return null;
 				}
 	
@@ -10660,7 +10894,8 @@
 					applyDayNight();
 					Dialog.tick();
 					const dialogOpen = Dialog.isOpen();
-					const shopOpen = MarketShop.isOpen() || ExpeditionBoard.isOpen() || TreasureExcavation.isOpen();
+					const shopOpen = MarketShop.isOpen() || ExpeditionBoard.isOpen() || TreasureExcavation.isOpen()
+					              || (typeof TowerDungeon !== 'undefined' && TowerDungeon.isOpen && TowerDungeon.isOpen());
 					const k = this.keys, d = this.dpad;
 					let vx = 0, vy = 0;
 					if (!dialogOpen && !shopOpen) {
@@ -10702,7 +10937,9 @@
 					const showPrompt = !dialogOpen && !shopOpen && target;
 					if (pe && lbl) {
 						if (showPrompt) {
-							lbl.textContent = target.kind === 'npc' ? (target.npc.label || 'Shop') : 'Read';
+							lbl.textContent = target.kind === 'npc' ? (target.npc.label || 'Shop')
+								: target.kind === 'tower' ? 'Enter'
+								: target.kind === 'sign' ? 'Read' : 'Use';
 							pe.hidden = false;
 							const cam = this.cameras.main;
 							const sx = (this.player.x - cam.worldView.x) * cam.zoom;
@@ -10738,6 +10975,8 @@
 							Dialog.open(pool[dayIdx % pool.length] || 'Nothing to say today.');
 						} else if (target && target.kind === 'npc') {
 							MarketShop.open(target.npc);
+						} else if (target && target.kind === 'tower') {
+							TowerDungeon.start();
 						} else if (target && target.kind === 'sign') {
 							Dialog.open(target.message);
 						}
