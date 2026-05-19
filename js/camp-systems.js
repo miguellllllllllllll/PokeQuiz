@@ -12317,6 +12317,11 @@
 					console.log('[CaveScene] create()');
 					try {
 						this._buildCave();
+						// Clear the black campFade overlay (same 2-rAF pattern as other scenes)
+						requestAnimationFrame(() => requestAnimationFrame(() => {
+							const f = document.getElementById('campFade');
+							if (f) f.classList.add('is-hidden');
+						}));
 					} catch (e) {
 						console.error('[CaveScene] create failed:', e);
 						Debug.lastError = 'CaveScene.create: ' + e.message;
