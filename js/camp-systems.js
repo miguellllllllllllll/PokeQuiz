@@ -11113,14 +11113,6 @@
 				_initBeachFeatures() {
 					this._beachTick = 0;
 
-					// Distant island on the horizon water.
-					const isl = this.add.graphics().setDepth(0.6);
-					const ix = BEACH_W * TILE * 0.72, iy = 14 * TILE;
-					isl.fillStyle(0x5f7d33, 1); isl.fillEllipse(ix, iy, 96, 24);
-					isl.fillStyle(0x46602a, 1); isl.fillEllipse(ix, iy - 5, 60, 16);
-					isl.fillStyle(0x2f4a18, 1); isl.fillRect(ix - 2, iy - 18, 4, 14);
-					isl.fillStyle(0x3d6b22, 1); isl.fillCircle(ix, iy - 19, 7);
-
 					// Warm sunset overlay — alpha is driven each frame by the clock.
 					this._sunsetOverlay = this.add
 						.rectangle(0, 0, BEACH_W * TILE, BEACH_H * TILE, 0xff7a3c, 0)
