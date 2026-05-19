@@ -7900,8 +7900,11 @@
 					const spawnTileR = this.spawnFrom === 'house'  ? 12
 					                 : this.spawnFrom === 'market' ? MAP_H - 2
 					                 : this.spawnFrom === 'beach'  ? MAP_H - 2
+					                 : this.spawnFrom === 'cave'   ? 2   // just below cave entrance (rows 0–1, cols 4–5)
 					                 : 14;
-					const spawnTileC = this.spawnFrom === 'beach' ? 28 : 11;
+					const spawnTileC = this.spawnFrom === 'beach' ? 28
+					                 : this.spawnFrom === 'cave'  ? 4    // left column of cave entrance
+					                 : 11;
 					this.player = this.physics.add.sprite(spawnTileC*TILE + TILE/2, spawnTileR*TILE + TILE/2, 'player', 0);
 					// Origin: feet at the bottom-centre of the frame (foot point ≈ y=36 in 38-tall frame)
 					this.player.setOrigin(0.5, 36/38);
@@ -7999,6 +8002,7 @@
 					WeatherSystem.check(this);
 					if (this.isFoggy) this.fogOverlay.setAlpha(0.32);
 	
+					// Face south (into camp) from house/cave; north (into camp) from market/beach
 					this.dir = (this.spawnFrom === 'market' || this.spawnFrom === 'beach') ? 2 : 0;
 					this.dirAnimKeys = ['walk-south', 'walk-west', 'walk-north', 'walk-east'];
 					// Idle frame index per direction (frame 0 of each row)
@@ -12409,7 +12413,7 @@
 					mkAnim('cv-walk-north', [7, 6, 8, 6]);
 					mkAnim('cv-walk-east',  [10, 9, 11, 9]);
 
-					// Spawn player near top-center
+					// Spawn at top-center entrance, facing south (walking into the cave)
 					const spawnC = Math.floor(CAVE_W / 2);
 					const spawnR = 2;
 					this.player = this.physics.add.sprite(spawnC*TILE + TILE/2, spawnR*TILE + TILE/2, 'player-cave', 0);
@@ -12652,6 +12656,10 @@
 						} else if (facingTile === TCVXT) {
 							if (!this.didTransition) {
 								this.didTransition = true;
+								// Face south through the exit so the sprite orientation matches
+								// the camp spawn (emerging from the cave entrance facing south)
+								this.dir = 0;
+								this.player.setFrame(this.dirIdleFrame[0]);
 								if (pe) pe.hidden = true;
 								safeSceneStart(this, 'camp', { from: 'cave' });
 							}
