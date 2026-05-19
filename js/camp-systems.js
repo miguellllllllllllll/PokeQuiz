@@ -1330,6 +1330,7 @@
 				seeds: 3, friendshipBerries: 0, tokens: 0, friendship: 0,
 				eeveeForm: 'eevee', stone: null,
 				hasScythe: false, scytheEquipped: false,
+				seashells: 0,
 				cosmetics: { wallpaper: 'default', accent: 'default', partnerScale: 'normal', decor: [], roomItems: [], roomPlacements: {}, houseRoomItems: [], housePlacements: {} },
 			};
 			function load() {
@@ -3047,6 +3048,7 @@
 				{ id: 'rhythm',   label: 'Win a rhythm battle',   goal: 1,  reward: 15, icoKey: 'music'  },
 				{ id: 'fish',     label: 'Catch a fish',          goal: 1,  reward: 10, icoKey: 'fish'   },
 				{ id: 'minigame', label: 'Win any wild battle',   goal: 1,  reward: 8,  icoKey: 'game'   },
+				{ id: 'shell',    label: 'Collect 3 seashells',   goal: 3,  reward: 10, icoKey: 'star'   },
 			];
 			function todayKey() { return new Date().toISOString().slice(0, 10); }
 			function load() {
@@ -3305,7 +3307,14 @@
 					const inv = Inventory.load();
 					const hasBait = (inv.fishingBait || 0) > 0;
 					if (hasBait) { inv.fishingBait -= 1; }
-					const roll = Math.random() + (hasBait ? 0.15 : 0);
+					// Daily catch streak — every fish landed today nudges the odds
+					// toward rarer catches (resets at midnight).
+					const fToday = new Date().toISOString().slice(0, 10);
+					if (!inv.fishStreak || inv.fishStreak.date !== fToday)
+						inv.fishStreak = { date: fToday, count: 0 };
+					const streakBonus = Math.min(0.22, (inv.fishStreak.count || 0) * 0.045);
+					const roll = Math.random() + (hasBait ? 0.15 : 0) + streakBonus;
+					inv.fishStreak.count = (inv.fishStreak.count || 0) + 1;
 					let caught = null;
 					if (roll < 0.45) caught = { name: 'Magikarp', rarity: 'common',   reward: 'berry',  amount: 1, icoKey: 'fish' };
 					else if (roll < 0.70) caught = { name: 'Goldeen', rarity: 'common',   reward: 'berry',  amount: 2, icoKey: 'fish' };
@@ -3328,7 +3337,8 @@
 					if (caught.rarity === 'rare' || caught.rarity === 'shiny') Achievements.unlock('rareFish');
 	
 					const rewardStr = caught.reward === 'tokens' ? caught.amount + ' ' + ico(ICO.token) : caught.amount + ' ' + ico(caught.reward === 'berry' ? ICO.berry : ICO.seed);
-					if (status) status.innerHTML = ico(ICO[caught.icoKey]||ICO.fish) + ' Caught ' + caught.name + '! +' + rewardStr + (hasBait ? ' (bait bonus!)' : '');
+					const streakNote = (inv.fishStreak.count >= 3) ? ' · streak ×' + inv.fishStreak.count + ' (rarer bites!)' : '';
+					if (status) status.innerHTML = ico(ICO[caught.icoKey]||ICO.fish) + ' Caught ' + caught.name + '! +' + rewardStr + (hasBait ? ' (bait bonus!)' : '') + streakNote;
 					showToast(ico(ICO[caught.icoKey]||ICO.fish) + ' ' + caught.name + ' caught!');
 				} else {
 					if (status) status.innerHTML = ico('x-circle-fill') + ' The fish got away! Try again.';
@@ -3352,6 +3362,88 @@
 			return { start, close, isOpen: getIsOpen };
 		})();
 	window.CAMP_SYSTEMS.Fishing = Fishing;
+
+	// ── BeachShack — trade seashells collected on the beach ─────────────────────
+		const BeachShack = (() => {
+			let openFlag = false;
+			const COST = { tokens: 3, berries: 5, seeds: 5, parasol: 20 };
+			function ensure() {
+				if (document.getElementById('beachShackPanel')) return;
+				const p = document.createElement('div');
+				p.id = 'beachShackPanel';
+				p.hidden = true;
+				p.className = 'pk-backdrop';
+				const inner = document.createElement('div');
+				inner.className = 'pk-modal pk-modal-sm';
+				inner.style.textAlign = 'center';
+				inner.innerHTML =
+					'<div class="pk-modal-head"><span class="pk-modal-title">🐚 BEACH SHACK</span></div>' +
+					'<div class="pk-modal-body">' +
+					'<div id="shackBal" style="font-size:9px;color:var(--pk-gold);margin-bottom:6px"></div>' +
+					'<div id="shackStatus" style="font-size:8px;color:var(--pk-muted);min-height:14px;margin-bottom:10px"></div>' +
+					'<div style="display:flex;flex-direction:column;gap:8px">' +
+					'<button class="pk-btn pk-btn-blue pk-btn-sm" data-trade="tokens">3 🐚 → 25 Tokens</button>' +
+					'<button class="pk-btn pk-btn-blue pk-btn-sm" data-trade="berries">5 🐚 → 4 Berries</button>' +
+					'<button class="pk-btn pk-btn-blue pk-btn-sm" data-trade="seeds">5 🐚 → 3 Seeds</button>' +
+					'<button class="pk-btn pk-btn-blue pk-btn-sm" data-trade="parasol">20 🐚 → 🏖 Beach Parasol decor</button>' +
+					'</div>' +
+					'<button id="shackClose" class="pk-btn pk-btn-ghost pk-btn-xs" style="display:block;margin:14px auto 0" type="button">Leave</button>' +
+					'</div>';
+				p.appendChild(inner);
+				inner.addEventListener('pointerdown', e => e.stopPropagation());
+				p.addEventListener('pointerdown', () => { if (openFlag) close(); });
+				document.body.appendChild(p);
+				document.getElementById('shackClose').addEventListener('click', close);
+				inner.querySelectorAll('[data-trade]').forEach(b => {
+					b.addEventListener('click', () => trade(b.dataset.trade));
+				});
+			}
+			function setStatus(m) { const e = document.getElementById('shackStatus'); if (e) e.textContent = m || ''; }
+			function trade(kind) {
+				const inv = Inventory.load();
+				const have = inv.seashells || 0;
+				const cost = COST[kind];
+				if (have < cost) { setStatus('Not enough seashells — go collect more!'); return; }
+				if (kind === 'parasol') {
+					if (!inv.cosmetics) inv.cosmetics = {};
+					if (!Array.isArray(inv.cosmetics.decor)) inv.cosmetics.decor = [];
+					if (inv.cosmetics.decor.includes('parasol')) { setStatus('You already own the Beach Parasol.'); return; }
+					inv.cosmetics.decor.push('parasol');
+					setStatus('🏖 Beach Parasol added to your camp decor!');
+				} else if (kind === 'tokens')  { inv.tokens = (inv.tokens || 0) + 25; setStatus('Traded for +25 Tokens!'); }
+				else if (kind === 'berries')   { inv.friendshipBerries = (inv.friendshipBerries || 0) + 4; setStatus('Traded for +4 Friendship Berries!'); }
+				else if (kind === 'seeds')     { inv.seeds = (inv.seeds || 0) + 3; setStatus('Traded for +3 Berry Seeds!'); }
+				inv.seashells = have - cost;
+				Inventory.save(inv);
+				refresh();
+			}
+			function refresh() {
+				const inv = Inventory.load();
+				const bal = document.getElementById('shackBal');
+				if (bal) bal.textContent = 'You have ' + (inv.seashells || 0) + ' 🐚 seashells';
+				document.querySelectorAll('#beachShackPanel [data-trade]').forEach(btn => {
+					btn.disabled = (inv.seashells || 0) < COST[btn.dataset.trade];
+				});
+			}
+			function open() {
+				ensure();
+				const p = document.getElementById('beachShackPanel');
+				if (p) p.hidden = false;
+				openFlag = true;
+				setStatus('Seashells wash up all over the beach — collect and trade them here.');
+				refresh();
+			}
+			function close() {
+				const p = document.getElementById('beachShackPanel');
+				if (p) p.hidden = true;
+				openFlag = false;
+			}
+			document.addEventListener('keydown', e => {
+				if (openFlag && e.key === 'Escape') { e.preventDefault(); close(); }
+			});
+			return { open, close, isOpen: () => openFlag };
+		})();
+	window.CAMP_SYSTEMS.BeachShack = BeachShack;
 
 	// ── Battle ────────────────────────────────────────────────────────
 		const Battle = (() => {
@@ -10821,13 +10913,34 @@
 					}
 					this.physics.add.collider(this.player, this.solids);
 
+					// Day-rotating dialogue pools — each NPC says a different line daily.
+					const _dayIdx = Math.floor(Date.now() / 86400000);
 					const BEACH_NPCS = [
 						{ r:8,  c:16, species:'fisherman', label:'Talk',
-						  dialog: "I've been fishing here for hours. The bite is best at sunset!" },
+						  dialogPool: [
+						    "I've been fishing here for hours. The bite is best at sunset!",
+						    "Catch enough fish in a day and they start biting easier — lucky streak, I call it.",
+						    "Rare Pokemon lurk in the deep water. Keep casting!",
+						    "Bait widens your reel window. Always worth it.",
+						  ] },
 						{ r:10, c:8,  species:'swimmer-m', label:'Talk',
-						  dialog: "The water's warm today! Watch out for currents." },
+						  dialogPool: [
+						    "The water's warm today! Watch out for currents.",
+						    "Try surfing the waves — your partner loves it.",
+						    "At low tide the rock pools fill with treasure. Go look!",
+						    "I saw a Wingull flock circling earlier. Storm coming, maybe.",
+						  ] },
 						{ r:5,  c:22, species:'picnicker', label:'Talk',
-						  dialog: "I found a Pokemon fossil here once. Keep looking!" },
+						  dialogPool: [
+						    "I found a Pokemon fossil here once. Keep digging — it takes days!",
+						    "Seashells wash up all along the sand. Collect them for the shack.",
+						    "A beach picnic with your partner does wonders for friendship.",
+						    "Build a sandcastle! Trainers passing by always tip well.",
+						  ] },
+						// Daily visitor — a different trainer each day, hands out a small gift.
+						{ r:4,  c:13, species:['fisherman','swimmer-m','picnicker'][_dayIdx % 3],
+						  label:'Talk', kind:'visitor',
+						  dialog: "Oh, a fellow beachgoer! Here, take this — found it down the shore." },
 					];
 					this.npcByTile = {};
 					const npcSolids = this.physics.add.staticGroup();
@@ -10853,6 +10966,10 @@
 					for (let pr = 10; pr <= 12; pr++) {
 						this._interactSpots[pr + ',16'] = { kind: 'pier_fishing', label: 'Fish' };
 					}
+
+					// Beachfront overhaul — shells, activity spots, ambiance, wildlife.
+					try { this._initBeachFeatures(); }
+					catch (e) { console.warn('[Beach] features init failed:', e); }
 
 					this.physics.world.setBounds(0, 0, W, H);
 					this.player.setCollideWorldBounds(true);
@@ -10992,7 +11109,227 @@
 					return null;
 				}
 
+				// ── Beachfront features — built once in _buildBeach ──────────────
+				_initBeachFeatures() {
+					this._beachTick = 0;
+
+					// Distant island on the horizon water.
+					const isl = this.add.graphics().setDepth(0.6);
+					const ix = BEACH_W * TILE * 0.72, iy = 14 * TILE;
+					isl.fillStyle(0x5f7d33, 1); isl.fillEllipse(ix, iy, 96, 24);
+					isl.fillStyle(0x46602a, 1); isl.fillEllipse(ix, iy - 5, 60, 16);
+					isl.fillStyle(0x2f4a18, 1); isl.fillRect(ix - 2, iy - 18, 4, 14);
+					isl.fillStyle(0x3d6b22, 1); isl.fillCircle(ix, iy - 19, 7);
+
+					// Warm sunset overlay — alpha is driven each frame by the clock.
+					this._sunsetOverlay = this.add
+						.rectangle(0, 0, BEACH_W * TILE, BEACH_H * TILE, 0xff7a3c, 0)
+						.setOrigin(0).setDepth(20);
+
+					// Ambient Wingull — drifting birds drawn with graphics.
+					this._gulls = [];
+					for (let i = 0; i < 3; i++) {
+						const g = this.add.graphics().setDepth(19);
+						g._gx = Math.random() * BEACH_W * TILE;
+						g._gy = (2 + Math.random() * 5) * TILE;
+						g._gspd = 0.25 + Math.random() * 0.35;
+						this._gulls.push(g);
+					}
+
+					// Seashells — collectible sprites scattered on the dry sand.
+					this._shells = [];
+					const occupied = new Set(Object.keys(this._interactSpots));
+					Object.keys(this.npcByTile || {}).forEach(k => occupied.add(k));
+					let placed = 0, tries = 0;
+					while (placed < 6 && tries < 300) {
+						tries++;
+						const r = 3 + Math.floor(Math.random() * 5);
+						const c = 3 + Math.floor(Math.random() * (BEACH_W - 6));
+						const key = r + ',' + c;
+						if (occupied.has(key) || !this.map[r] || SOLID.has(this.map[r][c])) continue;
+						occupied.add(key);
+						const sx = c * TILE + TILE / 2, sy = r * TILE + TILE / 2;
+						const g = this.add.graphics().setDepth(2.5);
+						g.fillStyle(0xf3d9b0, 1); g.fillCircle(sx, sy + 3, 4);
+						g.fillStyle(0xe0a6c0, 1); g.fillCircle(sx, sy + 3, 2.4);
+						g.lineStyle(1, 0xc98a52, 1);
+						g.beginPath(); g.moveTo(sx, sy - 1); g.lineTo(sx, sy + 5); g.strokePath();
+						g._sr = r; g._sc = c;
+						this._shells.push(g);
+						placed++;
+					}
+
+					// Activity spots — only register where the tile is walkable.
+					const addSpot = (r, c, kind, label) => {
+						if (this.map[r] && !SOLID.has(this.map[r][c]) && !this._interactSpots[r + ',' + c])
+							this._interactSpots[r + ',' + c] = { kind, label, r, c };
+					};
+					addSpot(4, 6,  'sandcastle',  'Build');
+					addSpot(6, 11, 'picnic',      'Picnic');
+					addSpot(7, 27, 'fossil',      'Excavate');
+					addSpot(10, 5, 'surf',        'Surf');
+					addSpot(9, 24, 'tide_pool',   'Search');
+					addSpot(3, 20, 'beach_shack', 'Shop');
+
+					// Beach Shack hut graphic.
+					const hut = this.add.graphics().setDepth(2.6);
+					const hx = 20 * TILE, hy = 3 * TILE;
+					hut.fillStyle(0x8a5a2c, 1); hut.fillRect(hx + 1, hy + 5, 14, 9);
+					hut.fillStyle(0xc0863e, 1); hut.fillRect(hx - 1, hy, 18, 6);
+					hut.fillStyle(0x3a2410, 1); hut.fillRect(hx + 6, hy + 9, 4, 5);
+
+					this._sandcastleG = this.add.graphics().setDepth(2.5);
+					this._renderSandcastle();
+				}
+
+				_renderSandcastle() {
+					if (!this._sandcastleG) return;
+					this._sandcastleG.clear();
+					if (!localStorage.getItem('pokequiz_beach_sandcastle_' + new Date().toDateString())) return;
+					let entry = null;
+					for (const [k, s] of Object.entries(this._interactSpots || {})) {
+						if (s.kind === 'sandcastle') { entry = k; break; }
+					}
+					if (!entry) return;
+					const [r, c] = entry.split(',').map(Number);
+					const x = c * TILE + TILE / 2, y = r * TILE + TILE / 2, g = this._sandcastleG;
+					g.fillStyle(0xe8caa0, 1);
+					g.fillRect(x - 6, y, 12, 6);
+					g.fillRect(x - 5, y - 4, 3, 5); g.fillRect(x + 2, y - 4, 3, 5);
+					g.fillRect(x - 1.5, y - 6, 3, 7);
+					g.fillStyle(0xc99a5a, 1); g.fillRect(x - 6, y + 5, 12, 2);
+				}
+
+				_updateBeachFeatures() {
+					this._beachTick = (this._beachTick || 0) + 1;
+					const clock = (performance.now() / 1000) % 360;
+
+					// Sunset glow — warm overlay that peaks during the dusk window.
+					if (this._sunsetOverlay) {
+						let a = 0;
+						if (clock > 130 && clock < 200)      a = (clock - 130) / 70 * 0.3;
+						else if (clock >= 200 && clock < 250) a = 0.3;
+						else if (clock >= 250 && clock < 300) a = (1 - (clock - 250) / 50) * 0.3;
+						this._sunsetOverlay.setAlpha(a);
+					}
+
+					// Drift the Wingull flock.
+					if (this._gulls) {
+						for (const g of this._gulls) {
+							g._gx += g._gspd;
+							if (g._gx > BEACH_W * TILE + 24) { g._gx = -24; g._gy = (2 + Math.random() * 5) * TILE; }
+							const wob = Math.sin(this._beachTick * 0.08 + g._gx * 0.05) * 2;
+							g.clear();
+							g.lineStyle(1.5, 0xffffff, 0.9);
+							g.beginPath();
+							g.moveTo(g._gx - 5, g._gy + wob);
+							g.lineTo(g._gx, g._gy - 2 + wob);
+							g.lineTo(g._gx + 5, g._gy + wob);
+							g.strokePath();
+						}
+					}
+
+					// Auto-collect a seashell the player walks over.
+					if (this._shells && this._shells.length) {
+						const pr = Math.floor(this.player.y / TILE);
+						const pc = Math.floor(this.player.x / TILE);
+						for (let i = this._shells.length - 1; i >= 0; i--) {
+							const s = this._shells[i];
+							if (s._sr === pr && s._sc === pc) {
+								s.destroy();
+								this._shells.splice(i, 1);
+								const inv = Inventory.load();
+								inv.seashells = (inv.seashells || 0) + 1;
+								Inventory.save(inv);
+								try { Sound.chime && Sound.chime(); } catch (_) {}
+								try { DailyQuests.increment('shell'); } catch (_) {}
+								showToast('🐚 Seashell collected — ' + inv.seashells + ' total');
+							}
+						}
+					}
+				}
+
 				_handleSpot(spot) {
+					const today = new Date().toDateString();
+					if (spot.kind === 'sandcastle') {
+						const key = 'pokequiz_beach_sandcastle_' + today;
+						if (localStorage.getItem(key)) { Dialog.open('Your sandcastle still stands proud — the tide will claim it by tomorrow.'); return; }
+						localStorage.setItem(key, '1');
+						const inv = Inventory.load();
+						inv.tokens = (inv.tokens || 0) + 12;
+						Inventory.save(inv);
+						this._renderSandcastle();
+						Dialog.open('You build a magnificent sandcastle! A passing trainer tips you 12 tokens.');
+						showToast('+12 tokens — nice sandcastle!');
+						return;
+					}
+					if (spot.kind === 'picnic') {
+						const key = 'pokequiz_beach_picnic_' + today;
+						if (localStorage.getItem(key)) { Dialog.open('You and your partner already enjoyed a seaside picnic today.'); return; }
+						localStorage.setItem(key, '1');
+						const inv = Inventory.load();
+						if ((inv.eeveeForm || 'eevee') === 'eevee')
+							inv.friendship = Math.min(FRIENDSHIP_MAX, (inv.friendship || 0) + 15);
+						Inventory.save(inv);
+						Dialog.open('You share a picnic with your partner by the waves. It looks overjoyed — friendship grew!');
+						showToast('Beach picnic — friendship up!');
+						return;
+					}
+					if (spot.kind === 'surf') {
+						const key = 'pokequiz_beach_surf_' + today;
+						if (localStorage.getItem(key)) { Dialog.open('The waves have calmed. Come back tomorrow to surf again!'); return; }
+						localStorage.setItem(key, '1');
+						const inv = Inventory.load();
+						const b = 2 + Math.floor(Math.random() * 3);
+						inv.friendshipBerries = (inv.friendshipBerries || 0) + b;
+						Inventory.save(inv);
+						Dialog.open('You ride the waves on your partner\'s back — what a rush! You scoop up ' + b + ' berries bobbing in the surf.');
+						showToast('+' + b + ' berries from surfing!');
+						return;
+					}
+					if (spot.kind === 'tide_pool') {
+						const lowTide = today && (((performance.now() / 1000) % 360) < 120 || ((performance.now() / 1000) % 360) > 300);
+						if (!lowTide) { Dialog.open('The tide is in — this rock pool is underwater. Search again at low tide.'); return; }
+						const key = 'pokequiz_beach_tidepool_' + today;
+						if (localStorage.getItem(key)) { Dialog.open('The tide pool is quiet now. The next tide will refill it.'); return; }
+						localStorage.setItem(key, '1');
+						const inv = Inventory.load();
+						inv.tokens = (inv.tokens || 0) + 8;
+						inv.seashells = (inv.seashells || 0) + 2;
+						Inventory.save(inv);
+						Dialog.open('You explore the tide pool and find coins and shells wedged among the rocks. +8 tokens, +2 🐚!');
+						showToast('Tide pool: +8 tokens, +2 shells');
+						return;
+					}
+					if (spot.kind === 'fossil') {
+						const dayK = 'pokequiz_beach_fossil_' + today;
+						if (localStorage.getItem(dayK)) { Dialog.open('You\'ve excavated here today. Freeing a fossil takes patience — return tomorrow.'); return; }
+						localStorage.setItem(dayK, '1');
+						const fk = 'pokequiz_beach_fossil_progress';
+						let prog = (parseInt(localStorage.getItem(fk) || '0', 10) || 0) + 1;
+						const NEED = 5;
+						if (prog >= NEED) {
+							localStorage.removeItem(fk);
+							const inv = Inventory.load();
+							inv.tokens = (inv.tokens || 0) + 50;
+							Inventory.save(inv);
+							Dialog.open('At last — you free an ancient Pokémon fossil from the rock! A collector rewards you 50 tokens.');
+							showToast('Fossil revived! +50 tokens');
+						} else {
+							localStorage.setItem(fk, String(prog));
+							Dialog.open('You chip away at the buried fossil. (' + prog + ' / ' + NEED + ' fragments uncovered.)');
+							showToast('Fossil fragment ' + prog + ' / ' + NEED);
+						}
+						return;
+					}
+					if (spot.kind === 'beach_shack') {
+						BeachShack.open();
+						return;
+					}
+					this._handleSpotLegacy(spot);
+				}
+
+				_handleSpotLegacy(spot) {
 					const today = new Date().toDateString();
 					if (spot.kind === 'wishing_well') {
 						const key = 'pokequiz_beach_wishing_well_' + today;
@@ -11066,10 +11403,14 @@
 					}
 					applyDayNight();
 					Dialog.tick();
+					try { this._updateBeachFeatures(); } catch (_) {}
 					const dialogOpen = Dialog.isOpen();
+					// Freeze movement while a beach overlay (fishing / shack) is open.
+					const overlayOpen = (typeof Fishing !== 'undefined' && Fishing.isOpen && Fishing.isOpen())
+					                 || (typeof BeachShack !== 'undefined' && BeachShack.isOpen && BeachShack.isOpen());
 					const k = this.keys, d = this.dpad;
 					let vx = 0, vy = 0;
-					if (!dialogOpen) {
+					if (!dialogOpen && !overlayOpen) {
 						if (k.up.isDown    || k.w.isDown || d.up)    { vy = -SPEED; this.dir = 2; }
 						if (k.down.isDown  || k.s.isDown || d.down)  { vy =  SPEED; this.dir = 0; }
 						if (k.left.isDown  || k.a.isDown || d.left)  { vx = -SPEED; this.dir = 1; }
@@ -11132,12 +11473,35 @@
 						}
 					}
 
-					if (ePressed) {
+					if (ePressed && !overlayOpen) {
 						if (dialogOpen) {
 							Dialog.advance();
 						} else if (target && target.kind === 'npc') {
-							const lines = Array.isArray(target.npc.dialog) ? target.npc.dialog : [target.npc.dialog];
-							Dialog.open(lines.join('\n'));
+							const npc = target.npc;
+							if (npc.kind === 'visitor') {
+								// Daily visitor — hands out one small gift per day.
+								const vk = 'pokequiz_beach_visitor_' + new Date().toDateString();
+								if (localStorage.getItem(vk)) {
+									Dialog.open('Enjoy the beach! I already gave you something today.');
+								} else {
+									localStorage.setItem(vk, '1');
+									const inv = Inventory.load();
+									const roll = Math.random();
+									let msg;
+									if (roll < 0.4)      { inv.tokens = (inv.tokens||0)+15; msg = '+15 tokens'; }
+									else if (roll < 0.75){ inv.friendshipBerries = (inv.friendshipBerries||0)+3; msg = '+3 Friendship Berries'; }
+									else                 { inv.seashells = (inv.seashells||0)+5; msg = '+5 seashells'; }
+									Inventory.save(inv);
+									Dialog.open(npc.dialog + '\n\n(' + msg + '!)');
+									showToast('Daily beach gift: ' + msg);
+								}
+							} else if (Array.isArray(npc.dialogPool)) {
+								const dayIdx = Math.floor(Date.now() / 86400000);
+								Dialog.open(npc.dialogPool[dayIdx % npc.dialogPool.length]);
+							} else {
+								const lines = Array.isArray(npc.dialog) ? npc.dialog : [npc.dialog];
+								Dialog.open(lines.join('\n'));
+							}
 						} else if (target && target.kind === 'spot') {
 							this._handleSpot(target.spot);
 						} else if (target && target.kind === 'sign') {
