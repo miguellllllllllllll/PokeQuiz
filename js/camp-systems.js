@@ -12337,18 +12337,10 @@
 					this._tileGfx = this.add.graphics().setDepth(0);
 					this._drawCaveTiles();
 
-					// Flashlight overlay — DOM canvas with radial gradient (Phaser
-					// Graphics can't do radial gradients, so we overlay a canvas element).
-					this._fog = null; // kept as compat ref, unused
-					this._flashCanvas = document.createElement('canvas');
-					this._flashCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;';
-					(document.getElementById('campWrap') || document.body).appendChild(this._flashCanvas);
-					this.events.once('shutdown', () => {
-						if (this._flashCanvas && this._flashCanvas.parentNode) {
-							this._flashCanvas.parentNode.removeChild(this._flashCanvas);
-						}
-						this._flashCanvas = null;
-					});
+					// Flashlight fog — pure Phaser Graphics, no DOM canvas needed.
+					// Drawn in screen space (scrollFactor 0), above everything else.
+					this._fog = this.add.graphics().setDepth(100).setScrollFactor(0);
+					this._flashCanvas = null; // not used
 
 					// Palette-swap player sprite
 					try {
@@ -12568,34 +12560,32 @@
 					const dialogOpen = Dialog.isOpen();
 					const k = this.keys, d = this.dpad;
 
-					// Flashlight effect — radial gradient on DOM canvas overlay.
-					// Technique: fill screen with darkness, then destination-out erase
-					// a circular "torch" hole so the cave tiles show through cleanly.
-					if (this._flashCanvas && this.player) {
+					// Flashlight fog — Phaser Graphics circular strip mask (screen space).
+					// Draws horizontal 2-px strips leaving a clean circular torch hole.
+					// Pure Phaser WebGL — no DOM canvas, no z-index issues.
+					if (this._fog && this.player) {
 						const cam = this.cameras.main;
 						const SW = this.scale.width, SH = this.scale.height;
-						const c = this._flashCanvas;
-						// Keep canvas pixel dims in sync with logical screen size
-						if (c.width !== SW || c.height !== SH) { c.width = SW; c.height = SH; }
-						const ctx2d = c.getContext('2d');
-						ctx2d.clearRect(0, 0, SW, SH);
-						// Step 1 — fill entire screen with cave darkness
-						ctx2d.fillStyle = 'rgba(0,0,0,0.92)';
-						ctx2d.fillRect(0, 0, SW, SH);
-						// Step 2 — erase a soft circle where the torch shines
-						const sx = (this.player.x - cam.scrollX) * cam.zoom;
-						const sy = (this.player.y - cam.scrollY) * cam.zoom;
-						const R = Math.round(96 * cam.zoom); // torch radius (screen px)
-						const grd = ctx2d.createRadialGradient(sx, sy, 0, sx, sy, R);
-						grd.addColorStop(0,    'rgba(0,0,0,1)');   // fully erase centre
-						grd.addColorStop(0.55, 'rgba(0,0,0,1)');   // flat bright zone
-						grd.addColorStop(0.82, 'rgba(0,0,0,0.55)');// soft penumbra
-						grd.addColorStop(1,    'rgba(0,0,0,0)');   // fade to darkness
-						ctx2d.save();
-						ctx2d.globalCompositeOperation = 'destination-out';
-						ctx2d.fillStyle = grd;
-						ctx2d.fillRect(0, 0, SW, SH);
-						ctx2d.restore();
+						const sx = Math.round((this.player.x - cam.scrollX) * cam.zoom);
+						const sy = Math.round((this.player.y - cam.scrollY) * cam.zoom);
+						const R  = Math.round(96 * cam.zoom); // torch radius (screen px)
+						const STEP = 3; // strip height in px — 3px = pixel-art feel
+						this._fog.clear();
+						this._fog.fillStyle(0x000000, 0.92);
+						for (let py = 0; py < SH; py += STEP) {
+							const dy = (py + STEP * 0.5) - sy;
+							if (Math.abs(dy) >= R) {
+								// fully outside circle — dark strip
+								this._fog.fillRect(0, py, SW, STEP);
+							} else {
+								// partially lit — draw fog left and right of the circle edge
+								const dx = Math.sqrt(R * R - dy * dy);
+								const lx = Math.round(sx - dx);
+								const rx = Math.round(sx + dx);
+								if (lx > 0)  this._fog.fillRect(0,  py, lx,      STEP);
+								if (rx < SW) this._fog.fillRect(rx, py, SW - rx, STEP);
+							}
+						}
 					}
 
 					const tc = Math.floor(this.player.x / TILE);
