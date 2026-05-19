@@ -12333,23 +12333,9 @@
 					this.map = buildCaveMap();
 					const W = CAVE_W * TILE, H = CAVE_H * TILE;
 
-					const grabCanvasTex = (key) => {
-						const existing = this.textures.exists(key) ? this.textures.get(key) : null;
-						if (existing && typeof existing.getContext === 'function') return existing;
-						if (existing) { try { this.textures.remove(key); } catch (_) {} }
-						return this.textures.createCanvas(key, W, H);
-					};
-					this.baseTex = grabCanvasTex('caveBase');
-					if (!this.baseTex) throw new Error('createCanvas returned null for cave texture');
-					const baseCtx = this.baseTex.getContext();
-					baseCtx.imageSmoothingEnabled = false;
-					for (let r = 0; r < CAVE_H; r++) {
-						for (let c = 0; c < CAVE_W; c++) {
-							drawTile(baseCtx, this.map[r][c], c*TILE, r*TILE, 0);
-						}
-					}
-					this.baseTex.refresh();
-					this.add.image(0, 0, 'caveBase').setOrigin(0).setDepth(0);
+					// Draw tiles with native Phaser Graphics (no canvas-texture upload needed)
+					this._tileGfx = this.add.graphics().setDepth(0);
+					this._drawCaveTiles();
 
 					// Flashlight overlay — DOM canvas with radial gradient (Phaser
 					// Graphics can't do radial gradients, so we overlay a canvas element).
@@ -12475,6 +12461,39 @@
 						if (this._promptEl) this._promptEl.hidden = true;
 						if (this._locEl && this._prevLocText) this._locEl.textContent = this._prevLocText;
 					});
+				}
+
+				_drawCaveTiles() {
+					const gfx = this._tileGfx;
+					if (!gfx) return;
+					gfx.clear();
+					const T = TILE;
+					for (let r = 0; r < CAVE_H; r++) {
+						for (let c = 0; c < CAVE_W; c++) {
+							const x = c * T, y = r * T, t = this.map[r][c];
+							if (t === TCVF) {
+								gfx.fillStyle(0x9898b8,1); gfx.fillRect(x,y,T,T);
+								gfx.fillStyle(0xb0b0cc,1); gfx.fillRect(x+1,y+1,T-2,T-2);
+								gfx.fillStyle(0x8080a0,1); gfx.fillRect(x,y,1,1); gfx.fillRect(x+T-1,y+T-1,1,1);
+							} else if (t === TCVW) {
+								gfx.fillStyle(0x2c2020,1); gfx.fillRect(x,y,T,T);
+								gfx.fillStyle(0x3c2c24,1); gfx.fillRect(x+1,y+1,T-2,T-2);
+								gfx.fillStyle(0x5c4030,1);
+								gfx.fillRect(x+2,y+3,3,3); gfx.fillRect(x+6,y+3,3,3); gfx.fillRect(x+10,y+3,3,3);
+								gfx.fillStyle(0x7a5840,1); gfx.fillRect(x+2,y+3,2,2);
+							} else if (t === TCVFS) {
+								gfx.fillStyle(0x3a3045,1); gfx.fillRect(x,y,T,T);
+								gfx.fillStyle(0x8070a0,1); gfx.fillRect(x+5,y+5,6,6);
+								gfx.fillStyle(0xb0a0c8,1); gfx.fillRect(x+6,y+6,4,4);
+							} else if (t === TCVXT) {
+								gfx.fillStyle(0x4a2e18,1); gfx.fillRect(x,y,T,T);
+								gfx.fillStyle(0xffcb05,1);
+								gfx.fillRect(x+T/2-2,y+3,4,T-6); gfx.fillRect(x+3,y+T/2-1,T-6,3);
+							} else {
+								gfx.fillStyle(0x5a5070,1); gfx.fillRect(x,y,T,T);
+							}
+						}
+					}
 				}
 
 				onResize() { applyWrapTop(); this.applyZoom(); }
@@ -12622,10 +12641,7 @@
 								inv.tokens = (inv.tokens || 0) + 25;
 								localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
 								this.map[tileR][tileC] = TCVF;
-								const ctx = this.baseTex.getContext();
-								ctx.imageSmoothingEnabled = false;
-								drawTile(ctx, TCVF, tileC * TILE, tileR * TILE, 0);
-								this.baseTex.refresh();
+								this._drawCaveTiles();
 							} catch (_) {}
 							Dialog.open('⛏️ You chipped away at the rock and found a fossil!\n+25 tokens!');
 						} else if (!this._inWildEncounter && this._wildSpawner) {
