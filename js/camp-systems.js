@@ -6987,7 +6987,7 @@
 					ctx.fillStyle='#D05878'; // center point
 					ctx.fillRect(x+8,y+8,1,1);
 					break;
-				case TCVF: ctx.fillStyle='#7c7c94'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#8c8ca8'; ctx.fillRect(x+1,y+1,S-2,S-2); ctx.fillStyle='#6c6c80'; ctx.fillRect(x,y,1,1); ctx.fillRect(x+S-1,y+S-1,1,1); break;
+				case TCVF: ctx.fillStyle='#9898b8'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#b0b0cc'; ctx.fillRect(x+1,y+1,S-2,S-2); ctx.fillStyle='#8080a0'; ctx.fillRect(x,y,1,1); ctx.fillRect(x+S-1,y+S-1,1,1); break;
 				case TCVW: ctx.fillStyle='#2c2020'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#3c2c24'; ctx.fillRect(x+1,y+1,S-2,S-2); ctx.fillStyle='#5c4030'; for(var _i=0;_i<3;_i++){ctx.fillRect(x+2+_i*4,y+3,3,3);} ctx.fillStyle='#7a5840'; ctx.fillRect(x+2,y+3,2,2); break;
 				case TCVFS: ctx.fillStyle='#3a3045'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#8070a0'; ctx.fillRect(x+5,y+5,6,6); ctx.fillStyle='#b0a0c8'; ctx.fillRect(x+6,y+6,4,4); break;
 				case TCVXT: ctx.fillStyle='#4a2e18'; ctx.fillRect(x,y,S,S); ctx.fillStyle='#ffcb05'; ctx.fillRect(x+S/2-2,y+3,4,S-6); ctx.fillRect(x+3,y+S/2-1,S-6,3); break;
@@ -12351,8 +12351,18 @@
 					this.baseTex.refresh();
 					this.add.image(0, 0, 'caveBase').setOrigin(0).setDepth(0);
 
-					// Fog / flashlight overlay — use screen-space (scrollFactor 0)
-					this._fog = this.add.graphics().setDepth(100).setScrollFactor(0);
+					// Flashlight overlay — DOM canvas with radial gradient (Phaser
+					// Graphics can't do radial gradients, so we overlay a canvas element).
+					this._fog = null; // kept as compat ref, unused
+					this._flashCanvas = document.createElement('canvas');
+					this._flashCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;';
+					(document.getElementById('campWrap') || document.body).appendChild(this._flashCanvas);
+					this.events.once('shutdown', () => {
+						if (this._flashCanvas && this._flashCanvas.parentNode) {
+							this._flashCanvas.parentNode.removeChild(this._flashCanvas);
+						}
+						this._flashCanvas = null;
+					});
 
 					// Palette-swap player sprite
 					try {
@@ -12539,32 +12549,31 @@
 					const dialogOpen = Dialog.isOpen();
 					const k = this.keys, d = this.dpad;
 
-					// Flashlight fog effect (screen-space coords)
-					if (this._fog && this.player) {
+					// Flashlight effect — radial gradient on DOM canvas overlay
+					if (this._flashCanvas && this.player) {
 						const cam = this.cameras.main;
 						const SW = this.scale.width, SH = this.scale.height;
-						// Convert player world pos → screen pos
+						const c = this._flashCanvas;
+						if (c.width !== SW || c.height !== SH) { c.width = SW; c.height = SH; }
+						const ctx2d = c.getContext('2d');
+						ctx2d.clearRect(0, 0, SW, SH);
 						const sx = (this.player.x - cam.scrollX) * cam.zoom;
 						const sy = (this.player.y - cam.scrollY) * cam.zoom;
-						const R = Math.round(72 * cam.zoom); // flashlight radius in screen px
-						this._fog.clear();
-						this._fog.fillStyle(0x000000, 0.55);
-						// 4 rects around the light hole, clamped to screen bounds
-						const top_h = Math.max(0, sy - R);
-						const bot_y = Math.min(SH, sy + R);
-						const bot_h = Math.max(0, SH - bot_y);
-						const mid_y = sy - R, mid_h = Math.max(0, R * 2);
-						const left_w = Math.max(0, sx - R);
-						const right_x = Math.min(SW, sx + R);
-						const right_w = Math.max(0, SW - right_x);
-						this._fog.fillRect(0,      0,       SW,      top_h);           // top
-						this._fog.fillRect(0,      mid_y,   left_w,  mid_h);           // left
-						this._fog.fillRect(right_x, mid_y,  right_w, mid_h);           // right
-						this._fog.fillRect(0,      bot_y,   SW,      bot_h);           // bottom
-						// Fill 4 corners of the circular area (approximation)
-						const cr = Math.round(R * 0.29); // corner filler ~sin(45°) gap
-						this._fog.fillRect(0,        mid_y,        cr,  mid_h);
-						this._fog.fillRect(SW - cr,  mid_y,        cr,  mid_h);
+						const R = Math.round(80 * cam.zoom); // flashlight radius in screen px
+						// Radial gradient: transparent at centre, opaque at edges
+						const grd = ctx2d.createRadialGradient(sx, sy, 0, sx, sy, R);
+						grd.addColorStop(0,    'rgba(0,0,0,0)');
+						grd.addColorStop(0.55, 'rgba(0,0,0,0)');
+						grd.addColorStop(0.80, 'rgba(0,0,0,0.45)');
+						grd.addColorStop(1,    'rgba(0,0,0,0.92)');
+						ctx2d.fillStyle = grd;
+						ctx2d.fillRect(0, 0, SW, SH);
+						// Dark ring beyond the flashlight radius
+						ctx2d.fillStyle = 'rgba(0,0,0,0.92)';
+						ctx2d.beginPath();
+						ctx2d.rect(0, 0, SW, SH);
+						ctx2d.arc(sx, sy, R, 0, Math.PI * 2, true); // counter-clockwise = hole
+						ctx2d.fill('evenodd');
 					}
 
 					const tc = Math.floor(this.player.x / TILE);
