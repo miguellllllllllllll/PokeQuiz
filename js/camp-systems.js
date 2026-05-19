@@ -12549,31 +12549,34 @@
 					const dialogOpen = Dialog.isOpen();
 					const k = this.keys, d = this.dpad;
 
-					// Flashlight effect — radial gradient on DOM canvas overlay
+					// Flashlight effect — radial gradient on DOM canvas overlay.
+					// Technique: fill screen with darkness, then destination-out erase
+					// a circular "torch" hole so the cave tiles show through cleanly.
 					if (this._flashCanvas && this.player) {
 						const cam = this.cameras.main;
 						const SW = this.scale.width, SH = this.scale.height;
 						const c = this._flashCanvas;
+						// Keep canvas pixel dims in sync with logical screen size
 						if (c.width !== SW || c.height !== SH) { c.width = SW; c.height = SH; }
 						const ctx2d = c.getContext('2d');
 						ctx2d.clearRect(0, 0, SW, SH);
+						// Step 1 — fill entire screen with cave darkness
+						ctx2d.fillStyle = 'rgba(0,0,0,0.92)';
+						ctx2d.fillRect(0, 0, SW, SH);
+						// Step 2 — erase a soft circle where the torch shines
 						const sx = (this.player.x - cam.scrollX) * cam.zoom;
 						const sy = (this.player.y - cam.scrollY) * cam.zoom;
-						const R = Math.round(80 * cam.zoom); // flashlight radius in screen px
-						// Radial gradient: transparent at centre, opaque at edges
+						const R = Math.round(96 * cam.zoom); // torch radius (screen px)
 						const grd = ctx2d.createRadialGradient(sx, sy, 0, sx, sy, R);
-						grd.addColorStop(0,    'rgba(0,0,0,0)');
-						grd.addColorStop(0.55, 'rgba(0,0,0,0)');
-						grd.addColorStop(0.80, 'rgba(0,0,0,0.45)');
-						grd.addColorStop(1,    'rgba(0,0,0,0.92)');
+						grd.addColorStop(0,    'rgba(0,0,0,1)');   // fully erase centre
+						grd.addColorStop(0.55, 'rgba(0,0,0,1)');   // flat bright zone
+						grd.addColorStop(0.82, 'rgba(0,0,0,0.55)');// soft penumbra
+						grd.addColorStop(1,    'rgba(0,0,0,0)');   // fade to darkness
+						ctx2d.save();
+						ctx2d.globalCompositeOperation = 'destination-out';
 						ctx2d.fillStyle = grd;
 						ctx2d.fillRect(0, 0, SW, SH);
-						// Dark ring beyond the flashlight radius
-						ctx2d.fillStyle = 'rgba(0,0,0,0.92)';
-						ctx2d.beginPath();
-						ctx2d.rect(0, 0, SW, SH);
-						ctx2d.arc(sx, sy, R, 0, Math.PI * 2, true); // counter-clockwise = hole
-						ctx2d.fill('evenodd');
+						ctx2d.restore();
 					}
 
 					const tc = Math.floor(this.player.x / TILE);
