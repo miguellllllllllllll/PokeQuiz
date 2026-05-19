@@ -3546,17 +3546,32 @@
 			}
 			function newRoom() {
 				S.doorOpen = false;
-				S.bullets = []; S.ebullets = []; S.enemies = [];
-				const n = 2 + Math.min(7, S.room + 1);
-				for (let i = 0; i < n; i++) {
-					const shooter = S.room >= 3 && Math.random() < 0.35;
+				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
+				S.roomType = (S.room >= MAX_ROOM) ? 'boss' : (S.room === 4) ? 'treasure' : 'combat';
+				if (S.roomType === 'treasure') {
+					S.doorOpen = true;
+					const kinds = ['heart', 'rapid', 'maxhp'];
+					for (let i = 0; i < 3; i++)
+						S.pickups.push({ x: W / 2 - 64 + i * 64, y: H / 2, kind: kinds[i], r: 9, bob: i * 2 });
+				} else if (S.roomType === 'boss') {
+					const bhp = 56 + S.room * 6;
 					S.enemies.push({
-						x: WALL + 24 + Math.random() * (W - 2 * WALL - 48),
-						y: WALL + 24 + Math.random() * (H - 2 * WALL - 120),
-						hp: shooter ? 2 : 2 + Math.floor(S.room / 3),
-						r: 7, shooter, cd: 50 + Math.random() * 70,
-						spd: shooter ? 0.45 : 0.62 + Math.random() * 0.3, hurt: 0,
+						x: W / 2, y: WALL + 96, hp: bhp, maxHp: bhp,
+						r: 22, boss: true, shooter: true, cd: 70,
+						spd: 0.5, hurt: 0,
 					});
+				} else {
+					const n = 2 + Math.min(7, S.room + 1);
+					for (let i = 0; i < n; i++) {
+						const shooter = S.room >= 3 && Math.random() < 0.35;
+						S.enemies.push({
+							x: WALL + 24 + Math.random() * (W - 2 * WALL - 48),
+							y: WALL + 24 + Math.random() * (H - 2 * WALL - 120),
+							hp: shooter ? 2 : 2 + Math.floor(S.room / 3),
+							r: 7, shooter, cd: 50 + Math.random() * 70,
+							spd: shooter ? 0.45 : 0.62 + Math.random() * 0.3, hurt: 0,
+						});
+					}
 				}
 			}
 			function nearest(x, y, list) {
@@ -3582,8 +3597,12 @@
 				const SP = 1.8;
 				S.px = Math.max(WALL + 7, Math.min(W - WALL - 7, S.px + mx * SP));
 				S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + my * SP));
-				// Partner trails the player and assists with auto-fire.
-				S.partner.x += (S.px - 15 - S.partner.x) * 0.12;
+				// Partner follows the player path via a position-history trail.
+				S.ptrail.push({ x: S.px, y: S.py });
+				if (S.ptrail.length > 18) S.ptrail.shift();
+				{ const _tp = S.ptrail[0] || S.partner;
+				  S.partner.x += (_tp.x - S.partner.x) * 0.34;
+				  S.partner.y += (_tp.y - S.partner.y) * 0.34; }
 				S.moving = !!(mx || my);
 				if (mx || my) { S.faceX = mx; S.faceY = my; S.walkPhase += 0.35; }
 				if (S.pMuzzle > 0) S.pMuzzle--;
@@ -3593,14 +3612,13 @@
 					_p.x += _p.vx; _p.y += _p.vy; _p.vx *= 0.88; _p.vy *= 0.88; _p.life--;
 					if (_p.life <= 0) S.fx.splice(_i, 1);
 				}
-				S.partner.y += (S.py + 4 - S.partner.y) * 0.12;
 				if (S.fireCd > 0) S.fireCd--;
 				const tgt = nearest(S.px, S.py, S.enemies);
-				if (tgt && S.fireCd <= 0) { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, 1, '#ffe060'); S.fireCd = 26;
+				if (tgt && S.fireCd <= 0) { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, 1, '#ffe060'); S.fireCd = S.rapid ? 14 : 26;
 					S.pAim = Math.atan2(tgt.y - S.py, tgt.x - S.px); S.pMuzzle = 5; }
 				if (S.partnerCd > 0) S.partnerCd--;
 				const ptgt = nearest(S.partner.x, S.partner.y, S.enemies);
-				if (ptgt && S.partnerCd <= 0) { shoot(S.bullets, S.partner.x, S.partner.y, ptgt.x, ptgt.y, 3.0, 1, S.pColor); S.partnerCd = 36;
+				if (ptgt && S.partnerCd <= 0) { shoot(S.bullets, S.partner.x, S.partner.y, ptgt.x, ptgt.y, 3.0, 1, S.pColor); S.partnerCd = S.rapid ? 22 : 36;
 					S.partnerAim = Math.atan2(ptgt.y - S.partner.y, ptgt.x - S.partner.x); S.partnerMuzzle = 5; }
 				for (let i = S.bullets.length - 1; i >= 0; i--) {
 					const b = S.bullets[i]; b.x += b.vx; b.y += b.vy;
@@ -3609,6 +3627,7 @@
 					for (const e of S.enemies) {
 						if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) {
 							e.hp -= b.dmg; e.hurt = 6; hit = true;
+							if (e.hp <= 0 && !e.boss && Math.random() < 0.2) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
 							for (let _k = 0; _k < 5; _k++) S.fx.push({ x: b.x, y: b.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 9 + Math.random()*6, col: e.hp <= 0 ? '#ffd060' : '#ffffff' });
 							break;
 						}
@@ -3623,13 +3642,30 @@
 					if ((e.x - S.px) ** 2 + (e.y - S.py) ** 2 < (e.r + 7) ** 2 && S.invuln <= 0) {
 						S.hp--; S.invuln = 52; S.flash = 8;
 					}
-					if (e.shooter) { e.cd--; if (e.cd <= 0) { shoot(S.ebullets, e.x, e.y, S.px, S.py, 2.0, 1, '#ff5a7a'); e.cd = 90 + Math.random() * 70; } }
+					if (e.shooter) { e.cd--; if (e.cd <= 0) {
+						if (e.boss) {
+							const ba = Math.atan2(S.py - e.y, S.px - e.x);
+							for (const off of [-0.34, 0, 0.34]) { const aa = ba + off;
+								S.ebullets.push({ x: e.x, y: e.y, vx: Math.cos(aa) * 2.3, vy: Math.sin(aa) * 2.3, dmg: 1, col: "#ff5a7a", r: 3 }); }
+							e.cd = 58;
+						} else { shoot(S.ebullets, e.x, e.y, S.px, S.py, 2.0, 1, '#ff5a7a'); e.cd = 90 + Math.random() * 70; }
+					} }
 				}
 				for (let i = S.ebullets.length - 1; i >= 0; i--) {
 					const b = S.ebullets[i]; b.x += b.vx; b.y += b.vy;
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.ebullets.splice(i, 1); continue; }
 					if ((b.x - S.px) ** 2 + (b.y - S.py) ** 2 < (b.r + 7) ** 2 && S.invuln <= 0) {
 						S.hp--; S.invuln = 52; S.flash = 8; S.ebullets.splice(i, 1);
+					}
+				}
+				for (let i = S.pickups.length - 1; i >= 0; i--) {
+					const p = S.pickups[i];
+					if ((p.x - S.px) ** 2 + (p.y - S.py) ** 2 < (p.r + 9) ** 2) {
+						if (p.kind === "heart") S.hp = Math.min(S.maxHp, S.hp + 1);
+						else if (p.kind === "maxhp") { S.maxHp++; S.hp = S.maxHp; }
+						else if (p.kind === "rapid") S.rapid = true;
+						for (let k = 0; k < 9; k++) S.fx.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 13, col: "#9effa0" });
+						S.pickups.splice(i, 1);
 					}
 				}
 				if (S.enemies.length === 0) {
@@ -3702,10 +3738,40 @@
 				};
 				for (const b of S.bullets) orb(b.x, b.y, 3.2, b.col);
 				for (const b of S.ebullets) orb(b.x, b.y, 3, b.col);
+				// pickups
+				for (const p of S.pickups) {
+					const by = p.y + Math.sin((t + p.bob * 20) * 0.1) * 3;
+					const col = p.kind === "heart" ? "#ff5a6a" : p.kind === "rapid" ? "#ffd24a" : "#ff8ad0";
+					ctx.globalAlpha = 0.4; ctx.fillStyle = col;
+					ctx.beginPath(); ctx.arc(p.x, by, p.r + 4, 0, 7); ctx.fill();
+					ctx.globalAlpha = 1;
+					ctx.fillStyle = "#1a1426"; ctx.beginPath(); ctx.arc(p.x, by, p.r, 0, 7); ctx.fill();
+					ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p.x, by, p.r - 2, 0, 7); ctx.fill();
+					ctx.fillStyle = "#ffffff"; ctx.font = "9px monospace"; ctx.textAlign = "center";
+					ctx.fillText(p.kind === "heart" ? "+" : p.kind === "rapid" ? "F" : "U", p.x, by + 3);
+				}
 				// enemies
 				for (const e of S.enemies) {
 					const hurt = e.hurt > 0;
-					if (e.shooter) {
+					if (e.boss) {
+						const by = e.y + Math.sin(t * 0.06) * 3;
+						ctx.fillStyle = hurt ? "#ffffff" : "#1a0e26";
+						ctx.beginPath(); ctx.moveTo(e.x - 14, by - 11); ctx.lineTo(e.x - 21, by - 27); ctx.lineTo(e.x - 6, by - 14); ctx.closePath(); ctx.fill();
+						ctx.beginPath(); ctx.moveTo(e.x + 14, by - 11); ctx.lineTo(e.x + 21, by - 27); ctx.lineTo(e.x + 6, by - 14); ctx.closePath(); ctx.fill();
+						ctx.fillStyle = hurt ? "#ffffff" : "#241038";
+						ctx.beginPath(); ctx.arc(e.x, by, e.r + 2, 0, 7); ctx.fill();
+						ctx.fillStyle = hurt ? "#ffffff" : "#6a2a9a";
+						ctx.beginPath(); ctx.arc(e.x, by, e.r, 0, 7); ctx.fill();
+						ctx.fillStyle = hurt ? "#ffffff" : "#9a4ad0";
+						ctx.beginPath(); ctx.arc(e.x - 5, by - 5, e.r * 0.5, 0, 7); ctx.fill();
+						ctx.fillStyle = "#ff3050";
+						ctx.beginPath(); ctx.arc(e.x - 8, by - 2, 3.6, 0, 7); ctx.fill();
+						ctx.beginPath(); ctx.arc(e.x + 8, by - 2, 3.6, 0, 7); ctx.fill();
+						ctx.fillStyle = "#ffe0e0";
+						ctx.beginPath(); ctx.arc(e.x - 8, by - 2, 1.5, 0, 7); ctx.fill();
+						ctx.beginPath(); ctx.arc(e.x + 8, by - 2, 1.5, 0, 7); ctx.fill();
+						ctx.fillStyle = "#1a0e26"; ctx.fillRect(e.x - 9, by + 8, 18, 3);
+					} else if (e.shooter) {
 						const bob = Math.sin(t * 0.1 + e.x) * 2;
 						const ey = e.y + bob;
 						ctx.fillStyle = hurt ? "#ffffff" : "#2a1830";
@@ -3803,8 +3869,18 @@
 				ctx.font = "8px monospace"; ctx.textAlign = "right";
 				ctx.fillStyle = "#ffe060"; ctx.fillText("ROOM " + S.room + "/" + MAX_ROOM, VW - 6, 11);
 				ctx.textAlign = "center";
-				if (S.enemies.length) { ctx.fillStyle = "#c8a0ff"; ctx.fillText(S.enemies.length + " foes", VW / 2, 11); }
+				if (S.roomType === "boss" && S.enemies.length) { ctx.fillStyle = "#ff7a8a"; ctx.fillText("BOSS FIGHT", VW / 2, 11); }
+				else if (S.roomType === "treasure" && S.pickups.length) { ctx.fillStyle = "#9effa0"; ctx.fillText("TREASURE ROOM", VW / 2, 11); }
+				else if (S.enemies.length) { ctx.fillStyle = "#c8a0ff"; ctx.fillText(S.enemies.length + " foes", VW / 2, 11); }
 				else { ctx.fillStyle = "#7ad07a"; ctx.fillText("CLEAR \u2014 GO UP", VW / 2, 11); }
+				{ const boss = S.enemies.find(e => e.boss);
+				  if (boss) {
+					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 22;
+					ctx.fillStyle = "rgba(10,8,18,0.85)"; ctx.fillRect(bx - 3, byy - 2, bw + 6, 12);
+					ctx.fillStyle = "#3a2030"; ctx.fillRect(bx, byy, bw, 8);
+					ctx.fillStyle = "#ff4d63"; ctx.fillRect(bx, byy, bw * Math.max(0, boss.hp / boss.maxHp), 8);
+					ctx.strokeStyle = "#5a4a8a"; ctx.lineWidth = 1; ctx.strokeRect(bx, byy, bw, 8);
+				  } }
 				if (S.result) {
 					ctx.fillStyle = "rgba(6,4,12,0.8)"; ctx.fillRect(0, 0, VW, VH);
 					ctx.textAlign = "center";
@@ -3830,10 +3906,10 @@
 				S = {
 					room: 1, hp: 6, maxHp: 6, px: W / 2, py: H - 40,
 					partner: { x: W / 2 - 15, y: H - 30 }, pColor: FORM_COLOR[form] || '#c89860',
-					bullets: [], ebullets: [], enemies: [], fx: [],
+					bullets: [], ebullets: [], enemies: [], fx: [], pickups: [], ptrail: [],
 					fireCd: 0, partnerCd: 0, invuln: 0, doorOpen: false,
 					faceX: 0, faceY: 1, pMuzzle: 0, partnerMuzzle: 0, walkPhase: 0,
-					result: null, endTimer: 0, tick: 0, flash: 0,
+					result: null, endTimer: 0, tick: 0, flash: 0, roomType: 'combat', rapid: false,
 				};
 				loadSprites();
 				newRoom();
