@@ -17,7 +17,7 @@
 	// ── Tile IDs ────────────────────────────────────────────────────────────────
 	// These must be defined here (not just in camp.js) because buildMap, drawTile,
 	// canWalkOn, and all four scene classes reference them and live in this file.
-	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25,TBLD=26,TSA=27,TSA2=28,TSHO=29,TBWT=30,TPIER=31,TPALM=32,TROCKB=33,TSHL=34,TCVF=35,TCVW=36,TCVFS=37,TCVXT=38;
+	const TG=0,TG2=1,TP=2,TW=3,TR=4,TR2=5,TWN=6,TD=7,TH2O=8,TTR=9,TFR=10,TFY=11,TSO=12,TCR=13,TFN=14,TRP=15,TIF=16,TIW=17,TRU=18,TST=19,TSG=20,TTR2=21,TBSH=22,TTG=23,TBED=24,TBKS=25,TBLD=26,TSA=27,TSA2=28,TSHO=29,TBWT=30,TPIER=31,TPALM=32,TROCKB=33,TSHL=34,TCVF=35,TCVW=36,TCVFS=37,TCVXT=38,TCVTR=39,TCVCH=40,TCVHK=41;
 	const SOLID    = new Set([TW,TR,TR2,TRP,TWN,TH2O,TTR,TTR2,TFN,TIW,TSG,TBSH,TBED,TBKS,TBLD,TBWT,TPALM,TROCKB,TCVW]);
 	const ANIMATED = new Set([TWN,TH2O,TCR]);
 
@@ -424,6 +424,9 @@
 				{ id: 'composted',    label: 'Composter',        icoKey: 'compost',       desc: 'Make your first compost'            },
 				{ id: 'camperMet',    label: 'Good Company',     icoKey: 'npc',    desc: 'Meet a visiting trainer'            },
 				{ id: 'secretFound',  label: 'Secret Seeker',    icoKey: 'sparkle', desc: 'Find the hidden treasure spot'      },
+				{ id: 'caveExplorer',  label: 'Cave Explorer',       icoKey: 'map',     desc: 'Visit the cave 10 times'        },
+				{ id: 'fossilHunter',  label: 'Fossil Hunter',        icoKey: 'gem',     desc: 'Dig 20 fossils total'           },
+				{ id: 'lightBringer',  label: 'Let There Be Light',   icoKey: 'sparkle', desc: 'Explore with Flash HM equipped' },
 			];
 			function load() {
 				const raw = localStorage.getItem('pokequiz_achievements');
@@ -446,6 +449,8 @@
 				data[key] = (data[key] || 0) + 1;
 				if (id === 'rhythm100' && data[key] >= 10) unlock('rhythm100');
 				if (id === 'berryFarmer' && data[key] >= 20) unlock('berryFarmer');
+				if (id === 'caveExplorer' && data[key] >= 10) unlock('caveExplorer');
+				if (id === 'fossilHunter' && data[key] >= 20) unlock('fossilHunter');
 				save(data);
 			}
 			function getAll() { return { defs: DEFS, unlocked: load() }; }
@@ -4945,6 +4950,9 @@
 				const rsBtn = $('cmBuyRockSmash');
 				if (rsBtn) { rsBtn.disabled = !!(inv.hasRockSmash)||(inv.tokens||0)<60; rsBtn.textContent = inv.hasRockSmash?'Owned':'Buy'; }
 				$('cmRockSmashStatus') && ($('cmRockSmashStatus').textContent = inv.hasRockSmash ? '(owned)' : '');
+				const flashBtn = $('cmBuyFlash');
+				if (flashBtn) { flashBtn.disabled = !!(inv.hasFlash)||(inv.tokens||0)<40; flashBtn.textContent = inv.hasFlash?'Owned':'Buy'; }
+				$('cmFlashStatus') && ($('cmFlashStatus').textContent = inv.hasFlash ? '(owned)' : '');
 				// Plot upgrade
 				const upgradeBtn = $('cmUpgradePlot');
 				const plotLvlEl = $('cmPlotLevel');
@@ -5135,6 +5143,17 @@
 					inv.hasRockSmash = true;
 					Inventory.save(inv);
 					setStatus('Got Rock Smash! Press E near boulders to break them.');
+					refresh();
+				});
+				$('cmBuyFlash') && $('cmBuyFlash').addEventListener('click', () => {
+					const inv = Inventory.load();
+					if (inv.hasFlash) { setStatus('Already have Flash HM!'); return; }
+					if ((inv.tokens||0) < 40) { setStatus('Need 40 ' + ico(ICO.token)); return; }
+					inv.tokens -= 40;
+					inv.hasFlash = true;
+					Inventory.save(inv);
+					setStatus('Got Flash HM! Brightens the cave when exploring.');
+					Achievements.unlock('lightBringer');
 					refresh();
 				});
 				$('cmClose') && $('cmClose').addEventListener('click', close);
@@ -12290,14 +12309,20 @@
 			const CH=18, CW=22;
 			const m=Array.from({length:CH},()=>new Array(CW).fill(TCVW));
 			const s=(r,c,t)=>{if(r>=0&&r<CH&&c>=0&&c<CW)m[r][c]=t;};
-			// Main floor area
+			// Main floor
 			for(let r=2;r<CH-2;r++) for(let c=2;c<CW-2;c++) s(r,c,TCVF);
 			// Rocky pillars
 			for(const[r,c] of [[4,5],[4,6],[5,5],[4,14],[4,15],[5,15],[10,8],[10,9],[11,8],[10,17],[10,18],[11,17]]) s(r,c,TCVW);
 			// Fossil spots
 			for(const[r,c] of [[4,9],[7,4],[7,17],[12,7],[12,15]]) s(r,c,TCVFS);
-			// Exit tiles — north wall, 2-wide for easy walk-through
+			// Exit tiles — north wall
 			s(1,10,TCVXT); s(1,11,TCVXT);
+			// Trap tiles — disguised floor (revealed on first step)
+			for(const[r,c] of [[6,7],[8,13],[11,5],[13,14]]) s(r,c,TCVTR);
+			// Daily chest — south center
+			s(CH-3, CW/2|0, TCVCH);
+			// Hiker NPC — mid-cave west side
+			s(7, 7, TCVHK);
 			return m;
 		}
 	window.CAMP_SYSTEMS.buildCaveMap = buildCaveMap;
@@ -12335,6 +12360,19 @@
 				_buildCave() {
 					this.tick = 0;
 					this.map = buildCaveMap();
+					// Daily seeded hidden item tile — random floor position changes each day
+					{
+						const seed = Math.floor(Date.now() / 86400000); // day number
+						const rng = (n) => { let x = Math.sin(seed * 9301 + n * 49297) * 233280; return x - Math.floor(x); };
+						const floorTiles = [];
+						for (let r = 5; r < CAVE_H - 3; r++)
+							for (let c = 3; c < CAVE_W - 3; c++)
+								if (this.map[r][c] === TCVF) floorTiles.push([r, c]);
+						if (floorTiles.length) {
+							const idx = Math.floor(rng(0) * floorTiles.length);
+							this._hiddenItemTile = floorTiles[idx];
+						}
+					}
 					const W = CAVE_W * TILE, H = CAVE_H * TILE;
 
 					// ── Tile rendering — Rectangle GameObjects ───────────────────────
@@ -12348,6 +12386,9 @@
 						if (t === TCVW)  return 0x2c2020;
 						if (t === TCVFS) return 0x3a3045;
 						if (t === TCVXT) return 0x4a2e18;
+						if (t === TCVTR) return 0x9898b8; // looks like floor until triggered
+						if (t === TCVCH) return 0x8b6914; // chest — gold-brown
+						if (t === TCVHK) return 0x2a5a2a; // hiker — dark green patch
 						return 0x5a5070;
 					};
 					this._tileRects = [];
@@ -12363,7 +12404,7 @@
 					// Highlight pass — inner bevel on floor tiles (second rect, lighter)
 					for (let r = 0; r < CAVE_H; r++)
 						for (let c = 0; c < CAVE_W; c++)
-							if (this.map[r][c] === TCVF)
+							if (this.map[r][c] === TCVF || this.map[r][c] === TCVTR)
 								this.add.rectangle(
 									c * TILE + TILE / 2, r * TILE + TILE / 2, TILE - 2, TILE - 2, 0xb0b0cc
 								).setDepth(0);
@@ -12374,6 +12415,16 @@
 								this.add.rectangle(
 									c * TILE + TILE / 2, r * TILE + TILE / 2, 6, 6, 0x8070a0
 								).setDepth(1);
+					// Hidden daily item — tiny sparkle dot (only shows if not already claimed today)
+					if (this._hiddenItemTile) {
+						const [hr, hc] = this._hiddenItemTile;
+						const today = new Date().toDateString();
+						if (!localStorage.getItem('pokequiz_cave_item_' + today)) {
+							this._hiddenItemDot = this.add.rectangle(
+								hc * TILE + TILE/2, hr * TILE + TILE/2, 4, 4, 0xffffff
+							).setDepth(2);
+						}
+					}
 
 					// Flashlight fog — pure Phaser Graphics, no DOM canvas needed.
 					// Drawn in screen space (scrollFactor 0), above everything else.
@@ -12438,7 +12489,8 @@
 
 					// Wild Pokémon (cave-appropriate pool)
 					this._wildSpawner = new WildSpawner(this.map, TILE);
-					this._wildSpawner._pool = [92,93,96,97,66,67,74,75];
+					// Cave-exclusive pool: Zubat, Golbat, Geodude, Graveler, Onix, Diglett, Dugtrio, Machop + rare Snorlax/Lapras
+					this._wildSpawner._pool = [41,42,74,75,95,50,51,66,143,131];
 					this._wildSpawner.spawnAll(null);
 					this._inWildEncounter = false;
 
@@ -12487,7 +12539,8 @@
 					this._locEl = document.querySelector('.camp-location-name');
 					if (this._locEl) {
 						this._prevLocText = this._locEl.textContent;
-						this._locEl.textContent = 'UNDERGROUND CAVE';
+						Achievements.increment('caveExplorer');
+					this._locEl.textContent = 'UNDERGROUND CAVE';
 					}
 					this.events.once('shutdown', () => {
 						if (this._promptEl) this._promptEl.hidden = true;
@@ -12604,7 +12657,11 @@
 						const SW = this.scale.width, SH = this.scale.height;
 						const sx = Math.round((this.player.x - cam.scrollX) * cam.zoom);
 						const sy = Math.round((this.player.y - cam.scrollY) * cam.zoom);
-						const R  = Math.round(96 * cam.zoom); // torch radius (screen px)
+						const inv = Inventory.load();
+						const _hasFlash = !!(inv && inv.hasFlash);
+						// Torch radius: Flash HM = full 128; no Flash = shrinks deeper in cave (row-based)
+						const _baseR = _hasFlash ? 128 : Math.max(52, 96 - Math.floor(tr / CAVE_H * 44));
+						const R  = Math.round(_baseR * cam.zoom); // torch radius (screen px)
 						const STEP = 3; // strip height in px — 3px = pixel-art feel
 						this._fog.clear();
 						this._fog.fillStyle(0x000000, 0.92);
@@ -12634,6 +12691,8 @@
 					const pe = this._promptEl, lbl = this._promptLbl;
 					let promptLabel = null;
 					if (facingTile === TCVFS) promptLabel = 'Dig';
+					if (facingTile === TCVCH) promptLabel = 'Open Chest';
+					if (facingTile === TCVHK) promptLabel = 'Talk';
 					if (pe && lbl) {
 						if (!dialogOpen && promptLabel) {
 							lbl.textContent = promptLabel;
@@ -12654,18 +12713,55 @@
 						if (dialogOpen) {
 							Dialog.advance();
 						} else if (facingTile === TCVFS && this.map[tileR] && this.map[tileR][tileC] === TCVFS) {
-							showToast('⛏️ Found a fossil! +25 tokens');
+							this._miningStreak = (this._miningStreak || 0) + 1;
+							const mult = this._miningStreak >= 5 ? 2 : this._miningStreak >= 3 ? 1.5 : 1;
+							const reward = Math.round(25 * mult);
 							try {
 								const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
-								inv.tokens = (inv.tokens || 0) + 25;
+								inv.tokens = (inv.tokens || 0) + reward;
 								localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
 								this.map[tileR][tileC] = TCVF;
-								// Update the Rectangle tile to show floor colour
 								if (this._tileRects[tileR] && this._tileRects[tileR][tileC]) {
 									this._tileRects[tileR][tileC].setFillStyle(0x9898b8);
+									// also remove the gem highlight — find and destroy it by position
 								}
 							} catch (_) {}
-							Dialog.open('⛏️ You chipped away at the rock and found a fossil!\n+25 tokens!');
+							Achievements.increment('fossilHunter');
+							const streakMsg = mult > 1 ? ' 🔥 ×' + mult + ' streak!' : '';
+							Dialog.open('⛏️ Fossil found! +' + reward + ' tokens!' + streakMsg);
+						} else if (facingTile === TCVCH) {
+							const today = new Date().toDateString();
+							const key = 'pokequiz_cave_chest_' + today;
+							if (localStorage.getItem(key)) {
+								Dialog.open('📦 The chest is empty for today.\nCome back tomorrow!');
+							} else {
+								localStorage.setItem(key, '1');
+								const rewards = [
+									{ tokens: 40, msg: '+40 tokens!' },
+									{ tokens: 20, berry: 1, msg: '+20 tokens + 1 Friendship Berry!' },
+									{ seed: 1, msg: '+1 Seed!' },
+									{ tokens: 60, msg: '+60 tokens!' },
+								];
+								const r = rewards[Math.floor(Math.random() * rewards.length)];
+								try {
+									const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+									if (r.tokens) inv.tokens = (inv.tokens || 0) + r.tokens;
+									if (r.berry) inv.friendshipBerries = (inv.friendshipBerries || 0) + r.berry;
+									if (r.seed) inv.seeds = (inv.seeds || 0) + 1;
+									localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+								} catch (_) {}
+								Dialog.open('📦 Daily Cave Chest!\n' + r.msg);
+							}
+						} else if (facingTile === TCVHK) {
+							const tips = [
+								'Hiker: "The deeper you go, the darker it gets. A Flash HM from the Mart helps a lot!"',
+								'Hiker: "I once dug 5 fossils in one run — the streak bonus is worth it!"',
+								'Hiker: "Watch your step... some floor tiles aren\'t what they seem."',
+								'Hiker: "There\'s a chest somewhere in the deep cave. It refills every day!"',
+								'Hiker: "Zubat swoops fast, but Onix hits harder. Bring your best team!"',
+							];
+							const tip = tips[Math.floor(Date.now() / 86400000) % tips.length];
+							Dialog.open(tip);
 						} else if (!this._inWildEncounter && this._wildSpawner) {
 							const _ww = this._wildSpawner.getNearby(this.player.x, this.player.y);
 							if (_ww) {
@@ -12697,6 +12793,49 @@
 						if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 					}
 					this.player.setVelocity(vx, vy);
+
+					// Trap tile — penalise first step on hidden floor crack
+					if (!dialogOpen && !this.didTransition) {
+						const curTile = this.map[tr]?.[tc];
+						if (curTile === TCVTR) {
+							const trapKey = tr + ',' + tc;
+							if (!this._triggeredTraps) this._triggeredTraps = new Set();
+							if (!this._triggeredTraps.has(trapKey)) {
+								this._triggeredTraps.add(trapKey);
+								// Reveal tile (darken it slightly)
+								if (this._tileRects[tr]?.[tc]) this._tileRects[tr][tc].setFillStyle(0x706878);
+								try {
+									const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+									inv.tokens = Math.max(0, (inv.tokens || 0) - 5);
+									localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+								} catch (_) {}
+								showToast('💥 Cracked floor! −5 tokens');
+							}
+						}
+					}
+
+					// Hidden daily item walk-on
+					if (this._hiddenItemTile && !dialogOpen && !this.didTransition) {
+						const [hr, hc] = this._hiddenItemTile;
+						if (tr === hr && tc === hc) {
+							const today = new Date().toDateString();
+							const iKey = 'pokequiz_cave_item_' + today;
+							if (!localStorage.getItem(iKey)) {
+								localStorage.setItem(iKey, '1');
+								if (this._hiddenItemDot) { this._hiddenItemDot.destroy(); this._hiddenItemDot = null; }
+								const prizes = ['tokens:30', 'berry:1', 'seed:1', 'tokens:50'];
+								const prize = prizes[Math.floor(Math.random() * prizes.length)];
+								try {
+									const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
+									if (prize.startsWith('tokens')) inv.tokens = (inv.tokens||0) + parseInt(prize.split(':')[1]);
+									else if (prize.startsWith('berry')) inv.friendshipBerries = (inv.friendshipBerries||0) + 1;
+									else if (prize.startsWith('seed')) inv.seeds = (inv.seeds||0) + 1;
+									localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
+								} catch (_) {}
+								showToast('✨ Found a hidden item! ' + prize.replace('tokens:', '+').replace(':', ' +') + '!');
+							}
+						}
+					}
 
 					// Walk-on north exit — arm once player moves south of spawn row,
 					// then auto-transition when they walk back onto the TCVXT tiles.
