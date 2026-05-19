@@ -12296,8 +12296,9 @@
 			for(const[r,c] of [[4,5],[4,6],[5,5],[4,14],[4,15],[5,15],[10,8],[10,9],[11,8],[10,17],[10,18],[11,17]]) s(r,c,TCVW);
 			// Fossil spots
 			for(const[r,c] of [[4,9],[7,4],[7,17],[12,7],[12,15]]) s(r,c,TCVFS);
-			// Exit tile (south center)
-			s(CH-2,CW/2|0,TCVXT); s(CH-3,CW/2|0,TCVXT);
+			// Exit tile — north wall, same end as the entrance so the cave is
+			// a single-entrance dead-end you explore south and walk back out north.
+			s(1,CW/2|0,TCVXT);
 			return m;
 		}
 	window.CAMP_SYSTEMS.buildCaveMap = buildCaveMap;
@@ -12656,10 +12657,10 @@
 						} else if (facingTile === TCVXT) {
 							if (!this.didTransition) {
 								this.didTransition = true;
-								// Face south through the exit so the sprite orientation matches
-								// the camp spawn (emerging from the cave entrance facing south)
-								this.dir = 0;
-								this.player.setFrame(this.dirIdleFrame[0]);
+								// Walking north back out of the cave — face north on exit so
+								// the sprite matches the south-facing camp spawn (just emerged)
+								this.dir = 2;
+								this.player.setFrame(this.dirIdleFrame[2]);
 								if (pe) pe.hidden = true;
 								safeSceneStart(this, 'camp', { from: 'cave' });
 							}
