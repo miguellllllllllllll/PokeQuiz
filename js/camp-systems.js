@@ -12333,19 +12333,23 @@
 					this.map = buildCaveMap();
 					const W = CAVE_W * TILE, H = CAVE_H * TILE;
 
-					// ── Tile canvas texture ──────────────────────────────────────────
-					// Canvas texture + refresh() was verified working via GL readPixels.
-					// Phaser Graphics fillRect silently fails to render in this scene
-					// (unknown Phaser 3.88 issue), so we keep the canvas-texture path.
-					try { this.textures.remove('caveBase'); } catch (_) {}
-					this.baseTex = this.textures.createCanvas('caveBase', W, H);
-					if (!this.baseTex) throw new Error('createCanvas null');
-					const baseCtx = this.baseTex.getContext();
-					baseCtx.imageSmoothingEnabled = false;
+					// ── Tile canvas texture (DOM canvas → addCanvas) ─────────────────
+					// createCanvas() + refresh() produces an invisible Image in WebGL
+					// mode with pixelArt:true — unknown Phaser 3.88 CanvasTexture bug.
+					// Using a plain DOM canvas passed to addCanvas() is more reliable.
+					if (!W || !H) throw new Error('caveBase size NaN — TILE=' + TILE);
+					const tileCanvas = document.createElement('canvas');
+					tileCanvas.width = W; tileCanvas.height = H;
+					const tileCtx = tileCanvas.getContext('2d');
+					tileCtx.imageSmoothingEnabled = false;
 					for (let r = 0; r < CAVE_H; r++)
 						for (let c = 0; c < CAVE_W; c++)
-							drawTile(baseCtx, this.map[r][c], c * TILE, r * TILE, 0);
-					this.baseTex.refresh();
+							drawTile(tileCtx, this.map[r][c], c * TILE, r * TILE, 0);
+					try { this.textures.remove('caveBase'); } catch (_) {}
+					this.textures.addCanvas('caveBase', tileCanvas);
+					this._tileCanvas = tileCanvas;
+					this._tileCtx = tileCtx;
+					this.baseTex = this.textures.get('caveBase'); // kept for compat
 					this._tileImg = this.add.image(0, 0, 'caveBase').setOrigin(0).setDepth(0);
 
 					// Flashlight fog — pure Phaser Graphics, no DOM canvas needed.
@@ -12642,11 +12646,10 @@
 								inv.tokens = (inv.tokens || 0) + 25;
 								localStorage.setItem('pokequiz_inventory', JSON.stringify(inv));
 								this.map[tileR][tileC] = TCVF;
-								if (this.baseTex) {
-									const ctx = this.baseTex.getContext();
-									ctx.imageSmoothingEnabled = false;
-									drawTile(ctx, TCVF, tileC * TILE, tileR * TILE, 0);
-									this.baseTex.refresh();
+								if (this._tileCtx) {
+									this._tileCtx.imageSmoothingEnabled = false;
+									drawTile(this._tileCtx, TCVF, tileC * TILE, tileR * TILE, 0);
+									if (this.textures.exists('caveBase')) this.textures.get('caveBase').refresh();
 								}
 							} catch (_) {}
 							Dialog.open('⛏️ You chipped away at the rock and found a fossil!\n+25 tokens!');
@@ -12714,6 +12717,7 @@
 						'CAVE\n' +
 						'tile  ' + tc + ',' + tr + '\n' +
 						'dir   ' + ['S','W','N','E'][this.dir] + '\n' +
+						'tex   ' + (this._tileCanvas ? this._tileCanvas.width + 'x' + this._tileCanvas.height : 'null') + '\n' +
 						'trans ' + this.didTransition + '\n' +
 						'dlg   ' + dialogOpen + '\n' +
 						(Debug.lastError ? 'ERR ' + Debug.lastError : '')
