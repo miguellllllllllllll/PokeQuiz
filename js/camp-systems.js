@@ -3449,7 +3449,7 @@
 	// Self-contained canvas-overlay minigame; does not touch the Phaser scenes.
 	// Your partner Pokémon fights alongside you, auto-firing at nearby foes.
 		const TowerDungeon = (() => {
-			const W = 320, H = 240, WALL = 16, MAX_ROOM = 8;
+			let W = 320, H = 240; const WALL = 16, MAX_ROOM = 8;
 			let root = null, cv = null, ctx = null, raf = null, openFlag = false;
 			let S = null;
 			const keys = {};
@@ -3496,43 +3496,53 @@
 				keys[k] = (e.type === 'keydown');
 				if (e.type === 'keydown' && k === 'escape') exit();
 			}
+			function fit() {
+				const vw = Math.max(300, window.innerWidth || 360);
+				const vh = Math.max(300, window.innerHeight || 540);
+				const ar = vw / vh;
+				if (ar >= 1) { W = 480; H = Math.round(480 / ar); }
+				else { H = 480; W = Math.round(480 * ar); }
+				if (cv) { cv.width = W; cv.height = H; }
+				if (ctx) ctx.imageSmoothingEnabled = false;
+			}
 			function ensure() {
 				if (root) return;
-				root = document.createElement('div');
-				root.id = 'towerDungeon';
+				root = document.createElement("div");
+				root.id = "towerDungeon";
 				root.hidden = true;
-				root.style.cssText = 'position:fixed;inset:0;z-index:120;background:#07060f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:monospace;touch-action:none';
-				cv = document.createElement('canvas');
+				root.style.cssText = "position:fixed;inset:0;z-index:120;background:#07060f;font-family:monospace;touch-action:none;overflow:hidden";
+				cv = document.createElement("canvas");
 				cv.width = W; cv.height = H;
-				cv.style.cssText = 'image-rendering:pixelated;width:min(94vw,560px);height:auto;border:3px solid #4a3a7a;border-radius:6px;background:#15101f';
-				ctx = cv.getContext('2d');
+				// Canvas aspect tracks the viewport, so it fills the screen edge to edge.
+				cv.style.cssText = "image-rendering:pixelated;position:absolute;inset:0;width:100%;height:100%;background:#15101f";
+				ctx = cv.getContext("2d");
 				ctx.imageSmoothingEnabled = false;
 				root.appendChild(cv);
-				const wrap = document.createElement('div');
-				wrap.style.cssText = 'display:flex;gap:26px;align-items:center';
-				const pad = document.createElement('div');
-				pad.style.cssText = 'display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:5px';
+				// Touch d-pad overlaid bottom-left.
+				const pad = document.createElement("div");
+				pad.style.cssText = "position:absolute;left:14px;bottom:16px;display:grid;grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px);gap:6px;touch-action:none";
 				const mk = (label, key, gc, gr) => {
-					const b = document.createElement('button');
-					b.textContent = label; b.type = 'button';
-					b.style.cssText = 'grid-column:' + gc + ';grid-row:' + gr + ';font-size:18px;border-radius:9px;border:2px solid #5a4a8a;background:#2a2440;color:#cfc6ee;touch-action:none';
-					b.addEventListener('pointerdown', e => { e.preventDefault(); keys[key] = true; });
-					['pointerup','pointercancel','pointerleave'].forEach(ev =>
+					const b = document.createElement("button");
+					b.textContent = label; b.type = "button";
+					b.style.cssText = "grid-column:" + gc + ";grid-row:" + gr + ";font-size:20px;border-radius:10px;border:2px solid #5a4a8a;background:rgba(42,36,64,0.82);color:#cfc6ee;touch-action:none";
+					b.addEventListener("pointerdown", e => { e.preventDefault(); keys[key] = true; });
+					["pointerup","pointercancel","pointerleave"].forEach(ev =>
 						b.addEventListener(ev, e => { e.preventDefault(); keys[key] = false; }));
 					pad.appendChild(b);
 				};
-				mk('↑','arrowup',2,1); mk('←','arrowleft',1,2);
-				mk('→','arrowright',3,2); mk('↓','arrowdown',2,3);
-				wrap.appendChild(pad);
-				const leave = document.createElement('button');
-				leave.textContent = 'LEAVE'; leave.type = 'button';
-				leave.style.cssText = 'font-size:11px;padding:14px 18px;border-radius:9px;border:2px solid #5a4a8a;background:#2a2440;color:#cfc6ee';
-				leave.addEventListener('click', exit);
-				wrap.appendChild(leave);
-				root.appendChild(wrap);
+				mk("↑","arrowup",2,1); mk("←","arrowleft",1,2);
+				mk("→","arrowright",3,2); mk("↓","arrowdown",2,3);
+				root.appendChild(pad);
+				// LEAVE button overlaid bottom-right.
+				const leave = document.createElement("button");
+				leave.textContent = "LEAVE"; leave.type = "button";
+				leave.style.cssText = "position:absolute;right:16px;bottom:26px;font-size:12px;padding:16px 20px;border-radius:10px;border:2px solid #5a4a8a;background:rgba(42,36,64,0.82);color:#cfc6ee";
+				leave.addEventListener("click", exit);
+				root.appendChild(leave);
 				document.body.appendChild(root);
-				window.addEventListener('keydown', onKey);
-				window.addEventListener('keyup', onKey);
+				window.addEventListener("keydown", onKey);
+				window.addEventListener("keyup", onKey);
+				window.addEventListener("resize", () => { if (openFlag) fit(); });
 			}
 			function newRoom() {
 				S.doorOpen = false;
@@ -3809,6 +3819,7 @@
 			}
 			function start() {
 				ensure();
+				fit();
 				const inv = Inventory.load();
 				const form = (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee'));
 				S = {
