@@ -3028,9 +3028,13 @@ body.pk-reduce-motion *::after {
   /* Hamburger stays above the sheet so it's always tappable */
   #campBarToggle {
     position: fixed !important;
-    bottom: 14px;
-    left: 12px;
+    bottom: 10px;
+    left: 8px;
     z-index: 50;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .camp-btn-bar-items.camp-mobile-sheet {
@@ -3391,3 +3395,5 @@ body.pk-reduce-motion *::after {
   #notifDrawer { width: 100vw; }
   .camp-dialog { font-size: 9px; }
 }
+
+@keyframes campBounce { from { transform: translateY(0); } to { transform: translateY(-18px); } }
