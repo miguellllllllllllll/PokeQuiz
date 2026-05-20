@@ -3500,6 +3500,29 @@
 				const pool = Object.keys(RELICS).filter(k => owned.indexOf(k) < 0);
 				return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 			}
+			// Boss archetypes for varied boss encounters each run
+			const BOSS_ARCHETYPES = [
+				{
+					key:'dark', name:'Dark Tyrant', color:'#6a2a9a', barColor:'#9a4ad0', eType:'dark', hp:22,
+					desc:'3-spread + homing', attackMode:'dark',
+				},
+				{
+					key:'fire', name:'Fire Lord', color:'#ff6010', barColor:'#ff9020', eType:'fire', hp:24,
+					desc:'Spinning ring of 8', attackMode:'fire',
+				},
+				{
+					key:'ice', name:'Ice Queen', color:'#a0d8f0', barColor:'#60c0e8', eType:'ice', hp:20,
+					desc:'4-directional cross', attackMode:'ice',
+				},
+				{
+					key:'psychic', name:'Psychic Overlord', color:'#e060c0', barColor:'#ff80d0', eType:'psychic', hp:26,
+					desc:'Teleports + homing burst', attackMode:'psychic',
+				},
+				{
+					key:'poison', name:'Poison King', color:'#60b040', barColor:'#90d060', eType:'poison', hp:18,
+					desc:'Radial cloud of 12', attackMode:'poison',
+				},
+			];
 			// Permanent upgrades
 			const PERM_DEFS = {
 				startHp:    { name:'Thick Fat',    desc:'Start with +1 max HP per level',      costs:[15,30,50] },
@@ -3524,17 +3547,79 @@
 				{ q:"What type is Eevee?",           a:"Normal",     w:["Fairy","Psychic","Ground"] },
 				{ q:"How many Eevee evolutions exist?", a:"8",       w:["6","7","9"] },
 				{ q:"What move cannot miss?",        a:"Swift",      w:["Tackle","Bite","Pound"] },
+				// Types
+				{ q:"What type is Mewtwo?",          a:"Psychic",    w:["Dark","Normal","Ghost"] },
+				{ q:"What type is Magnemite?",       a:"Electric/Steel", w:["Electric","Steel","Electric/Rock"] },
+				{ q:"What type is Clefairy?",        a:"Fairy",      w:["Normal","Psychic","Ice"] },
+				{ q:"What is super effective vs Dark?", a:"Fairy",   w:["Ghost","Psychic","Fighting"] },
+				{ q:"What type is Snorlax?",         a:"Normal",     w:["Ground","Fighting","Psychic"] },
+				{ q:"What is Charizard's secondary type?", a:"Flying", w:["Dragon","Fire","Rock"] },
+				{ q:"What type is Marowak?",         a:"Ground",     w:["Normal","Rock","Fighting"] },
+				{ q:"What type resists Electric?",   a:"Dragon",     w:["Water","Grass","Normal"] },
+				// Evolutions
+				{ q:"What does Machoke evolve into?", a:"Machamp",   w:["Machop","Golem","Alakazam"] },
+				{ q:"What level does Magikarp evolve?", a:"20",      w:["15","25","30"] },
+				{ q:"What stone evolves Pikachu?",   a:"Thunder Stone", w:["Moon Stone","Fire Stone","Water Stone"] },
+				{ q:"What evolves into Alakazam?",   a:"Kadabra",    w:["Abra","Drowzee","Jynx"] },
+				{ q:"What does Slowpoke evolve into?", a:"Slowbro",  w:["Slowking","Slowbro or Slowking","Slowpoke+"] },
+				{ q:"What evolves Eevee into Espeon?", a:"High Friendship (Day)", w:["Sun Stone","Psychic TM","Dusk Stone"] },
+				{ q:"What Pokémon evolves using a King's Rock?", a:"Slowking", w:["Politoed","Steelix","Porygon2"] },
+				// Moves
+				{ q:"How many PP does Hyper Beam have?", a:"5",      w:["10","15","8"] },
+				{ q:"What type is Earthquake?",      a:"Ground",     w:["Rock","Normal","Fighting"] },
+				{ q:"What move has 120 base power and may burn?", a:"Fire Blast", w:["Flamethrower","Overheat","Heat Wave"] },
+				{ q:"What move puts the foe to sleep?", a:"Spore",   w:["Sleep Powder","Hypnosis","Yawn"] },
+				{ q:"What move copies the foe's last move?", a:"Mimic", w:["Copycat","Mirror Move","Sketch"] },
+				// Abilities
+				{ q:"What ability does Intimidate lower?", a:"Attack", w:["Speed","Defense","Sp. Atk"] },
+				{ q:"What ability prevents stat drops?", a:"Clear Body", w:["Sturdy","Immunity","Own Tempo"] },
+				{ q:"Levitate grants immunity to which type?", a:"Ground", w:["Electric","Rock","Poison"] },
+				{ q:"What ability heals HP in rain?",  a:"Rain Dish", w:["Hydration","Swift Swim","Dry Skin"] },
+				// Pokédex numbers
+				{ q:"What is Pikachu's Pokédex number?", a:"25",     w:["35","55","12"] },
+				{ q:"What number is Mewtwo?",         a:"150",        w:["151","149","152"] },
+				{ q:"Which number is Snorlax?",       a:"143",        w:["131","113","133"] },
+				{ q:"What is Dragonite's number?",    a:"149",        w:["147","148","150"] },
+				// Generations
+				{ q:"Which gen introduced Johto starters?", a:"Gen 2", w:["Gen 1","Gen 3","Gen 4"] },
+				{ q:"Which gen introduced Fairy type?", a:"Gen 6",   w:["Gen 5","Gen 7","Gen 4"] },
+				{ q:"Lucario was introduced in which gen?", a:"Gen 4", w:["Gen 3","Gen 5","Gen 2"] },
+				// Version exclusives
+				{ q:"Scyther is exclusive to which game?", a:"Red",  w:["Blue","Yellow","Gold"] },
+				{ q:"Ekans is exclusive to which version?", a:"Red", w:["Blue","FireRed","LeafGreen"] },
+				// Legendary types
+				{ q:"What type is Lugia?",            a:"Psychic/Flying", w:["Water/Flying","Normal/Flying","Psychic/Water"] },
+				{ q:"What type is Ho-Oh?",            a:"Fire/Flying",    w:["Normal/Flying","Psychic/Fire","Fire/Normal"] },
+				{ q:"What type is Celebi?",           a:"Psychic/Grass",  w:["Grass","Fairy/Grass","Psychic"] },
+				// Held items / stat totals
+				{ q:"What item boosts Sp. Atk by 10%?", a:"Wise Glasses", w:["Shell Bell","Expert Belt","Petaya Berry"] },
+				{ q:"What is Blissey's total base stat?", a:"540",   w:["600","480","520"] },
+				{ q:"What held item halves burn damage?", a:"Rawst Berry", w:["Lum Berry","Oran Berry","Pecha Berry"] },
 			];
-			// Trainer room data
+			// Trainer room data — tier indicates earliest floor they can appear on (0=floor1, 1=floor4, 2=floor7)
 			const TRAINERS = [
-				{ name:"Youngster Joey", emoji:"👦",
+				{ name:"Youngster Joey", emoji:"👦", tier:0,
 				  team:[{col:'#a0785a',type:'normal',hp:10,r:8},{col:'#c08040',type:'normal',hp:16,r:9}] },
-				{ name:"Lass Iris", emoji:"👧",
+				{ name:"Lass Iris", emoji:"👧", tier:0,
 				  team:[{col:'#4060e0',type:'grass',hp:9,r:8},{col:'#e02040',type:'grass',hp:18,r:10}] },
-				{ name:"Bug Catcher", emoji:"🧒",
+				{ name:"Bug Catcher", emoji:"🧒", tier:0,
 				  team:[{col:'#80a040',type:'bug',hp:8,r:7},{col:'#d0d0ff',type:'bug',hp:14,r:9},{col:'#f0e040',type:'bug',hp:16,r:9}] },
-				{ name:"Sailor Jack", emoji:"⚓",
+				{ name:"Sailor Jack", emoji:"⚓", tier:0,
 				  team:[{col:'#40a0c0',type:'water',hp:10,r:8},{col:'#2050d0',type:'water',hp:22,r:12}] },
+				{ name:"Hiker Rocky", emoji:"🧗", tier:1,
+				  team:[{col:'#a08060',type:'rock',hp:18,r:10},{col:'#806040',type:'ground',hp:20,r:11},{col:'#c09060',type:'rock',hp:24,r:12}] },
+				{ name:"Scientist Lara", emoji:"🔬", tier:1,
+				  team:[{col:'#a0e0e0',type:'electric',hp:16,r:9},{col:'#4080ff',type:'psychic',hp:20,r:10},{col:'#80e0ff',type:'electric',hp:22,r:10}] },
+				{ name:"Psychic Owen", emoji:"🔮", tier:1,
+				  team:[{col:'#d070d0',type:'psychic',hp:18,r:10},{col:'#e090e8',type:'psychic',hp:26,r:12}] },
+				{ name:"Bug Maniac Boris", emoji:"🦋", tier:1,
+				  team:[{col:'#70c050',type:'bug',hp:14,r:9},{col:'#a0d060',type:'bug',hp:18,r:10},{col:'#f0e040',type:'bug',hp:20,r:10},{col:'#c0f060',type:'bug',hp:22,r:11}] },
+				{ name:"Ace Trainer Nina", emoji:"🌟", tier:2,
+				  team:[{col:'#60a0ff',type:'water',hp:22,r:11},{col:'#ff8040',type:'fire',hp:24,r:12},{col:'#60c060',type:'grass',hp:26,r:12},{col:'#a060ff',type:'psychic',hp:30,r:13}] },
+				{ name:"Cooltrainer Rex", emoji:"😎", tier:2,
+				  team:[{col:'#ffe060',type:'electric',hp:24,r:12},{col:'#ff4080',type:'fairy',hp:28,r:13},{col:'#8060ff',type:'dark',hp:32,r:14}] },
+				{ name:"Dragon Tamer Cory", emoji:"🐉", tier:2,
+				  team:[{col:'#6040a0',type:'dragon',hp:28,r:13},{col:'#4030c0',type:'dragon',hp:32,r:14},{col:'#9060d0',type:'dragon',hp:38,r:15}] },
 			];
 			// Sprite cache — reuse the player's trainer sheet + the partner's
 			// follower spritesheet (both already shipped game assets).
@@ -3699,6 +3784,11 @@
 					card.addEventListener('click', () => { beginRun(form, p.nickname || form); });
 					grid.appendChild(card);
 				});
+				// Show possible modifiers as teaser
+				const modPreview = document.createElement('div');
+				modPreview.style.cssText = 'margin:8px 0 2px;padding:6px 10px;background:rgba(30,20,50,0.8);border-radius:8px;border:1px solid #5a4a8a;font-size:9px;color:#8a7aaa;text-align:center;';
+				modPreview.innerHTML = '<span style="color:#c0a0ff">Run Modifier (random):</span> ' + MODIFIERS.map(m => m.icon + ' ' + m.name).join(' · ');
+				el.appendChild(modPreview);
 				const btnRow = document.createElement('div');
 				btnRow.style.cssText = 'display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;';
 				el.appendChild(btnRow);
@@ -3850,7 +3940,11 @@
 			// ── Trainer overlay ─────────────────────────────────────────────
 			let trainerData = null, trainerTeamIdx = 0;
 			function showTrainerBattle(onDone) {
-				trainerData = TRAINERS[Math.floor(Math.random() * TRAINERS.length)];
+				// Floor-scaled trainer selection: early floors use low-tier trainers, late floors use higher tiers
+				const floorTier = S ? Math.floor((S.room - 1) / 3) : 0; // 0=floors1-3, 1=floors4-6, 2=floors7-9
+				const eligible = TRAINERS.filter(t => t.tier <= floorTier);
+				const pool = eligible.length ? eligible : TRAINERS;
+				trainerData = pool[Math.floor(Math.random() * pool.length)];
 				trainerTeamIdx = 0;
 				const el = getOverlay('towerTrainerOverlay');
 				if (!el) { spawnTrainerWave(onDone); return; }
@@ -3896,6 +3990,47 @@
 					cd: 60, spd: 0.55 + tier*0.12, hurt:0,
 				}];
 			}
+			// ── Endless choice screen ───────────────────────────────────────
+			function showEndlessChoice() {
+				hideAllOverlays();
+				const el = getOverlay('towerRecapOverlay');
+				if (!el) { S.result = 'win'; return; }
+				el.innerHTML = '';
+				const h = document.createElement('h2');
+				h.style.color = '#ffe060';
+				h.textContent = '🏆 Floor 9 Cleared!';
+				el.appendChild(h);
+				const p = document.createElement('p');
+				p.textContent = 'You have conquered the tower. Push further into endless?';
+				el.appendChild(p);
+				const bankBtn = document.createElement('button');
+				bankBtn.className = 'tower-btn primary';
+				bankBtn.style.margin = '8px 4px';
+				bankBtn.textContent = '🏦 Bank & Finish';
+				bankBtn.addEventListener('click', () => {
+					el.hidden = true;
+					S.result = 'win';
+					S.endTimer = 0;
+					S._recapShown = false;
+					// Trigger normal recap after a short delay
+					setTimeout(() => { if (!S._recapShown) { S._recapShown = true; showRecapScreen(true); } }, 200);
+				});
+				el.appendChild(bankBtn);
+				const endlessBtn = document.createElement('button');
+				endlessBtn.className = 'tower-btn';
+				endlessBtn.style.margin = '8px 4px';
+				endlessBtn.textContent = '⚡ Push Further →';
+				endlessBtn.addEventListener('click', () => {
+					el.hidden = true;
+					S.endlessLoop = (S.endlessLoop || 0) + 1;
+					S.room = 1;
+					S._endlessChoiceShown = false;
+					newRoom();
+					S.px = W / 2; S.py = H - 40;
+				});
+				el.appendChild(endlessBtn);
+				el.hidden = false;
+			}
 			// ── Recap screen ────────────────────────────────────────────────
 			function showRecapScreen(win) {
 				hideAllOverlays();
@@ -3906,14 +4041,45 @@
 				h.textContent = win ? '🏆 TOWER RUN COMPLETE' : '💀 YOU FELL';
 				el.appendChild(h);
 				if (win) { const wm = document.createElement('p'); wm.style.color = '#7ad07a'; wm.textContent = '🎉 Congratulations! Tower cleared!'; el.appendChild(wm); }
+				const endlessLoop = S ? (S.endlessLoop || 0) : 0;
+				const roomNum = S ? Math.max(0, S.room - 1) : 0;
 				const stats = [
-					'Floors cleared: ' + (S ? Math.max(0, S.room - 1) : 0),
+					'Floors cleared: ' + (endlessLoop > 0 ? 'ENDLESS ×' + endlessLoop + ' + ' + roomNum : roomNum),
 					'Enemies defeated: ' + (S ? S.kills : 0),
 					'Stardust earned: ' + (S ? S.stardust : 0),
 					'Relics collected: ' + (S ? S.relics.length : 0),
 				];
+				if (endlessLoop > 0) stats.push('Endless Depth: ' + (endlessLoop * 9 + roomNum) + ' floors');
+				if (S && S.modifier) {
+					const modDef = MODIFIERS.find(m => m.key === S.modifier);
+					if (modDef) stats.push('Modifier: ' + modDef.icon + ' ' + modDef.name);
+				}
 				stats.forEach(st => { const p = document.createElement('p'); p.textContent = st; el.appendChild(p); });
-				const earned = S ? S.stardust : 0;
+				// Show active synergies
+				if (S && S.synergies && S.synergies.size > 0) {
+					const synDiv = document.createElement('div');
+					synDiv.style.cssText = 'margin:6px 0;padding:6px;border:1px solid #5a4a8a;border-radius:6px;';
+					const synTitle = document.createElement('div');
+					synTitle.style.cssText = 'color:#ffe060;font-size:10px;margin-bottom:4px;';
+					synTitle.textContent = '⚡ Active Synergies';
+					synDiv.appendChild(synTitle);
+					const synNames = { sniper:'Sniper (2.5x crits)', regen_combo:'Regen Combo (fast regen)', bulletstorm:'Bulletstorm (8-tick fire)', ironbarbs:'Iron Barbs (2 thorn dmg)', luckybreak:'Lucky Break (+8 SD focus)' };
+					S.synergies.forEach(k => {
+						const sd = document.createElement('div');
+						sd.style.cssText = 'color:#c0a0ff;font-size:9px;';
+						sd.textContent = '• ' + (synNames[k] || k);
+						synDiv.appendChild(sd);
+					});
+					el.appendChild(synDiv);
+				}
+				const endlessBonus = endlessLoop * 20;
+				const earned = (S ? S.stardust : 0) + endlessBonus;
+				if (endlessBonus > 0) {
+					const eb = document.createElement('p');
+					eb.style.cssText = 'color:#ff9040;font-size:10px;';
+					eb.textContent = '+ ' + endlessBonus + ' ⭐ Endless Bonus (×' + endlessLoop + ')';
+					el.appendChild(eb);
+				}
 				const bankBtn = document.createElement('button');
 				bankBtn.className = 'tower-btn primary';
 				bankBtn.style.margin = '12px 4px 4px';
@@ -3945,9 +4111,18 @@
 				S._roomOverlay = false;
 				S._trainerBattle = false;
 				S.berryUsed = false;
+				// Speedrun modifier: 45-second timer (45*60 ticks)
+				S.roomTimer = S.modifier === 'speedrun' ? 45 * 60 : 0;
 				// Determine room type based on room number
 				const r = S.room;
-				if (r >= MAX_ROOM) { S.roomType = 'boss'; }
+				const el = S.endlessLoop || 0;
+				if (el > 0) {
+					// Endless mode: boss every 3rd room
+					const endlessRoomInCycle = ((r - 1) % 9) + 1;
+					if (endlessRoomInCycle % 3 === 0) { S.roomType = 'boss'; }
+					else if (endlessRoomInCycle % 3 === 2) { S.roomType = Math.random() < 0.5 ? 'rest' : 'treasure'; }
+					else { S.roomType = Math.random() < 0.4 ? 'combat' : (Math.random() < 0.5 ? 'trainer' : 'ambush'); }
+				} else if (r >= MAX_ROOM) { S.roomType = 'boss'; }
 				else if (r === 8) { S.roomType = 'rest'; }
 				else if (r === 7) { S.roomType = Math.random() < 0.5 ? 'trainer' : 'shop'; }
 				else if (r === 6) { S.roomType = 'combat'; }
@@ -3984,11 +4159,13 @@
 					S._roomOverlay = true;
 					S._pendingOverlay = 'trainer';
 				} else if (S.roomType === 'boss') {
-					const bhp = 90 + S.room * 4;
+					const arch = S.bossArchetype || BOSS_ARCHETYPES[0];
+					const hpScale = 1 + (S.endlessLoop||0) * 0.2;
+					const bhp = Math.round(arch.hp * 4 * hpScale);
 					S.enemies.push({
 						x:W/2, y:WALL+96, hp:bhp, maxHp:bhp, r:22,
 						boss:true, shooter:true, cd:70, spd:0.55, hurt:0,
-						eType:'dark',
+						eType: arch.eType, bossColor: arch.color, attackMode: arch.attackMode,
 					});
 				} else if (S.roomType === 'miniboss') {
 					S.enemies.push({
@@ -3999,23 +4176,45 @@
 				} else {
 					// combat or ambush
 					const isAmbush = (S.roomType === 'ambush');
-					const base = 2 + Math.min(7, r + 1);
+					const isHorde = S.modifier === 'horde';
+					const base = 2 + Math.min(7, r + 1) + (isHorde ? 2 : 0);
 					const n = isAmbush ? base * 2 : base;
 					const tierR = [7,9,11][tier];
 					const tierHpMin = [2,4,8][tier];
 					const tierHpMax = [4,8,14][tier];
 					const tierSpd = [0.55,0.7,0.88][tier];
+					// Move mode weights by tier
+					const movePools = [
+						// tier 0: 70% charger, 20% zigzagger, 10% circler
+						['charger','charger','charger','charger','charger','charger','charger','zigzagger','zigzagger','circler'],
+						// tier 1: 40% charger, 25% circler, 20% zigzagger, 15% retreater
+						['charger','charger','charger','charger','circler','circler','circler','zigzagger','zigzagger','retreater','retreater','circler'],
+						// tier 2: 25% charger, 25% circler, 20% flanker, 20% retreater, 10% zigzagger
+						['charger','charger','circler','circler','flanker','flanker','retreater','retreater','zigzagger','charger'],
+					];
+					const modePool = movePools[Math.min(tier, 2)];
 					for (let i = 0; i < n; i++) {
 						const shooter = r >= 3 && Math.random() < 0.35;
 						const hp = tierHpMin + Math.floor(Math.random()*(tierHpMax-tierHpMin+1));
 						const heldRoll = r >= 3 && Math.random() < 0.25;
 						const held = heldRoll ? (Math.random()<0.5 ? 'sitrus' : 'helmet') : null;
+						// Attack pattern assignment
+						let attackPat = 'straight';
+						if (tier >= 1 && Math.random() < 0.30) attackPat = 'spread';
+						if (tier >= 2 && Math.random() < 0.20) attackPat = 'burst';
+						const moveMode = modePool[Math.floor(Math.random() * modePool.length)];
+						// Endless mode HP scaling
+						const endlessHpScale = 1 + (S.endlessLoop||0) * 0.2;
+						// Horde: 80% HP and size
+						const hordeScale = isHorde ? 0.8 : 1;
+						const finalHp = Math.max(1, Math.round(hp * hordeScale * endlessHpScale));
+						const finalR = Math.max(5, Math.round(tierR * hordeScale));
 						S.enemies.push({
 							x: WALL+24+Math.random()*(W-2*WALL-48),
 							y: WALL+24+Math.random()*(H-2*WALL-120),
-							hp, maxHp:hp, r:tierR, shooter, cd:50+Math.random()*70,
+							hp: finalHp, maxHp: finalHp, r: finalR, shooter, cd:50+Math.random()*70,
 							spd: shooter ? tierSpd*0.7 : tierSpd+Math.random()*0.2,
-							hurt:0, eType, held, heldUsed:false,
+							hurt:0, eType, held, heldUsed:false, moveMode, attackPat, zigTimer:0, burstQueue:0,
 						});
 					}
 					if (isAmbush) {
@@ -4061,7 +4260,7 @@
 						showPuzzleOverlay((correct) => {
 							if (correct) {
 								const rk = randomRelic(S.relics);
-								if (rk) { S.relics.push(rk); if (rk==='swift') S.rapid=true; showToast('Relic: '+RELICS[rk].name); }
+								if (rk) { S.relics.push(rk); if (rk==='swift') S.rapid=true; showToast('Relic: '+RELICS[rk].name); checkSynergies(); }
 								S.stardust += 6;
 							}
 							openRoomAfterOverlay();
@@ -4095,8 +4294,19 @@
 				if (S.statuses.poison > 0 && S.tick % 90 === 0) { S.hp--; S.flash = 4; }
 				const paralysed = S.statuses.para > 0 && Math.random() < 0.25;
 				const sleeping  = S.statuses.sleep > 0;
-				// Regen relic
-				if (S.relics.indexOf('regen') >= 0 && S.tick % 80 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
+				// Speedrun modifier: room timer countdown
+				if (S.modifier === 'speedrun' && S.roomTimer > 0 && !S._roomOverlay && !S.doorOpen) {
+					S.roomTimer--;
+					if (S.roomTimer <= 0) {
+						// Auto-clear room but costs 1 HP
+						S.enemies = [];
+						S.hp = Math.max(1, S.hp - 1);
+						S.flash = 12;
+					}
+				}
+				// Regen relic + regen_combo synergy
+				if (S.synergies && S.synergies.has('regen_combo') && S.tick % 50 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
+				else if (S.relics.indexOf('regen') >= 0 && S.tick % 80 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
 				// Oran Berry relic (once per room)
 				if (S.relics.indexOf('berries') >= 0 && !S.berryUsed && S.hp < 3) { S.hp = Math.min(S.maxHp, S.hp + 2); S.berryUsed = true; }
 				if (sleeping || paralysed) {
@@ -4167,14 +4377,15 @@
 				// Fire rate
 				const fasterRate = (perm.fireRate||0)*4;
 				const baseFireRate = (S.relics.indexOf('swift')>=0||S.rapid) ? 14 : 26;
-				const playerFireRate = Math.max(8, baseFireRate - fasterRate);
+				const playerFireRate = (S.synergies && S.synergies.has('bulletstorm')) ? 8 : Math.max(8, baseFireRate - fasterRate);
 				if (S.fireCd > 0) S.fireCd--;
 				const baseDmg = 1 + (S.relics.indexOf('power')>=0?1:0) + (S.bonusDmg||0);
 				const tgt = nearest(S.px, S.py, S.enemies);
 				if (tgt && S.fireCd <= 0) {
 					const critChance = 0.10 + (S.relics.indexOf('scope')>=0?0.15:0);
 					const isCrit = Math.random() < critChance;
-					let dmg = baseDmg * (isCrit ? 1.5 : 1);
+					const critMult = (S.synergies && S.synergies.has('sniper')) ? 2.5 : 1.5;
+					let dmg = baseDmg * (isCrit ? critMult : 1);
 					if (S.relics.indexOf('choice') >= 0) { dmg = (baseDmg+2) * (isCrit?1.5:1); const a=Math.atan2(S.faceY||1,S.faceX||0); S.bullets.push({x:S.px,y:S.py,vx:Math.cos(a)*3.4,vy:Math.sin(a)*3.4,dmg:Math.ceil(dmg),col:'#ffe060',r:3,isCrit}); S.pAim=a; }
 					else { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, Math.ceil(dmg), '#ffe060'); S.bullets[S.bullets.length-1].isCrit=isCrit; S.pAim=Math.atan2(tgt.y-S.py,tgt.x-S.px); }
 					if (isCrit) S.fx.push({x:S.px,y:S.py-10,vx:0,vy:-0.5,life:22,col:'#ffd700',crit:true,text:'CRIT!'});
@@ -4209,13 +4420,15 @@
 							if (e.held==='sitrus' && !e.heldUsed && e.hp < e.maxHp*0.5) { e.hp=Math.min(e.maxHp,e.hp+3); e.heldUsed=true; }
 							if (e.hp <= 0 && !e._dead) {
 								e._dead = true;
-								S.stardust += (e.boss||e.miniboss ? 12 : 1) * (S.relics.indexOf("lucky") >= 0 ? 2 : 1);
+								const baseSD = (e.boss||e.miniboss ? 12 : 1) + (S.modifier === 'frail' ? 5 : 0) + (S.endlessLoop||0);
+								S.stardust += baseSD * (S.relics.indexOf("lucky") >= 0 ? 2 : 1);
 								S.kills++;
 								S.partnerXP++;
-								if (S.partnerLevel<2 && S.partnerXP>=8) { S.partnerLevel=2; showToast(S.partnerNickname+' reached Lv.2!'); }
-								else if (S.partnerLevel<3 && S.partnerXP>=20) { S.partnerLevel=3; showToast(S.partnerNickname+' reached Lv.3!'); }
+								if (S.partnerLevel<2 && S.partnerXP>=8) { S.partnerLevel=2; showToast(S.partnerNickname+' reached Lv.2!'); try { Sound.evolve && Sound.evolve(); } catch(_) {} }
+								else if (S.partnerLevel<3 && S.partnerXP>=20) { S.partnerLevel=3; showToast(S.partnerNickname+' reached Lv.3!'); try { Sound.evolve && Sound.evolve(); } catch(_) {} }
 								if (S.relics.indexOf("shellbell") >= 0 && S.kills % 4 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
 								if (!e.boss && !e.miniboss && Math.random() < 0.2) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
+								try { Sound.plant && Sound.plant(); } catch(_) {}
 							}
 							for (let _k = 0; _k < 5; _k++) S.fx.push({ x: b.x, y: b.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 9 + Math.random()*6, col: e.hp <= 0 ? '#ffd060' : '#ffffff' });
 							break;
@@ -4227,12 +4440,50 @@
 				for (const e of S.enemies) {
 					if (e.hurt > 0) e.hurt--;
 					if (e.critFlash > 0) e.critFlash--;
-					const a = Math.atan2(S.py - e.y, S.px - e.x);
-					e.x += Math.cos(a) * e.spd; e.y += Math.sin(a) * e.spd;
+					// Enemy movement by moveMode
+					const _dx = S.px - e.x, _dy = S.py - e.y;
+					const _dist = Math.hypot(_dx, _dy) || 1;
+					const _da = Math.atan2(_dy, _dx);
+					const mm = e.moveMode || 'charger';
+					if (mm === 'charger' || e.boss || e.miniboss) {
+						e.x += Math.cos(_da) * e.spd; e.y += Math.sin(_da) * e.spd;
+					} else if (mm === 'circler') {
+						// Orbit player at ~90px, strafe sideways
+						const targetDist = 90;
+						const radialSpd = (_dist - targetDist) > 0 ? 0.7 : -0.7;
+						const tangAngle = _da + Math.PI / 2;
+						e.x += Math.cos(_da) * radialSpd + Math.cos(tangAngle) * e.spd;
+						e.y += Math.sin(_da) * radialSpd + Math.sin(tangAngle) * e.spd;
+					} else if (mm === 'zigzagger') {
+						e.zigTimer = (e.zigTimer || 0) + 1;
+						const zigOff = (Math.floor(e.zigTimer / 40) % 2 === 0 ? 0.6 : -0.6);
+						const perpA = _da + Math.PI / 2;
+						e.x += Math.cos(_da) * e.spd + Math.cos(perpA) * zigOff;
+						e.y += Math.sin(_da) * e.spd + Math.sin(perpA) * zigOff;
+					} else if (mm === 'retreater') {
+						if (_dist < 55) {
+							// Back away from player
+							e.x -= Math.cos(_da) * e.spd;
+							e.y -= Math.sin(_da) * e.spd;
+						} else {
+							e.x += Math.cos(_da) * e.spd * 0.7;
+							e.y += Math.sin(_da) * e.spd * 0.7;
+						}
+					} else if (mm === 'flanker') {
+						const flankA = _da + (70 * Math.PI / 180);
+						e.x += Math.cos(flankA) * e.spd;
+						e.y += Math.sin(flankA) * e.spd;
+					} else {
+						e.x += Math.cos(_da) * e.spd; e.y += Math.sin(_da) * e.spd;
+					}
+					// Clamp to room bounds
+					e.x = Math.max(WALL + e.r, Math.min(W - WALL - e.r, e.x));
+					e.y = Math.max(WALL + e.r, Math.min(H - WALL - e.r, e.y));
 					if ((e.x - S.px) ** 2 + (e.y - S.py) ** 2 < (e.r + 7) ** 2 && S.invuln <= 0) {
-						if (S.relics.indexOf('thorns') >= 0) { e.hp--; if(e.hp<=0&&!e._dead){e._dead=true;S.kills++;S.stardust+=(S.relics.indexOf('lucky')>=0?2:1);} }
+						if (S.relics.indexOf('thorns') >= 0) { const thDmg = (S.synergies && S.synergies.has('ironbarbs')) ? 2 : 1; e.hp -= thDmg; if(e.hp<=0&&!e._dead){e._dead=true;S.kills++;S.stardust+=(S.relics.indexOf('lucky')>=0?2:1);} }
 						if (S.hp <= 1 && S.relics.indexOf('focus') >= 0 && !S._focusUsed && Math.random() < 0.2) {
 							S._focusUsed = true; S.invuln = S.relics.indexOf("guard")>=0?72:52; S.flash = 8;
+							if (S.synergies && S.synergies.has('luckybreak')) S.stardust += 8;
 						} else { S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; }
 						if (S.relics.indexOf('lum') < 0 && Math.random() < 0.15) {
 							if (e.eType==='poison') applyStatus('poison',180);
@@ -4240,19 +4491,78 @@
 							else if (e.eType==='psychic'||e.eType==='dark') applyStatus('para',120);
 						}
 					}
-					if (e.shooter||e.boss||e.miniboss) { e.cd--; if (e.cd <= 0) {
+					if (e.shooter||e.boss||e.miniboss) {
+						// Handle burst queue (fires one bullet per tick)
+						if (e.burstQueue > 0) {
+							e.burstQueue--;
+							shoot(S.ebullets, e.x, e.y, S.px, S.py, 2.2, 1, '#ff5a7a');
+						}
+						e.cd--;
+						if (e.cd <= 0) {
 						if (e.boss) {
+							const am = e.attackMode || 'dark';
 							const ba = Math.atan2(S.py - e.y, S.px - e.x);
-							for (const off of [-0.34, 0, 0.34]) { const aa = ba + off;
-								const eb = { x: e.x, y: e.y, vx: Math.cos(aa) * 2.3, vy: Math.sin(aa) * 2.3, dmg: 1, col: "#ff5a7a", r: 3 };
-								if (Math.random()<0.2) eb.statusPara = true;
-								S.ebullets.push(eb); }
-							const ba2 = Math.atan2(S.py-e.y,S.px-e.x);
-							S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(ba2)*1.6,vy:Math.sin(ba2)*1.6,dmg:1,col:"#ff90b0",r:3,homing:true});
-							e.cd = 58;
+							if (am === 'dark') {
+								for (const off of [-0.34, 0, 0.34]) { const aa = ba + off;
+									const eb = { x: e.x, y: e.y, vx: Math.cos(aa) * 2.3, vy: Math.sin(aa) * 2.3, dmg: 1, col: "#9a4ad0", r: 3 };
+									if (Math.random()<0.2) eb.statusPara = true;
+									S.ebullets.push(eb); }
+								S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(ba)*1.6,vy:Math.sin(ba)*1.6,dmg:1,col:"#c070ff",r:3,homing:true});
+								e.cd = 58;
+							} else if (am === 'fire') {
+								// Spinning ring of 8
+								for (let k = 0; k < 8; k++) {
+									const aa = (k / 8) * Math.PI * 2 + S.tick * 0.05;
+									S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.2,vy:Math.sin(aa)*2.2,dmg:1,col:"#ff7020",r:3,statusBurn:true});
+								}
+								e.cd = 80;
+							} else if (am === 'ice') {
+								// 4-directional cross + slow
+								for (let k = 0; k < 4; k++) {
+									const aa = (k / 4) * Math.PI * 2;
+									S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*1.8,vy:Math.sin(aa)*1.8,dmg:1,col:"#80d8ff",r:3,slow:true});
+								}
+								e.cd = 70;
+							} else if (am === 'psychic') {
+								// Teleport to random position, then burst of 6 homing
+								if (S.tick % 180 < 5) {
+									e.x = WALL+40+Math.random()*(W-2*WALL-80);
+									e.y = WALL+40+Math.random()*(H-2*WALL-80);
+								}
+								for (let k = 0; k < 6; k++) {
+									const aa = (k / 6) * Math.PI * 2;
+									S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*1.9,vy:Math.sin(aa)*1.9,dmg:1,col:"#ff80d0",r:3,homing:true});
+								}
+								e.cd = 65;
+							} else if (am === 'poison') {
+								// Radial cloud of 12
+								for (let k = 0; k < 12; k++) {
+									const aa = (k / 12) * Math.PI * 2;
+									S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*1.7,vy:Math.sin(aa)*1.7,dmg:1,col:"#80e040",r:3,statusPoison:true});
+								}
+								e.cd = 65;
+							}
 						} else if (e.miniboss) {
 							e.spd = 1.4; e.cd = 80;
-						} else { shoot(S.ebullets, e.x, e.y, S.px, S.py, 2.0, 1, '#ff5a7a'); e.cd = 90 + Math.random() * 70; }
+							// miniboss always uses burst attack
+							if (!e.burstQueue) { e.burstQueue = 3; }
+						} else {
+							// Regular shooter: apply attackPat
+							const ap = e.attackPat || 'straight';
+							if (ap === 'burst' && !e.burstQueue) {
+								e.burstQueue = 3;
+								e.cd = 180 + Math.random() * 40;
+							} else if (ap === 'spread') {
+								const ba2 = Math.atan2(S.py - e.y, S.px - e.x);
+								for (const off of [-0.38, 0, 0.38]) {
+									S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(ba2+off)*2.0,vy:Math.sin(ba2+off)*2.0,dmg:1,col:'#ff5a7a',r:3});
+								}
+								e.cd = 90 + Math.random() * 60;
+							} else {
+								shoot(S.ebullets, e.x, e.y, S.px, S.py, 2.0, 1, '#ff5a7a');
+								e.cd = 90 + Math.random() * 70;
+							}
+						}
 					} }
 				}
 				for (let i = S.ebullets.length - 1; i >= 0; i--) {
@@ -4260,8 +4570,12 @@
 					if (b.homing) { const ha=Math.atan2(S.py-b.y,S.px-b.x); b.vx+=Math.cos(ha)*0.14; b.vy+=Math.sin(ha)*0.14; }
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.ebullets.splice(i, 1); continue; }
 					if ((b.x - S.px) ** 2 + (b.y - S.py) ** 2 < (b.r + 7) ** 2 && S.invuln <= 0) {
-						S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8;
+						const guardT = S.synergies && S.synergies.has('ironbarbs') ? 90 : (S.relics.indexOf("guard") >= 0 ? 72 : 52);
+						S.hp--; S.invuln = guardT; S.flash = 8;
+						try { Sound.chime && Sound.chime(); } catch(_) {}
 						if (b.statusPara && S.relics.indexOf('lum')<0) applyStatus('para',120);
+						if (b.statusBurn && S.relics.indexOf('lum')<0) applyStatus('burn',180);
+						if (b.statusPoison && S.relics.indexOf('lum')<0) applyStatus('poison',180);
 						S.ebullets.splice(i, 1);
 					}
 				}
@@ -4275,7 +4589,10 @@
 					else if (p.kind === "rapid") S.rapid = true;
 					else if (p.kind === "relic") {
 						if (p.relic) { S.relics.push(p.relic); if (p.relic === "swift") S.rapid = true;
-							showToast("Relic: " + RELICS[p.relic].name + " \u2014 " + RELICS[p.relic].desc); }
+							showToast("Relic: " + RELICS[p.relic].name + " \u2014 " + RELICS[p.relic].desc);
+							checkSynergies();
+							try { Sound.spin && Sound.spin(); } catch(_) {}
+						}
 						fxCol = "#ffe060";
 					} else if (p.kind === "restpad") {
 						S.hp = S.maxHp; S.energy = S.maxEnergy; S.berryUsed = false; fxCol = "#7ad0ff";
@@ -4293,7 +4610,7 @@
 						if (p.item === "heal") S.hp = Math.min(S.maxHp, S.hp + 3);
 						else if (p.item === "energy") S.energy = S.maxEnergy;
 						else if (p.item === "relic" && p.relic) { S.relics.push(p.relic); if (p.relic === "swift") S.rapid = true;
-							showToast("Bought relic: " + RELICS[p.relic].name); }
+							showToast("Bought relic: " + RELICS[p.relic].name); checkSynergies(); try { Sound.spin && Sound.spin(); } catch(_) {} }
 						fxCol = "#ffd24a";
 					}
 					for (let k = 0; k < 10; k++) S.fx.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 14, col: fxCol });
@@ -4310,8 +4627,13 @@
 					}
 					if (S.py < WALL + 12 && Math.abs(S.px - W / 2) < 14) {
 						S.room++;
-						if (S.room > MAX_ROOM) { S.result = 'win'; }
-						else { newRoom(); S.px = W / 2; S.py = H - 40; }
+						try { Sound.door && Sound.door(); } catch(_) {}
+						if (S.room > MAX_ROOM) {
+							if (!S._endlessChoiceShown) {
+								S._endlessChoiceShown = true;
+								showEndlessChoice();
+							}
+						} else { newRoom(); S.px = W / 2; S.py = H - 40; }
 					}
 				}
 				if (S.hp <= 0) {
@@ -4421,15 +4743,19 @@
 					const critGold = e.critFlash > 0;
 					if (e.boss) {
 						const by = e.y + Math.sin(t * 0.06) * 3;
+						const bCol = e.bossColor || '#6a2a9a';
+						// Lighter shade for highlight
 						ctx.fillStyle = hurt ? "#ffffff" : "#1a0e26";
 						ctx.beginPath(); ctx.moveTo(e.x - 14, by - 11); ctx.lineTo(e.x - 21, by - 27); ctx.lineTo(e.x - 6, by - 14); ctx.closePath(); ctx.fill();
 						ctx.beginPath(); ctx.moveTo(e.x + 14, by - 11); ctx.lineTo(e.x + 21, by - 27); ctx.lineTo(e.x + 6, by - 14); ctx.closePath(); ctx.fill();
 						ctx.fillStyle = hurt ? "#ffffff" : "#241038";
 						ctx.beginPath(); ctx.arc(e.x, by, e.r + 2, 0, 7); ctx.fill();
-						ctx.fillStyle = hurt ? "#ffffff" : "#6a2a9a";
+						ctx.fillStyle = hurt ? "#ffffff" : bCol;
 						ctx.beginPath(); ctx.arc(e.x, by, e.r, 0, 7); ctx.fill();
-						ctx.fillStyle = hurt ? "#ffffff" : "#9a4ad0";
+						ctx.globalAlpha = 0.6;
+						ctx.fillStyle = hurt ? "#ffffff" : "#ffffff";
 						ctx.beginPath(); ctx.arc(e.x - 5, by - 5, e.r * 0.5, 0, 7); ctx.fill();
+						ctx.globalAlpha = 1;
 						ctx.fillStyle = "#ff3050";
 						ctx.beginPath(); ctx.arc(e.x - 8, by - 2, 3.6, 0, 7); ctx.fill();
 						ctx.beginPath(); ctx.arc(e.x + 8, by - 2, 3.6, 0, 7); ctx.fill();
@@ -4524,6 +4850,17 @@
 				for (const p of S.fx) { ctx.globalAlpha = Math.min(1, p.life / 9); ctx.fillStyle = p.col; ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3); }
 				ctx.globalAlpha = 1;
 				ctx.restore();
+				// Fog modifier — darken beyond 130px circle around player
+				if (S.modifier === 'fog') {
+					const fogPX = S.px - (Math.max(0, Math.min(W - VW, S.px - VW / 2)));
+					const fogPY = S.py - (Math.max(0, Math.min(H - VH, S.py - VH / 2)));
+					const fogG = ctx.createRadialGradient(fogPX, fogPY, 90, fogPX, fogPY, 200);
+					fogG.addColorStop(0, 'rgba(0,0,0,0)');
+					fogG.addColorStop(0.65, 'rgba(0,0,0,0.55)');
+					fogG.addColorStop(1, 'rgba(0,0,0,0.92)');
+					ctx.fillStyle = fogG;
+					ctx.fillRect(0, 0, VW, VH);
+				}
 				// vignette
 				const vg = ctx.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * 0.28, VW / 2, VH / 2, Math.max(VW, VH) * 0.72);
 				vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.5)");
@@ -4538,7 +4875,8 @@
 					if (on) { ctx.fillStyle = "#ff8a98"; ctx.fillRect(hx + 1, hy + 2, 2, 2); }
 				}
 				ctx.font = "8px monospace"; ctx.textAlign = "right";
-				ctx.fillStyle = "#ffe060"; ctx.fillText("ROOM " + S.room + "/" + MAX_ROOM, VW - 6, 11);
+				const roomLabel = S.endlessLoop > 0 ? ("END×" + S.endlessLoop + " R" + S.room) : ("ROOM " + S.room + "/" + MAX_ROOM);
+				ctx.fillStyle = S.endlessLoop > 0 ? "#ff9040" : "#ffe060"; ctx.fillText(roomLabel, VW - 6, 11);
 				ctx.textAlign = "center";
 				if (S.roomType === "boss" && S.enemies.length) { ctx.fillStyle = "#ff7a8a"; ctx.fillText("BOSS FIGHT", VW / 2, 11); }
 				else if (S.roomType === "treasure" && S.pickups.length) { ctx.fillStyle = "#9effa0"; ctx.fillText("TREASURE ROOM", VW / 2, 11); }
@@ -4562,24 +4900,48 @@
 				ctx.fillText("ENERGY \u2014 E", 9, 34.5);
 				ctx.fillStyle = "#ffd24a"; ctx.font = "8px monospace"; ctx.textAlign = "right";
 				ctx.fillText("STARDUST " + S.stardust, VW - 6, 35);
+				// Modifier label (top-center small)
+				if (S.modifier) {
+					const modDef = MODIFIERS.find(m => m.key === S.modifier);
+					if (modDef) {
+						ctx.font = "6px monospace"; ctx.textAlign = "center";
+						ctx.fillStyle = "#c0a0ff";
+						let modLabel = modDef.icon + " " + modDef.name.toUpperCase();
+						if (S.modifier === 'speedrun' && S.roomTimer > 0) {
+							const secsLeft = Math.ceil(S.roomTimer / 60);
+							modLabel += " " + secsLeft + "s";
+							ctx.fillStyle = secsLeft <= 10 ? "#ff4040" : "#c0a0ff";
+						}
+						ctx.fillText(modLabel, VW / 2, 43);
+					}
+				}
+				// Endless mode indicator
+				if (S.endlessLoop > 0) {
+					ctx.font = "6px monospace"; ctx.textAlign = "right";
+					ctx.fillStyle = "#ff9040";
+					ctx.fillText("ENDLESS ×" + S.endlessLoop, VW - 6, 43);
+				}
 				// Partner info + level
 				ctx.fillStyle = S.pColor; ctx.font = "7px monospace"; ctx.textAlign = "right";
-				ctx.fillText((S.partnerNickname||'Partner') + " Lv." + (S.partnerLevel||1), VW - 6, 45);
+				ctx.fillText((S.partnerNickname||'Partner') + " Lv." + (S.partnerLevel||1), VW - 6, 52);
 				// Status indicators
 				if (S.statuses) {
 					let sx = 6; ctx.font = "7px monospace"; ctx.textAlign = "left";
-					if (S.statuses.burn > 0)   { ctx.fillStyle = "#ff7040"; ctx.fillText("BRN", sx, 45); sx += 22; }
-					if (S.statuses.poison > 0) { ctx.fillStyle = "#c060e0"; ctx.fillText("PSN", sx, 45); sx += 22; }
-					if (S.statuses.para > 0)   { ctx.fillStyle = "#f0d040"; ctx.fillText("PAR", sx, 45); sx += 22; }
-					if (S.statuses.sleep > 0)  { ctx.fillStyle = "#7090ff"; ctx.fillText("SLP", sx, 45); }
+					if (S.statuses.burn > 0)   { ctx.fillStyle = "#ff7040"; ctx.fillText("BRN", sx, 52); sx += 22; }
+					if (S.statuses.poison > 0) { ctx.fillStyle = "#c060e0"; ctx.fillText("PSN", sx, 52); sx += 22; }
+					if (S.statuses.para > 0)   { ctx.fillStyle = "#f0d040"; ctx.fillText("PAR", sx, 52); sx += 22; }
+					if (S.statuses.sleep > 0)  { ctx.fillStyle = "#7090ff"; ctx.fillText("SLP", sx, 52); }
 				}
 				{ const boss = S.enemies.find(e => e.boss);
 				  if (boss) {
-					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 52;
+					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 58;
+					const arch = S.bossArchetype || BOSS_ARCHETYPES[0];
 					ctx.fillStyle = "rgba(10,8,18,0.85)"; ctx.fillRect(bx - 3, byy - 2, bw + 6, 12);
 					ctx.fillStyle = "#3a2030"; ctx.fillRect(bx, byy, bw, 8);
-					ctx.fillStyle = "#ff4d63"; ctx.fillRect(bx, byy, bw * Math.max(0, boss.hp / boss.maxHp), 8);
+					ctx.fillStyle = arch.barColor || "#ff4d63"; ctx.fillRect(bx, byy, bw * Math.max(0, boss.hp / boss.maxHp), 8);
 					ctx.strokeStyle = "#5a4a8a"; ctx.lineWidth = 1; ctx.strokeRect(bx, byy, bw, 8);
+					ctx.fillStyle = "#ffffff"; ctx.font = "6px monospace"; ctx.textAlign = "center";
+					ctx.fillText(arch.name || "BOSS", VW / 2, byy - 3);
 				  } }
 				// Trainer banner
 				if (S._trainerBattle && S._trainerData) {
@@ -4619,12 +4981,41 @@
 				S = null;
 				showStartScreen();
 			}
+			// Floor modifiers — one per run
+			const MODIFIERS = [
+				{ key:'fog',      icon:'🌫', name:'Foggy', desc:'Reduced visibility' },
+				{ key:'frail',    icon:'💔', name:'Frail', desc:'-1 max HP, +5 Stardust/kill bonus' },
+				{ key:'horde',    icon:'👾', name:'Horde', desc:'More enemies, but weaker' },
+				{ key:'blessed',  icon:'✨', name:'Blessed', desc:'Start with 2 free relics' },
+				{ key:'speedrun', icon:'⏱', name:'Speedrun', desc:'45s per room or lose 1 HP' },
+			];
+			// Relic synergy check
+			function checkSynergies() {
+				if (!S) return;
+				if (!S.synergies) S.synergies = new Set();
+				const r = S.relics;
+				const has = k => r.indexOf(k) >= 0;
+				// sniper: Power Band + Scope Lens
+				if (has('power') && has('scope')) S.synergies.add('sniper'); else S.synergies.delete('sniper');
+				// regen: Shell Bell + Leftovers
+				if (has('shellbell') && has('regen')) S.synergies.add('regen_combo'); else S.synergies.delete('regen_combo');
+				// bulletstorm: Magnet + Quick Claw/swift
+				if (has('magnet') && has('swift')) S.synergies.add('bulletstorm'); else S.synergies.delete('bulletstorm');
+				// ironbarbs: Thorn Coat + Guard Spec.
+				if (has('thorns') && has('guard')) S.synergies.add('ironbarbs'); else S.synergies.delete('ironbarbs');
+				// luckybreak: Lucky Egg + Focus Band
+				if (has('lucky') && has('focus')) S.synergies.add('luckybreak'); else S.synergies.delete('luckybreak');
+			}
 			function beginRun(form, nickname) {
 				hideAllOverlays();
 				const perm = loadPerm();
 				const startHpBonus = perm.startHp || 0;
 				const startStarBonus = (perm.startStar || 0) * 8;
-				const baseHp = 6 + startHpBonus;
+				// Pick random boss archetype and run modifier
+				const chosenBoss = BOSS_ARCHETYPES[Math.floor(Math.random() * BOSS_ARCHETYPES.length)];
+				const chosenMod = MODIFIERS[Math.floor(Math.random() * MODIFIERS.length)];
+				let baseHp = 6 + startHpBonus;
+				if (chosenMod.key === 'frail') baseHp = Math.max(2, baseHp - 1);
 				S = {
 					room: 1, hp: baseHp, maxHp: baseHp, px: W / 2, py: H - 40,
 					partner: { x: W / 2 - 15, y: H - 30 },
@@ -4644,7 +5035,20 @@
 					_roomOverlay: false, _pendingOverlay: null, _ambushRoom: false, _ambushDropped: false,
 					_trainerBattle: false, _trainerData: null, _trainerTeamIdx: 0, _trainerOnDone: null,
 					_focusUsed: false, _recapShown: false, berryUsed: false,
+					bossArchetype: chosenBoss,
+					modifier: chosenMod.key,
+					synergies: new Set(),
+					endlessLoop: 0,
+					roomTimer: 0,
 				};
+				// Blessed modifier: start with 2 random relics
+				if (chosenMod.key === 'blessed') {
+					const r1 = randomRelic(S.relics);
+					if (r1) { S.relics.push(r1); if (r1 === 'swift') S.rapid = true; }
+					const r2 = randomRelic(S.relics);
+					if (r2) { S.relics.push(r2); if (r2 === 'swift') S.rapid = true; }
+					checkSynergies();
+				}
 				loadSprites();
 				newRoom();
 				if (raf) cancelAnimationFrame(raf);
@@ -4658,7 +5062,8 @@
 				const cleared = Math.max(0, (S ? S.room : 1) - 1);
 				if (cleared > 0) {
 					const inv = Inventory.load();
-					const tok = cleared * 6 + (S && S.result === 'win' ? 30 : 0);
+					const endlessLoopN = S ? (S.endlessLoop || 0) : 0;
+					const tok = cleared * 6 + (S && S.result === 'win' ? 30 : 0) + (endlessLoopN * 20);
 					const ber = Math.floor(cleared / 2);
 					inv.tokens = (inv.tokens || 0) + tok;
 					inv.friendshipBerries = (inv.friendshipBerries || 0) + ber;
