@@ -8051,40 +8051,28 @@
 			// Pre-set boot data so consumeBootFrom() works without a real reload.
 			__S._bootData = { scene: key, from: from };
 
-			const game = (scene && scene.game) || window.__phaserGame;
-			if (!game || !game.scene) {
+			// Call ScenePlugin.start() SYNCHRONOUSLY — we are still inside the calling
+			// scene's update() stack at this point, so its status is guaranteed RUNNING.
+			// Using setTimeout would let Phaser run more ticks and potentially change the
+			// scene's status before we call start(), causing a silent no-op or freeze.
+			try {
+				scene.scene.start(key, data || {});
+			} catch (e) {
+				console.warn('[safeSceneStart] scene.scene.start threw — reloading', e);
 				setTimeout(() => window.location.reload(), 50);
 				return;
 			}
 
-			// Capture the currently-running scene key NOW (before any async delay)
-			// so we can stop it cleanly via the SceneManager (which has no RUNNING guard).
-			const running = game.scene.getScenes(true);
-			const currentKey = running.length > 0 ? running[0].sys.settings.key : null;
-
+			// Safety net: if the new scene's create() never clears the fade within 3 s
+			// (e.g. Phaser silently no-oped the start, or _buildX() threw), fall back to
+			// a full reload. The hash + _bootData are already set so it lands correctly.
 			setTimeout(() => {
-				try {
-					if (currentKey && currentKey !== key) game.scene.stop(currentKey);
-					// Use game.scene (SceneManager) directly — unlike ScenePlugin.start() it
-					// has no "status must be RUNNING" guard that silently no-ops the call.
-					game.scene.start(key, data || {});
-				} catch (e) {
-					console.warn('[safeSceneStart] scene switch threw, reloading', e);
+				const f = document.getElementById('campFade');
+				if (f && !f.classList.contains('is-hidden')) {
+					console.warn('[safeSceneStart] safety net — create() never cleared fade, reloading');
 					window.location.reload();
-					return;
 				}
-
-				// Safety net: if create() never clears the fade within 2 s
-				// (e.g. because _buildX() threw in the new scene), force a reload.
-				// The hash is already set so the reload lands in the right scene.
-				setTimeout(() => {
-					const f = document.getElementById('campFade');
-					if (f && !f.classList.contains('is-hidden')) {
-						console.warn('[safeSceneStart] create() never cleared fade — reloading');
-						window.location.reload();
-					}
-				}, 2000);
-			}, 50);
+			}, 3000);
 		}
 	window.CAMP_SYSTEMS.safeSceneStart = safeSceneStart;
 
