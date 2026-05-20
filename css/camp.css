@@ -2999,15 +2999,7 @@ body.pk-reduce-motion *::after {
   100% { opacity: 0.7; background-position: 50% 100%; }
 }
 
-/* ── Sliding door transition ──────────────────────────────────────────── */
-.camp-fade {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 50;
-  pointer-events: none;
-  display: flex;
-}
+/* ── Door panel overlay (unused — kept for future sliding door effect) ── */
 .camp-door-left,
 .camp-door-right {
   width: 50%;
@@ -3018,9 +3010,6 @@ body.pk-reduce-motion *::after {
 }
 .camp-door-left  { transform-origin: left;  }
 .camp-door-right { transform-origin: right; }
-.camp-fade.camp-door-open .camp-door-left  { transform: translateX(-100%); }
-.camp-fade.camp-door-open .camp-door-right { transform: translateX(100%); }
-.camp-fade.is-hidden { display: none; }
 
 /* ── Colorblind mode ──────────────────────────────────────────────────── */
 .cb-colorblind {
