@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node tests/check-consistency.mjs"
+    "test": "node tests/check-consistency.mjs",
+    "build:camp": "npx terser js/camp-data.js js/camp-systems.js js/camp.js --compress passes=2 --mangle --output js/camp.bundle.min.js"
   },
   "dependencies": {
     "@upstash/redis": "^1.34.0"

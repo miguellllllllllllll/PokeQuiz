@@ -4,7 +4,7 @@
 //   - same-origin assets → stale-while-revalidate (fast + self-updating)
 //   - /api/*             → never cached (always live)
 //   - cross-origin       → left to the browser (fonts, sprite CDNs)
-const CACHE = 'pokequiz-v1';
+const CACHE = 'pokequiz-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 

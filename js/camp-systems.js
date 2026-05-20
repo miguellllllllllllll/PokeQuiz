@@ -3454,7 +3454,7 @@
 	// Self-contained canvas-overlay minigame; does not touch the Phaser scenes.
 	// Your partner Pokémon fights alongside you, auto-firing at nearby foes.
 		const TowerDungeon = (() => {
-			let W = 560, H = 560, VW = 320, VH = 240; const WALL = 16, MAX_ROOM = 8;
+			let W = 560, H = 560, VW = 320, VH = 240; const WALL = 16, MAX_ROOM = 9;
 			let root = null, cv = null, ctx = null, raf = null, openFlag = false;
 			let S = null;
 			const keys = {};
@@ -3466,17 +3466,76 @@
 				eevee:'#e8d0a0', vaporeon:'#4aa8f0', jolteon:'#f8e050', flareon:'#ff7038',
 				espeon:'#e070e0', umbreon:'#7060a0', leafeon:'#70d040', glaceon:'#a0e8ff', sylveon:'#ffa0d8',
 			};
+			const FORM_TYPE = {
+				eevee:'normal', vaporeon:'water', jolteon:'electric', flareon:'fire',
+				espeon:'psychic', umbreon:'dark', leafeon:'grass', glaceon:'ice', sylveon:'fairy',
+			};
+			// type effectiveness: attacking type → array of types it's super effective against
+			const TYPE_SE = {
+				water:['fire'], fire:['grass','ice'], grass:['water'],
+				electric:['water'], ice:['grass'], psychic:['poison'],
+				dark:['psychic'], fairy:['dark'],
+			};
+			function typeMultiplier(attackerType, defenderType) {
+				const se = TYPE_SE[attackerType] || [];
+				return se.indexOf(defenderType) >= 0 ? 2 : 1;
+			}
 			const RELICS = {
-				shellbell: { name:'Shell Bell',  desc:'Heal 1 HP every 4 kills' },
-				lucky:     { name:'Lucky Egg',   desc:'Double Stardust drops' },
-				guard:     { name:'Guard Spec',  desc:'Longer invulnerability' },
-				power:     { name:'Power Band',  desc:'+1 shot damage' },
-				swift:     { name:'Quick Claw',  desc:'Faster fire rate' },
+				shellbell: { name:'Shell Bell',   desc:'Heal 1 HP every 4 kills' },
+				lucky:     { name:'Lucky Egg',    desc:'Double Stardust drops' },
+				guard:     { name:'Guard Spec.',  desc:'Longer invulnerability' },
+				power:     { name:'Power Band',   desc:'+1 shot damage' },
+				swift:     { name:'Quick Claw',   desc:'Faster fire rate' },
+				thorns:    { name:'Thorn Coat',   desc:'Deal 1 dmg to enemies that touch you' },
+				focus:     { name:'Focus Band',   desc:'20% chance survive lethal hit (once per run)' },
+				magnet:    { name:'Magnet',        desc:'Bullets slightly home toward enemies' },
+				scope:     { name:'Scope Lens',   desc:'+15% critical hit chance' },
+				lum:       { name:'Lum Berry',    desc:'Immune to status effects' },
+				berries:   { name:'Oran Berry',   desc:'Heal 2 HP when HP < 3 (once per room)' },
+				regen:     { name:'Leftovers',    desc:'Regen 1 HP every 80 ticks' },
+				salve:     { name:'Full Restore', desc:'Full heal when entering rest rooms' },
+				choice:    { name:'Choice Band',  desc:'+2 shot dmg, shots only fire in face direction' },
 			};
 			function randomRelic(owned) {
 				const pool = Object.keys(RELICS).filter(k => owned.indexOf(k) < 0);
 				return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 			}
+			// Permanent upgrades
+			const PERM_DEFS = {
+				startHp:    { name:'Thick Fat',    desc:'Start with +1 max HP per level',      costs:[15,30,50] },
+				startStar:  { name:'Pickup',       desc:'Start with +8 Stardust per level',    costs:[12,25,40] },
+				fireRate:   { name:'Hustle',       desc:'Player fires 4 ticks faster per level',costs:[20,45,70] },
+				novaCharge: { name:'Synchronize',  desc:'Partner nova cost -8 per level',      costs:[18,35,55] },
+				rollFrames: { name:'Speed Boost',  desc:'Dodge roll lasts 2 extra frames/level',costs:[22,40,65] },
+			};
+			function loadPerm() {
+				try { return JSON.parse(localStorage.getItem('pokequiz_tower_perm') || '{}'); } catch(_){ return {}; }
+			}
+			function savePerm(p) { localStorage.setItem('pokequiz_tower_perm', JSON.stringify(p)); }
+			function loadBank() { return parseInt(localStorage.getItem('pokequiz_tower_bank') || '0', 10) || 0; }
+			function saveBank(v) { localStorage.setItem('pokequiz_tower_bank', String(v)); }
+			// Trivia questions for puzzle rooms
+			const TRIVIA = [
+				{ q:"What type is Gengar?",          a:"Ghost",      w:["Psychic","Dark","Poison"] },
+				{ q:"How many HP does Blissey have?", a:"255",        w:["220","300","180"] },
+				{ q:"What evolves into Vaporeon?",   a:"Eevee",      w:["Poliwag","Staryu","Slowpoke"] },
+				{ q:"What is super effective vs Water?", a:"Grass",  w:["Fire","Ground","Ice"] },
+				{ q:"Which Pokémon is #001?",         a:"Bulbasaur",  w:["Charmander","Squirtle","Caterpie"] },
+				{ q:"What type is Eevee?",           a:"Normal",     w:["Fairy","Psychic","Ground"] },
+				{ q:"How many Eevee evolutions exist?", a:"8",       w:["6","7","9"] },
+				{ q:"What move cannot miss?",        a:"Swift",      w:["Tackle","Bite","Pound"] },
+			];
+			// Trainer room data
+			const TRAINERS = [
+				{ name:"Youngster Joey", emoji:"👦",
+				  team:[{col:'#a0785a',type:'normal',hp:10,r:8},{col:'#c08040',type:'normal',hp:16,r:9}] },
+				{ name:"Lass Iris", emoji:"👧",
+				  team:[{col:'#4060e0',type:'grass',hp:9,r:8},{col:'#e02040',type:'grass',hp:18,r:10}] },
+				{ name:"Bug Catcher", emoji:"🧒",
+				  team:[{col:'#80a040',type:'bug',hp:8,r:7},{col:'#d0d0ff',type:'bug',hp:14,r:9},{col:'#f0e040',type:'bug',hp:16,r:9}] },
+				{ name:"Sailor Jack", emoji:"⚓",
+				  team:[{col:'#40a0c0',type:'water',hp:10,r:8},{col:'#2050d0',type:'water',hp:22,r:12}] },
+			];
 			// Sprite cache — reuse the player's trainer sheet + the partner's
 			// follower spritesheet (both already shipped game assets).
 			let dunImgPlayer = null, dunImgPartner = null, dunPartnerMeta = null, dunPartnerForm = null;
@@ -3533,7 +3592,6 @@
 				root.style.cssText = "position:fixed;inset:0;z-index:120;background:#07060f;font-family:monospace;touch-action:none;overflow:hidden";
 				cv = document.createElement("canvas");
 				cv.width = W; cv.height = H;
-				// Canvas aspect tracks the viewport, so it fills the screen edge to edge.
 				cv.style.cssText = "image-rendering:pixelated;position:absolute;inset:0;width:100%;height:100%;background:#15101f";
 				ctx = cv.getContext("2d");
 				ctx.imageSmoothingEnabled = false;
@@ -3559,56 +3617,418 @@
 				leave.style.cssText = "position:absolute;right:16px;bottom:26px;font-size:12px;padding:16px 20px;border-radius:10px;border:2px solid #5a4a8a;background:rgba(42,36,64,0.82);color:#cfc6ee";
 				leave.addEventListener("click", exit);
 				root.appendChild(leave);
+				// Start screen
+				const ss = document.createElement("div");
+				ss.id = "towerStartScreen"; ss.className = "tower-start-screen"; ss.hidden = true;
+				root.appendChild(ss);
+				// Puzzle overlay
+				const puz = document.createElement("div");
+				puz.id = "towerPuzzleOverlay"; puz.className = "tower-overlay"; puz.hidden = true;
+				root.appendChild(puz);
+				// Shrine overlay
+				const shr = document.createElement("div");
+				shr.id = "towerShrineOverlay"; shr.className = "tower-overlay"; shr.hidden = true;
+				root.appendChild(shr);
+				// Trainer overlay
+				const tr = document.createElement("div");
+				tr.id = "towerTrainerOverlay"; tr.className = "tower-overlay"; tr.hidden = true;
+				root.appendChild(tr);
+				// Upgrade overlay
+				const up = document.createElement("div");
+				up.id = "towerUpgradeOverlay"; up.className = "tower-overlay"; up.hidden = true;
+				root.appendChild(up);
+				// Recap overlay
+				const rc = document.createElement("div");
+				rc.id = "towerRecapOverlay"; rc.className = "tower-overlay"; rc.hidden = true;
+				root.appendChild(rc);
 				document.body.appendChild(root);
 				window.addEventListener("keydown", onKey);
 				window.addEventListener("keyup", onKey);
 				window.addEventListener("resize", () => { if (openFlag) fit(); });
 			}
+			function getOverlay(id) { return root && root.querySelector('#' + id); }
+			function hideAllOverlays() {
+				['towerStartScreen','towerPuzzleOverlay','towerShrineOverlay',
+				 'towerTrainerOverlay','towerUpgradeOverlay','towerRecapOverlay'].forEach(id => {
+					const el = getOverlay(id); if (el) el.hidden = true;
+				});
+			}
+			// ── Start screen ────────────────────────────────────────────────
+			function showStartScreen() {
+				hideAllOverlays();
+				const inv = Inventory.load();
+				const party = inv.party || [];
+				const el = getOverlay('towerStartScreen');
+				if (!el) return;
+				const bank = loadBank();
+				el.innerHTML = '';
+				const title = document.createElement('h2');
+				title.style.cssText = 'color:#ffe060;font-size:18px;margin:0 0 6px;';
+				title.textContent = '🗼 Tower Dungeon';
+				el.appendChild(title);
+				const sub = document.createElement('p');
+				sub.style.cssText = 'color:#8a7aaa;font-size:11px;margin:0 0 14px;';
+				sub.textContent = 'Choose your partner for this run';
+				el.appendChild(sub);
+				const bankEl = document.createElement('p');
+				bankEl.style.cssText = 'color:#ffd24a;font-size:12px;margin:0 0 10px;';
+				bankEl.textContent = '⭐ Stardust Bank: ' + bank;
+				el.appendChild(bankEl);
+				const grid = document.createElement('div');
+				grid.className = 'tower-partner-grid';
+				el.appendChild(grid);
+				const defaultPartner = (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee'));
+				const partnerList = party.length > 0 ? party : [{ form: defaultPartner, nickname: defaultPartner }];
+				partnerList.forEach((p, idx) => {
+					const form = p.form || defaultPartner;
+					const col = FORM_COLOR[form] || '#c89860';
+					const card = document.createElement('div');
+					card.className = 'tower-partner-card' + (idx === (inv.partyActive || 0) ? ' selected' : '');
+					const dot = document.createElement('div');
+					dot.className = 'tower-partner-dot';
+					dot.style.background = col;
+					card.appendChild(dot);
+					const nn = document.createElement('div');
+					nn.style.cssText = 'font-size:11px;font-weight:bold;margin-bottom:3px;';
+					nn.textContent = p.nickname || form;
+					card.appendChild(nn);
+					const fn = document.createElement('div');
+					fn.style.cssText = 'font-size:9px;color:#8a7aaa;';
+					fn.textContent = form;
+					card.appendChild(fn);
+					card.addEventListener('click', () => { beginRun(form, p.nickname || form); });
+					grid.appendChild(card);
+				});
+				const btnRow = document.createElement('div');
+				btnRow.style.cssText = 'display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;';
+				el.appendChild(btnRow);
+				const upgradeBtn = document.createElement('button');
+				upgradeBtn.className = 'tower-btn';
+				upgradeBtn.textContent = '⬆ Permanent Upgrades';
+				upgradeBtn.addEventListener('click', showUpgradeScreen);
+				btnRow.appendChild(upgradeBtn);
+				const closeBtn = document.createElement('button');
+				closeBtn.className = 'tower-btn';
+				closeBtn.textContent = '✕ Close';
+				closeBtn.addEventListener('click', () => { hideAllOverlays(); exit(); });
+				btnRow.appendChild(closeBtn);
+				el.hidden = false;
+			}
+			// ── Upgrade screen ──────────────────────────────────────────────
+			function showUpgradeScreen() {
+				hideAllOverlays();
+				const el = getOverlay('towerUpgradeOverlay');
+				if (!el) return;
+				const perm = loadPerm();
+				let bank = loadBank();
+				el.innerHTML = '';
+				const title = document.createElement('h2');
+				title.textContent = 'Permanent Upgrades';
+				el.appendChild(title);
+				const bankEl = document.createElement('p');
+				bankEl.id = 'towerUpgradeBank';
+				bankEl.style.cssText = 'color:#ffd24a;font-size:12px;margin:4px 0 10px;';
+				bankEl.textContent = '⭐ Stardust Bank: ' + bank;
+				el.appendChild(bankEl);
+				const grid = document.createElement('div');
+				grid.className = 'tower-upgrade-grid';
+				el.appendChild(grid);
+				Object.entries(PERM_DEFS).forEach(([key, def]) => {
+					const lvl = perm[key] || 0;
+					const row = document.createElement('div');
+					row.className = 'tower-upgrade-row';
+					const info = document.createElement('div');
+					info.style.cssText = 'flex:1;';
+					const nm = document.createElement('div');
+					nm.style.cssText = 'font-size:12px;color:#cfc6ee;';
+					nm.textContent = def.name + ' Lv.' + lvl + '/3';
+					const desc = document.createElement('div');
+					desc.style.cssText = 'font-size:9px;color:#8a7aaa;margin-top:2px;';
+					desc.textContent = def.desc;
+					info.appendChild(nm); info.appendChild(desc);
+					row.appendChild(info);
+					const cost = lvl < 3 ? def.costs[lvl] : null;
+					const btn = document.createElement('button');
+					btn.className = 'tower-upgrade-buy';
+					btn.disabled = lvl >= 3 || bank < (cost || 9999);
+					btn.textContent = lvl >= 3 ? 'MAX' : cost + ' ⭐';
+					btn.addEventListener('click', () => {
+						const curBank = loadBank();
+						const curPerm = loadPerm();
+						const curLvl = curPerm[key] || 0;
+						const curCost = PERM_DEFS[key].costs[curLvl];
+						if (curLvl >= 3 || curBank < curCost) return;
+						curPerm[key] = curLvl + 1;
+						savePerm(curPerm);
+						saveBank(curBank - curCost);
+						showUpgradeScreen();
+					});
+					row.appendChild(btn);
+					grid.appendChild(row);
+				});
+				const backBtn = document.createElement('button');
+				backBtn.className = 'tower-btn';
+				backBtn.style.marginTop = '14px';
+				backBtn.textContent = '← Back';
+				backBtn.addEventListener('click', showStartScreen);
+				el.appendChild(backBtn);
+				el.hidden = false;
+			}
+			// ── Puzzle overlay ──────────────────────────────────────────────
+			function showPuzzleOverlay(onDone) {
+				const el = getOverlay('towerPuzzleOverlay');
+				if (!el) { onDone(false); return; }
+				const q = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
+				el.innerHTML = '';
+				const h = document.createElement('h2');
+				h.textContent = '❓ Puzzle Room';
+				el.appendChild(h);
+				const qp = document.createElement('p');
+				qp.style.cssText = 'font-size:13px;margin:8px 0 14px;max-width:320px;';
+				qp.textContent = q.q;
+				el.appendChild(qp);
+				const answers = [q.a, ...q.w].sort(() => Math.random() - 0.5);
+				const grid = document.createElement('div');
+				grid.className = 'tower-answer-grid';
+				el.appendChild(grid);
+				answers.forEach(ans => {
+					const btn = document.createElement('button');
+					btn.className = 'tower-answer-btn';
+					btn.textContent = ans;
+					btn.addEventListener('click', () => {
+						const correct = ans === q.a;
+						btn.style.borderColor = correct ? '#7ad07a' : '#ff5a6a';
+						if (!correct && S) { S.hp--; }
+						setTimeout(() => { el.hidden = true; onDone(correct); }, 700);
+					});
+					grid.appendChild(btn);
+				});
+				el.hidden = false;
+			}
+			// ── Shrine overlay ──────────────────────────────────────────────
+			function showShrineOverlay(onDone) {
+				const el = getOverlay('towerShrineOverlay');
+				if (!el) { onDone(); return; }
+				el.innerHTML = '';
+				const h = document.createElement('h2');
+				h.textContent = '⛩ Shrine Room';
+				el.appendChild(h);
+				const p = document.createElement('p');
+				p.textContent = 'Choose a blessing (costs Stardust):';
+				el.appendChild(p);
+				const opts = [
+					{ label:'Vitality Shrine', desc:'+1 max HP', cost:10, fn:() => { S.maxHp++; S.hp = Math.min(S.hp + 1, S.maxHp); } },
+					{ label:'Power Shrine',    desc:'+1 player shot dmg (this run)', cost:12, fn:() => { S.bonusDmg = (S.bonusDmg||0)+1; } },
+					{ label:'Energy Shrine',   desc:'+30 max energy', cost:8, fn:() => { S.maxEnergy += 30; } },
+				];
+				const grid = document.createElement('div');
+				grid.className = 'tower-shrine-grid';
+				el.appendChild(grid);
+				opts.forEach(opt => {
+					const btn = document.createElement('button');
+					btn.className = 'tower-shrine-opt';
+					const canAfford = S && S.stardust >= opt.cost;
+					btn.style.opacity = canAfford ? '1' : '0.45';
+					btn.innerHTML = '<b style="color:#ffe060">' + opt.label + '</b><br><span style="font-size:10px;color:#8a7aaa">' + opt.desc + ' · ' + opt.cost + ' ⭐</span>';
+					btn.addEventListener('click', () => {
+						if (!S || S.stardust < opt.cost) return;
+						S.stardust -= opt.cost;
+						opt.fn();
+						el.hidden = true;
+						onDone();
+					});
+					grid.appendChild(btn);
+				});
+				const skipBtn = document.createElement('button');
+				skipBtn.className = 'tower-btn';
+				skipBtn.style.marginTop = '10px';
+				skipBtn.textContent = 'Skip';
+				skipBtn.addEventListener('click', () => { el.hidden = true; onDone(); });
+				el.appendChild(skipBtn);
+				el.hidden = false;
+			}
+			// ── Trainer overlay ─────────────────────────────────────────────
+			let trainerData = null, trainerTeamIdx = 0;
+			function showTrainerBattle(onDone) {
+				trainerData = TRAINERS[Math.floor(Math.random() * TRAINERS.length)];
+				trainerTeamIdx = 0;
+				const el = getOverlay('towerTrainerOverlay');
+				if (!el) { spawnTrainerWave(onDone); return; }
+				el.innerHTML = '';
+				const h = document.createElement('h2');
+				h.textContent = trainerData.emoji + ' ' + trainerData.name + ' wants to battle!';
+				el.appendChild(h);
+				const p = document.createElement('p');
+				p.textContent = 'Team: ' + trainerData.team.length + ' Pokémon';
+				el.appendChild(p);
+				const btn = document.createElement('button');
+				btn.className = 'tower-btn primary';
+				btn.textContent = 'Fight!';
+				btn.addEventListener('click', () => {
+					el.hidden = true;
+					S._trainerBattle = true;
+					S._trainerData = trainerData;
+					S._trainerTeamIdx = 0;
+					S._trainerOnDone = onDone;
+					spawnTrainerWave();
+				});
+				el.appendChild(btn);
+				el.hidden = false;
+			}
+			function spawnTrainerWave() {
+				if (!S || !S._trainerData) return;
+				const team = S._trainerData.team;
+				const idx = S._trainerTeamIdx;
+				if (idx >= team.length) {
+					// trainer defeated
+					S._trainerBattle = false;
+					const rk = randomRelic(S.relics);
+					if (rk) S.pickups.push({ x: W/2, y: H/2, kind:'relic', relic:rk, r:11, bob:0 });
+					if (S._trainerOnDone) S._trainerOnDone();
+					return;
+				}
+				const tm = team[idx];
+				const tier = Math.floor((S.room - 1) / 3);
+				S.enemies = [{
+					x: W/2 + (Math.random()-0.5)*80, y: WALL + 60 + Math.random()*80,
+					hp: tm.hp, maxHp: tm.hp, r: tm.r, col: tm.col,
+					eType: tm.type, boss:false, shooter: Math.random()<0.4,
+					cd: 60, spd: 0.55 + tier*0.12, hurt:0,
+				}];
+			}
+			// ── Recap screen ────────────────────────────────────────────────
+			function showRecapScreen(win) {
+				hideAllOverlays();
+				const el = getOverlay('towerRecapOverlay');
+				if (!el) return;
+				el.innerHTML = '';
+				const h = document.createElement('h2');
+				h.textContent = win ? '🏆 TOWER RUN COMPLETE' : '💀 YOU FELL';
+				el.appendChild(h);
+				if (win) { const wm = document.createElement('p'); wm.style.color = '#7ad07a'; wm.textContent = '🎉 Congratulations! Tower cleared!'; el.appendChild(wm); }
+				const stats = [
+					'Floors cleared: ' + (S ? Math.max(0, S.room - 1) : 0),
+					'Enemies defeated: ' + (S ? S.kills : 0),
+					'Stardust earned: ' + (S ? S.stardust : 0),
+					'Relics collected: ' + (S ? S.relics.length : 0),
+				];
+				stats.forEach(st => { const p = document.createElement('p'); p.textContent = st; el.appendChild(p); });
+				const earned = S ? S.stardust : 0;
+				const bankBtn = document.createElement('button');
+				bankBtn.className = 'tower-btn primary';
+				bankBtn.style.margin = '12px 4px 4px';
+				bankBtn.textContent = 'Bank Stardust (+' + earned + ' ⭐)';
+				bankBtn.addEventListener('click', () => {
+					saveBank(loadBank() + earned);
+					if (S) S.stardust = 0;
+					bankBtn.disabled = true;
+					bankBtn.textContent = 'Banked!';
+				});
+				el.appendChild(bankBtn);
+				const againBtn = document.createElement('button');
+				againBtn.className = 'tower-btn';
+				againBtn.style.margin = '4px';
+				againBtn.textContent = '↩ Play Again';
+				againBtn.addEventListener('click', () => { el.hidden = true; showStartScreen(); });
+				el.appendChild(againBtn);
+				const campBtn = document.createElement('button');
+				campBtn.className = 'tower-btn';
+				campBtn.style.margin = '4px';
+				campBtn.textContent = '🏕 Return to Camp';
+				campBtn.addEventListener('click', () => { el.hidden = true; _doExit(); });
+				el.appendChild(campBtn);
+				el.hidden = false;
+			}
 			function newRoom() {
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
-				// Floor plan: combat, with a treasure / rest / shop room and
-				// bosses on floors 4 and 8 (Soul-Knight-style room variety).
-				S.roomType = (S.room === 4 || S.room >= MAX_ROOM) ? 'boss'
-					: (S.room === 3) ? 'treasure'
-					: (S.room === 6) ? 'rest'
-					: (S.room === 7) ? 'shop'
-					: 'combat';
+				S._roomOverlay = false;
+				S._trainerBattle = false;
+				S.berryUsed = false;
+				// Determine room type based on room number
+				const r = S.room;
+				if (r >= MAX_ROOM) { S.roomType = 'boss'; }
+				else if (r === 8) { S.roomType = 'rest'; }
+				else if (r === 7) { S.roomType = Math.random() < 0.5 ? 'trainer' : 'shop'; }
+				else if (r === 6) { S.roomType = 'combat'; }
+				else if (r === 5) { S.roomType = Math.random() < 0.5 ? 'puzzle' : 'shrine'; }
+				else if (r === 4) { S.roomType = 'miniboss'; }
+				else if (r === 3) { S.roomType = Math.random() < 0.5 ? 'treasure' : 'ambush'; }
+				else { S.roomType = 'combat'; }
+				const tier = Math.floor((r - 1) / 3); // 0,1,2
+				const tierTypes = ['poison','psychic','dark'];
+				const eType = tierTypes[Math.min(tier, 2)];
 				if (S.roomType === 'treasure') {
 					S.doorOpen = true;
 					const rk = randomRelic(S.relics);
-					S.pickups.push({ x: W / 2, y: H / 2, kind: 'relic', relic: rk, r: 11, bob: 0 });
-					S.pickups.push({ x: W / 2 - 70, y: H / 2, kind: 'heart', r: 8, bob: 1 });
-					S.pickups.push({ x: W / 2 + 70, y: H / 2, kind: 'maxhp', r: 9, bob: 3 });
+					S.pickups.push({ x: W/2, y: H/2, kind:'relic', relic:rk, r:11, bob:0 });
+					S.pickups.push({ x: W/2-70, y:H/2, kind:'heart', r:8, bob:1 });
+					S.pickups.push({ x: W/2+70, y:H/2, kind:'maxhp', r:9, bob:3 });
 				} else if (S.roomType === 'rest') {
 					S.doorOpen = true;
-					S.pickups.push({ x: W / 2, y: H / 2, kind: 'restpad', r: 18, bob: 0 });
+					S.pickups.push({ x:W/2-50, y:H/2, kind:'restpad', r:18, bob:0 });
+					S.pickups.push({ x:W/2+60, y:H/2, kind:'reroll', r:13, bob:2 });
 				} else if (S.roomType === 'shop') {
 					S.doorOpen = true;
 					const rk = randomRelic(S.relics);
-					S.pickups.push({ x: W / 2 - 80, y: H / 2, kind: 'shop', item: 'heal',   cost: 8,  r: 13, bob: 0 });
-					S.pickups.push({ x: W / 2,      y: H / 2, kind: 'shop', item: 'energy', cost: 6,  r: 13, bob: 0 });
-					S.pickups.push({ x: W / 2 + 80, y: H / 2, kind: 'shop', item: 'relic', relic: rk, cost: 14, r: 13, bob: 0 });
+					S.pickups.push({ x:W/2-80, y:H/2, kind:'shop', item:'heal',   cost:8,  r:13, bob:0 });
+					S.pickups.push({ x:W/2,    y:H/2, kind:'shop', item:'energy', cost:6,  r:13, bob:0 });
+					S.pickups.push({ x:W/2+80, y:H/2, kind:'shop', item:'relic',  relic:rk, cost:14, r:13, bob:0 });
+				} else if (S.roomType === 'puzzle' || S.roomType === 'shrine') {
+					S.doorOpen = false;
+					S._roomOverlay = true;
+					// Show overlay after a short delay (next tick)
+					S._pendingOverlay = S.roomType;
+				} else if (S.roomType === 'trainer') {
+					S.doorOpen = false;
+					S._roomOverlay = true;
+					S._pendingOverlay = 'trainer';
 				} else if (S.roomType === 'boss') {
-					const bhp = 56 + S.room * 7;
+					const bhp = 90 + S.room * 4;
 					S.enemies.push({
-						x: W / 2, y: WALL + 96, hp: bhp, maxHp: bhp,
-						r: 22, boss: true, shooter: true, cd: 70,
-						spd: 0.5, hurt: 0,
+						x:W/2, y:WALL+96, hp:bhp, maxHp:bhp, r:22,
+						boss:true, shooter:true, cd:70, spd:0.55, hurt:0,
+						eType:'dark',
+					});
+				} else if (S.roomType === 'miniboss') {
+					S.enemies.push({
+						x:W/2, y:WALL+96, hp:40, maxHp:40, r:15,
+						boss:false, miniboss:true, shooter:false, cd:80, spd:0.9, hurt:0,
+						eType:'psychic',
 					});
 				} else {
-					const n = 2 + Math.min(7, S.room + 1);
+					// combat or ambush
+					const isAmbush = (S.roomType === 'ambush');
+					const base = 2 + Math.min(7, r + 1);
+					const n = isAmbush ? base * 2 : base;
+					const tierR = [7,9,11][tier];
+					const tierHpMin = [2,4,8][tier];
+					const tierHpMax = [4,8,14][tier];
+					const tierSpd = [0.55,0.7,0.88][tier];
 					for (let i = 0; i < n; i++) {
-						const shooter = S.room >= 3 && Math.random() < 0.35;
+						const shooter = r >= 3 && Math.random() < 0.35;
+						const hp = tierHpMin + Math.floor(Math.random()*(tierHpMax-tierHpMin+1));
+						const heldRoll = r >= 3 && Math.random() < 0.25;
+						const held = heldRoll ? (Math.random()<0.5 ? 'sitrus' : 'helmet') : null;
 						S.enemies.push({
-							x: WALL + 24 + Math.random() * (W - 2 * WALL - 48),
-							y: WALL + 24 + Math.random() * (H - 2 * WALL - 120),
-							hp: (shooter ? 2 : 2 + Math.floor(S.room / 3)) + Math.floor(S.room / 4),
-							r: 7, shooter, cd: 50 + Math.random() * 70,
-							spd: shooter ? 0.45 : 0.62 + Math.random() * 0.3 + S.room * 0.03, hurt: 0,
+							x: WALL+24+Math.random()*(W-2*WALL-48),
+							y: WALL+24+Math.random()*(H-2*WALL-120),
+							hp, maxHp:hp, r:tierR, shooter, cd:50+Math.random()*70,
+							spd: shooter ? tierSpd*0.7 : tierSpd+Math.random()*0.2,
+							hurt:0, eType, held, heldUsed:false,
 						});
 					}
+					if (isAmbush) {
+						// drop 2 relics + stardust on clear — set a flag
+						S._ambushRoom = true;
+					}
 				}
+			}
+			// Called once per room after overlay
+			function openRoomAfterOverlay() {
+				S._roomOverlay = false;
+				S._pendingOverlay = null;
+				S.doorOpen = false; // door opens when enemies cleared
 			}
 			function nearest(x, y, list) {
 				let best = null, bd = 1e9;
@@ -3619,35 +4039,100 @@
 				const a = Math.atan2(ty - y, tx - x);
 				list.push({ x, y, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, dmg, col, r: 3 });
 			}
+			function applyStatus(name, ticks) {
+				if (!S || S.relics.indexOf('lum') >= 0) return;
+				S.statuses[name] = Math.max(S.statuses[name], ticks);
+			}
 			function step() {
 				S.tick++;
 				if (S.flash > 0) S.flash--;
 				if (S.invuln > 0) S.invuln--;
-				if (S.result) { S.endTimer++; return; }
+				if (S.result) {
+					S.endTimer++;
+					if (S.endTimer === 120 && !S._recapShown) { S._recapShown = true; showRecapScreen(S.result === 'win'); }
+					return;
+				}
+				// Handle pending overlay triggers (fire on tick 2 of the new room)
+				if (S._pendingOverlay && S.tick === 2) {
+					const ov = S._pendingOverlay;
+					S._pendingOverlay = null;
+					S._roomOverlay = true;
+					if (ov === 'puzzle') {
+						showPuzzleOverlay((correct) => {
+							if (correct) {
+								const rk = randomRelic(S.relics);
+								if (rk) { S.relics.push(rk); if (rk==='swift') S.rapid=true; showToast('Relic: '+RELICS[rk].name); }
+								S.stardust += 6;
+							}
+							openRoomAfterOverlay();
+							S.doorOpen = true;
+						});
+					} else if (ov === 'shrine') {
+						showShrineOverlay(() => { openRoomAfterOverlay(); S.doorOpen = true; });
+					} else if (ov === 'trainer') {
+						showTrainerBattle(() => { openRoomAfterOverlay(); S.doorOpen = false; });
+					}
+					return;
+				}
+				if (S._roomOverlay) return;
+				// Trainer battle wave progression
+				if (S._trainerBattle && S.enemies.length === 0) {
+					S._trainerTeamIdx++;
+					if (S._trainerTeamIdx >= (S._trainerData && S._trainerData.team.length || 0)) {
+						S._trainerBattle = false;
+						const rk = randomRelic(S.relics);
+						if (rk) S.pickups.push({ x:W/2, y:H/2, kind:'relic', relic:rk, r:11, bob:0 });
+						S.doorOpen = true;
+						if (S._trainerOnDone) { const cb = S._trainerOnDone; S._trainerOnDone=null; cb(); }
+					} else {
+						spawnTrainerWave();
+					}
+					return;
+				}
+				// Status ticks
+				for (const [k, v] of Object.entries(S.statuses)) { if (v > 0) S.statuses[k]--; }
+				if (S.statuses.burn > 0 && S.tick % 60 === 0) { S.hp--; S.flash = 4; }
+				if (S.statuses.poison > 0 && S.tick % 90 === 0) { S.hp--; S.flash = 4; }
+				const paralysed = S.statuses.para > 0 && Math.random() < 0.25;
+				const sleeping  = S.statuses.sleep > 0;
+				// Regen relic
+				if (S.relics.indexOf('regen') >= 0 && S.tick % 80 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
+				// Oran Berry relic (once per room)
+				if (S.relics.indexOf('berries') >= 0 && !S.berryUsed && S.hp < 3) { S.hp = Math.min(S.maxHp, S.hp + 2); S.berryUsed = true; }
+				if (sleeping || paralysed) {
+					S.ptrail.push({ x:S.px, y:S.py });
+					if (S.ptrail.length > 18) S.ptrail.shift();
+					for (let _i = S.fx.length-1; _i>=0; _i--) {
+						const _p = S.fx[_i]; _p.x+=_p.vx; _p.y+=_p.vy; _p.vx*=0.88; _p.vy*=0.88; _p.life--;
+						if (_p.life<=0) S.fx.splice(_i,1);
+					}
+					return;
+				}
 				const kL = keys['arrowleft'] || keys['a'], kR = keys['arrowright'] || keys['d'];
 				const kU = keys['arrowup'] || keys['w'], kD = keys['arrowdown'] || keys['s'];
-				let mx = (kR ? 1 : 0) - (kL ? 1 : 0), my = (kD ? 1 : 0) - (kU ? 1 : 0);
-				// double-tap a direction to dodge-roll (brief invincibility)
+				let mx = (kR?1:0)-(kL?1:0), my = (kD?1:0)-(kU?1:0);
 				if (!S._pk) S._pk = {};
+				const perm = loadPerm();
+				const rollDur = 13 + (perm.rollFrames||0)*2;
 				const edge = (cur, name, vx, vy) => {
 					if (cur && !S._pk[name]) {
-						if (S.tapDir === name && S.tick - S.tapT < 16 && S.rollT <= 0) {
-							S.rollT = 13; S.rollVx = vx * 4.6; S.rollVy = vy * 4.6;
+						if (S.tapDir===name && S.tick-S.tapT<16 && S.rollT<=0) {
+							S.rollT=rollDur; S.rollVx=vx*4.6; S.rollVy=vy*4.6;
 						}
-						S.tapDir = name; S.tapT = S.tick;
+						S.tapDir=name; S.tapT=S.tick;
 					}
 					S._pk[name] = cur;
 				};
-				edge(kL, 'L', -1, 0); edge(kR, 'R', 1, 0); edge(kU, 'U', 0, -1); edge(kD, 'D', 0, 1);
+				edge(kL,'L',-1,0); edge(kR,'R',1,0); edge(kU,'U',0,-1); edge(kD,'D',0,1);
 				const SP = 1.85;
 				if (S.rollT > 0) {
 					S.rollT--; S.invuln = Math.max(S.invuln, 2);
-					S.px = Math.max(WALL + 7, Math.min(W - WALL - 7, S.px + S.rollVx));
-					S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + S.rollVy));
+					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+S.rollVx));
+					S.py = Math.max(WALL+7, Math.min(H-WALL-7, S.py+S.rollVy));
 				} else {
 					if (mx && my) { mx *= 0.707; my *= 0.707; }
-					S.px = Math.max(WALL + 7, Math.min(W - WALL - 7, S.px + mx * SP));
-					S.py = Math.max(WALL + 7, Math.min(H - WALL - 7, S.py + my * SP));
+					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+mx*SP));
+					S.py = Math.max(WALL+7, Math.min(H-WALL-7, S.py+my*SP));
 				}
 				// Partner follows the player path via a position-history trail.
 				S.ptrail.push({ x: S.px, y: S.py });
@@ -3665,40 +4150,72 @@
 					if (_p.life <= 0) S.fx.splice(_i, 1);
 				}
 				// partner special — press E to release a type-themed energy nova
+				const novaCost = Math.max(20, 45 - (perm.novaCharge||0)*8);
 				if (S.novaCd > 0) S.novaCd--;
 				if (S.energy < S.maxEnergy) S.energy = Math.min(S.maxEnergy, S.energy + 0.13);
 				const eDown = !!keys["e"];
-				if (eDown && !S.ePrev && S.energy >= 45 && S.novaCd <= 0 && S.enemies.length) {
-					S.energy -= 45; S.novaCd = 24; S.partnerMuzzle = 9;
-					const nd = 2 + (S.relics.indexOf("power") >= 0 ? 1 : 0);
+				if (eDown && !S.ePrev && S.energy >= novaCost && S.novaCd <= 0 && S.enemies.length) {
+					S.energy -= novaCost; S.novaCd = 24; S.partnerMuzzle = 9;
+					const nd = 2 + (S.relics.indexOf("power") >= 0 ? 1 : 0) + (S.partnerLevel >= 3 ? 1 : 0);
 					for (let k = 0; k < 16; k++) {
 						const aa = k / 16 * Math.PI * 2;
-						S.bullets.push({ x: S.partner.x, y: S.partner.y, vx: Math.cos(aa) * 3.7, vy: Math.sin(aa) * 3.7, dmg: nd, col: S.novaColor, r: 4 });
+						S.bullets.push({ x: S.partner.x, y: S.partner.y, vx: Math.cos(aa) * 3.7, vy: Math.sin(aa) * 3.7, dmg: nd, col: S.novaColor, r: 4, isNova: true });
 					}
 					for (let k = 0; k < 12; k++) S.fx.push({ x: S.partner.x, y: S.partner.y, vx: (Math.random()-0.5)*7, vy: (Math.random()-0.5)*7, life: 15, col: S.novaColor });
 				}
 				S.ePrev = eDown;
+				// Fire rate
+				const fasterRate = (perm.fireRate||0)*4;
+				const baseFireRate = (S.relics.indexOf('swift')>=0||S.rapid) ? 14 : 26;
+				const playerFireRate = Math.max(8, baseFireRate - fasterRate);
 				if (S.fireCd > 0) S.fireCd--;
+				const baseDmg = 1 + (S.relics.indexOf('power')>=0?1:0) + (S.bonusDmg||0);
 				const tgt = nearest(S.px, S.py, S.enemies);
-				if (tgt && S.fireCd <= 0) { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, 1 + (S.relics.indexOf('power') >= 0 ? 1 : 0), '#ffe060'); S.fireCd = S.rapid ? 14 : 26;
-					S.pAim = Math.atan2(tgt.y - S.py, tgt.x - S.px); S.pMuzzle = 5; }
+				if (tgt && S.fireCd <= 0) {
+					const critChance = 0.10 + (S.relics.indexOf('scope')>=0?0.15:0);
+					const isCrit = Math.random() < critChance;
+					let dmg = baseDmg * (isCrit ? 1.5 : 1);
+					if (S.relics.indexOf('choice') >= 0) { dmg = (baseDmg+2) * (isCrit?1.5:1); const a=Math.atan2(S.faceY||1,S.faceX||0); S.bullets.push({x:S.px,y:S.py,vx:Math.cos(a)*3.4,vy:Math.sin(a)*3.4,dmg:Math.ceil(dmg),col:'#ffe060',r:3,isCrit}); S.pAim=a; }
+					else { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, Math.ceil(dmg), '#ffe060'); S.bullets[S.bullets.length-1].isCrit=isCrit; S.pAim=Math.atan2(tgt.y-S.py,tgt.x-S.px); }
+					if (isCrit) S.fx.push({x:S.px,y:S.py-10,vx:0,vy:-0.5,life:22,col:'#ffd700',crit:true,text:'CRIT!'});
+					S.fireCd = playerFireRate; S.pMuzzle = 5;
+				}
 				if (S.partnerCd > 0) S.partnerCd--;
 				const ptgt = nearest(S.partner.x, S.partner.y, S.enemies);
-				if (ptgt && S.partnerCd <= 0) { shoot(S.bullets, S.partner.x, S.partner.y, ptgt.x, ptgt.y, 3.0, 1, S.pColor); S.partnerCd = S.rapid ? 22 : 36;
-					S.partnerAim = Math.atan2(ptgt.y - S.partner.y, ptgt.x - S.partner.x); S.partnerMuzzle = 5; }
+				const partnerFireRate = (S.relics.indexOf('swift')>=0||S.rapid) ? 22 : (S.partnerLevel>=3?28:36);
+				const partnerDmg = 1 + (S.partnerLevel>=2?1:0);
+				if (ptgt && S.partnerCd <= 0) {
+					const pType = FORM_TYPE[S.partnerForm] || 'normal';
+					const mult = typeMultiplier(pType, ptgt.eType || 'normal');
+					shoot(S.bullets, S.partner.x, S.partner.y, ptgt.x, ptgt.y, 3.0, partnerDmg * mult, S.pColor);
+					S.partnerCd = partnerFireRate;
+					S.partnerAim = Math.atan2(ptgt.y - S.partner.y, ptgt.x - S.partner.x); S.partnerMuzzle = 5;
+				}
+				// magnet homing
+				const hasMagnet = S.relics.indexOf('magnet') >= 0;
 				for (let i = S.bullets.length - 1; i >= 0; i--) {
 					const b = S.bullets[i]; b.x += b.vx; b.y += b.vy;
+					if (hasMagnet && !b.isNova && S.enemies.length) {
+						const nt = nearest(b.x, b.y, S.enemies);
+						if (nt) { const ha=Math.atan2(nt.y-b.y,nt.x-b.x); b.vx+=Math.cos(ha)*0.18; b.vy+=Math.sin(ha)*0.18; const spd=Math.hypot(b.vx,b.vy); if(spd>4.2){b.vx=b.vx/spd*4.2;b.vy=b.vy/spd*4.2;} }
+					}
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.bullets.splice(i, 1); continue; }
 					let hit = false;
 					for (const e of S.enemies) {
 						if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) {
+							if (e.held==='helmet' && !e.heldUsed && S.invuln<=0) { S.hp--; S.flash=5; }
 							e.hp -= b.dmg; e.hurt = 6; hit = true;
+							if (b.isCrit) e.critFlash = 8;
+							if (e.held==='sitrus' && !e.heldUsed && e.hp < e.maxHp*0.5) { e.hp=Math.min(e.maxHp,e.hp+3); e.heldUsed=true; }
 							if (e.hp <= 0 && !e._dead) {
 								e._dead = true;
-								S.stardust += (e.boss ? 12 : 1) * (S.relics.indexOf("lucky") >= 0 ? 2 : 1);
+								S.stardust += (e.boss||e.miniboss ? 12 : 1) * (S.relics.indexOf("lucky") >= 0 ? 2 : 1);
 								S.kills++;
+								S.partnerXP++;
+								if (S.partnerLevel<2 && S.partnerXP>=8) { S.partnerLevel=2; showToast(S.partnerNickname+' reached Lv.2!'); }
+								else if (S.partnerLevel<3 && S.partnerXP>=20) { S.partnerLevel=3; showToast(S.partnerNickname+' reached Lv.3!'); }
 								if (S.relics.indexOf("shellbell") >= 0 && S.kills % 4 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
-								if (!e.boss && Math.random() < 0.2) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
+								if (!e.boss && !e.miniboss && Math.random() < 0.2) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
 							}
 							for (let _k = 0; _k < 5; _k++) S.fx.push({ x: b.x, y: b.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 9 + Math.random()*6, col: e.hp <= 0 ? '#ffd060' : '#ffffff' });
 							break;
@@ -3709,32 +4226,49 @@
 				S.enemies = S.enemies.filter(e => e.hp > 0);
 				for (const e of S.enemies) {
 					if (e.hurt > 0) e.hurt--;
+					if (e.critFlash > 0) e.critFlash--;
 					const a = Math.atan2(S.py - e.y, S.px - e.x);
 					e.x += Math.cos(a) * e.spd; e.y += Math.sin(a) * e.spd;
 					if ((e.x - S.px) ** 2 + (e.y - S.py) ** 2 < (e.r + 7) ** 2 && S.invuln <= 0) {
-						S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8;
+						if (S.relics.indexOf('thorns') >= 0) { e.hp--; if(e.hp<=0&&!e._dead){e._dead=true;S.kills++;S.stardust+=(S.relics.indexOf('lucky')>=0?2:1);} }
+						if (S.hp <= 1 && S.relics.indexOf('focus') >= 0 && !S._focusUsed && Math.random() < 0.2) {
+							S._focusUsed = true; S.invuln = S.relics.indexOf("guard")>=0?72:52; S.flash = 8;
+						} else { S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; }
+						if (S.relics.indexOf('lum') < 0 && Math.random() < 0.15) {
+							if (e.eType==='poison') applyStatus('poison',180);
+							else if (e.eType==='fire') applyStatus('burn',180);
+							else if (e.eType==='psychic'||e.eType==='dark') applyStatus('para',120);
+						}
 					}
-					if (e.shooter) { e.cd--; if (e.cd <= 0) {
+					if (e.shooter||e.boss||e.miniboss) { e.cd--; if (e.cd <= 0) {
 						if (e.boss) {
 							const ba = Math.atan2(S.py - e.y, S.px - e.x);
 							for (const off of [-0.34, 0, 0.34]) { const aa = ba + off;
-								S.ebullets.push({ x: e.x, y: e.y, vx: Math.cos(aa) * 2.3, vy: Math.sin(aa) * 2.3, dmg: 1, col: "#ff5a7a", r: 3 }); }
+								const eb = { x: e.x, y: e.y, vx: Math.cos(aa) * 2.3, vy: Math.sin(aa) * 2.3, dmg: 1, col: "#ff5a7a", r: 3 };
+								if (Math.random()<0.2) eb.statusPara = true;
+								S.ebullets.push(eb); }
+							const ba2 = Math.atan2(S.py-e.y,S.px-e.x);
+							S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(ba2)*1.6,vy:Math.sin(ba2)*1.6,dmg:1,col:"#ff90b0",r:3,homing:true});
 							e.cd = 58;
+						} else if (e.miniboss) {
+							e.spd = 1.4; e.cd = 80;
 						} else { shoot(S.ebullets, e.x, e.y, S.px, S.py, 2.0, 1, '#ff5a7a'); e.cd = 90 + Math.random() * 70; }
 					} }
 				}
 				for (let i = S.ebullets.length - 1; i >= 0; i--) {
 					const b = S.ebullets[i]; b.x += b.vx; b.y += b.vy;
+					if (b.homing) { const ha=Math.atan2(S.py-b.y,S.px-b.x); b.vx+=Math.cos(ha)*0.14; b.vy+=Math.sin(ha)*0.14; }
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.ebullets.splice(i, 1); continue; }
 					if ((b.x - S.px) ** 2 + (b.y - S.py) ** 2 < (b.r + 7) ** 2 && S.invuln <= 0) {
-						S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; S.ebullets.splice(i, 1);
+						S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8;
+						if (b.statusPara && S.relics.indexOf('lum')<0) applyStatus('para',120);
+						S.ebullets.splice(i, 1);
 					}
 				}
 				for (let i = S.pickups.length - 1; i >= 0; i--) {
 					const p = S.pickups[i];
 					if ((p.x - S.px) ** 2 + (p.y - S.py) ** 2 >= (p.r + 9) ** 2) continue;
-					// shop pad — needs Stardust; skip if the player cannot afford it
-					if (p.kind === "shop" && S.stardust < p.cost) continue;
+					if ((p.kind === "shop" || p.kind === "reroll") && S.stardust < (p.cost||10)) continue;
 					let fxCol = "#9effa0";
 					if (p.kind === "heart") S.hp = Math.min(S.maxHp, S.hp + 1);
 					else if (p.kind === "maxhp") { S.maxHp++; S.hp = S.maxHp; }
@@ -3744,7 +4278,16 @@
 							showToast("Relic: " + RELICS[p.relic].name + " \u2014 " + RELICS[p.relic].desc); }
 						fxCol = "#ffe060";
 					} else if (p.kind === "restpad") {
-						S.hp = S.maxHp; S.energy = S.maxEnergy; fxCol = "#7ad0ff";
+						S.hp = S.maxHp; S.energy = S.maxEnergy; S.berryUsed = false; fxCol = "#7ad0ff";
+					} else if (p.kind === "reroll") {
+						if (S.relics.length > 0) {
+							S.stardust -= 10;
+							const swapIdx = Math.floor(Math.random()*S.relics.length);
+							const old = S.relics[swapIdx];
+							const newR = randomRelic(S.relics.filter((_,ii)=>ii!==swapIdx));
+							if (newR) { S.relics[swapIdx]=newR; showToast("Rerolled "+RELICS[old].name+" \u2192 "+RELICS[newR].name); }
+						}
+						fxCol = "#c0a0ff";
 					} else if (p.kind === "shop") {
 						S.stardust -= p.cost;
 						if (p.item === "heal") S.hp = Math.min(S.maxHp, S.hp + 3);
@@ -3756,15 +4299,26 @@
 					for (let k = 0; k < 10; k++) S.fx.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 14, col: fxCol });
 					S.pickups.splice(i, 1);
 				}
-				if (S.enemies.length === 0) {
+				if (S.enemies.length === 0 && !S._roomOverlay && !S._trainerBattle) {
 					S.doorOpen = true;
+					if (S._ambushRoom && !S._ambushDropped) {
+						S._ambushDropped = true;
+						const rk1 = randomRelic(S.relics); const rk2 = randomRelic([...S.relics, rk1||'']);
+						if (rk1) S.pickups.push({x:W/2-40,y:H/2,kind:'relic',relic:rk1,r:11,bob:0});
+						if (rk2) S.pickups.push({x:W/2+40,y:H/2,kind:'relic',relic:rk2,r:11,bob:2});
+						S.stardust += 8;
+					}
 					if (S.py < WALL + 12 && Math.abs(S.px - W / 2) < 14) {
 						S.room++;
 						if (S.room > MAX_ROOM) { S.result = 'win'; }
 						else { newRoom(); S.px = W / 2; S.py = H - 40; }
 					}
 				}
-				if (S.hp <= 0) S.result = 'lose';
+				if (S.hp <= 0) {
+					if (S.relics.indexOf('focus') >= 0 && !S._focusUsed && Math.random() < 0.2) {
+						S._focusUsed = true; S.hp = 1; S.invuln = 90;
+					} else { S.result = 'lose'; }
+				}
 			}
 			function draw() {
 				const t = S.tick;
@@ -3863,7 +4417,8 @@
 				}
 				// enemies
 				for (const e of S.enemies) {
-					const hurt = e.hurt > 0;
+					const hurt = e.hurt > 0 || e.critFlash > 0;
+					const critGold = e.critFlash > 0;
 					if (e.boss) {
 						const by = e.y + Math.sin(t * 0.06) * 3;
 						ctx.fillStyle = hurt ? "#ffffff" : "#1a0e26";
@@ -3902,9 +4457,14 @@
 						ctx.fillStyle = "#ffffff";
 						ctx.beginPath(); ctx.arc(e.x - 2.6, e.y - 1, 2.1, 0, 7); ctx.fill();
 						ctx.beginPath(); ctx.arc(e.x + 2.6, e.y - 1, 2.1, 0, 7); ctx.fill();
-						ctx.fillStyle = "#1a0e26";
+						ctx.fillStyle = critGold ? "#ffd700" : "#1a0e26";
 						ctx.beginPath(); ctx.arc(e.x - 2, e.y - 0.6, 1, 0, 7); ctx.fill();
 						ctx.beginPath(); ctx.arc(e.x + 3.2, e.y - 0.6, 1, 0, 7); ctx.fill();
+					}
+					// held item dot
+					if (e.held && !e.heldUsed) {
+						ctx.fillStyle = e.held==='sitrus' ? '#f0d040' : '#ff4444';
+						ctx.beginPath(); ctx.arc(e.x + e.r - 2, e.y - e.r + 2, 3, 0, 7); ctx.fill();
 					}
 				}
 				// partner Pokemon — real follower sprite when loaded, else drawn
@@ -3989,7 +4549,7 @@
 				// floor progress bar (1..8, boss floors marked)
 				for (let i = 1; i <= MAX_ROOM; i++) {
 					const fx = VW / 2 - MAX_ROOM * 5 + (i - 1) * 10;
-					const isBoss = (i === 4 || i === MAX_ROOM);
+					const isBoss = (i === 4 || i === 9);
 					ctx.fillStyle = i < S.room ? "#7ad07a" : i === S.room ? "#ffe060" : "#3a3158";
 					if (isBoss && i >= S.room) ctx.fillStyle = i === S.room ? "#ff7a8a" : "#5a3045";
 					ctx.fillRect(fx, 19, 8, 6);
@@ -4002,14 +4562,40 @@
 				ctx.fillText("ENERGY \u2014 E", 9, 34.5);
 				ctx.fillStyle = "#ffd24a"; ctx.font = "8px monospace"; ctx.textAlign = "right";
 				ctx.fillText("STARDUST " + S.stardust, VW - 6, 35);
+				// Partner info + level
+				ctx.fillStyle = S.pColor; ctx.font = "7px monospace"; ctx.textAlign = "right";
+				ctx.fillText((S.partnerNickname||'Partner') + " Lv." + (S.partnerLevel||1), VW - 6, 45);
+				// Status indicators
+				if (S.statuses) {
+					let sx = 6; ctx.font = "7px monospace"; ctx.textAlign = "left";
+					if (S.statuses.burn > 0)   { ctx.fillStyle = "#ff7040"; ctx.fillText("BRN", sx, 45); sx += 22; }
+					if (S.statuses.poison > 0) { ctx.fillStyle = "#c060e0"; ctx.fillText("PSN", sx, 45); sx += 22; }
+					if (S.statuses.para > 0)   { ctx.fillStyle = "#f0d040"; ctx.fillText("PAR", sx, 45); sx += 22; }
+					if (S.statuses.sleep > 0)  { ctx.fillStyle = "#7090ff"; ctx.fillText("SLP", sx, 45); }
+				}
 				{ const boss = S.enemies.find(e => e.boss);
 				  if (boss) {
-					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 42;
+					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 52;
 					ctx.fillStyle = "rgba(10,8,18,0.85)"; ctx.fillRect(bx - 3, byy - 2, bw + 6, 12);
 					ctx.fillStyle = "#3a2030"; ctx.fillRect(bx, byy, bw, 8);
 					ctx.fillStyle = "#ff4d63"; ctx.fillRect(bx, byy, bw * Math.max(0, boss.hp / boss.maxHp), 8);
 					ctx.strokeStyle = "#5a4a8a"; ctx.lineWidth = 1; ctx.strokeRect(bx, byy, bw, 8);
 				  } }
+				// Trainer banner
+				if (S._trainerBattle && S._trainerData) {
+					ctx.fillStyle = "rgba(10,8,18,0.85)"; ctx.fillRect(0, 0, VW, 16);
+					ctx.fillStyle = "#ffe060"; ctx.font = "8px monospace"; ctx.textAlign = "center";
+					ctx.fillText(S._trainerData.emoji + " " + S._trainerData.name + " \u2014 team " + (S._trainerTeamIdx+1) + "/" + S._trainerData.team.length, VW/2, 11);
+				}
+				// CRIT floating text
+				for (const p of S.fx) {
+					if (p.crit && p.text) {
+						ctx.globalAlpha = Math.min(1, p.life / 12);
+						ctx.fillStyle = "#ffd700"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
+						ctx.fillText(p.text, p.x - camX, p.y - camY);
+						ctx.globalAlpha = 1;
+					}
+				}
 				if (S.result) {
 					ctx.fillStyle = "rgba(6,4,12,0.8)"; ctx.fillRect(0, 0, VW, VH);
 					ctx.textAlign = "center";
@@ -4022,36 +4608,49 @@
 				}
 				if (S.flash > 0) { ctx.fillStyle = "rgba(255,40,60," + (S.flash / 26) + ")"; ctx.fillRect(0, 0, VW, VH); }
 			}
-			function loop() {
-				if (!openFlag) return;
-				try { step(); draw(); } catch (e) { console.warn('[TowerDungeon]', e); }
-				raf = requestAnimationFrame(loop);
-			}
 			function start() {
 				ensure();
 				fit();
-				const inv = Inventory.load();
-				const form = (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || 'eevee'));
+				loadSprites();
+				root.hidden = false;
+				openFlag = true;
+				if (raf) cancelAnimationFrame(raf);
+				// Blank loop so root is visible during start screen
+				S = null;
+				showStartScreen();
+			}
+			function beginRun(form, nickname) {
+				hideAllOverlays();
+				const perm = loadPerm();
+				const startHpBonus = perm.startHp || 0;
+				const startStarBonus = (perm.startStar || 0) * 8;
+				const baseHp = 6 + startHpBonus;
 				S = {
-					room: 1, hp: 6, maxHp: 6, px: W / 2, py: H - 40,
-					partner: { x: W / 2 - 15, y: H - 30 }, pColor: FORM_COLOR[form] || '#c89860',
+					room: 1, hp: baseHp, maxHp: baseHp, px: W / 2, py: H - 40,
+					partner: { x: W / 2 - 15, y: H - 30 },
+					pColor: FORM_COLOR[form] || '#c89860',
 					novaColor: FORM_NOVA[form] || '#e8d0a0',
+					partnerForm: form, partnerNickname: nickname || form,
+					partnerLevel: 1, partnerXP: 0,
 					bullets: [], ebullets: [], enemies: [], fx: [], pickups: [], ptrail: [],
 					fireCd: 0, partnerCd: 0, invuln: 0, doorOpen: false,
 					faceX: 0, faceY: 1, pMuzzle: 0, partnerMuzzle: 0, walkPhase: 0,
 					result: null, endTimer: 0, tick: 0, flash: 0, roomType: 'combat', rapid: false,
-					energy: 60, maxEnergy: 100, novaCd: 0, stardust: 0,
+					energy: 60, maxEnergy: 100, novaCd: 0,
+					stardust: startStarBonus, bonusDmg: 0,
 					relics: [], kills: 0, rollT: 0, rollVx: 0, rollVy: 0,
 					tapDir: '', tapT: -99, ePrev: true,
+					statuses: { burn:0, poison:0, para:0, sleep:0 },
+					_roomOverlay: false, _pendingOverlay: null, _ambushRoom: false, _ambushDropped: false,
+					_trainerBattle: false, _trainerData: null, _trainerTeamIdx: 0, _trainerOnDone: null,
+					_focusUsed: false, _recapShown: false, berryUsed: false,
 				};
 				loadSprites();
 				newRoom();
-				root.hidden = false;
-				openFlag = true;
 				if (raf) cancelAnimationFrame(raf);
 				loop();
 			}
-			function exit() {
+			function _doExit() {
 				if (!openFlag) return;
 				openFlag = false;
 				if (raf) { cancelAnimationFrame(raf); raf = null; }
@@ -4067,6 +4666,12 @@
 					try { TrainerLevel.addXP('quest'); } catch (_) {}
 					showToast('Tower run — ' + cleared + ' room' + (cleared === 1 ? '' : 's') + ' cleared · +' + tok + ' tokens' + (ber ? ', +' + ber + ' berries' : ''));
 				}
+			}
+			function exit() { _doExit(); }
+			function loop() {
+				if (!openFlag) return;
+				try { if (S) { step(); draw(); } } catch (e) { console.warn('[TowerDungeon]', e); }
+				raf = requestAnimationFrame(loop);
 			}
 			return { start, exit, isOpen: () => openFlag };
 		})();
@@ -7439,15 +8044,23 @@
 			try { Dialog.close(); } catch (_) {}
 			try { Sound.door(); } catch (_) {}
 			const from = (data && data.from) || '';
-			console.log('[scene] reload →', key, 'from', from);
-			// Trigger the black fade-in so the screen stays dark through the reload.
+			console.log('[scene] switch →', key, 'from', from);
+			// Trigger the black fade-in so the screen stays dark during the switch.
 			const fade = document.getElementById('campFade');
 			if (fade) fade.classList.remove('is-hidden');
-			// Wait for the 350ms fade transition to fully complete before reloading.
+			// Update the hash so a hard-reload still lands in the right scene,
+			// but do NOT call window.location.reload() — use Phaser scene switching
+			// instead, which is near-instant (assets already cached in texture manager).
+			window.location.hash = '#' + key + (from ? '|' + from : '');
 			setTimeout(() => {
-				window.location.hash = '#' + key + (from ? '|' + from : '');
-				window.location.reload();
-			}, 400);
+				// Pre-populate boot data so consumeBootFrom() works without a real reload.
+				__S._bootData = { scene: key, from: from };
+				try { scene.scene.start(key, data || {}); } catch (e) {
+					// Fallback: if Phaser scene switch fails for any reason, do a reload.
+					console.warn('[safeSceneStart] scene.start failed, falling back to reload', e);
+					window.location.reload();
+				}
+			}, 380);
 		}
 	window.CAMP_SYSTEMS.safeSceneStart = safeSceneStart;
 

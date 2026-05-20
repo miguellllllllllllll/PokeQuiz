@@ -546,3 +546,55 @@ footer::before {
 @media (prefers-reduced-motion: reduce) {
 	.pq-toast { transition: opacity 0.2s ease; }
 }
+
+/* ── Light Theme ─────────────────────────────────────────────────────────── */
+[data-theme="light"] body {
+  background:
+    radial-gradient(900px 600px at 90% -10%, rgba(255,203,5,0.12), transparent 60%),
+    radial-gradient(800px 700px at -10% 30%, rgba(59,76,202,0.07), transparent 60%),
+    linear-gradient(180deg, #fffaf5 0%, #fff3e0 100%);
+  color: #1f1f23;
+}
+
+[data-theme="light"] html {
+  background: #fff8f0;
+}
+
+[data-theme="light"] .card,
+[data-theme="light"] .quiz-card,
+[data-theme="light"] .puzzle-card,
+[data-theme="light"] .game-card,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .leaderboard-card {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.10);
+  color: #1f1f23;
+}
+
+[data-theme="light"] .quiz-option,
+[data-theme="light"] .answer-btn {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.15);
+  color: #1f1f23;
+}
+
+[data-theme="light"] .quiz-option:hover,
+[data-theme="light"] .answer-btn:hover {
+  background: #fff8ec;
+  border-color: var(--poke-yellow);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background: #fff;
+  border-color: rgba(0,0,0,0.2);
+  color: #1f1f23;
+}
+
+/* Keep camp page dark always — Phaser canvas needs dark background */
+[data-theme="light"] .camp-body {
+  background: #000 !important;
+}
+
+/* Keep header always dark — it's already dark-bg hardcoded */

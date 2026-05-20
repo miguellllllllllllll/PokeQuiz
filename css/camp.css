@@ -3401,3 +3401,80 @@ body.pk-reduce-motion *::after {
 }
 
 @keyframes campBounce { from { transform: translateY(0); } to { transform: translateY(-18px); } }
+
+/* ── Tower Dungeon UI (v21) ─────────────────────────────────────────────── */
+#towerDungeon .tower-start-screen {
+	position: absolute; inset: 0; z-index: 10;
+	background: #07060f; display: flex; flex-direction: column;
+	align-items: center; padding: 20px; overflow-y: auto; box-sizing: border-box;
+	font-family: monospace;
+}
+#towerDungeon .tower-partner-grid {
+	display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+	gap: 10px; width: 100%; max-width: 480px; margin: 16px 0;
+}
+#towerDungeon .tower-partner-card {
+	background: rgba(42,36,64,0.9); border: 2px solid #5a4a8a;
+	border-radius: 10px; padding: 12px 8px; text-align: center;
+	cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+	color: #cfc6ee;
+}
+#towerDungeon .tower-partner-card:hover,
+#towerDungeon .tower-partner-card.selected {
+	border-color: #c8a0ff; transform: scale(1.05);
+}
+#towerDungeon .tower-partner-dot {
+	width: 32px; height: 32px; border-radius: 50%;
+	margin: 0 auto 6px; border: 2px solid rgba(255,255,255,0.2);
+}
+#towerDungeon .tower-btn {
+	background: rgba(42,36,64,0.9); border: 2px solid #5a4a8a;
+	border-radius: 8px; color: #cfc6ee; padding: 10px 22px;
+	font-family: monospace; font-size: 13px; cursor: pointer;
+	touch-action: manipulation; margin: 4px;
+}
+#towerDungeon .tower-btn:hover { border-color: #c8a0ff; }
+#towerDungeon .tower-btn.primary { border-color: #7ad07a; color: #7ad07a; font-size: 15px; padding: 12px 32px; }
+#towerDungeon .tower-overlay {
+	position: absolute; inset: 0; z-index: 10;
+	background: rgba(7,6,15,0.95); display: flex; flex-direction: column;
+	align-items: center; justify-content: center; font-family: monospace;
+	color: #cfc6ee; padding: 20px; box-sizing: border-box; text-align: center;
+}
+#towerDungeon .tower-overlay h2 { color: #ffe060; margin: 0 0 12px; font-size: 16px; }
+#towerDungeon .tower-overlay p { margin: 6px 0; font-size: 13px; }
+#towerDungeon .tower-answer-grid {
+	display: grid; grid-template-columns: 1fr 1fr;
+	gap: 10px; margin: 16px 0; width: 100%; max-width: 340px;
+}
+#towerDungeon .tower-answer-btn {
+	background: rgba(42,36,64,0.9); border: 2px solid #5a4a8a;
+	border-radius: 8px; padding: 10px 8px; font-family: monospace;
+	font-size: 12px; cursor: pointer; color: #cfc6ee; touch-action: manipulation;
+}
+#towerDungeon .tower-answer-btn:hover { border-color: #c8a0ff; }
+#towerDungeon .tower-shrine-grid {
+	display: flex; flex-direction: column; gap: 10px;
+	width: 100%; max-width: 300px; margin: 12px 0;
+}
+#towerDungeon .tower-shrine-opt {
+	background: rgba(42,36,64,0.9); border: 2px solid #5a4a8a;
+	border-radius: 8px; padding: 12px; cursor: pointer; text-align: left;
+	font-family: monospace; color: #cfc6ee; touch-action: manipulation;
+}
+#towerDungeon .tower-shrine-opt:hover { border-color: #c8a0ff; }
+#towerDungeon .tower-upgrade-grid {
+	display: flex; flex-direction: column; gap: 8px;
+	width: 100%; max-width: 360px; margin: 12px 0;
+}
+#towerDungeon .tower-upgrade-row {
+	background: rgba(42,36,64,0.9); border: 2px solid #5a4a8a;
+	border-radius: 8px; padding: 10px 12px; display: flex;
+	justify-content: space-between; align-items: center; font-family: monospace;
+}
+#towerDungeon .tower-upgrade-buy {
+	background: rgba(60,50,90,0.9); border: 2px solid #ffd24a;
+	border-radius: 6px; padding: 5px 10px; font-family: monospace;
+	font-size: 11px; color: #ffd24a; cursor: pointer; touch-action: manipulation;
+}
+#towerDungeon .tower-upgrade-buy:disabled { opacity: 0.4; cursor: not-allowed; border-color: #554433; color: #886633; }
