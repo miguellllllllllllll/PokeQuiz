@@ -3470,6 +3470,24 @@
 				eevee:'normal', vaporeon:'water', jolteon:'electric', flareon:'fire',
 				espeon:'psychic', umbreon:'dark', leafeon:'grass', glaceon:'ice', sylveon:'fairy',
 			};
+			// Per-type enemy color palette { body, hi, eye }
+			const TYPE_COLOR = {
+				normal:   { body:'#a0a0a0', hi:'#c8c8a0', eye:'#404060' },
+				fire:     { body:'#e03010', hi:'#ff7030', eye:'#ffff40' },
+				water:    { body:'#1870c8', hi:'#50a8ff', eye:'#e0f0ff' },
+				grass:    { body:'#3a9030', hi:'#60d050', eye:'#ffffc0' },
+				electric: { body:'#d8b820', hi:'#ffe860', eye:'#302000' },
+				ice:      { body:'#80c8c8', hi:'#c0f0f0', eye:'#203040' },
+				psychic:  { body:'#c04090', hi:'#ff80c8', eye:'#fffff0' },
+				dark:     { body:'#3a2050', hi:'#6a4880', eye:'#ff2020' },
+				poison:   { body:'#703090', hi:'#b060d8', eye:'#80ff80' },
+				rock:     { body:'#a08030', hi:'#d0b050', eye:'#402000' },
+				ground:   { body:'#b08030', hi:'#e0b050', eye:'#300000' },
+				bug:      { body:'#809020', hi:'#c0d030', eye:'#300000' },
+				dragon:   { body:'#5030d0', hi:'#8870ff', eye:'#ffd700' },
+				fairy:    { body:'#e090a8', hi:'#ffbbd0', eye:'#803090' },
+				ghost:    { body:'#504080', hi:'#8070b0', eye:'#ff60ff' },
+			};
 			// type effectiveness: attacking type → array of types it's super effective against
 			const TYPE_SE = {
 				water:['fire'], fire:['grass','ice'], grass:['water'],
@@ -3786,8 +3804,15 @@
 				});
 				// Show possible modifiers as teaser
 				const modPreview = document.createElement('div');
-				modPreview.style.cssText = 'margin:8px 0 2px;padding:6px 10px;background:rgba(30,20,50,0.8);border-radius:8px;border:1px solid #5a4a8a;font-size:9px;color:#8a7aaa;text-align:center;';
-				modPreview.innerHTML = '<span style="color:#c0a0ff">Run Modifier (random):</span> ' + MODIFIERS.map(m => m.icon + ' ' + m.name).join(' · ');
+				modPreview.style.cssText = 'margin:10px 0 4px;';
+				modPreview.innerHTML = '<div style="font-size:9px;color:#8a7aaa;text-align:center;margin-bottom:5px;letter-spacing:1px;text-transform:uppercase;">Run Modifier (random)</div>' +
+					'<div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;">' +
+					MODIFIERS.map(m => '<div style="background:rgba(30,20,50,0.9);border:1px solid #5a4a8a;border-radius:6px;padding:4px 8px;text-align:center;min-width:60px;">' +
+						'<div style="font-size:14px;line-height:1.3">' + m.icon + '</div>' +
+						'<div style="font-size:9px;color:#c0a0ff;font-weight:bold;margin:1px 0">' + m.name + '</div>' +
+						'<div style="font-size:7px;color:#7a6a9a">' + m.desc + '</div>' +
+					'</div>').join('') +
+					'</div>';
 				el.appendChild(modPreview);
 				const btnRow = document.createElement('div');
 				btnRow.style.cssText = 'display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;';
@@ -4111,6 +4136,7 @@
 				S._roomOverlay = false;
 				S._trainerBattle = false;
 				S.berryUsed = false;
+				S.roomBanner = 90;
 				// Speedrun modifier: 45-second timer (45*60 ticks)
 				S.roomTimer = S.modifier === 'speedrun' ? 45 * 60 : 0;
 				// Determine room type based on room number
@@ -4417,6 +4443,8 @@
 							if (e.held==='helmet' && !e.heldUsed && S.invuln<=0) { S.hp--; S.flash=5; }
 							e.hp -= b.dmg; e.hurt = 6; hit = true;
 							if (b.isCrit) e.critFlash = 8;
+							// Floating damage number
+							S.fx.push({ x: b.x + (Math.random()-0.5)*6, y: b.y - 4, vx: (Math.random()-0.5)*0.6, vy: -1.4, life: 28, col: b.isCrit ? '#ffd700' : '#ffffff', dmgText: (b.isCrit ? '★' : '') + Math.ceil(b.dmg) });
 							if (e.held==='sitrus' && !e.heldUsed && e.hp < e.maxHp*0.5) { e.hp=Math.min(e.maxHp,e.hp+3); e.heldUsed=true; }
 							if (e.hp <= 0 && !e._dead) {
 								e._dead = true;
@@ -4484,7 +4512,7 @@
 						if (S.hp <= 1 && S.relics.indexOf('focus') >= 0 && !S._focusUsed && Math.random() < 0.2) {
 							S._focusUsed = true; S.invuln = S.relics.indexOf("guard")>=0?72:52; S.flash = 8;
 							if (S.synergies && S.synergies.has('luckybreak')) S.stardust += 8;
-						} else { S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; }
+						} else { S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; S.shake = 8; }
 						if (S.relics.indexOf('lum') < 0 && Math.random() < 0.15) {
 							if (e.eType==='poison') applyStatus('poison',180);
 							else if (e.eType==='fire') applyStatus('burn',180);
@@ -4645,8 +4673,15 @@
 			function draw() {
 				const t = S.tick;
 				// camera follows the player, clamped to the room bounds
-				const camX = Math.max(0, Math.min(W - VW, S.px - VW / 2));
-				const camY = Math.max(0, Math.min(H - VH, S.py - VH / 2));
+				let camX = Math.max(0, Math.min(W - VW, S.px - VW / 2));
+				let camY = Math.max(0, Math.min(H - VH, S.py - VH / 2));
+				// Screen shake
+				if (S.shake > 0) {
+					const shk = S.shake * 0.6;
+					camX += (Math.random() - 0.5) * shk;
+					camY += (Math.random() - 0.5) * shk;
+					S.shake--;
+				}
 				ctx.fillStyle = "#0e0b16"; ctx.fillRect(0, 0, VW, VH);
 				ctx.save(); ctx.translate(-camX, -camY);
 				// floor — dungeon stone tiles
@@ -4774,16 +4809,20 @@
 					} else {
 						const sq = Math.sin(t * 0.18 + e.x) * 1.4;
 						const rw = e.r + sq, rh = e.r - sq;
-						ctx.fillStyle = hurt ? "#ffffff" : "#3a2050";
+						const tc = TYPE_COLOR[e.eType] || TYPE_COLOR.poison;
+						// darken body color for outline
+						ctx.fillStyle = hurt ? "#ffffff" : tc.body;
+						ctx.globalAlpha = hurt ? 1 : 0.55;
 						ctx.beginPath(); ctx.ellipse(e.x, e.y, rw + 1, rh + 1, 0, 0, 7); ctx.fill();
-						ctx.fillStyle = hurt ? "#ffffff" : "#8a4ad0";
+						ctx.globalAlpha = 1;
+						ctx.fillStyle = hurt ? "#ffffff" : tc.body;
 						ctx.beginPath(); ctx.ellipse(e.x, e.y, rw, rh, 0, 0, 7); ctx.fill();
-						ctx.fillStyle = hurt ? "#ffffff" : "#b27ae8";
+						ctx.fillStyle = hurt ? "#ffffff" : tc.hi;
 						ctx.beginPath(); ctx.ellipse(e.x - 2, e.y - 2, rw * 0.4, rh * 0.4, 0, 0, 7); ctx.fill();
 						ctx.fillStyle = "#ffffff";
 						ctx.beginPath(); ctx.arc(e.x - 2.6, e.y - 1, 2.1, 0, 7); ctx.fill();
 						ctx.beginPath(); ctx.arc(e.x + 2.6, e.y - 1, 2.1, 0, 7); ctx.fill();
-						ctx.fillStyle = critGold ? "#ffd700" : "#1a0e26";
+						ctx.fillStyle = critGold ? "#ffd700" : tc.eye;
 						ctx.beginPath(); ctx.arc(e.x - 2, e.y - 0.6, 1, 0, 7); ctx.fill();
 						ctx.beginPath(); ctx.arc(e.x + 3.2, e.y - 0.6, 1, 0, 7); ctx.fill();
 					}
@@ -4846,8 +4885,20 @@
 					}
 					if (S.pMuzzle > 0) { ctx.fillStyle = "rgba(255,240,170,0.9)"; ctx.beginPath(); ctx.arc(px + Math.cos(S.pAim) * 11, py - 9 + Math.sin(S.pAim) * 11, 4, 0, 7); ctx.fill(); }
 				}
-				// particles
-				for (const p of S.fx) { ctx.globalAlpha = Math.min(1, p.life / 9); ctx.fillStyle = p.col; ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3); }
+				// particles + floating damage numbers
+				for (const p of S.fx) {
+					if (p.dmgText) {
+						ctx.globalAlpha = Math.min(1, p.life / 14);
+						ctx.fillStyle = p.col;
+						ctx.font = p.col === '#ffd700' ? 'bold 9px monospace' : '7px monospace';
+						ctx.textAlign = 'center';
+						ctx.fillText(p.dmgText, p.x, p.y);
+					} else {
+						ctx.globalAlpha = Math.min(1, p.life / 9);
+						ctx.fillStyle = p.col;
+						ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
+					}
+				}
 				ctx.globalAlpha = 1;
 				ctx.restore();
 				// Fog modifier — darken beyond 130px circle around player
@@ -4865,6 +4916,23 @@
 				const vg = ctx.createRadialGradient(VW / 2, VH / 2, Math.min(VW, VH) * 0.28, VW / 2, VH / 2, Math.max(VW, VH) * 0.72);
 				vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.5)");
 				ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH);
+				// Room entry banner (fades in/out over 90 ticks)
+				if (S.roomBanner > 0) {
+					const bannerAlpha = S.roomBanner > 70 ? (90 - S.roomBanner) / 20 : Math.min(1, S.roomBanner / 30);
+					const ROOM_LABELS = { combat:'⚔ Combat', boss:'💀 Boss Fight', miniboss:'🔥 Mini-Boss', treasure:'💎 Treasure Room', rest:'💙 Rest Room', shop:'🛒 Shop', puzzle:'🧩 Puzzle', shrine:'🌟 Shrine', trainer:'🎌 Trainer Battle', ambush:'⚠ Ambush!' };
+					const label = ROOM_LABELS[S.roomType] || S.roomType;
+					const roomNum = S.endlessLoop > 0 ? 'ENDLESS ×' + S.endlessLoop + ' — R' + S.room : 'ROOM ' + S.room + ' / ' + MAX_ROOM;
+					ctx.globalAlpha = bannerAlpha * 0.85;
+					ctx.fillStyle = 'rgba(10,8,22,0.9)';
+					ctx.fillRect(VW * 0.1, VH / 2 - 22, VW * 0.8, 36);
+					ctx.globalAlpha = bannerAlpha;
+					ctx.fillStyle = '#ffe060'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+					ctx.fillText(label, VW / 2, VH / 2 - 5);
+					ctx.fillStyle = '#8a7aaa'; ctx.font = '7px monospace';
+					ctx.fillText(roomNum, VW / 2, VH / 2 + 9);
+					ctx.globalAlpha = 1;
+					S.roomBanner--;
+				}
 				// HUD
 				ctx.fillStyle = "rgba(10,8,18,0.7)"; ctx.fillRect(0, 0, VW, 16);
 				for (let i = 0; i < S.maxHp; i++) {
@@ -4920,6 +4988,22 @@
 					ctx.font = "6px monospace"; ctx.textAlign = "right";
 					ctx.fillStyle = "#ff9040";
 					ctx.fillText("ENDLESS ×" + S.endlessLoop, VW - 6, 43);
+				}
+				// Relic strip
+				if (S.relics && S.relics.length > 0) {
+					const RELIC_ABBR = { shellbell:'🔔', lucky:'🥚', guard:'🛡', power:'💪', swift:'⚡', thorns:'🌵', focus:'🎯', magnet:'🧲', scope:'🔭', lum:'🍋', berries:'🍇', regen:'🍃', salve:'💊', choice:'🎗' };
+					const rx = 6, ry = 58;
+					ctx.font = '8px monospace'; ctx.textAlign = 'left';
+					let xx = rx;
+					for (const rk of S.relics) {
+						const abbr = RELIC_ABBR[rk] || rk[0].toUpperCase();
+						ctx.fillStyle = (S.synergies && [...S.synergies].some(s => {
+							const synMap = { sniper:['power','scope'], regen_combo:['shellbell','regen'], bulletstorm:['magnet','swift'], ironbarbs:['thorns','guard'], luckybreak:['lucky','focus'] };
+							return synMap[s] && synMap[s].indexOf(rk) >= 0;
+						})) ? '#ffd700' : '#c0a0ff';
+						ctx.fillText(abbr, xx, ry + 8);
+						xx += 12;
+					}
 				}
 				// Partner info + level
 				ctx.fillStyle = S.pColor; ctx.font = "7px monospace"; ctx.textAlign = "right";
@@ -4995,6 +5079,8 @@
 				if (!S.synergies) S.synergies = new Set();
 				const r = S.relics;
 				const has = k => r.indexOf(k) >= 0;
+				const prev = new Set(S.synergies);
+				const SYNERGY_NAMES = { sniper:'Sniper — Crit hits deal 2.5× dmg!', regen_combo:'Regen Combo — Heal faster!', bulletstorm:'Bulletstorm — Rapid homing fire!', ironbarbs:'Iron Barbs — Double thorn dmg!', luckybreak:'Lucky Break — Bonus Stardust on focus!' };
 				// sniper: Power Band + Scope Lens
 				if (has('power') && has('scope')) S.synergies.add('sniper'); else S.synergies.delete('sniper');
 				// regen: Shell Bell + Leftovers
@@ -5005,6 +5091,13 @@
 				if (has('thorns') && has('guard')) S.synergies.add('ironbarbs'); else S.synergies.delete('ironbarbs');
 				// luckybreak: Lucky Egg + Focus Band
 				if (has('lucky') && has('focus')) S.synergies.add('luckybreak'); else S.synergies.delete('luckybreak');
+				// Toast newly activated synergies
+				for (const key of S.synergies) {
+					if (!prev.has(key) && SYNERGY_NAMES[key]) {
+						showToast('✨ SYNERGY: ' + SYNERGY_NAMES[key]);
+						try { Sound.chime && Sound.chime(); } catch(_) {}
+					}
+				}
 			}
 			function beginRun(form, nickname) {
 				hideAllOverlays();
@@ -5040,6 +5133,8 @@
 					synergies: new Set(),
 					endlessLoop: 0,
 					roomTimer: 0,
+					shake: 0,
+					roomBanner: 0,
 				};
 				// Blessed modifier: start with 2 random relics
 				if (chosenMod.key === 'blessed') {
