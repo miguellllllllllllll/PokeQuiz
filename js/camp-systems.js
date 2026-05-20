@@ -8045,13 +8045,46 @@
 			try { Sound.door(); } catch (_) {}
 			const from = (data && data.from) || '';
 			console.log('[scene] switch →', key, 'from', from);
-			// Show the black overlay so the screen stays dark during the reload.
 			const fade = document.getElementById('campFade');
 			if (fade) fade.classList.remove('is-hidden');
-			// Write destination into the hash so the boot logic lands in the right scene.
 			window.location.hash = '#' + key + (from ? '|' + from : '');
-			// Small delay lets the fade render one frame before the page tears down.
-			setTimeout(() => window.location.reload(), 50);
+			// Pre-set boot data so consumeBootFrom() works without a real reload.
+			__S._bootData = { scene: key, from: from };
+
+			const game = (scene && scene.game) || window.__phaserGame;
+			if (!game || !game.scene) {
+				setTimeout(() => window.location.reload(), 50);
+				return;
+			}
+
+			// Capture the currently-running scene key NOW (before any async delay)
+			// so we can stop it cleanly via the SceneManager (which has no RUNNING guard).
+			const running = game.scene.getScenes(true);
+			const currentKey = running.length > 0 ? running[0].sys.settings.key : null;
+
+			setTimeout(() => {
+				try {
+					if (currentKey && currentKey !== key) game.scene.stop(currentKey);
+					// Use game.scene (SceneManager) directly — unlike ScenePlugin.start() it
+					// has no "status must be RUNNING" guard that silently no-ops the call.
+					game.scene.start(key, data || {});
+				} catch (e) {
+					console.warn('[safeSceneStart] scene switch threw, reloading', e);
+					window.location.reload();
+					return;
+				}
+
+				// Safety net: if create() never clears the fade within 2 s
+				// (e.g. because _buildX() threw in the new scene), force a reload.
+				// The hash is already set so the reload lands in the right scene.
+				setTimeout(() => {
+					const f = document.getElementById('campFade');
+					if (f && !f.classList.contains('is-hidden')) {
+						console.warn('[safeSceneStart] create() never cleared fade — reloading');
+						window.location.reload();
+					}
+				}, 2000);
+			}, 50);
 		}
 	window.CAMP_SYSTEMS.safeSceneStart = safeSceneStart;
 
@@ -8556,6 +8589,7 @@
 					} catch (e) {
 						console.error('[CampScene] create failed:', e);
 						Debug.lastError = 'CampScene.create: ' + e.message;
+						const _f = document.getElementById('campFade'); if (_f) _f.classList.add('is-hidden');
 					}
 				}
 	
@@ -13109,6 +13143,7 @@
 					} catch (e) {
 						console.error('[CaveScene] create failed:', e);
 						Debug.lastError = 'CaveScene.create: ' + e.message;
+						const _f = document.getElementById('campFade'); if (_f) _f.classList.add('is-hidden');
 					}
 				}
 
