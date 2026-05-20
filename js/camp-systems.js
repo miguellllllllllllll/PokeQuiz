@@ -3470,6 +3470,30 @@
 				eevee:'normal', vaporeon:'water', jolteon:'electric', flareon:'fire',
 				espeon:'psychic', umbreon:'dark', leafeon:'grass', glaceon:'ice', sylveon:'fairy',
 			};
+			// Gen1 primary type for dex 1-151 (index = dex number)
+			const GEN1_TYPE_STR = '_GGGFFFWWWBBBBBBNNNNNNNNPPEEUUPPPPPPNNFFNNPPGGGBBBBUURNNWWKKFFWWWYYYKKKGGGWWRRRFFWWEENNNWWPPWWHHHRYYRRWWEEGGUURKKNPPUUNGNWWWWWWYBIEFBNWWWNNWEFNRRRRRNIEFDDDYY';
+			const GEN1_CHAR_TYPE = {G:'grass',F:'fire',W:'water',B:'bug',N:'normal',P:'poison',E:'electric',U:'ground',R:'rock',K:'fighting',H:'ghost',D:'dragon',Y:'psychic',I:'ice'};
+			function formType(form) {
+				if (FORM_TYPE[form]) return FORM_TYPE[form];
+				const dex = parseInt(form);
+				if (!isNaN(dex) && dex >= 1 && dex <= 151) return GEN1_CHAR_TYPE[GEN1_TYPE_STR[dex]] || 'normal';
+				return 'normal';
+			}
+			function formColor(form) {
+				if (FORM_COLOR[form]) return FORM_COLOR[form];
+				const tc = TYPE_COLOR[formType(form)]; return tc ? tc.body : '#c89860';
+			}
+			function formNovaColor(form) {
+				if (FORM_NOVA[form]) return FORM_NOVA[form];
+				const tc = TYPE_COLOR[formType(form)]; return tc ? tc.hi : '#e8d0a0';
+			}
+			function formDisplayName(form) {
+				const EEV = { eevee:1, vaporeon:1, jolteon:1, flareon:1, espeon:1, umbreon:1, leafeon:1, glaceon:1, sylveon:1 };
+				if (EEV[form]) return form.charAt(0).toUpperCase() + form.slice(1);
+				const dex = parseInt(form);
+				if (!isNaN(dex) && FOLLOWER_FORMS && FOLLOWER_FORMS[dex]) return FOLLOWER_FORMS[dex].displayName || String(dex);
+				return String(form);
+			}
 			// Per-type enemy color palette { body, hi, eye }
 			const TYPE_COLOR = {
 				normal:   { body:'#a0a0a0', hi:'#c8c8a0', eye:'#404060' },
@@ -3673,7 +3697,8 @@
 				const inv = Inventory.load();
 				const form = (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || "eevee"));
 				const local = { eevee:1, vaporeon:1, espeon:1, umbreon:1, flareon:1, jolteon:1, leafeon:1, glaceon:1, sylveon:1 };
-				const useForm = local[form] ? form : "eevee";
+				const dexNum = parseInt(form);
+				const useForm = local[form] ? form : (!isNaN(dexNum) && FOLLOWER_FORMS && FOLLOWER_FORMS[dexNum] ? dexNum : 'eevee');
 				if (dunPartnerForm !== useForm) {
 					dunPartnerForm = useForm;
 					dunPartnerMeta = (FOLLOWER_FORMS && FOLLOWER_FORMS[useForm]) || { sheet: useForm, cols: 7, frameW: 40, frameH: 48 };
@@ -3796,7 +3821,8 @@
 				const partnerList = party.length > 0 ? party : [{ form: defaultPartner, nickname: defaultPartner }];
 				partnerList.forEach((p, idx) => {
 					const form = p.form || defaultPartner;
-					const col = FORM_COLOR[form] || '#c89860';
+					const col = formColor(form);
+					const displayName = formDisplayName(form);
 					const card = document.createElement('div');
 					card.className = 'tower-partner-card' + (idx === (inv.partyActive || 0) ? ' selected' : '');
 					const dot = document.createElement('div');
@@ -3805,13 +3831,13 @@
 					card.appendChild(dot);
 					const nn = document.createElement('div');
 					nn.style.cssText = 'font-size:11px;font-weight:bold;margin-bottom:3px;';
-					nn.textContent = p.nickname || form;
+					nn.textContent = p.nickname || displayName;
 					card.appendChild(nn);
 					const fn = document.createElement('div');
 					fn.style.cssText = 'font-size:9px;color:#8a7aaa;';
-					fn.textContent = form;
+					fn.textContent = displayName;
 					card.appendChild(fn);
-					card.addEventListener('click', () => { beginRun(form, p.nickname || form); });
+					card.addEventListener('click', () => { beginRun(form, p.nickname || displayName); });
 					grid.appendChild(card);
 				});
 				// Show possible modifiers as teaser
@@ -4653,7 +4679,7 @@
 							e.hp -= dmg; e.hurt = 6; hit = true;
 							if (b.isCrit) e.critFlash = 8;
 							// Floating damage number
-							S.fx.push({ x: b.x + (Math.random()-0.5)*6, y: b.y - 4, vx: (Math.random()-0.5)*0.6, vy: -1.4, life: 28, col: b.isCrit ? '#ffd700' : '#ffffff', dmgText: (b.isCrit ? '★' : '') + Math.ceil(dmg) });
+							S.fx.push({ x: b.x + (Math.random()-0.5)*8, y: b.y - 4, vx: (Math.random()-0.5)*0.4, vy: -0.9, life: 46, col: b.isCrit ? '#ffd700' : '#e8e0ff', dmgText: (b.isCrit ? '★' : '') + Math.ceil(dmg) });
 							if (e.held==='sitrus' && !e.heldUsed && e.hp < e.maxHp*0.5) { e.hp=Math.min(e.maxHp,e.hp+3); e.heldUsed=true; }
 							// Partner bullet status effect
 							if (b.partner && e.eStatuses) {
@@ -5067,16 +5093,32 @@
 						ctx.fillText(p.cost + " SD", p.x, p.y + p.r + 9);
 						continue;
 					}
-					const col = p.kind === "heart" ? "#ff5a6a" : p.kind === "rapid" ? "#ffd24a"
+					const col = p.kind === "heart" ? "#ff4060" : p.kind === "rapid" ? "#ffd24a"
 						: p.kind === "maxhp" ? "#ff8ad0" : "#ffe060";
-					ctx.globalAlpha = 0.4; ctx.fillStyle = col;
-					ctx.beginPath(); ctx.arc(p.x, by, p.r + 4, 0, 7); ctx.fill();
+					// glow aura
+					ctx.globalAlpha = 0.3 + Math.sin(t * 0.14) * 0.12; ctx.fillStyle = col;
+					ctx.beginPath(); ctx.arc(p.x, by, p.r + 5, 0, 7); ctx.fill();
 					ctx.globalAlpha = 1;
-					ctx.fillStyle = "#1a1426"; ctx.beginPath(); ctx.arc(p.x, by, p.r, 0, 7); ctx.fill();
-					ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p.x, by, p.r - 2, 0, 7); ctx.fill();
-					ctx.fillStyle = "#ffffff"; ctx.font = "9px monospace"; ctx.textAlign = "center";
-					ctx.fillText(p.kind === "heart" ? "+" : p.kind === "rapid" ? "F"
-						: p.kind === "maxhp" ? "U" : "R", p.x, by + 3);
+					if (p.kind === "heart") {
+						// Parametric heart shape
+						ctx.save(); ctx.translate(p.x, by); ctx.scale(0.38, 0.38);
+						ctx.beginPath();
+						for (let ang = 0; ang <= Math.PI * 2; ang += 0.05) {
+							const hx = 16 * Math.pow(Math.sin(ang), 3);
+							const hy = -(13 * Math.cos(ang) - 5 * Math.cos(2*ang) - 2 * Math.cos(3*ang) - Math.cos(4*ang));
+							ang === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+						}
+						ctx.closePath();
+						ctx.fillStyle = "#ff4060"; ctx.fill();
+						ctx.fillStyle = "rgba(255,180,190,0.7)";
+						ctx.beginPath(); ctx.ellipse(-3, -5, 3, 2, -0.5, 0, Math.PI*2); ctx.fill();
+						ctx.restore();
+					} else {
+						ctx.fillStyle = "#1a1426"; ctx.beginPath(); ctx.arc(p.x, by, p.r, 0, 7); ctx.fill();
+						ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p.x, by, p.r - 2, 0, 7); ctx.fill();
+						ctx.fillStyle = "#ffffff"; ctx.font = "9px monospace"; ctx.textAlign = "center";
+						ctx.fillText(p.kind === "rapid" ? "F" : p.kind === "maxhp" ? "U" : "R", p.x, by + 3);
+					}
 				}
 				// hazards
 				if (S.hazards) {
@@ -5304,10 +5346,15 @@
 						}
 						ctx.lineTo(lx2,ly2); ctx.stroke(); ctx.globalAlpha = 1;
 					} else if (p.dmgText) {
-						ctx.globalAlpha = Math.min(1, p.life / 14);
-						ctx.fillStyle = p.col;
-						ctx.font = p.col === '#ffd700' ? 'bold 9px monospace' : '7px monospace';
+						const dAlpha = Math.min(1, p.life / 20);
+						ctx.globalAlpha = dAlpha;
+						const isCritDmg = p.col === '#ffd700';
+						ctx.font = isCritDmg ? 'bold 12px monospace' : 'bold 10px monospace';
 						ctx.textAlign = 'center';
+						// drop shadow
+						ctx.fillStyle = 'rgba(0,0,0,0.7)';
+						ctx.fillText(p.dmgText, p.x + 1, p.y + 1);
+						ctx.fillStyle = p.col;
 						ctx.fillText(p.dmgText, p.x, p.y);
 					} else {
 						ctx.globalAlpha = Math.min(1, p.life / 9);
@@ -5387,19 +5434,21 @@
 				ctx.fillStyle = (S.energy >= 45 ? "#bff0fa" : "#6a7a90"); ctx.font = "6px monospace"; ctx.textAlign = "left";
 				ctx.fillText("ENERGY \u2014 E", 9, 34.5);
 				ctx.fillStyle = "#ffd24a"; ctx.font = "8px monospace"; ctx.textAlign = "right";
-				ctx.fillText("STARDUST " + S.stardust, VW - 6, 35);
+				ctx.fillText("⭐ " + S.stardust, VW - 6, 35);
 				// Modifier label (top-center small)
 				if (S.modifier) {
 					const modDef = MODIFIERS.find(m => m.key === S.modifier);
 					if (modDef) {
-						ctx.font = "6px monospace"; ctx.textAlign = "center";
-						ctx.fillStyle = "#c0a0ff";
+						const modColors = { fog:'#a0c0e0', frail:'#ff6060', horde:'#c060ff', blessed:'#ffe060', speedrun:'#ff9040' };
+						ctx.font = "7px monospace"; ctx.textAlign = "center";
 						let modLabel = modDef.icon + " " + modDef.name.toUpperCase();
+						let modLabelColor = modColors[S.modifier] || '#c0a0ff';
 						if (S.modifier === 'speedrun' && S.roomTimer > 0) {
 							const secsLeft = Math.ceil(S.roomTimer / 60);
 							modLabel += " " + secsLeft + "s";
-							ctx.fillStyle = secsLeft <= 10 ? "#ff4040" : "#c0a0ff";
+							modLabelColor = secsLeft <= 10 ? "#ff4040" : '#ff9040';
 						}
+						ctx.fillStyle = modLabelColor;
 						ctx.fillText(modLabel, VW / 2, 43);
 					}
 				}
@@ -5441,7 +5490,8 @@
 				}
 				// Partner info + level
 				ctx.fillStyle = S.pColor; ctx.font = "7px monospace"; ctx.textAlign = "right";
-				ctx.fillText((S.partnerNickname||'Partner') + " Lv." + (S.partnerLevel||1), VW - 6, 52);
+				const _pnn = (S.partnerNickname||'Partner'); const _pnShort = _pnn.length > 10 ? _pnn.slice(0,9)+'…' : _pnn;
+				ctx.fillText(_pnShort + " Lv." + (S.partnerLevel||1), VW - 6, 52);
 				// Status indicators
 				if (S.statuses) {
 					let sx = 6; ctx.font = "7px monospace"; ctx.textAlign = "left";
@@ -5572,9 +5622,9 @@
 				S = {
 					room: 1, hp: baseHp, maxHp: baseHp, px: W / 2, py: H - 40,
 					partner: { x: W / 2 - 15, y: H - 30 },
-					pColor: FORM_COLOR[form] || '#c89860',
-					novaColor: FORM_NOVA[form] || '#e8d0a0',
-					partnerForm: form, partnerNickname: nickname || form,
+					pColor: formColor(form),
+					novaColor: formNovaColor(form),
+					partnerForm: form, partnerNickname: nickname || formDisplayName(form),
 					partnerLevel: 1, partnerXP: 0,
 					bullets: [], ebullets: [], enemies: [], fx: [], pickups: [], ptrail: [],
 					hazards: [],
