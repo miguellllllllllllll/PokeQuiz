@@ -8045,33 +8045,13 @@
 			try { Sound.door(); } catch (_) {}
 			const from = (data && data.from) || '';
 			console.log('[scene] switch →', key, 'from', from);
-			// Trigger the black fade-in so the screen stays dark during the switch.
+			// Show the black overlay so the screen stays dark during the reload.
 			const fade = document.getElementById('campFade');
 			if (fade) fade.classList.remove('is-hidden');
-			// Update the hash so a hard-reload still lands in the right scene,
-			// but do NOT call window.location.reload() — use Phaser scene switching
-			// instead, which is near-instant (assets already cached in texture manager).
+			// Write destination into the hash so the boot logic lands in the right scene.
 			window.location.hash = '#' + key + (from ? '|' + from : '');
-			setTimeout(() => {
-				// Pre-populate boot data so consumeBootFrom() works without a real reload.
-				__S._bootData = { scene: key, from: from };
-				try {
-					// Always call scene.scene.start() via the *currently running* scene's
-					// ScenePlugin — this is the most reliable way to trigger a Phaser scene
-					// transition. Using the captured `scene` reference can silently no-op if
-					// the caller has been stopped/restarted since safeSceneStart was called
-					// (e.g. in a market→camp→house multi-hop where camp was itself started
-					// via scene switching). Getting the live running scene avoids that.
-					const game = (scene && scene.game) || window.__phaserGame;
-					const running = game && game.scene && game.scene.getScenes(true);
-					const caller = (running && running.length > 0) ? running[0] : scene;
-					caller.scene.start(key, data || {});
-				} catch (e) {
-					// Last-resort fallback: full page reload.
-					console.warn('[safeSceneStart] scene switch failed, falling back to reload', e);
-					window.location.reload();
-				}
-			}, 380);
+			// Small delay lets the fade render one frame before the page tears down.
+			setTimeout(() => window.location.reload(), 50);
 		}
 	window.CAMP_SYSTEMS.safeSceneStart = safeSceneStart;
 
