@@ -8040,39 +8040,32 @@
 	window.CAMP_SYSTEMS.miniMapColor = miniMapColor;
 
 	// ── safeSceneStart ────────────────────────────────────────────────────────
+		// Area display names shown in the transition overlay so the user sees
+		// "Entering the Market…" rather than a silent black freeze.
+		const _AREA_NAMES = { camp:'the Camp', house:'your House', upstairs:'upstairs',
+		                       market:'the Market', beach:'the Beach', cave:'the Cave' };
+
 		function safeSceneStart(scene, key, data) {
 			try { Dialog.close(); } catch (_) {}
 			try { Sound.door(); } catch (_) {}
 			const from = (data && data.from) || '';
 			console.log('[scene] switch →', key, 'from', from);
-			const fade = document.getElementById('campFade');
-			if (fade) fade.classList.remove('is-hidden');
-			window.location.hash = '#' + key + (from ? '|' + from : '');
-			// Pre-set boot data so consumeBootFrom() works without a real reload.
-			__S._bootData = { scene: key, from: from };
 
-			// Call ScenePlugin.start() SYNCHRONOUSLY — we are still inside the calling
-			// scene's update() stack at this point, so its status is guaranteed RUNNING.
-			// Using setTimeout would let Phaser run more ticks and potentially change the
-			// scene's status before we call start(), causing a silent no-op or freeze.
-			try {
-				scene.scene.start(key, data || {});
-			} catch (e) {
-				console.warn('[safeSceneStart] scene.scene.start threw — reloading', e);
-				setTimeout(() => window.location.reload(), 50);
-				return;
+			// Show the black overlay immediately with a label so users know it's
+			// loading (not frozen). The reload fires 80 ms later — enough for the
+			// browser to paint the overlay before tearing down the page.
+			const fade = document.getElementById('campFade');
+			if (fade) {
+				fade.innerHTML =
+					'<div style="position:absolute;inset:0;display:flex;align-items:center;' +
+					'justify-content:center;color:rgba(255,255,255,0.55);font-family:' +
+					'monospace;font-size:13px;letter-spacing:1px;pointer-events:none;">' +
+					'Entering ' + (_AREA_NAMES[key] || key) + '…</div>';
+				fade.classList.remove('is-hidden');
 			}
 
-			// Safety net: if the new scene's create() never clears the fade within 3 s
-			// (e.g. Phaser silently no-oped the start, or _buildX() threw), fall back to
-			// a full reload. The hash + _bootData are already set so it lands correctly.
-			setTimeout(() => {
-				const f = document.getElementById('campFade');
-				if (f && !f.classList.contains('is-hidden')) {
-					console.warn('[safeSceneStart] safety net — create() never cleared fade, reloading');
-					window.location.reload();
-				}
-			}, 3000);
+			window.location.hash = '#' + key + (from ? '|' + from : '');
+			setTimeout(() => window.location.reload(), 80);
 		}
 	window.CAMP_SYSTEMS.safeSceneStart = safeSceneStart;
 
