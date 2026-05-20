@@ -109,59 +109,25 @@
 	else setupTouchPad();
 
 	// ── Phaser game bootstrap ─────────────────────────────────────────────────────
-	function start() {
-		const wrap = document.getElementById('campWrap');
-		if (!wrap) return;
-		if (!window.Phaser) { setTimeout(start, 30); return; }
-
-		applyWrapTop();
-		window.addEventListener('resize', applyWrapTop);
-		window.addEventListener('load', applyWrapTop);
-		if (document.fonts && document.fonts.ready) document.fonts.ready.then(applyWrapTop);
-
-		// Capture boot hash once, then clear the URL so a reload stays in place.
-		// Scene init() calls consumeBootFrom() (in camp-systems.js) to read it once.
-		window.__CAMP_STATE._bootData = readBootHash();
-		const boot = window.__CAMP_STATE._bootData;
-
+	function buildSceneList(boot) {
 		const CampClass      = makeSceneClass();
 		const HouseClass     = makeHouseSceneClass();
 		const UpstairsClass  = makeUpstairsSceneClass();
 		const MarketClass    = makeMarketSceneClass();
 		const BeachClass     = makeBeachSceneClass();
 		const CaveClass      = makeCaveSceneClass ? makeCaveSceneClass() : null;
+		const _all = (list) => CaveClass ? [...list, CaveClass] : list;
+		if      (boot.scene === 'house')    return _all([HouseClass,    CampClass, UpstairsClass, MarketClass, BeachClass]);
+		else if (boot.scene === 'upstairs') return _all([UpstairsClass, CampClass, HouseClass,    MarketClass, BeachClass]);
+		else if (boot.scene === 'market')   return _all([MarketClass,   CampClass, HouseClass,    UpstairsClass, BeachClass]);
+		else if (boot.scene === 'beach')    return _all([BeachClass,    CampClass, HouseClass,    UpstairsClass, MarketClass]);
+		else if (boot.scene === 'cave')     return [CaveClass || CampClass, CampClass, HouseClass, UpstairsClass, MarketClass, BeachClass];
+		else                                return _all([CampClass, HouseClass, UpstairsClass, MarketClass, BeachClass]);
+	}
 
-		const _allScenes = (list) => CaveClass ? [...list, CaveClass] : list;
-
-		let sceneList;
-		if      (boot.scene === 'house')    sceneList = _allScenes([HouseClass,    CampClass, UpstairsClass, MarketClass, BeachClass]);
-		else if (boot.scene === 'upstairs') sceneList = _allScenes([UpstairsClass, CampClass, HouseClass,    MarketClass, BeachClass]);
-		else if (boot.scene === 'market')   sceneList = _allScenes([MarketClass,   CampClass, HouseClass,    UpstairsClass, BeachClass]);
-		else if (boot.scene === 'beach')    sceneList = _allScenes([BeachClass,    CampClass, HouseClass,    UpstairsClass, MarketClass]);
-		// Cave boot: CaveClass is first (auto-started); do NOT use _allScenes() here
-		// because _allScenes appends CaveClass again → duplicate 'cave' key crashes Phaser.
-		else if (boot.scene === 'cave')     sceneList = [CaveClass || CampClass, CampClass, HouseClass, UpstairsClass, MarketClass, BeachClass];
-		else                                sceneList = _allScenes([CampClass, HouseClass, UpstairsClass, MarketClass, BeachClass]);
-
-		// Define hide-fn BEFORE Phaser.Game() so create() can always call it,
-		// even on the rare edge where the first scene boots synchronously.
-		const _ls = document.getElementById('campLoadingScreen');
-		if (_ls) {
-			window.__campLoadHide = function() {
-				_ls.style.transition = 'opacity 0.4s';
-				_ls.style.opacity = '0';
-				setTimeout(function(){ _ls.remove(); }, 450);
-				window.__campLoadHide = null;
-			};
-			// Safety-net: force-hide after 20 s in case create() never fires
-			setTimeout(function() {
-				if (window.__campLoadHide) {
-					console.warn('[Camp] Loading screen safety-net triggered after 20 s');
-					window.__campLoadHide();
-				}
-			}, 20000);
-		}
-
+	function launchPhaser(boot) {
+		const wrap = document.getElementById('campWrap');
+		if (!wrap) return;
 		try {
 			window.__phaserGame = new Phaser.Game({
 				type: Phaser.AUTO,
@@ -173,19 +139,68 @@
 				loader: { maxParallelDownloads: 64 },
 				scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
 				physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-				scene: sceneList,
+				scene: buildSceneList(boot),
 			});
 		} catch (e) {
 			console.error('[Camp] Phaser.Game() threw:', e);
-			if (window.__campLoadHide) window.__campLoadHide();
-			const wrap = document.getElementById('campWrap');
-			if (wrap) {
-				const err = document.createElement('div');
-				err.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#f55;font-family:monospace;font-size:12px;padding:16px;text-align:center;';
-				err.textContent = 'Camp failed to start: ' + e.message;
-				wrap.appendChild(err);
-			}
+			const err = document.createElement('div');
+			err.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#f55;font-family:monospace;font-size:12px;padding:16px;text-align:center;';
+			err.textContent = 'Camp failed to start: ' + e.message;
+			wrap.appendChild(err);
 		}
+	}
+
+	// ── Phaser restart (used by safeSceneStart for fast scene transitions) ────────
+	// Destroys the existing Phaser instance and creates a fresh one targeting the
+	// scene encoded in window.location.hash. All JS stays parsed in memory — only
+	// Phaser re-initialises, making this ~2-3× faster than a full page reload.
+	window.__campRestart = function () {
+		const game = window.__phaserGame;
+		window.__phaserGame = null;
+		if (game) {
+			try { game.destroy(true); } catch (_) {}
+		}
+		// One rAF so the canvas teardown flushes before we create a new one.
+		requestAnimationFrame(() => {
+			window.__CAMP_STATE._bootData = readBootHash();
+			const boot = window.__CAMP_STATE._bootData;
+			if (window.location.hash)
+				history.replaceState(null, '', window.location.pathname + window.location.search);
+			launchPhaser(boot);
+		});
+	};
+
+	function start() {
+		const wrap = document.getElementById('campWrap');
+		if (!wrap) return;
+		if (!window.Phaser) { setTimeout(start, 30); return; }
+
+		applyWrapTop();
+		window.addEventListener('resize', applyWrapTop);
+		window.addEventListener('load', applyWrapTop);
+		if (document.fonts && document.fonts.ready) document.fonts.ready.then(applyWrapTop);
+
+		window.__CAMP_STATE._bootData = readBootHash();
+		const boot = window.__CAMP_STATE._bootData;
+
+		// Define hide-fn BEFORE Phaser.Game() so create() can always call it.
+		const _ls = document.getElementById('campLoadingScreen');
+		if (_ls) {
+			window.__campLoadHide = function() {
+				_ls.style.transition = 'opacity 0.4s';
+				_ls.style.opacity = '0';
+				setTimeout(function(){ _ls.remove(); }, 450);
+				window.__campLoadHide = null;
+			};
+			setTimeout(function() {
+				if (window.__campLoadHide) {
+					console.warn('[Camp] Loading screen safety-net triggered after 20 s');
+					window.__campLoadHide();
+				}
+			}, 20000);
+		}
+
+		launchPhaser(boot);
 
 		if (window.location.hash)
 			history.replaceState(null, '', window.location.pathname + window.location.search);

@@ -8041,7 +8041,7 @@
 
 	// ── safeSceneStart ────────────────────────────────────────────────────────
 		// Area display names shown in the transition overlay so the user sees
-		// "Entering the Market…" rather than a silent black freeze.
+		// "Entering the Market…" rather than a silent black screen.
 		const _AREA_NAMES = { camp:'the Camp', house:'your House', upstairs:'upstairs',
 		                       market:'the Market', beach:'the Beach', cave:'the Cave' };
 
@@ -8051,9 +8051,7 @@
 			const from = (data && data.from) || '';
 			console.log('[scene] switch →', key, 'from', from);
 
-			// Show the black overlay immediately with a label so users know it's
-			// loading (not frozen). The reload fires 80 ms later — enough for the
-			// browser to paint the overlay before tearing down the page.
+			// Show the black overlay with a label so users know it's loading, not frozen.
 			const fade = document.getElementById('campFade');
 			if (fade) {
 				fade.innerHTML =
@@ -8064,8 +8062,20 @@
 				fade.classList.remove('is-hidden');
 			}
 
+			// Encode destination in the hash so __campRestart / readBootHash lands right.
 			window.location.hash = '#' + key + (from ? '|' + from : '');
-			setTimeout(() => window.location.reload(), 80);
+
+			// __campRestart (defined in camp.js) destroys the current Phaser instance and
+			// creates a fresh one. JS stays compiled in memory — only Phaser re-inits,
+			// making this ~2-3× faster than window.location.reload().
+			// Fall back to reload if __campRestart isn't available yet (race on cold boot).
+			setTimeout(() => {
+				if (typeof window.__campRestart === 'function') {
+					window.__campRestart();
+				} else {
+					window.location.reload();
+				}
+			}, 80);
 		}
 	window.CAMP_SYSTEMS.safeSceneStart = safeSceneStart;
 
