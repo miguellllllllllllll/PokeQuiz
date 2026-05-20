@@ -8056,19 +8056,16 @@
 				// Pre-populate boot data so consumeBootFrom() works without a real reload.
 				__S._bootData = { scene: key, from: from };
 				try {
-					// Use the global Phaser SceneManager rather than the ScenePlugin on the
-					// caller scene — this avoids a subtle Phaser quirk where ScenePlugin.start()
-					// can silently no-op after a multi-hop transition (e.g. market→camp→house)
-					// if the calling scene is no longer in RUNNING status when the timeout fires.
+					// Always call scene.scene.start() via the *currently running* scene's
+					// ScenePlugin — this is the most reliable way to trigger a Phaser scene
+					// transition. Using the captured `scene` reference can silently no-op if
+					// the caller has been stopped/restarted since safeSceneStart was called
+					// (e.g. in a market→camp→house multi-hop where camp was itself started
+					// via scene switching). Getting the live running scene avoids that.
 					const game = (scene && scene.game) || window.__phaserGame;
-					const currentKey = scene && scene.sys && scene.sys.settings && scene.sys.settings.key;
-					if (game && game.scene) {
-						if (currentKey) game.scene.stop(currentKey);
-						game.scene.start(key, data || {});
-					} else {
-						// Fallback to ScenePlugin if game ref unavailable
-						scene.scene.start(key, data || {});
-					}
+					const running = game && game.scene && game.scene.getScenes(true);
+					const caller = (running && running.length > 0) ? running[0] : scene;
+					caller.scene.start(key, data || {});
 				} catch (e) {
 					// Last-resort fallback: full page reload.
 					console.warn('[safeSceneStart] scene switch failed, falling back to reload', e);
