@@ -4519,6 +4519,22 @@
 							enemy.spd *= 1.3;
 							enemy.r += 2;
 						}
+						// Special enemy type (skip on elites to avoid stacking)
+						if (!enemy.elite) {
+							const _sp = Math.random();
+							if (tier === 0) {
+								if (_sp < 0.14) enemy.special = 'splitter';
+							} else if (tier === 1) {
+								if (_sp < 0.12) enemy.special = 'splitter';
+								else if (_sp < 0.24) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
+								else if (_sp < 0.35) enemy.special = 'rusher';
+							} else {
+								if (_sp < 0.10) enemy.special = 'splitter';
+								else if (_sp < 0.22) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
+								else if (_sp < 0.33) enemy.special = 'rusher';
+								else if (_sp < 0.46) { enemy.special = 'shielder'; enemy._shieldAngle = Math.random()*Math.PI*2; }
+							}
+						}
 						S.enemies.push(enemy);
 					}
 					if (isAmbush) {
@@ -4835,6 +4851,17 @@
 									break;
 								}
 							}
+							// Shielder: front-facing shield blocks bullets
+							if (e.special === 'shielder') {
+								const _bAng = Math.atan2(b.y-e.y, b.x-e.x);
+								const _sAng = e._shieldAngle || 0;
+								const _diff = Math.abs((((_bAng-_sAng+Math.PI*3)%(Math.PI*2))-Math.PI));
+								if (_diff < Math.PI*0.52) {
+									hit = true;
+									for (let _k=0;_k<4;_k++) S.fx.push({x:b.x,y:b.y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,life:8,col:'#a0c8ff'});
+									break;
+								}
+							}
 							// Shell item
 							if (e.shellHp > 0) {
 								e.shellHp--;
@@ -4875,7 +4902,21 @@
 								else if (S.partnerLevel<3 && S.partnerXP>=20) { S.partnerLevel=3; showToast(S.partnerNickname+' reached Lv.3!'); try { Sound.evolve && Sound.evolve(); } catch(_) {} }
 								if (S.relics.indexOf("shellbell") >= 0 && S.kills % 4 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
 								if (!e.boss && !e.miniboss && Math.random() < 0.11) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
-								if (e.elite && !e.boss) S.stardust += 4; // elites drop stardust, not hearts
+								if (e.elite && !e.boss) S.stardust += 4;
+								// Splitter: spawn 2 smaller children
+								if (e.special === 'splitter' && !e._splitDone) {
+									e._splitDone = true;
+									for (let _k=0;_k<2;_k++) {
+										const _sa=_k/2*Math.PI*2+Math.random()*0.6;
+										S.enemies.push({x:e.x+Math.cos(_sa)*14,y:e.y+Math.sin(_sa)*14,hp:2,maxHp:2,r:Math.max(5,Math.round(e.r*0.55)),shooter:false,cd:60,spd:e.spd*1.4,hurt:0,eType:e.eType,held:null,heldUsed:false,moveMode:'charger',attackPat:'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_splitChild:true});
+									}
+								}
+								// Bomber: leave an explosion hazard on death
+								if (e.special === 'bomber') {
+									S.floorHazards = S.floorHazards || [];
+									S.floorHazards.push({x:e.x,y:e.y,r:38,type:'spike',phase:72,_oneShot:true});
+									S.shake = 8;
+								}
 								if (e.held === 'berries') S.pickups.push({ x: e.x, y: e.y+10, kind: 'heart', r: 8, bob: Math.random()*5 });
 								try { Sound.plant && Sound.plant(); } catch(_) {}
 							}
@@ -4953,7 +4994,10 @@
 					const fastFoesMult = (S.curses && S.curses.includes('fast_foes') ? 1.3 : 1);
 					const paraMult = (e.eStatuses && e.eStatuses.para > 0 && Math.random()<0.3) ? 0 : 1;
 					const spdMult = frozenMult * statusSlowMult * fastFoesMult * paraMult;
-					const effSpd = e.spd * spdMult;
+					// Special enemy type updates
+					if (e.special === 'rusher') e._rushMult = Math.min(3.2, (e._rushMult||1) + 0.007);
+					if (e.special === 'shielder') e._shieldAngle = Math.atan2(S.py-e.y, S.px-e.x);
+					const effSpd = e.spd * spdMult * (e.special === 'rusher' ? (e._rushMult||1) : 1);
 					// Miniboss special logic
 					if (e.miniboss) {
 						const mbk = e.mbKey;
@@ -5225,7 +5269,8 @@
 					for (let k = 0; k < 10; k++) S.fx.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 14, col: fxCol });
 					S.pickups.splice(i, 1);
 				}
-				// Floor hazard tick (spikes, ice)
+				// Floor hazard tick (spikes, ice); prune one-shot hazards after use
+				S.floorHazards = (S.floorHazards||[]).filter(hz => !hz._expired);
 				for (const hz of (S.floorHazards||[])) {
 					hz.phase = (hz.phase + 1) % 130;
 					if (hz.type === 'spike') {
@@ -5233,7 +5278,9 @@
 						if (active && (S.px-hz.x)**2+(S.py-hz.y)**2 < hz.r*hz.r && S.invuln <= 0 && S.barrier <= 0) {
 							if ((S.revivals||0)>0&&S.hp<=1){S.revivals--;S.hp=1;S.invuln=120;S.flash=12;}
 							else{S.hp--;} S.invuln=45; S.flash=6; S.shake=5;
+							if (hz._oneShot) hz._expired = true;
 						}
+						if (hz._oneShot && hz.phase >= 110) hz._expired = true;
 					} else if (hz.type === 'ice') {
 						// Slow applied dynamically in SP calc — just tag player
 						S._onIce = (S.px-hz.x)**2+(S.py-hz.y)**2 < hz.r*hz.r;
@@ -5711,6 +5758,40 @@
 							ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 4, 0, 7); ctx.stroke();
 							ctx.globalAlpha = 1;
 						}
+					}
+					// Special type overlays
+					if (e.special === 'splitter' && !e._splitDone) {
+						// Crack line through body
+						ctx.globalAlpha = 0.7; ctx.strokeStyle = '#60ff80'; ctx.lineWidth = 1.5;
+						ctx.beginPath(); ctx.moveTo(e.x-e.r*0.7, e.y-e.r*0.7); ctx.lineTo(e.x+e.r*0.7, e.y+e.r*0.7); ctx.stroke();
+						ctx.globalAlpha = 0.4; ctx.strokeStyle = '#60ff80'; ctx.lineWidth = 3;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+3, 0, Math.PI*2); ctx.stroke();
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					}
+					if (e.special === 'bomber') {
+						const _bp = 0.4 + Math.sin(t * (0.1 + (1-e.hp/e.maxHp)*0.3)) * 0.35;
+						ctx.globalAlpha = _bp; ctx.strokeStyle = '#ff6010'; ctx.lineWidth = 4;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+4, 0, Math.PI*2); ctx.stroke();
+						ctx.globalAlpha = _bp*0.5; ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 8;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+2, 0, Math.PI*2); ctx.stroke();
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					}
+					if (e.special === 'rusher') {
+						const _rm = e._rushMult || 1;
+						if (_rm > 1.5) {
+							const _rda = Math.atan2(S.py-e.y, S.px-e.x);
+							ctx.globalAlpha = Math.min(0.6, (_rm-1.5)*0.4); ctx.strokeStyle = '#ffcc40'; ctx.lineWidth = 2;
+							for (let _k=0;_k<3;_k++) { const _a=_rda+Math.PI+(_k-1)*0.35; ctx.beginPath(); ctx.moveTo(e.x+Math.cos(_a)*e.r,e.y+Math.sin(_a)*e.r); ctx.lineTo(e.x+Math.cos(_a)*(e.r+8+_rm*3),e.y+Math.sin(_a)*(e.r+8+_rm*3)); ctx.stroke(); }
+							ctx.globalAlpha = 1; ctx.lineWidth = 1;
+						}
+					}
+					if (e.special === 'shielder') {
+						const _sAng = e._shieldAngle || 0;
+						ctx.globalAlpha = 0.75; ctx.strokeStyle = '#a0c8ff'; ctx.lineWidth = 4;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+5, _sAng-Math.PI*0.52, _sAng+Math.PI*0.52); ctx.stroke();
+						ctx.globalAlpha = 0.3; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+5, _sAng-Math.PI*0.52, _sAng+Math.PI*0.52); ctx.stroke();
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
 					}
 				}
 				// partner Pokemon — real follower sprite when loaded, else drawn
