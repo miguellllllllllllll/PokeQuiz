@@ -4034,6 +4034,50 @@
 				el.hidden = false;
 			}
 			// ── Curse overlay ──────────────────────────────────────────────
+			const DUNGEON_PERKS = [
+				{ key:'power', icon:'⚡', name:'Sharpshooter', desc:'+1 damage per bullet' },
+				{ key:'quick', icon:'💨', name:'Hair Trigger',  desc:'-18% fire cooldown' },
+				{ key:'tough', icon:'♥',  name:'Iron Body',     desc:'+1 max HP, heal 1' },
+				{ key:'nova',  icon:'✦',  name:'Overcharged',   desc:'+25 max energy' },
+				{ key:'swift', icon:'↯',  name:'Tailwind',      desc:'+18% move speed' },
+				{ key:'lucky', icon:'★',  name:'Fortune',       desc:'+2 stardust per kill' },
+			];
+			function showPerkOverlay(onDone) {
+				const el = getOverlay('towerShrineOverlay');
+				if (!el) { onDone(); return; }
+				// Pick 3 random perks
+				const pool = [...DUNGEON_PERKS].sort(()=>Math.random()-0.5).slice(0,3);
+				el.innerHTML = '';
+				const h = document.createElement('h2');
+				h.textContent = '⬆ Level Up!';
+				el.appendChild(h);
+				const sub = document.createElement('p');
+				sub.style.cssText = 'font-size:11px;color:#b0a0c8;margin:2px 0 12px;';
+				sub.textContent = 'Choose a permanent upgrade for this run';
+				el.appendChild(sub);
+				const row = document.createElement('div');
+				row.style.cssText = 'display:flex;gap:8px;justify-content:center;flex-wrap:wrap;';
+				el.appendChild(row);
+				pool.forEach(p => {
+					const btn = document.createElement('button');
+					btn.className = 'tower-btn';
+					btn.style.cssText = (btn.style.cssText||'')+'display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;min-width:88px;';
+					const ic = document.createElement('span'); ic.style.fontSize='20px'; ic.textContent=p.icon;
+					const nm = document.createElement('span'); nm.style.cssText='font-size:11px;font-weight:bold;'; nm.textContent=p.name;
+					const ds = document.createElement('span'); ds.style.cssText='font-size:9px;color:#b0a0c8;text-align:center;'; ds.textContent=p.desc;
+					btn.appendChild(ic); btn.appendChild(nm); btn.appendChild(ds);
+					btn.addEventListener('click', () => {
+						if (!S.perks) S.perks = {};
+						S.perks[p.key] = (S.perks[p.key]||0) + 1;
+						if (p.key==='tough') { S.maxHp++; S.hp = Math.min(S.hp+1, S.maxHp); }
+						if (p.key==='nova')  { S.maxEnergy += 25; }
+						showToast(p.icon + ' ' + p.name + '!');
+						el.hidden = true; onDone();
+					});
+					row.appendChild(btn);
+				});
+				el.hidden = false;
+			}
 			function showCurseOverlay(onDone) {
 				const el = getOverlay('towerShrineOverlay');
 				if (!el) { onDone(); return; }
@@ -4280,7 +4324,7 @@
 			function newRoom() {
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
-				S.hazards = []; S.obstacles = [];
+				S.hazards = []; S.obstacles = []; S._perkDone = false;
 				S._roomOverlay = false;
 				S._trainerBattle = false;
 				S.berryUsed = false;
@@ -4373,10 +4417,10 @@
 					const movePools = [
 						// tier 0: 70% charger, 20% zigzagger, 10% circler
 						['charger','charger','charger','charger','charger','charger','charger','zigzagger','zigzagger','circler'],
-						// tier 1: 40% charger, 25% circler, 20% zigzagger, 15% retreater
-						['charger','charger','charger','charger','circler','circler','circler','zigzagger','zigzagger','retreater','retreater','circler'],
-						// tier 2: 25% charger, 25% circler, 20% flanker, 20% retreater, 10% zigzagger
-						['charger','charger','circler','circler','flanker','flanker','retreater','retreater','zigzagger','charger'],
+						// tier 1: 30% charger, 20% circler, 18% zigzagger, 14% retreater, 18% sniper
+						['charger','charger','charger','circler','circler','circler','zigzagger','zigzagger','retreater','retreater','sniper','sniper'],
+						// tier 2: 20% charger, 20% circler, 18% flanker, 18% retreater, 24% sniper
+						['charger','charger','circler','circler','flanker','flanker','retreater','retreater','sniper','sniper','sniper','charger'],
 					];
 					const modePool = movePools[Math.min(tier, 2)];
 					const heldPool = [null,null,null,null,null,'sitrus','sitrus','helmet','berries','berries','berries','shell','toxic_orb','toxic_orb'];
@@ -4472,6 +4516,8 @@
 						showTrainerBattle(() => { openRoomAfterOverlay(); S.doorOpen = false; });
 					} else if (ov === 'curse') {
 						showCurseOverlay(() => { openRoomAfterOverlay(); S.doorOpen = true; });
+					} else if (ov === 'perk') {
+						showPerkOverlay(() => { openRoomAfterOverlay(); S.doorOpen = true; });
 					}
 					return;
 				}
@@ -4539,7 +4585,7 @@
 					S._pk[name] = cur;
 				};
 				edge(kL,'L',-1,0); edge(kR,'R',1,0); edge(kU,'U',0,-1); edge(kD,'D',0,1);
-				const SP = 1.85;
+				const SP = 1.85 * (1 + 0.18 * ((S.perks&&S.perks.swift)||0));
 				if (S.rollT > 0) {
 					S.rollT--; S.invuln = Math.max(S.invuln, 2);
 					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+S.rollVx));
@@ -4663,10 +4709,11 @@
 				const fasterRate = (perm.fireRate||0)*4;
 				const baseFireRate = (S.relics.indexOf('swift')>=0||S.rapid) ? 14 : 26;
 				const curseSlow = (S.curses&&S.curses.includes('slow_gun')) ? 1.3 : 1;
-				const playerFireRate = (S.synergies && S.synergies.has('bulletstorm')) ? 8 : Math.max(8, Math.round((baseFireRate - fasterRate) * curseSlow));
+				const _quickMult = Math.pow(0.82, (S.perks&&S.perks.quick)||0);
+				const playerFireRate = (S.synergies && S.synergies.has('bulletstorm')) ? 8 : Math.max(8, Math.round((baseFireRate - fasterRate) * curseSlow * _quickMult));
 				if (S.fireCd > 0) S.fireCd--;
 				const curseWeak = (S.curses&&S.curses.includes('weak')) ? 1 : 0;
-				const baseDmg = Math.max(1, 1 + (S.relics.indexOf('power')>=0?1:0) + (S.bonusDmg||0) - curseWeak);
+				const baseDmg = Math.max(1, 1 + (S.relics.indexOf('power')>=0?1:0) + (S.bonusDmg||0) + ((S.perks&&S.perks.power)||0) - curseWeak);
 				const tgt = nearest(S.px, S.py, S.enemies);
 				if (tgt && S.fireCd <= 0) {
 					const critChance = 0.10 + (S.relics.indexOf('scope')>=0?0.15:0);
@@ -4749,7 +4796,7 @@
 							if (e.hp <= 0 && !e._dead) {
 								e._dead = true;
 								const baseSD = (e.boss||e.miniboss ? 12 : 1) + (S.modifier === 'frail' ? 5 : 0) + (S.endlessLoop||0);
-								S.stardust += baseSD * (S.relics.indexOf("lucky") >= 0 ? 2 : 1);
+								S.stardust += baseSD * (S.relics.indexOf("lucky") >= 0 ? 2 : 1) + ((S.perks&&S.perks.lucky)||0);
 								S.kills++;
 								S.comboKills++; S.comboTimer = 120;
 								if (!e.boss) S.hitStop = Math.max(S.hitStop || 0, 1);
@@ -4795,6 +4842,13 @@
 					}
 				}
 				for (const e of S.enemies) {
+					// Berserker: elite enemies go into overdrive below 50% HP
+					if (e.elite && !e._berserk && e.hp > 0 && e.hp <= e.maxHp * 0.5) {
+						e._berserk = true;
+						e.spd = (e.spd || 0.7) * 1.5;
+						if (e.shooter) e.cd = Math.min(e.cd, 18);
+						for (let _k=0;_k<8;_k++) S.fx.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*5,vy:(Math.random()-0.5)*5,life:14,col:'#ff3020'});
+					}
 					if (e.hurt > 0) e.hurt--;
 					if (e.critFlash > 0) e.critFlash--;
 					if (e.marked > 0) e.marked--;
@@ -4834,11 +4888,20 @@
 						}
 						if (mbk === 'charger') {
 							e.chargeTimer = (e.chargeTimer||0) + 1;
-							if (e.chargeTimer >= 180 && !e.charging) {
-								e.charging = 30;
-								e.chargeVx = Math.cos(Math.atan2(S.py-e.y,S.px-e.x)) * 5;
-								e.chargeVy = Math.sin(Math.atan2(S.py-e.y,S.px-e.x)) * 5;
+							if (e.chargeTimer >= 180 && !e.charging && !e.chargeWind) {
+								e.chargeWind = 22; // telegraph windup before dash
 								e.chargeTimer = 0;
+							}
+							if (e.chargeWind > 0) {
+								e.chargeWind--;
+								if (e.chargeWind === 0) {
+									e.charging = 30;
+									const _ca = Math.atan2(S.py-e.y, S.px-e.x);
+									e.chargeVx = Math.cos(_ca) * 5.2;
+									e.chargeVy = Math.sin(_ca) * 5.2;
+								}
+								if (e.hurt > 0) e.hurt--;
+								continue; // freeze during windup
 							}
 							if (e.charging > 0) {
 								e.x += e.chargeVx; e.y += e.chargeVy; e.charging--;
@@ -4885,6 +4948,25 @@
 						const flankA = _da + (70 * Math.PI / 180);
 						e.x += Math.cos(flankA) * effSpd;
 						e.y += Math.sin(flankA) * effSpd;
+					} else if (mm === 'sniper') {
+						// Keep 130-180px range, freeze and aim before firing
+						e._sniperCd = (e._sniperCd === undefined) ? 80 + Math.floor(Math.random()*60) : e._sniperCd;
+						if (e._sniperAim > 0) {
+							e._sniperAim--;
+							if (e._sniperAim === 0) {
+								const _sa = Math.atan2(S.py-e.y, S.px-e.x);
+								const _sc = (TYPE_COLOR[e.eType]||TYPE_COLOR.poison).body;
+								S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(_sa)*5.5,vy:Math.sin(_sa)*5.5,dmg:2,col:_sc,r:3.5});
+								e._sniperCd = 85 + Math.floor(Math.random()*55);
+							}
+							// frozen while aiming
+						} else {
+							e._sniperCd--;
+							if (e._sniperCd <= 0) e._sniperAim = 28;
+							// maintain standoff distance
+							if (_dist < 130) { e.x -= Math.cos(_da)*effSpd*0.9; e.y -= Math.sin(_da)*effSpd*0.9; }
+							else if (_dist > 180) { e.x += Math.cos(_da)*effSpd*0.5; e.y += Math.sin(_da)*effSpd*0.5; }
+						}
 					} else {
 						e.x += Math.cos(_da) * effSpd; e.y += Math.sin(_da) * effSpd;
 					}
@@ -5041,7 +5123,15 @@
 					S.pickups.splice(i, 1);
 				}
 				if (S.enemies.length === 0 && !S._roomOverlay && !S._trainerBattle) {
+					// Perk selection overlay after combat/ambush/miniboss rooms
+					if (!S._perkDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss')) {
+						S._perkDone = true;
+						S._roomOverlay = true;
+						S._pendingOverlay = 'perk';
+						S._pendingOverlayTick = S.tick;
+					} else {
 					S.doorOpen = true;
+					}
 					if (S._ambushRoom && !S._ambushDropped) {
 						S._ambushDropped = true;
 						const rk1 = randomRelic(S.relics); const rk2 = randomRelic([...S.relics, rk1||'']);
@@ -5259,12 +5349,40 @@
 				for (const e of S.enemies) {
 					const hurt = e.hurt > 0 || e.critFlash > 0;
 					const critGold = e.critFlash > 0;
-					// Elite aura
+					// Elite aura (gold → red when berserk)
 					if (e.elite && !e.boss) {
 						ctx.globalAlpha = 0.3 + Math.sin(t*0.15)*0.15;
-						ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2.5;
+						ctx.strokeStyle = e._berserk ? '#ff3020' : '#ffd700';
+						ctx.lineWidth = e._berserk ? 3.5 : 2.5;
 						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+5, 0, 7); ctx.stroke();
+						if (e._berserk) {
+							ctx.globalAlpha = 0.1 + Math.sin(t*0.25)*0.08;
+							ctx.strokeStyle = '#ff6030'; ctx.lineWidth = 9;
+							ctx.beginPath(); ctx.arc(e.x, e.y, e.r+2, 0, 7); ctx.stroke();
+						}
 						ctx.globalAlpha = 1;
+					}
+					// Charger windup telegraph
+					if (e.chargeWind > 0) {
+						const _wp = e.chargeWind / 22;
+						ctx.globalAlpha = 0.55 + Math.sin(t*1.2)*0.3;
+						ctx.strokeStyle = '#ff8020'; ctx.lineWidth = 2.5;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+5, 0, Math.PI*2); ctx.stroke();
+						ctx.globalAlpha = _wp * 0.8;
+						ctx.strokeStyle = '#ffcc40'; ctx.lineWidth = 1.5;
+						const _cwa = Math.atan2(S.py-e.y, S.px-e.x);
+						ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.x+Math.cos(_cwa)*30, e.y+Math.sin(_cwa)*30); ctx.stroke();
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					}
+					// Sniper aim-line telegraph
+					if (e._sniperAim > 0) {
+						const _sp = 1 - e._sniperAim/28;
+						const _sa2 = Math.atan2(S.py-e.y, S.px-e.x);
+						ctx.setLineDash([5,5]);
+						ctx.globalAlpha = 0.25 + _sp*0.5;
+						ctx.strokeStyle = '#ff1030'; ctx.lineWidth = 1.5;
+						ctx.beginPath(); ctx.moveTo(e.x,e.y); ctx.lineTo(e.x+Math.cos(_sa2)*160,e.y+Math.sin(_sa2)*160); ctx.stroke();
+						ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.lineWidth = 1;
 					}
 					if (e.boss) {
 						const by = e.y + Math.sin(t * 0.06) * 3;
@@ -5806,7 +5924,8 @@
 					relics: [], kills: 0, comboKills: 0, comboTimer: 0, rollT: 0, rollCd: 0, rollVx: 0, rollVy: 0,
 					tapDir: '', tapT: -99, ePrev: true,
 					statuses: { burn:0, poison:0, para:0, sleep:0 },
-					_roomOverlay: false, _pendingOverlay: null, _ambushRoom: false, _ambushDropped: false,
+					_roomOverlay: false, _pendingOverlay: null, _ambushRoom: false, _ambushDropped: false, _perkDone: false,
+					perks: {},
 					_trainerBattle: false, _trainerData: null, _trainerTeamIdx: 0, _trainerOnDone: null,
 					_focusUsed: false, _recapShown: false, berryUsed: false,
 					bossArchetype: chosenBoss,
