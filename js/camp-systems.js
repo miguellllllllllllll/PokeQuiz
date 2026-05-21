@@ -4446,6 +4446,8 @@
 					return;
 				}
 				if (S._roomOverlay) return;
+				// Hit-stop: skip 1 logic frame on enemy kill for impact feel
+				if (S.hitStop > 0) { S.hitStop--; return; }
 				// Trainer battle wave progression
 				if (S._trainerBattle && S.enemies.length === 0) {
 					S._trainerTeamIdx++;
@@ -4463,6 +4465,7 @@
 				// Status ticks
 				for (const [k, v] of Object.entries(S.statuses)) { if (v > 0) S.statuses[k]--; }
 				if (S.statuses.burn > 0 && S.tick % 60 === 0) { S.hp--; S.flash = 4; }
+				if (S.comboTimer > 0) { S.comboTimer--; if (S.comboTimer <= 0) S.comboKills = 0; }
 				if (S.statuses.poison > 0 && S.tick % 90 === 0) { S.hp--; S.flash = 4; }
 				const paralysed = S.statuses.para > 0 && Math.random() < 0.25;
 				const sleeping  = S.statuses.sleep > 0;
@@ -4499,7 +4502,7 @@
 				const edge = (cur, name, vx, vy) => {
 					if (cur && !S._pk[name]) {
 						if (S.tapDir===name && S.tick-S.tapT<16 && S.rollT<=0) {
-							S.rollT=rollDur; S.rollVx=vx*4.6; S.rollVy=vy*4.6;
+							S.rollT=rollDur; S.rollVx=vx*4.6; S.rollVy=vy*4.6; S.rollCd=50;
 						}
 						S.tapDir=name; S.tapT=S.tick;
 					}
@@ -4516,6 +4519,8 @@
 					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+mx*SP));
 					S.py = Math.max(WALL+7, Math.min(H-WALL-7, S.py+my*SP));
 				}
+				// Track roll cooldown for visual indicator
+				if (S.rollT <= 0 && S.rollCd > 0) S.rollCd--;
 				// Partner follows the player path via a position-history trail.
 				S.ptrail.push({ x: S.px, y: S.py });
 				if (S.ptrail.length > 18) S.ptrail.shift();
@@ -4710,6 +4715,9 @@
 								const baseSD = (e.boss||e.miniboss ? 12 : 1) + (S.modifier === 'frail' ? 5 : 0) + (S.endlessLoop||0);
 								S.stardust += baseSD * (S.relics.indexOf("lucky") >= 0 ? 2 : 1);
 								S.kills++;
+								S.comboKills++; S.comboTimer = 120;
+								if (!e.boss) S.hitStop = Math.max(S.hitStop || 0, 1);
+								S.fx.push({ kind:'ring', x:e.x, y:e.y, r:e.r+2, life:20, maxLife:20, col:(TYPE_COLOR[e.eType]||{}).body||'#ffffff' });
 								S.partnerXP++;
 								if (S.partnerLevel<2 && S.partnerXP>=8) { S.partnerLevel=2; showToast(S.partnerNickname+' reached Lv.2!'); try { Sound.evolve && Sound.evolve(); } catch(_) {} }
 								else if (S.partnerLevel<3 && S.partnerXP>=20) { S.partnerLevel=3; showToast(S.partnerNickname+' reached Lv.3!'); try { Sound.evolve && Sound.evolve(); } catch(_) {} }
@@ -4719,7 +4727,8 @@
 								if (e.held === 'berries') S.pickups.push({ x: e.x, y: e.y+10, kind: 'heart', r: 8, bob: Math.random()*5 });
 								try { Sound.plant && Sound.plant(); } catch(_) {}
 							}
-							for (let _k = 0; _k < 5; _k++) S.fx.push({ x: b.x, y: b.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 9 + Math.random()*6, col: e.hp <= 0 ? '#ffd060' : '#ffffff' });
+							const _pCol = e.hp <= 0 ? ((TYPE_COLOR[e.eType] || {}).body || '#ffd060') : '#ffffff';
+							for (let _k = 0; _k < 5; _k++) S.fx.push({ x: b.x, y: b.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 9 + Math.random()*6, col: _pCol });
 							// Pierce logic
 							if (b.pierce && (b.pierceHits||0) < 3) {
 								b.pierceHits = (b.pierceHits||0) + 1;
@@ -5049,6 +5058,21 @@
 						ctx.fillStyle = "rgba(255,255,255,0.035)"; ctx.fillRect(x + 1, y + 15, 15, 1);
 					}
 				}
+				// Corner stones — darkened squares at the 4 corners of the playable area
+				ctx.fillStyle = 'rgba(0,0,0,0.38)';
+				ctx.fillRect(WALL, WALL, 24, 24); ctx.fillRect(W-WALL-24, WALL, 24, 24);
+				ctx.fillRect(WALL, H-WALL-24, 24, 24); ctx.fillRect(W-WALL-24, H-WALL-24, 24, 24);
+				ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+				[[WALL,WALL],[W-WALL-24,WALL],[WALL,H-WALL-24],[W-WALL-24,H-WALL-24]].forEach(([cx,cy]) => {
+					ctx.strokeRect(cx+1, cy+1, 22, 22);
+				});
+				// Centre floor marking — subtle diamond
+				const cx2 = W/2, cy2 = H/2, cr = 22;
+				ctx.globalAlpha = 0.09; ctx.strokeStyle = '#a090c0'; ctx.lineWidth = 1.5;
+				ctx.beginPath();
+				ctx.moveTo(cx2, cy2-cr); ctx.lineTo(cx2+cr, cy2);
+				ctx.lineTo(cx2, cy2+cr); ctx.lineTo(cx2-cr, cy2); ctx.closePath(); ctx.stroke();
+				ctx.globalAlpha = 1; ctx.lineWidth = 1;
 				// walls — stone bricks
 				const brick = (bx, by, bw, bh) => {
 					for (let y = by; y < by + bh; y += 8) {
@@ -5090,8 +5114,21 @@
 					ctx.fillStyle = "#ffffff";
 					ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.42, 0, 7); ctx.fill();
 				};
-				for (const b of S.bullets) orb(b.x, b.y, 3.2, b.col);
-				for (const b of S.ebullets) orb(b.x, b.y, 3, b.col);
+				// Bullet trails
+				for (const b of S.bullets) {
+					ctx.globalAlpha = 0.35;
+					ctx.strokeStyle = b.col; ctx.lineWidth = 1.5;
+					ctx.beginPath(); ctx.moveTo(b.x - b.vx * 4, b.y - b.vy * 4); ctx.lineTo(b.x, b.y); ctx.stroke();
+					ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					orb(b.x, b.y, 3.2, b.col);
+				}
+				for (const b of S.ebullets) {
+					ctx.globalAlpha = 0.3;
+					ctx.strokeStyle = b.col; ctx.lineWidth = 1.2;
+					ctx.beginPath(); ctx.moveTo(b.x - b.vx * 3, b.y - b.vy * 3); ctx.lineTo(b.x, b.y); ctx.stroke();
+					ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					orb(b.x, b.y, 3, b.col);
+				}
 				// pickups
 				for (const p of S.pickups) {
 					const by = p.y + Math.sin((t + p.bob * 20) * 0.1) * 3;
@@ -5225,12 +5262,19 @@
 						ctx.beginPath(); ctx.arc(e.x, ey, 3.4, 0, 7); ctx.fill();
 						ctx.fillStyle = "#ffd0e0"; ctx.beginPath(); ctx.arc(e.x, ey, 1.6, 0, 7); ctx.fill();
 						// Aim preview when about to shoot
-						if (e.cd < 15) {
-							const aimA = Math.atan2(S.py-e.y, S.px-e.x);
-							ctx.globalAlpha = (15-e.cd)/15 * 0.4;
-							ctx.strokeStyle = '#ff3050'; ctx.lineWidth = 1; ctx.setLineDash([3,4]);
-							ctx.beginPath(); ctx.moveTo(e.x, ey); ctx.lineTo(e.x+Math.cos(aimA)*50, ey+Math.sin(aimA)*50); ctx.stroke();
-							ctx.setLineDash([]); ctx.globalAlpha = 1;
+						if (e.cd < 22) {
+							const aimA2 = Math.atan2(S.py - e.y, S.px - e.x);
+							const aimProg = (22 - e.cd) / 22;
+							// Glow halo
+							ctx.globalAlpha = aimProg * 0.25;
+							ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 5;
+							ctx.beginPath(); ctx.moveTo(e.x, ey); ctx.lineTo(e.x + Math.cos(aimA2)*60, ey + Math.sin(aimA2)*60); ctx.stroke();
+							// Core line
+							ctx.globalAlpha = aimProg * 0.85;
+							ctx.strokeStyle = aimProg > 0.7 ? '#ff2020' : '#ff8800';
+							ctx.lineWidth = 1.5;
+							ctx.beginPath(); ctx.moveTo(e.x, ey); ctx.lineTo(e.x + Math.cos(aimA2)*60, ey + Math.sin(aimA2)*60); ctx.stroke();
+							ctx.globalAlpha = 1; ctx.lineWidth = 1;
 						}
 					} else {
 						const sq = Math.sin(t * 0.18 + e.x) * 1.4;
@@ -5344,6 +5388,22 @@
 					}
 					if (S.pMuzzle > 0) { ctx.fillStyle = "rgba(255,240,170,0.9)"; ctx.beginPath(); ctx.arc(px + Math.cos(S.pAim) * 11, py - 9 + Math.sin(S.pAim) * 11, 4, 0, 7); ctx.fill(); }
 				}
+				// Dodge availability ring
+				if (!S.rollT) {
+					const rollFill = S.rollCd > 0 ? 1 - S.rollCd / 50 : 1;
+					const ringR = 10;
+					ctx.globalAlpha = 0.55;
+					// background ring
+					ctx.strokeStyle = 'rgba(80,60,120,0.6)'; ctx.lineWidth = 1.5;
+					ctx.beginPath(); ctx.arc(S.px, S.py + 7, ringR, 0, Math.PI * 2); ctx.stroke();
+					// fill arc
+					ctx.strokeStyle = rollFill >= 1 ? '#a0e8ff' : '#6060c0';
+					ctx.lineWidth = 2;
+					ctx.beginPath();
+					ctx.arc(S.px, S.py + 7, ringR, -Math.PI/2, -Math.PI/2 + rollFill * Math.PI * 2);
+					ctx.stroke();
+					ctx.globalAlpha = 1; ctx.lineWidth = 1;
+				}
 				// Sylveon barrier glow
 				if (S.barrier > 0) {
 					ctx.globalAlpha = 0.25 + Math.sin(S.tick*0.15)*0.1;
@@ -5368,6 +5428,15 @@
 							ctx.lineTo(ox,oy);
 						}
 						ctx.lineTo(lx2,ly2); ctx.stroke(); ctx.globalAlpha = 1;
+					} else if (p.kind === 'ring') {
+						const rProg = 1 - p.life / p.maxLife;
+						ctx.globalAlpha = p.life / p.maxLife;
+						ctx.strokeStyle = p.col;
+						ctx.lineWidth = 2.5;
+						ctx.beginPath();
+						ctx.arc(p.x, p.y, p.r + rProg * 20, 0, Math.PI * 2);
+						ctx.stroke();
+						ctx.lineWidth = 1;
 					} else if (p.dmgText) {
 						const dAlpha = Math.min(1, p.life / 20);
 						ctx.globalAlpha = dAlpha;
@@ -5382,7 +5451,8 @@
 					} else {
 						ctx.globalAlpha = Math.min(1, p.life / 9);
 						ctx.fillStyle = p.col;
-						ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3);
+						const pr = Math.max(0.5, p.life * 0.18);
+						ctx.beginPath(); ctx.arc(p.x, p.y, pr, 0, Math.PI * 2); ctx.fill();
 					}
 				}
 				ctx.globalAlpha = 1;
@@ -5421,6 +5491,21 @@
 					ctx.globalAlpha = 1;
 					S.roomBanner--;
 				}
+				if (S.comboKills >= 3) {
+					const cAlpha = Math.min(1, S.comboTimer / 40);
+					ctx.globalAlpha = cAlpha;
+					const cScale = 1 + Math.sin(S.tick * 0.3) * 0.06;
+					ctx.save(); ctx.translate(VW / 2, VH / 2 - 30); ctx.scale(cScale, cScale);
+					ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center';
+					ctx.fillStyle = '#000'; ctx.fillText('×' + S.comboKills + ' COMBO', 1, 1);
+					ctx.fillStyle = S.comboKills >= 8 ? '#ff4040' : S.comboKills >= 5 ? '#ff9040' : '#ffe060';
+					ctx.fillText('×' + S.comboKills + ' COMBO', 0, 0);
+					ctx.restore(); ctx.globalAlpha = 1;
+				}
+				// HUD backing strips
+				ctx.fillStyle = 'rgba(8,5,18,0.62)';
+				ctx.fillRect(0, 0, VW, 44);           // top bar
+				ctx.fillRect(0, VH - 28, VW, 28);     // bottom bar (relics)
 				// HUD
 				ctx.fillStyle = "rgba(10,8,18,0.7)"; ctx.fillRect(0, 0, VW, 16);
 				// Subtle gradient border
@@ -5656,7 +5741,7 @@
 					result: null, endTimer: 0, tick: 0, flash: 0, roomType: 'combat', rapid: false,
 					energy: 60, maxEnergy: 100, novaCd: 0,
 					stardust: startStarBonus, bonusDmg: 0,
-					relics: [], kills: 0, rollT: 0, rollVx: 0, rollVy: 0,
+					relics: [], kills: 0, comboKills: 0, comboTimer: 0, rollT: 0, rollCd: 0, rollVx: 0, rollVy: 0,
 					tapDir: '', tapT: -99, ePrev: true,
 					statuses: { burn:0, poison:0, para:0, sleep:0 },
 					_roomOverlay: false, _pendingOverlay: null, _ambushRoom: false, _ambushDropped: false,
@@ -5668,7 +5753,7 @@
 					synergies: new Set(),
 					endlessLoop: 0,
 					roomTimer: 0,
-					shake: 0,
+					shake: 0, hitStop: 0,
 					roomBanner: 0,
 					roomFlash: 0,
 					frozenField: 0,
