@@ -4249,10 +4249,38 @@
 				el.appendChild(campBtn);
 				el.hidden = false;
 			}
+			function genObstacles(roomType) {
+				const obs = [];
+				if (roomType === 'boss' || roomType === 'treasure' || roomType === 'rest' ||
+					roomType === 'shop' || roomType === 'puzzle' || roomType === 'shrine' ||
+					roomType === 'curse' || roomType === 'trainer') return obs;
+				const cx = W / 2, cy = H / 2;
+				const PR = 13;
+				function safe(x, y) {
+					if (Math.abs(x - W/2) < 52 && y < WALL + 65) return false;       // near door
+					if (Math.abs(x - W/2) < 64 && y > H - WALL - 95) return false;   // near player start
+					if (x < WALL+PR+4 || x > W-WALL-PR-4 || y < WALL+PR+4 || y > H-WALL-PR-4) return false;
+					for (const o of obs) { if ((x-o.x)**2+(y-o.y)**2 < (PR*2+16)**2) return false; }
+					return true;
+				}
+				function add(x, y) { if (safe(x, y)) obs.push({x, y, r:PR}); }
+				const templates = [
+					() => { add(cx-90,cy-55); add(cx+90,cy-55); add(cx-90,cy+55); add(cx+90,cy+55); },
+					() => { add(cx,cy-105); add(cx+105,cy); add(cx,cy+75); add(cx-105,cy); },
+					() => { add(cx-115,cy-65); add(cx-115,cy+35); add(cx+115,cy-65); add(cx+115,cy+35); },
+					() => { add(cx-130,cy); add(cx,cy-75); add(cx+130,cy); },
+					() => { add(cx-85,cy-75); add(cx+85,cy-75); add(cx-85,cy+45); },
+				];
+				templates[Math.floor(Math.random() * templates.length)]();
+				if (roomType === 'ambush' && Math.random() < 0.65) {
+					[() => add(cx+75,cy+75), () => add(cx-75,cy+75), () => add(cx,cy+80)][Math.floor(Math.random()*3)]();
+				}
+				return obs;
+			}
 			function newRoom() {
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
-				S.hazards = [];
+				S.hazards = []; S.obstacles = [];
 				S._roomOverlay = false;
 				S._trainerBattle = false;
 				S.berryUsed = false;
@@ -4392,6 +4420,8 @@
 						S._ambushRoom = true;
 					}
 				}
+				// Generate room obstacles (pillars/cover) for combat rooms
+				S.obstacles = genObstacles(S.roomType);
 			}
 			// Called once per room after overlay
 			function openRoomAfterOverlay() {
@@ -4518,6 +4548,11 @@
 					if (mx && my) { mx *= 0.707; my *= 0.707; }
 					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+mx*SP));
 					S.py = Math.max(WALL+7, Math.min(H-WALL-7, S.py+my*SP));
+				}
+				// Obstacle (pillar) collision for player
+				if (S.obstacles) for (const ob of S.obstacles) {
+					const dx=S.px-ob.x, dy=S.py-ob.y, d2=dx*dx+dy*dy, minD=ob.r+8;
+					if (d2 < minD*minD) { const d=Math.sqrt(d2)||0.01; const p=minD-d+0.5; S.px+=dx/d*p; S.py+=dy/d*p; }
 				}
 				// Track roll cooldown for visual indicator
 				if (S.rollT <= 0 && S.rollCd > 0) S.rollCd--;
@@ -4669,6 +4704,7 @@
 						if (nt) { const ha=Math.atan2(nt.y-b.y,nt.x-b.x); b.vx+=Math.cos(ha)*0.18; b.vy+=Math.sin(ha)*0.18; const spd=Math.hypot(b.vx,b.vy); if(spd>4.2){b.vx=b.vx/spd*4.2;b.vy=b.vy/spd*4.2;} }
 					}
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.bullets.splice(i, 1); continue; }
+					if (S.obstacles && !b.pierce && !b.isNova) { let ho=false; for (const ob of S.obstacles) { if ((b.x-ob.x)**2+(b.y-ob.y)**2 < ob.r*ob.r) { ho=true; break; } } if (ho) { S.bullets.splice(i,1); continue; } }
 					let hit = false;
 					for (const e of S.enemies) {
 						if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) {
@@ -4855,6 +4891,11 @@
 					// Clamp to room bounds
 					e.x = Math.max(WALL + e.r, Math.min(W - WALL - e.r, e.x));
 					e.y = Math.max(WALL + e.r, Math.min(H - WALL - e.r, e.y));
+					// Obstacle (pillar) collision for enemies
+					if (S.obstacles) for (const ob of S.obstacles) {
+						const dx=e.x-ob.x, dy=e.y-ob.y, d2=dx*dx+dy*dy, minD=ob.r+e.r;
+						if (d2 < minD*minD) { const d=Math.sqrt(d2)||0.01; const p=minD-d+0.5; e.x+=dx/d*p; e.y+=dy/d*p; }
+					}
 					if ((e.x - S.px) ** 2 + (e.y - S.py) ** 2 < (e.r + 7) ** 2 && S.invuln <= 0 && S.barrier <= 0) {
 						if (S.relics.indexOf('thorns') >= 0) { const thDmg = (S.synergies && S.synergies.has('ironbarbs')) ? 2 : 1; e.hp -= thDmg; if(e.hp<=0&&!e._dead){e._dead=true;S.kills++;S.stardust+=(S.relics.indexOf('lucky')>=0?2:1);} }
 						if (S.hp <= 1 && S.relics.indexOf('focus') >= 0 && !S._focusUsed && Math.random() < 0.2) {
@@ -4948,6 +4989,7 @@
 					const b = S.ebullets[i]; b.x += b.vx; b.y += b.vy;
 					if (b.homing) { const ha=Math.atan2(S.py-b.y,S.px-b.x); b.vx+=Math.cos(ha)*0.14; b.vy+=Math.sin(ha)*0.14; }
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.ebullets.splice(i, 1); continue; }
+					if (S.obstacles) { let ho=false; for (const ob of S.obstacles) { if ((b.x-ob.x)**2+(b.y-ob.y)**2 < ob.r*ob.r) { ho=true; break; } } if (ho) { S.ebullets.splice(i,1); continue; } }
 					if ((b.x - S.px) ** 2 + (b.y - S.py) ** 2 < (b.r + 7) ** 2 && S.invuln <= 0) {
 						if (S.barrier > 0) { S.ebullets.splice(i,1); continue; }
 						const guardT = S.synergies && S.synergies.has('ironbarbs') ? 90 : (S.relics.indexOf("guard") >= 0 ? 72 : 52);
@@ -5100,6 +5142,19 @@
 					for (let i = 0; i < 5; i++) ctx.fillRect(dx - 13 + i * 6, 2, 3, WALL - 4);
 				}
 				ctx.fillStyle = "#2a2240"; ctx.fillRect(dx - 16, 0, 3, WALL); ctx.fillRect(dx + 13, 0, 3, WALL);
+				// Pillars / obstacles
+				if (S.obstacles) for (const ob of S.obstacles) {
+					ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
+					ctx.beginPath(); ctx.arc(ob.x+3, ob.y+5, ob.r, 0, Math.PI*2); ctx.fill();
+					ctx.globalAlpha = 1;
+					ctx.fillStyle = '#2d2448';
+					ctx.beginPath(); ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI*2); ctx.fill();
+					ctx.strokeStyle = '#5a4e82'; ctx.lineWidth = 2;
+					ctx.beginPath(); ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI*2); ctx.stroke();
+					ctx.fillStyle = 'rgba(255,255,255,0.09)';
+					ctx.beginPath(); ctx.arc(ob.x - ob.r*0.3, ob.y - ob.r*0.35, ob.r*0.55, 0, Math.PI*2); ctx.fill();
+					ctx.lineWidth = 1;
+				}
 				// soft shadows
 				ctx.fillStyle = "rgba(0,0,0,0.34)";
 				for (const e of S.enemies) { ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r - 1, e.r, e.r * 0.42, 0, 0, 7); ctx.fill(); }
@@ -5742,7 +5797,7 @@
 					partnerForm: form, partnerNickname: nickname || formDisplayName(form),
 					partnerLevel: 1, partnerXP: 0,
 					bullets: [], ebullets: [], enemies: [], fx: [], pickups: [], ptrail: [],
-					hazards: [],
+					hazards: [], obstacles: [],
 					fireCd: 0, partnerCd: 0, invuln: 0, doorOpen: false,
 					faceX: 0, faceY: 1, pMuzzle: 0, partnerMuzzle: 0, walkPhase: 0,
 					result: null, endTimer: 0, tick: 0, flash: 0, roomType: 'combat', rapid: false,
