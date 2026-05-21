@@ -4445,10 +4445,55 @@
 				}
 				return hzs;
 			}
+			function spawnGauntletWave(wave) {
+				const fl = S.floor || 1;
+				const tier = Math.min(2, fl - 1);
+				const eType = ['poison','psychic','dark'][tier];
+				const tierHpMin = [3,6,11][tier], tierHpMax = [5,10,18][tier];
+				const tierSpd = [0.62,0.82,1.02][tier], tierR = [7,10,12][tier];
+				const floorHpMult = [1.0,1.6,2.5][fl-1], floorSpdMult = [1.0,1.2,1.45][fl-1];
+				const baseN = 4 + (fl - 1) * 2; // 4, 6, 8 per floor
+				const n = Math.round(baseN * (1 + (wave - 1) * 0.5)); // wave1=base, wave2=×1.5, wave3=×2
+				for (let i = 0; i < n; i++) {
+					const hp = Math.max(1, Math.round((tierHpMin + Math.floor(Math.random()*(tierHpMax-tierHpMin+1))) * floorHpMult));
+					const _spawnA = (i / n) * Math.PI * 2 + Math.random() * 0.6;
+					const _spawnD = 110 + Math.random() * 80;
+					const _sx = Math.max(WALL+20, Math.min(W-WALL-20, W/2 + Math.cos(_spawnA)*_spawnD));
+					const _sy = Math.max(WALL+20, Math.min(H-WALL-120, H/2 - 30 + Math.sin(_spawnA)*_spawnD));
+					const _shooter = Math.random() < [0.42,0.55,0.68][fl-1];
+					const enemy = {
+						x:_sx, y:_sy, hp, maxHp:hp, r:tierR,
+						shooter:_shooter, cd:50+Math.random()*70,
+						spd:(_shooter ? tierSpd*0.7 : tierSpd+Math.random()*0.2)*floorSpdMult,
+						hurt:0, eType, held:null, heldUsed:false,
+						moveMode:['charger','circler','flanker','retreater','sniper'][Math.floor(Math.random()*5)],
+						attackPat:tier>=1&&Math.random()<0.3?'spread':'straight',
+						zigTimer:0, burstQueue:0, shellHp:0, eStatuses:{},
+					};
+					// Wave 2+: all enemies get a special type
+					if (wave >= 2) {
+						const _sp = Math.random();
+						if (_sp < 0.25) enemy.special = 'splitter';
+						else if (_sp < 0.50) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
+						else if (_sp < 0.75) enemy.special = 'rusher';
+						else { enemy.special = 'shielder'; enemy._shieldAngle = Math.random()*Math.PI*2; }
+					}
+					// Wave 3: first enemy is elite
+					if (wave === 3 && i === 0) {
+						enemy.elite = true;
+						enemy.hp = Math.ceil(enemy.hp * 2.2);
+						enemy.maxHp = enemy.hp;
+						enemy.spd *= 1.3;
+						enemy.r += 2;
+					}
+					S.enemies.push(enemy);
+				}
+				showToast('⚡ Wave ' + wave + ' / 3' + (wave===2?' — Mutants incoming!':wave===3?' — Final wave!':''));
+			}
 			function newRoom() {
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
-				S.hazards = []; S.obstacles = []; S.floorHazards = []; S._perkDone = false; S._clearDone = false; S._clearFlash = 0;
+				S.hazards = []; S.obstacles = []; S.floorHazards = []; S._perkDone = false; S._clearDone = false; S._clearFlash = 0; S._gauntletWave = 0; S._gauntletPending = 0; S._gauntletDone = false; S._eliteDropped = false;
 				S.roomThemeIdx = S.roomType === 'boss' ? 3 : Math.min(2, (S.floor||1) - 1);
 				S._roomOverlay = false;
 				S._trainerBattle = false;
@@ -4473,10 +4518,11 @@
 					else if (roomInFloor === 4) { S.roomType = 'miniboss'; }
 					else if (roomInFloor === 3) {
 						if (fl === 1) S.roomType = Math.random() < 0.5 ? 'treasure' : 'rest';
-						else if (fl === 2) S.roomType = (['shrine','shop','trainer','puzzle'])[Math.floor(Math.random()*4)];
-						else              S.roomType = Math.random() < 0.5 ? 'puzzle' : 'rest';
+						else if (fl === 2) S.roomType = Math.random() < 0.5 ? 'gauntlet' : (['shrine','shop','trainer'])[Math.floor(Math.random()*3)];
+						else              S.roomType = 'gauntlet'; // floor 3 always gauntlet
 					} else if (roomInFloor === 2) {
-						S.roomType = Math.random() < 0.55 ? 'combat' : 'ambush';
+						const _r2 = Math.random();
+						S.roomType = (_r2 < (fl >= 3 ? 0.30 : 0)) ? 'elite_room' : (_r2 < 0.55 ? 'combat' : 'ambush');
 					} else {
 						S.roomType = 'combat'; // room 1 always combat
 					}
@@ -4535,7 +4581,7 @@
 						mbKey: mbt.key, shieldAngle:0, chargeTimer:0, charging:0, _split:false,
 						eStatuses:{},
 					});
-				} else {
+				} else if (S.roomType === 'combat' || S.roomType === 'ambush') {
 					// combat or ambush
 					const isAmbush = (S.roomType === 'ambush');
 					const isHorde = S.modifier === 'horde';
@@ -4620,6 +4666,35 @@
 						// drop 2 relics + stardust on clear — set a flag
 						S._ambushRoom = true;
 					}
+				} else if (S.roomType === 'elite_room') {
+					// All enemies are elite — 40% fewer but each is an elite
+					const _eft = Math.min(2, (S.floor||1) - 1);
+					const _efeType = ['poison','psychic','dark'][_eft];
+					const _efHpMin = [3,6,11][_eft], _efHpMax = [5,10,18][_eft];
+					const _efSpd = [0.62,0.82,1.02][_eft], _efR = [7,10,12][_eft];
+					const _efFlHp = [1.0,1.6,2.5][(S.floor||1)-1];
+					const _efFlSpd = [1.0,1.2,1.45][(S.floor||1)-1];
+					const _efN = Math.max(3, Math.round((3 + ((r-1)%ROOMS_PER_FLOOR) + (S.floor||1)*2) * 0.6));
+					for (let i = 0; i < _efN; i++) {
+						const _efHp = Math.ceil(((_efHpMin + Math.floor(Math.random()*(_efHpMax-_efHpMin+1))) * _efFlHp) * 2.2);
+						const _efA = (i/_efN)*Math.PI*2 + Math.random()*0.8;
+						const _efD = 110 + Math.random()*90;
+						const _efX = Math.max(WALL+20, Math.min(W-WALL-20, W/2+Math.cos(_efA)*_efD));
+						const _efY = Math.max(WALL+20, Math.min(H-WALL-120, H/2-30+Math.sin(_efA)*_efD));
+						S.enemies.push({
+							x:_efX, y:_efY, hp:_efHp, maxHp:_efHp, r:_efR+2,
+							shooter:Math.random()<0.5, cd:50+Math.random()*70,
+							spd:(_efSpd+0.2)*_efFlSpd*1.3, hurt:0, eType:_efeType,
+							held:null, heldUsed:false,
+							moveMode:['circler','flanker','sniper','retreater'][Math.floor(Math.random()*4)],
+							attackPat:_eft>=1?'spread':'straight',
+							zigTimer:0, burstQueue:0, shellHp:0, elite:true, eStatuses:{},
+						});
+					}
+				} else if (S.roomType === 'gauntlet') {
+					// Gauntlet: start wave 1
+					S._gauntletWave = 1;
+					spawnGauntletWave(1);
 				}
 				// Generate room obstacles (pillars/cover) for combat rooms
 				S.obstacles = genObstacles(S.roomType);
@@ -5379,21 +5454,45 @@
 					S.enemies.push({x:rx,y:ry,hp:reinHp,maxHp:reinHp,r:[8,10,12][tier],shooter:Math.random()<0.4,cd:40,spd:[0.7,0.9,1.1][tier],hurt:0,eType,held:null,heldUsed:false,moveMode:'charger',attackPat:'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_reinf:true});
 					S.fx.push(...Array.from({length:8},()=>({x:rx,y:ry,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:12,col:'#ff4040'})));
 				}
+				// Gauntlet wave countdown
+				if (S.roomType === 'gauntlet' && S._gauntletPending > 0) {
+					S._gauntletPending--;
+					if (S._gauntletPending === 0) {
+						S._clearDone = false;
+						S._gauntletWave++;
+						spawnGauntletWave(S._gauntletWave);
+					}
+				}
 				if (S.enemies.length === 0 && !S._roomOverlay && !S._trainerBattle) {
 					// Room clear fanfare — fires once when enemies just hit 0
-					if (!S._clearDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss')) {
+					if (!S._clearDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss'||(S.roomType==='gauntlet'&&S._gauntletDone)||S.roomType==='elite_room')) {
 						S._clearDone = true; S._clearFlash = 55;
 						const cx2=W/2,cy2=H/2;
 						for (let _k=0;_k<24;_k++) { const _a=_k/24*Math.PI*2; S.fx.push({x:cx2+Math.cos(_a)*30,y:cy2+Math.sin(_a)*30,vx:Math.cos(_a)*4.5,vy:Math.sin(_a)*4.5,life:28,col:['#ffe060','#60d060','#60c0ff','#ff8060'][_k%4]}); }
 					}
 					// Perk selection overlay after combat/ambush/miniboss rooms
-					if (!S._perkDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss')) {
+					if (!S._perkDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss'||(S.roomType==='gauntlet'&&S._gauntletDone)||S.roomType==='elite_room')) {
 						S._perkDone = true;
 						S._roomOverlay = true;
 						S._pendingOverlay = 'perk';
 						S._pendingOverlayTick = S.tick;
 					} else {
 					S.doorOpen = true;
+					}
+					// Block door for gauntlet until all waves cleared
+					if (S.roomType === 'gauntlet' && !S._gauntletDone && !S._gauntletPending) {
+						S._gauntletPending = 60; // countdown to next wave
+					}
+					// Gauntlet complete bonus stardust (fires once)
+					if (S.roomType === 'gauntlet' && S._gauntletDone && !S._gauntletBonusDone) {
+						S._gauntletBonusDone = true; S.stardust += 15;
+					}
+					// Elite room: drop a relic on clear
+					if (S.roomType === 'elite_room' && !S._eliteDropped) {
+						S._eliteDropped = true;
+						const _erk = randomRelic(S.relics);
+						if (_erk) { S.pickups.push({x:W/2,y:H/2,kind:'relic',relic:_erk,r:11,bob:0}); showToast('👑 Elite Room cleared — Relic dropped!'); }
+						else { S.stardust += 12; showToast('👑 Elite Room cleared! +12 Stardust'); }
 					}
 					if (S._ambushRoom && !S._ambushDropped) {
 						S._ambushDropped = true;
@@ -6038,8 +6137,8 @@
 				// Room entry banner (fades in/out over 90 ticks)
 				if (S.roomBanner > 0) {
 					const bannerAlpha = S.roomBanner > 70 ? (90 - S.roomBanner) / 20 : Math.min(1, S.roomBanner / 30);
-					const ROOM_LABELS = { combat:'⚔ Combat', boss:'💀 Boss Fight', miniboss:'🔥 Mini-Boss', treasure:'💎 Treasure Room', rest:'💙 Rest Room', shop:'🛒 Shop', puzzle:'🧩 Puzzle', shrine:'🌟 Shrine', trainer:'🎌 Trainer Battle', ambush:'⚠ Ambush!' };
-					const ROOM_COLORS = { combat:'#ff6040', boss:'#c040ff', miniboss:'#ff9020', treasure:'#ffe060', rest:'#60d0ff', shop:'#a0e070', puzzle:'#80c0ff', shrine:'#ffc060', trainer:'#ff8090', ambush:'#ff8030' };
+					const ROOM_LABELS = { combat:'⚔ Combat', boss:'💀 Boss Fight', miniboss:'🔥 Mini-Boss', treasure:'💎 Treasure Room', rest:'💙 Rest Room', shop:'🛒 Shop', puzzle:'🧩 Puzzle', shrine:'🌟 Shrine', trainer:'🎌 Trainer Battle', ambush:'⚠ Ambush!', gauntlet:'⚡ Gauntlet', elite_room:'👑 Elite Chamber' };
+					const ROOM_COLORS = { combat:'#ff6040', boss:'#c040ff', miniboss:'#ff9020', treasure:'#ffe060', rest:'#60d0ff', shop:'#a0e070', puzzle:'#80c0ff', shrine:'#ffc060', trainer:'#ff8090', ambush:'#ff8030', gauntlet:'#ff4090', elite_room:'#e0b030' };
 					const label = ROOM_LABELS[S.roomType] || S.roomType;
 					const accentCol = ROOM_COLORS[S.roomType] || '#ffe060';
 					const _rif = ((S.room-1) % ROOMS_PER_FLOOR) + 1; const roomNum = S.endlessLoop > 0 ? 'ENDLESS ×' + S.endlessLoop + ' — R' + S.room : 'FL.' + (S.floor||1) + '  ·  ROOM ' + _rif + ' / ' + ROOMS_PER_FLOOR;
@@ -6091,6 +6190,7 @@
 				ctx.textAlign = "center";
 				if (S.roomType === "boss" && S.enemies.length) { ctx.fillStyle = "#ff7a8a"; ctx.fillText("BOSS FIGHT", VW / 2, 11); }
 				else if (S.roomType === "treasure" && S.pickups.length) { ctx.fillStyle = "#9effa0"; ctx.fillText("TREASURE ROOM", VW / 2, 11); }
+				else if (S.roomType === 'gauntlet' && !S._gauntletDone) { ctx.fillStyle = '#ff4090'; ctx.fillText('⚡ WAVE ' + (S._gauntletWave||1) + '/3  ·  ' + S.enemies.length + ' foes', VW/2, 11); }
 				else if (S.enemies.length) { ctx.fillStyle = "#c8a0ff"; ctx.fillText(S.enemies.length + " foes", VW / 2, 11); }
 				else if (S.roomType === "rest") { ctx.fillStyle = "#7ad0ff"; ctx.fillText("REST ROOM", VW / 2, 11); }
 				else if (S.roomType === "shop") { ctx.fillStyle = "#ffd24a"; ctx.fillText("SHOP", VW / 2, 11); }
@@ -6370,7 +6470,7 @@
 					minibossType: chosenMiniboss,
 					modifier: chosenMod.key,
 					synergies: new Set(),
-					endlessLoop: 0, floor: 1, _descendShown: false,
+					endlessLoop: 0, floor: 1, _descendShown: false, _gauntletWave: 0, _gauntletPending: 0, _gauntletDone: false, _gauntletBonusDone: false, _eliteDropped: false,
 					roomTimer: 0,
 					shake: 0, hitStop: 0, startTime: Date.now(),
 					roomBanner: 0,
