@@ -5114,18 +5114,24 @@
 					ctx.fillStyle = "#ffffff";
 					ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.42, 0, 7); ctx.fill();
 				};
-				// Bullet trails
+				// Bullet trails — gradient fade from transparent tail to full bullet colour
 				for (const b of S.bullets) {
-					ctx.globalAlpha = 0.35;
-					ctx.strokeStyle = b.col; ctx.lineWidth = 1.5;
-					ctx.beginPath(); ctx.moveTo(b.x - b.vx * 4, b.y - b.vy * 4); ctx.lineTo(b.x, b.y); ctx.stroke();
+					const tx = b.x - b.vx * 3.5, ty = b.y - b.vy * 3.5;
+					const tg = ctx.createLinearGradient(tx, ty, b.x, b.y);
+					tg.addColorStop(0, 'rgba(0,0,0,0)');
+					tg.addColorStop(1, b.col);
+					ctx.globalAlpha = 0.75; ctx.strokeStyle = tg; ctx.lineWidth = 2.2;
+					ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(b.x, b.y); ctx.stroke();
 					ctx.globalAlpha = 1; ctx.lineWidth = 1;
 					orb(b.x, b.y, 3.2, b.col);
 				}
 				for (const b of S.ebullets) {
-					ctx.globalAlpha = 0.3;
-					ctx.strokeStyle = b.col; ctx.lineWidth = 1.2;
-					ctx.beginPath(); ctx.moveTo(b.x - b.vx * 3, b.y - b.vy * 3); ctx.lineTo(b.x, b.y); ctx.stroke();
+					const tx = b.x - b.vx * 3, ty = b.y - b.vy * 3;
+					const tg = ctx.createLinearGradient(tx, ty, b.x, b.y);
+					tg.addColorStop(0, 'rgba(0,0,0,0)');
+					tg.addColorStop(1, b.col);
+					ctx.globalAlpha = 0.6; ctx.strokeStyle = tg; ctx.lineWidth = 1.8;
+					ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(b.x, b.y); ctx.stroke();
 					ctx.globalAlpha = 1; ctx.lineWidth = 1;
 					orb(b.x, b.y, 3, b.col);
 				}
@@ -5441,11 +5447,12 @@
 						const dAlpha = Math.min(1, p.life / 20);
 						ctx.globalAlpha = dAlpha;
 						const isCritDmg = p.col === '#ffd700';
-						ctx.font = isCritDmg ? 'bold 12px monospace' : 'bold 10px monospace';
+						ctx.font = isCritDmg ? 'bold 16px monospace' : 'bold 13px monospace';
 						ctx.textAlign = 'center';
-						// drop shadow
-						ctx.fillStyle = 'rgba(0,0,0,0.7)';
-						ctx.fillText(p.dmgText, p.x + 1, p.y + 1);
+						// thick outline for readability
+						ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(0,0,0,0.92)';
+						ctx.lineJoin = 'round';
+						ctx.strokeText(p.dmgText, p.x, p.y);
 						ctx.fillStyle = p.col;
 						ctx.fillText(p.dmgText, p.x, p.y);
 					} else {
