@@ -4563,13 +4563,16 @@
 					S._pendingOverlay = 'trainer'; S._pendingOverlayTick = S.tick;
 				} else if (S.roomType === 'boss') {
 					const arch = S.bossArchetype || BOSS_ARCHETYPES[0];
+					const _bfl = S.floor || 1;
 					const hpScale = 1 + (S.endlessLoop||0) * 0.2;
-					const bhp = Math.round(arch.hp * 4 * hpScale);
+					const _flBossHpMult = [1.0, 1.5, 2.2][_bfl - 1];
+					const bhp = Math.round(arch.hp * 4 * hpScale * _flBossHpMult);
 					S.enemies.push({
 						x:W/2, y:WALL+96, hp:bhp, maxHp:bhp, r:22,
-						boss:true, shooter:true, cd:70, spd:0.55, hurt:0,
+						boss:true, shooter:true,
+						cd:[70,58,48][_bfl-1], spd:[0.55,0.68,0.82][_bfl-1], hurt:0,
 						eType: arch.eType, bossColor: arch.color, attackMode: arch.attackMode,
-						eStatuses:{},
+						bossFloor: _bfl, eStatuses:{},
 					});
 				} else if (S.roomType === 'miniboss') {
 					const mbt = S.minibossType || MINIBOSS_TYPES[0];
@@ -5108,20 +5111,37 @@
 					}
 				}
 				for (const e of S.enemies) {
-					// Boss phase 2: enrage at 50% HP
-					if (e.boss && !e._phase2 && e.hp > 0 && e.hp <= e.maxHp * 0.5) {
+					// Boss phase 2: enrage — threshold scales with floor
+					const _ph2Thresh = (e.bossFloor||1) >= 3 ? 0.75 : ((e.bossFloor||1) >= 2 ? 0.66 : 0.50);
+					if (e.boss && !e._phase2 && e.hp > 0 && e.hp <= e.maxHp * _ph2Thresh) {
 						e._phase2 = true;
 						e.spd = (e.spd||0.55) * 1.8;
 						e.cd = Math.min(e.cd, 25);
 						e.r += 4;
-						const _btier = Math.min(2, (S.floor||1) - 1);
-						for (let _k=0;_k<2;_k++) {
-							const _ba = _k/2*Math.PI*2;
-							S.enemies.push({x:e.x+Math.cos(_ba)*55,y:e.y+Math.sin(_ba)*55,hp:4+_btier*3,maxHp:4+_btier*3,r:9,shooter:true,cd:50+_k*30,spd:0.8,hurt:0,eType:e.eType,held:null,heldUsed:false,moveMode:'circler',attackPat:'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_summon:true});
+						const _btier = Math.min(2, (e.bossFloor||1) - 1);
+						const _summonCount = (e.bossFloor||1) >= 3 ? 3 : 2;
+						for (let _k=0;_k<_summonCount;_k++) {
+							const _ba = _k/_summonCount*Math.PI*2;
+							S.enemies.push({x:e.x+Math.cos(_ba)*55,y:e.y+Math.sin(_ba)*55,hp:4+_btier*3,maxHp:4+_btier*3,r:9,shooter:true,cd:50+_k*25,spd:0.8+_btier*0.15,hurt:0,eType:e.eType,held:null,heldUsed:false,moveMode:'circler',attackPat:_btier>=1?'spread':'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_summon:true});
 						}
 						S.shake = 14;
 						for (let _k=0;_k<20;_k++) S.fx.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7,life:20,col:'#ff2040'});
-						S._bossPhase2Flash = 20;
+						S._bossPhase2Flash = 20; S._bossPhaseFlashText = 'ENRAGED!';
+					}
+					// Boss phase 3: floor 3 only — triggers at 50% HP after phase 2
+					if (e.boss && e._phase2 && !e._phase3 && (e.bossFloor||1) >= 3 && e.hp > 0 && e.hp <= e.maxHp * 0.50) {
+						e._phase3 = true;
+						e.spd *= 1.4;
+						e.cd = Math.min(e.cd, 15);
+						e.r += 2;
+						const _btier3 = Math.min(2, (e.bossFloor||1) - 1);
+						for (let _k=0;_k<3;_k++) {
+							const _ba3 = (_k/3+0.17)*Math.PI*2;
+							S.enemies.push({x:e.x+Math.cos(_ba3)*55,y:e.y+Math.sin(_ba3)*55,hp:8+_btier3*3,maxHp:8+_btier3*3,r:10,shooter:true,cd:35,spd:1.1,hurt:0,eType:e.eType,held:null,heldUsed:false,moveMode:'circler',attackPat:'spread',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_summon:true});
+						}
+						S.shake = 18;
+						for (let _k=0;_k<30;_k++) S.fx.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*9,vy:(Math.random()-0.5)*9,life:24,col:'#ff6000'});
+						S._bossPhase2Flash = 26; S._bossPhaseFlashText = 'UNLEASHED!';
 					}
 					// Berserker: elite enemies go into overdrive below 50% HP
 					if (e.elite && !e._berserk && e.hp > 0 && e.hp <= e.maxHp * 0.5) {
@@ -5302,10 +5322,25 @@
 							const am = e.attackMode || 'dark';
 							const ba = Math.atan2(S.py - e.y, S.px - e.x);
 							// Phase 2: override with spiral + homing burst every other shot
-							if (e._phase2 && S.tick % 2 === 0) {
+							if (e._phase3) {
+								// Floor 3 phase 3: ring burst every 300t, teleport every 240t, homing barrage every 480t
+								if (S.tick % 300 === 0) { for (let _k=0;_k<16;_k++) { const aa=_k/16*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.8,vy:Math.sin(aa)*2.8,dmg:1,col:'#ff6000',r:3.5}); } }
+								if (S.tick % 240 === 0) { e.x=WALL+40+Math.random()*(W-2*WALL-80); e.y=WALL+40+Math.random()*(H-2*WALL-80); }
+								if (S.tick % 480 === 0) { for (let _k=0;_k<6;_k++) { const aa=_k/6*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.4,vy:Math.sin(aa)*2.4,dmg:1,col:'#ffb020',r:3.5,homing:true}); } }
+								if (S.tick % 2 === 0) {
+									const spiralA3 = S.tick * 0.22;
+									for (let _k=0;_k<4;_k++) { const aa=spiralA3+_k/4*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*3.4,vy:Math.sin(aa)*3.4,dmg:1,col:'#ff6000',r:3.5}); }
+									if (S.tick % 60 === 0) { for (let _k=0;_k<6;_k++) { const aa=_k/6*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.2,vy:Math.sin(aa)*2.2,dmg:1,col:'#ffb020',r:3,homing:true}); } }
+								}
+								e.cd = 8;
+							} else if (e._phase2 && S.tick % 2 === 0) {
+								const _bfl2 = e.bossFloor || 1;
 								const spiralA = S.tick * 0.18;
-								for (let _k=0;_k<3;_k++) { const aa=spiralA+_k/3*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.6,vy:Math.sin(aa)*2.6,dmg:1,col:e.bossColor||'#ff2060',r:3.5}); }
-								if (S.tick % 90 === 0) { for (let _k=0;_k<5;_k++) { const aa=_k/5*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.0,vy:Math.sin(aa)*2.0,dmg:1,col:'#ff80c0',r:3,homing:true}); } }
+								const spiralN = _bfl2 >= 2 ? 4 : 3; const spiralSpd = _bfl2 >= 2 ? 3.38 : 2.6;
+								for (let _k=0;_k<spiralN;_k++) { const aa=spiralA+_k/spiralN*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*spiralSpd,vy:Math.sin(aa)*spiralSpd,dmg:1,col:e.bossColor||'#ff2060',r:3.5}); }
+								const _homingInt = _bfl2 >= 2 ? 60 : 90;
+								if (S.tick % _homingInt === 0) { for (let _k=0;_k<5;_k++) { const aa=_k/5*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.0,vy:Math.sin(aa)*2.0,dmg:1,col:'#ff80c0',r:3,homing:true}); } }
+								if (_bfl2 >= 2 && S.tick % 1500 === 0) { const _btier2=Math.min(2,_bfl2-1); const _ts2=ENEMY_TYPES[_btier2]; const _te2=_ts2[Math.floor(Math.random()*_ts2.length)]; S.enemies.push({x:e.x+(Math.random()-0.5)*60,y:e.y+(Math.random()-0.5)*60,hp:4+_bfl2,maxHp:4+_bfl2,r:8,spd:1.2+_bfl2*0.2,cd:70,shooter:true,eType:_te2.eType||'dark',_summon:true,eStatuses:{},hurt:0}); }
 								e.cd = 10;
 							} else if (am === 'dark') {
 								for (const off of [-0.34, 0, 0.34]) { const aa = ba + off;
@@ -5821,9 +5856,20 @@
 					}
 					if (e.boss) {
 						const by = e.y + Math.sin(t * 0.06) * 3;
-						const bCol = e._phase2 ? '#ff2060' : (e.bossColor || '#6a2a9a');
-						// Phase 2 rage aura
-						if (e._phase2) {
+						const bCol = e._phase3 ? '#ff6000' : (e._phase2 ? '#ff2060' : (e.bossColor || '#6a2a9a'));
+						// Phase 2/3 rage aura
+						if (e._phase3) {
+							// Orange/gold phase 3 — wider + triple ring
+							ctx.globalAlpha = 0.25 + Math.sin(t*0.6)*0.15;
+							ctx.strokeStyle = '#ff8000'; ctx.lineWidth = 12;
+							ctx.beginPath(); ctx.arc(e.x, by, e.r+14, 0, Math.PI*2); ctx.stroke();
+							ctx.globalAlpha = 0.4 + Math.sin(t*0.8)*0.2;
+							ctx.strokeStyle = '#ffe000'; ctx.lineWidth = 4;
+							ctx.beginPath(); ctx.arc(e.x, by, e.r+8, 0, Math.PI*2); ctx.stroke();
+							ctx.globalAlpha = 0.6; ctx.strokeStyle = '#ff4000'; ctx.lineWidth = 2;
+							ctx.beginPath(); ctx.arc(e.x, by, e.r+20+Math.sin(t*0.3)*4, 0, Math.PI*2); ctx.stroke();
+							ctx.globalAlpha = 1; ctx.lineWidth = 1;
+						} else if (e._phase2) {
 							ctx.globalAlpha = 0.18 + Math.sin(t*0.4)*0.12;
 							ctx.strokeStyle = '#ff3040'; ctx.lineWidth = 10;
 							ctx.beginPath(); ctx.arc(e.x, by, e.r+10, 0, Math.PI*2); ctx.stroke();
@@ -6331,8 +6377,8 @@
 					if (_pf > 14) {
 						ctx.globalAlpha = (_pf-14)/6;
 						ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center';
-						ctx.fillStyle = '#fff'; ctx.fillText('ENRAGED!', VW/2+2, VH/2+2);
-						ctx.fillStyle = '#ff2040'; ctx.fillText('ENRAGED!', VW/2, VH/2);
+						ctx.fillStyle = '#fff'; ctx.fillText(S._bossPhaseFlashText||'ENRAGED!', VW/2+2, VH/2+2);
+						ctx.fillStyle = '#ff2040'; ctx.fillText(S._bossPhaseFlashText||'ENRAGED!', VW/2, VH/2);
 						ctx.globalAlpha = 1;
 					}
 				}
