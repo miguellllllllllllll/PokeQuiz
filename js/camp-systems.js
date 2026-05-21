@@ -3454,7 +3454,7 @@
 	// Self-contained canvas-overlay minigame; does not touch the Phaser scenes.
 	// Your partner Pokémon fights alongside you, auto-firing at nearby foes.
 		const TowerDungeon = (() => {
-			let W = 560, H = 560, VW = 320, VH = 240; const WALL = 16, MAX_ROOM = 15, ROOMS_PER_FLOOR = 5, MAX_FLOOR = 3;
+			let W = 560, H = 560, VW = 320, VH = 240; const WALL = 16, MAX_ROOM = 25, ROOMS_PER_FLOOR = 5, MAX_FLOOR = 5;
 			let root = null, cv = null, ctx = null, raf = null, openFlag = false;
 			let S = null;
 			const keys = {};
@@ -3565,10 +3565,19 @@
 					desc:'Radial cloud of 12', attackMode:'poison',
 				},
 			];
+			const FLOOR_BOSSES = [
+				{ key:'warden',   name:'The Warden',   color:'#e05010', barColor:'#ff7030', eType:'fire',    hp:22, attackMode:'fire',    desc:'Shockwave on enrage' },
+				{ key:'specter',  name:'The Specter',  color:'#c040e0', barColor:'#e060ff', eType:'psychic', hp:26, attackMode:'psychic', desc:'Mirror clones on enrage' },
+				{ key:'overlord', name:'The Overlord', color:'#3020a0', barColor:'#6040d0', eType:'dark',    hp:30, attackMode:'dark',    desc:'Calls fallen allies' },
+				{ key:'colossus', name:'The Colossus', color:'#60c0f0', barColor:'#90d0ff', eType:'ice',     hp:36, attackMode:'ice',     desc:'Slowing maelstrom' },
+				{ key:'apex',     name:'The Apex',     color:'#ffd020', barColor:'#ffe060', eType:'psychic', hp:44, attackMode:'apex',    desc:'Cycles all elements' },
+			];
 			const MINIBOSS_TYPES = [
-				{ key:'shield',  name:'Guardian',  color:'#4060c0', barColor:'#6080e0', eType:'rock',  hp:30, desc:'Rotating shield' },
-				{ key:'split',   name:'Mimic',     color:'#a04080', barColor:'#d060a0', eType:'ghost', hp:28, desc:'Splits at half HP' },
-				{ key:'charger', name:'Rampager',  color:'#c04020', barColor:'#ff6030', eType:'fire',  hp:24, desc:'Charges across room' },
+				{ key:'shield',    name:'Guardian',  color:'#4060c0', barColor:'#6080e0', eType:'rock',  hp:30, desc:'Rotating shield' },
+				{ key:'split',     name:'Mimic',     color:'#a04080', barColor:'#d060a0', eType:'ghost', hp:28, desc:'Splits at half HP' },
+				{ key:'charger',   name:'Rampager',  color:'#c04020', barColor:'#ff6030', eType:'fire',  hp:24, desc:'Charges across room' },
+				{ key:'summoner',  name:'Summoner',  color:'#a0c030', barColor:'#c0e040', eType:'grass', hp:20, desc:'Summons minions' },
+				{ key:'mirror',    name:'Mirror',    color:'#a0d0d0', barColor:'#c0f0f0', eType:'steel', hp:22, desc:'Reflects bullets' },
 			];
 			// Permanent upgrades
 			const PERM_DEFS = {
@@ -4451,7 +4460,7 @@
 				const eType = ['poison','psychic','dark'][tier];
 				const tierHpMin = [3,6,11][tier], tierHpMax = [5,10,18][tier];
 				const tierSpd = [0.62,0.82,1.02][tier], tierR = [7,10,12][tier];
-				const floorHpMult = [1.0,1.6,2.5][fl-1], floorSpdMult = [1.0,1.2,1.45][fl-1];
+				const floorHpMult = [1.0,1.6,2.5,3.5,5.0][Math.min(4,fl-1)], floorSpdMult = [1.0,1.2,1.45,1.65,1.85][Math.min(4,fl-1)];
 				const baseN = 4 + (fl - 1) * 2; // 4, 6, 8 per floor
 				const n = Math.round(baseN * (1 + (wave - 1) * 0.5)); // wave1=base, wave2=×1.5, wave3=×2
 				for (let i = 0; i < n; i++) {
@@ -4460,7 +4469,7 @@
 					const _spawnD = 110 + Math.random() * 80;
 					const _sx = Math.max(WALL+20, Math.min(W-WALL-20, W/2 + Math.cos(_spawnA)*_spawnD));
 					const _sy = Math.max(WALL+20, Math.min(H-WALL-120, H/2 - 30 + Math.sin(_spawnA)*_spawnD));
-					const _shooter = Math.random() < [0.42,0.55,0.68][fl-1];
+					const _shooter = Math.random() < [0.42,0.55,0.68,0.78,0.88][Math.min(4,fl-1)];
 					const enemy = {
 						x:_sx, y:_sy, hp, maxHp:hp, r:tierR,
 						shooter:_shooter, cd:50+Math.random()*70,
@@ -4473,10 +4482,14 @@
 					// Wave 2+: all enemies get a special type
 					if (wave >= 2) {
 						const _sp = Math.random();
-						if (_sp < 0.25) enemy.special = 'splitter';
-						else if (_sp < 0.50) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
-						else if (_sp < 0.75) enemy.special = 'rusher';
-						else { enemy.special = 'shielder'; enemy._shieldAngle = Math.random()*Math.PI*2; }
+						if (_sp < 0.15) enemy.special = 'splitter';
+						else if (_sp < 0.28) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
+						else if (_sp < 0.41) enemy.special = 'rusher';
+						else if (_sp < 0.52) { enemy.special = 'shielder'; enemy._shieldAngle = Math.random()*Math.PI*2; }
+						else if (_sp < 0.62) { enemy.special = 'healer'; enemy.shooter = false; }
+						else if (_sp < 0.71) { enemy.special = 'sniper'; enemy.spd = 0.05; enemy._aimTimer = 0; enemy.shooter = false; }
+						else if (_sp < 0.81) enemy.special = 'berserker';
+						else enemy.special = 'phaser';
 					}
 					// Wave 3: first enemy is elite
 					if (wave === 3 && i === 0) {
@@ -4494,7 +4507,7 @@
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
 				S.hazards = []; S.obstacles = []; S.floorHazards = []; S._perkDone = false; S._clearDone = false; S._clearFlash = 0; S._gauntletWave = 0; S._gauntletPending = 0; S._gauntletDone = false; S._eliteDropped = false;
-				S.roomThemeIdx = S.roomType === 'boss' ? 3 : Math.min(2, (S.floor||1) - 1);
+				S.roomThemeIdx = S.roomType === 'boss' ? 5 : Math.min(4, (S.floor||1) - 1);
 				S._roomOverlay = false;
 				S._trainerBattle = false;
 				S.berryUsed = false;
@@ -4562,15 +4575,15 @@
 					S._roomOverlay = true;
 					S._pendingOverlay = 'trainer'; S._pendingOverlayTick = S.tick;
 				} else if (S.roomType === 'boss') {
-					const arch = S.bossArchetype || BOSS_ARCHETYPES[0];
 					const _bfl = S.floor || 1;
+					const arch = FLOOR_BOSSES[Math.min(4, _bfl - 1)];
 					const hpScale = 1 + (S.endlessLoop||0) * 0.2;
-					const _flBossHpMult = [1.0, 1.5, 2.2][_bfl - 1];
+					const _flBossHpMult = [1.0, 1.5, 2.2, 3.2, 4.5][Math.min(4, _bfl - 1)];
 					const bhp = Math.round(arch.hp * 4 * hpScale * _flBossHpMult);
 					S.enemies.push({
 						x:W/2, y:WALL+96, hp:bhp, maxHp:bhp, r:22,
 						boss:true, shooter:true,
-						cd:[70,58,48][_bfl-1], spd:[0.55,0.68,0.82][_bfl-1], hurt:0,
+						cd:[70,58,48,38,30][Math.min(4,_bfl-1)], spd:[0.55,0.68,0.82,0.98,1.15][Math.min(4,_bfl-1)], hurt:0,
 						eType: arch.eType, bossColor: arch.color, attackMode: arch.attackMode,
 						bossFloor: _bfl, eStatuses:{},
 					});
@@ -4607,7 +4620,7 @@
 					const modePool = movePools[Math.min(tier, 2)];
 					const heldPool = [null,null,null,null,null,'sitrus','sitrus','helmet','berries','berries','berries','shell','toxic_orb','toxic_orb'];
 					for (let i = 0; i < n; i++) {
-						const _shooterRate = (_rif3 >= 2 || _fl3 >= 2) ? [0.42, 0.55, 0.68][_fl3 - 1] : 0;
+						const _shooterRate = (_rif3 >= 2 || _fl3 >= 2) ? [0.42, 0.55, 0.68, 0.78, 0.88][Math.min(4,_fl3 - 1)] : 0;
 						const shooter = Math.random() < _shooterRate;
 						const hp = tierHpMin + Math.floor(Math.random()*(tierHpMax-tierHpMin+1));
 						const heldRoll = r >= 3 && Math.random() < 0.25;
@@ -4621,8 +4634,8 @@
 						const endlessHpScale = 1 + (S.endlessLoop||0) * 0.2;
 						// Horde: 80% HP and size
 						const hordeScale = isHorde ? 0.8 : 1;
-						const floorHpMult = [1.0, 1.6, 2.5][_fl3 - 1];
-						const floorSpdMult = [1.0, 1.2, 1.45][_fl3 - 1];
+						const floorHpMult = [1.0, 1.6, 2.5, 3.5, 5.0][Math.min(4,_fl3 - 1)];
+						const floorSpdMult = [1.0, 1.2, 1.45, 1.65, 1.85][Math.min(4,_fl3 - 1)];
 						const finalHp = Math.max(1, Math.round(hp * hordeScale * endlessHpScale * floorHpMult));
 						const finalR = Math.max(5, Math.round(tierR * hordeScale));
 						// Spread spawn: angular distribution so enemies approach from all sides
@@ -4639,7 +4652,7 @@
 							eStatuses:{},
 						};
 						// Elite variant — chance scales with floor
-						const _eliteChance = [0.20, 0.38, 0.55][_fl3 - 1];
+						const _eliteChance = [0.20, 0.38, 0.55, 0.65, 0.75][Math.min(4,_fl3 - 1)];
 						if (Math.random() < _eliteChance) {
 							enemy.elite = true;
 							enemy.hp = Math.ceil(enemy.hp*2.2);
@@ -4657,10 +4670,14 @@
 								else if (_sp < 0.24) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
 								else if (_sp < 0.35) enemy.special = 'rusher';
 							} else {
-								if (_sp < 0.10) enemy.special = 'splitter';
-								else if (_sp < 0.22) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
-								else if (_sp < 0.33) enemy.special = 'rusher';
-								else if (_sp < 0.46) { enemy.special = 'shielder'; enemy._shieldAngle = Math.random()*Math.PI*2; }
+								if (_sp < 0.09) enemy.special = 'splitter';
+								else if (_sp < 0.18) { enemy.special = 'bomber'; enemy.spd *= 0.55; enemy.r += 2; }
+								else if (_sp < 0.27) enemy.special = 'rusher';
+								else if (_sp < 0.37) { enemy.special = 'shielder'; enemy._shieldAngle = Math.random()*Math.PI*2; }
+								else if (_sp < 0.47) { enemy.special = 'healer'; enemy.shooter = false; }
+								else if (_sp < 0.56) { enemy.special = 'sniper'; enemy.spd = 0.05; enemy._aimTimer = 0; enemy.shooter = false; }
+								else if (_sp < 0.65) enemy.special = 'berserker';
+								else if (_sp < 0.73) enemy.special = 'phaser';
 							}
 						}
 						S.enemies.push(enemy);
@@ -4675,8 +4692,8 @@
 					const _efeType = ['poison','psychic','dark'][_eft];
 					const _efHpMin = [3,6,11][_eft], _efHpMax = [5,10,18][_eft];
 					const _efSpd = [0.62,0.82,1.02][_eft], _efR = [7,10,12][_eft];
-					const _efFlHp = [1.0,1.6,2.5][(S.floor||1)-1];
-					const _efFlSpd = [1.0,1.2,1.45][(S.floor||1)-1];
+					const _efFlHp = [1.0,1.6,2.5,3.5,5.0][Math.min(4,(S.floor||1)-1)];
+					const _efFlSpd = [1.0,1.2,1.45,1.65,1.85][Math.min(4,(S.floor||1)-1)];
 					const _efN = Math.max(3, Math.round((3 + ((r-1)%ROOMS_PER_FLOOR) + (S.floor||1)*2) * 0.6));
 					for (let i = 0; i < _efN; i++) {
 						const _efHp = Math.ceil(((_efHpMin + Math.floor(Math.random()*(_efHpMax-_efHpMin+1))) * _efFlHp) * 2.2);
@@ -4999,6 +5016,17 @@
 					let hit = false;
 					for (const e of S.enemies) {
 						if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) {
+							// Mirror miniboss: reflect bullets from front arc
+							if (e.miniboss && e.mbKey === 'mirror') {
+								const _bAng2 = Math.atan2(b.y-e.y, b.x-e.x);
+								const _mFacing = e._mirrorAngle || 0;
+								const _mDiff = Math.abs(Math.atan2(Math.sin(_bAng2-_mFacing), Math.cos(_bAng2-_mFacing)));
+								if (_mDiff < 1.22) {
+									S.ebullets.push({x:b.x,y:b.y,vx:-b.vx*1.3,vy:-b.vy*1.3,dmg:1,col:'#c0f0f0',r:3});
+									for (let _k=0;_k<4;_k++) S.fx.push({x:b.x,y:b.y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,life:8,col:'#c0f0f0'});
+									hit = true; break;
+								}
+							}
 							// Shield block check for miniboss shield type
 							if (e.miniboss && e.mbKey === 'shield') {
 								const bAngle = Math.atan2(b.y - e.y, b.x - e.x);
@@ -5009,6 +5037,11 @@
 									S.fx.push({x:b.x,y:b.y,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:8,col:'#c0c0ff'});
 									break;
 								}
+							}
+							// Phaser: invulnerable while phased
+							if (e.special === 'phaser' && e._phaseInvuln) {
+								for (let _k=0;_k<3;_k++) S.fx.push({x:b.x,y:b.y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:6,col:'#8080ff'});
+								hit = true; break;
 							}
 							// Shielder: front-facing shield blocks bullets
 							if (e.special === 'shielder') {
@@ -5033,6 +5066,7 @@
 							if (e.held==='helmet' && !e.heldUsed && S.invuln<=0) { S.hp--; S.flash=5; }
 							let dmg = b.dmg;
 							if (e.marked > 0) dmg *= 2;
+							if (e._blaze > 0) { e._blaze--; dmg *= 2; }
 							e.hp -= dmg; e.hurt = 6; hit = true;
 							if (b.isCrit) e.critFlash = 8;
 							// Floating damage number
@@ -5047,6 +5081,14 @@
 									const dur = { burn:180, slow:120, para:90, poison:150 }[sKey];
 									if (!(e.eStatuses[sKey] > 0)) e.eStatuses[sKey] = dur;
 								}
+							}
+							// Status combo reactions
+							if (e.eStatuses && (e.eStatuses.burn||0)>0 && (e.eStatuses.poison||0)>0 && !e._blaze) {
+								e._blaze = 180; S.shake = 3;
+								showToast('🔥 Blaze reaction! 2× damage!');
+							}
+							if (e.eStatuses && (e.eStatuses.para||0)>0 && e.hp > 0 && e.hp <= e.maxHp * 0.20 && !e._dead) {
+								e.hp = 0; showToast('💥 Shatter!');
 							}
 							if (e.hp <= 0 && !e._dead) {
 								e._dead = true;
@@ -5112,7 +5154,7 @@
 				}
 				for (const e of S.enemies) {
 					// Boss phase 2: enrage — threshold scales with floor
-					const _ph2Thresh = (e.bossFloor||1) >= 3 ? 0.75 : ((e.bossFloor||1) >= 2 ? 0.66 : 0.50);
+					const _ph2Thresh = (e.bossFloor||1) >= 4 ? 0.80 : ((e.bossFloor||1) >= 3 ? 0.75 : ((e.bossFloor||1) >= 2 ? 0.66 : 0.50));
 					if (e.boss && !e._phase2 && e.hp > 0 && e.hp <= e.maxHp * _ph2Thresh) {
 						e._phase2 = true;
 						e.spd = (e.spd||0.55) * 1.8;
@@ -5173,7 +5215,31 @@
 					// Special enemy type updates
 					if (e.special === 'rusher') e._rushMult = Math.min(3.2, (e._rushMult||1) + 0.007);
 					if (e.special === 'shielder') e._shieldAngle = Math.atan2(S.py-e.y, S.px-e.x);
-					const effSpd = e.spd * spdMult * (e.special === 'rusher' ? (e._rushMult||1) : 1);
+					// Healer: move toward and heal nearest wounded ally
+					if (e.special === 'healer') {
+						let _healTgt = null, _bestHd = 90*90;
+						for (const _ae of S.enemies) { if (_ae===e||_ae._dead||_ae.hp>=_ae.maxHp) continue; const _hd=(_ae.x-e.x)**2+(_ae.y-e.y)**2; if (_hd<_bestHd){_bestHd=_hd;_healTgt=_ae;} }
+						if (_healTgt && Math.hypot(_healTgt.x-e.x,_healTgt.y-e.y)<70) {
+							if (S.tick % 90 === 0) { _healTgt.hp = Math.min(_healTgt.maxHp, _healTgt.hp + 2); _healTgt.hurt = 0; }
+						}
+					}
+					// Sniper: wind up aim lock then fire a fast piercing shot
+					if (e.special === 'sniper') {
+						e._aimTimer = (e._aimTimer||0) + 1;
+						if (e._aimTimer === 20) e._aimTarget = {x:S.px, y:S.py}; // lock on at 20
+						if (e._aimTimer >= 120) {
+							if (e._aimTarget) {
+								const _sa = Math.atan2(e._aimTarget.y-e.y, e._aimTarget.x-e.x);
+								S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(_sa)*6.0,vy:Math.sin(_sa)*6.0,dmg:1,col:'#ff2020',r:2.5,piercing:true});
+							}
+							e._aimTimer = 0; e._aimTarget = null;
+						}
+					}
+					// Berserker: speed scale with missing HP
+					if (e.special === 'berserker') e._berzMult = 1 + (1 - Math.max(0, e.hp/e.maxHp)) * 1.8;
+					// Phaser: cycle invulnerability every 60 ticks
+					if (e.special === 'phaser') e._phaseInvuln = (S.tick % 120) >= 60;
+					const effSpd = e.spd * spdMult * (e.special === 'rusher' ? (e._rushMult||1) : 1) * (e.special === 'berserker' ? (e._berzMult||1) : 1);
 					// Miniboss special logic
 					if (e.miniboss) {
 						const mbk = e.mbKey;
@@ -5189,6 +5255,19 @@
 									hurt:0, eType:e.eType, held:null, heldUsed:false, moveMode:'charger',
 									attackPat:'straight', zigTimer:0, burstQueue:0, shellHp:0, eStatuses:{} });
 							}
+						}
+						if (mbk === 'summoner' && S.tick % 360 === 0 && S.enemies.filter(ex=>!ex.boss&&!ex.miniboss&&!ex._dead).length < 8) {
+							const _mft = Math.min(2, (S.floor||1) - 1);
+							const _mts = ENEMY_TYPES[_mft];
+							for (let _mk=0;_mk<2;_mk++) {
+								const _me = _mts[Math.floor(Math.random()*_mts.length)];
+								const _ma = Math.random()*Math.PI*2;
+								S.enemies.push({x:e.x+Math.cos(_ma)*50,y:e.y+Math.sin(_ma)*50,hp:4+_mft*3,maxHp:4+_mft*3,r:8,spd:0.7+_mft*0.15,cd:60,shooter:Math.random()<0.4,eType:_me.eType||'dark',hurt:0,moveMode:'charger',attackPat:'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{}});
+							}
+							showToast('🌿 Summoner calls for backup!');
+						}
+						if (mbk === 'mirror') {
+							e._mirrorAngle = Math.atan2(S.py - e.y, S.px - e.x);
 						}
 						if (mbk === 'charger') {
 							e.chargeTimer = (e.chargeTimer||0) + 1;
@@ -5324,6 +5403,7 @@
 							// Phase 2: override with spiral + homing burst every other shot
 							if (e._phase3) {
 								// Floor 3 phase 3: ring burst every 300t, teleport every 240t, homing barrage every 480t
+								if (S.tick % 300 === 270) { e._bossWarn = 30; } // telegraph warning
 								if (S.tick % 300 === 0) { for (let _k=0;_k<16;_k++) { const aa=_k/16*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.8,vy:Math.sin(aa)*2.8,dmg:1,col:'#ff6000',r:3.5}); } }
 								if (S.tick % 240 === 0) { e.x=WALL+40+Math.random()*(W-2*WALL-80); e.y=WALL+40+Math.random()*(H-2*WALL-80); }
 								if (S.tick % 480 === 0) { for (let _k=0;_k<6;_k++) { const aa=_k/6*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.4,vy:Math.sin(aa)*2.4,dmg:1,col:'#ffb020',r:3.5,homing:true}); } }
@@ -5381,6 +5461,29 @@
 									S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*1.7,vy:Math.sin(aa)*1.7,dmg:1,col:"#80e040",r:3,statusPoison:true});
 								}
 								e.cd = 65;
+							} else if (am === 'apex') {
+								// The Apex: cycles attack mode every 300 ticks
+								const _apexModes = ['dark','fire','ice','psychic','poison'];
+								const _apexAm = _apexModes[Math.floor(S.tick / 300) % 5];
+								const ba2 = Math.atan2(S.py - e.y, S.px - e.x);
+								if (_apexAm === 'dark') {
+									for (const off of [-0.34,0,0.34]) { S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(ba2+off)*2.6,vy:Math.sin(ba2+off)*2.6,dmg:1,col:'#9a4ad0',r:3}); }
+									S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(ba2)*1.7,vy:Math.sin(ba2)*1.7,dmg:1,col:'#c070ff',r:3,homing:true});
+									e.cd = 50;
+								} else if (_apexAm === 'fire') {
+									for (let k=0;k<8;k++) { const aa=(k/8)*Math.PI*2+S.tick*0.05; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.4,vy:Math.sin(aa)*2.4,dmg:1,col:'#ff7020',r:3,statusBurn:true}); }
+									e.cd = 70;
+								} else if (_apexAm === 'ice') {
+									for (let k=0;k<6;k++) { const aa=(k/6)*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.0,vy:Math.sin(aa)*2.0,dmg:1,col:'#80d8ff',r:3,slow:true}); }
+									e.cd = 60;
+								} else if (_apexAm === 'psychic') {
+									if (S.tick % 180 < 5) { e.x=WALL+40+Math.random()*(W-2*WALL-80); e.y=WALL+40+Math.random()*(H-2*WALL-80); }
+									for (let k=0;k<7;k++) { const aa=(k/7)*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.1,vy:Math.sin(aa)*2.1,dmg:1,col:'#ff80d0',r:3,homing:true}); }
+									e.cd = 58;
+								} else {
+									for (let k=0;k<14;k++) { const aa=(k/14)*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*1.9,vy:Math.sin(aa)*1.9,dmg:1,col:'#80e040',r:3,statusPoison:true}); }
+									e.cd = 58;
+								}
 							}
 						} else if (e.miniboss) {
 							e.spd = 1.4; e.cd = 80;
@@ -5582,13 +5685,17 @@
 			// Zoom factor: scales the game world up so the camera stays tight
 			// around the player even on large/hi-DPI viewports.
 			const ROOM_THEMES = [
-				// tier 0 — purple dungeon (rooms 1-3)
+				// tier 0 — purple dungeon (floor 1)
 				{ tiles:['#272036','#221c30','#2c2540'], brickFace:'#4a4068', brickHi:'#5a4f80', brickMortar:'#322a4a', door:'#1a1426', doorArch:'#2a2240', pillar:'#2d2448', pillarEdge:'#5a4e82', pillarHi:'rgba(255,255,255,0.09)', diamond:'#a090c0', bg:'#0e0b16' },
-				// tier 1 — stone ruins (rooms 4-6)
+				// tier 1 — stone ruins (floor 2)
 				{ tiles:['#221a10','#261e14','#2c2418'], brickFace:'#584030', brickHi:'#6a5040', brickMortar:'#3a2820', door:'#1e1408', doorArch:'#302018', pillar:'#3a2a18', pillarEdge:'#6a5038', pillarHi:'rgba(255,200,120,0.08)', diamond:'#c09060', bg:'#100c06' },
-				// tier 2 — blood crypt (rooms 7-9)
+				// tier 2 — blood crypt (floor 3)
 				{ tiles:['#1a0e0e','#200e10','#240e12'], brickFace:'#4a2020', brickHi:'#5c2828', brickMortar:'#301010', door:'#1a0808', doorArch:'#301010', pillar:'#38100e', pillarEdge:'#601820', pillarHi:'rgba(255,80,80,0.08)', diamond:'#c04040', bg:'#0e0606' },
-				// boss — obsidian chamber
+				// tier 3 — lava fortress (floor 4)
+				{ tiles:['#1a0808','#200a06','#240e08'], brickFace:'#5a2010', brickHi:'#702818', brickMortar:'#3a1008', door:'#180606', doorArch:'#2a0e08', pillar:'#3a1006', pillarEdge:'#703010', pillarHi:'rgba(255,100,20,0.10)', diamond:'#ff6020', bg:'#0e0402' },
+				// tier 4 — void realm (floor 5 non-boss)
+				{ tiles:['#080810','#0a0a14','#0c0c18'], brickFace:'#181830', brickHi:'#202040', brickMortar:'#101020', door:'#060612', doorArch:'#10101e', pillar:'#141428', pillarEdge:'#302060', pillarHi:'rgba(100,80,255,0.12)', diamond:'#6040e0', bg:'#040408' },
+				// tier 5 — obsidian boss chamber (all floor bosses)
 				{ tiles:['#0e0c14','#120e18','#160e1a'], brickFace:'#2a2040', brickHi:'#3a3054', brickMortar:'#1a1828', door:'#0c0c14', doorArch:'#201828', pillar:'#1e1830', pillarEdge:'#4a3870', pillarHi:'rgba(160,120,255,0.1)', diamond:'#8060d0', bg:'#080610' },
 			];
 			const DUNGEON_ZOOM = 2.0;
@@ -5860,6 +5967,14 @@
 					}
 					if (e.boss) {
 						const by = e.y + Math.sin(t * 0.06) * 3;
+						// Telegraph warning ring
+						if ((e._bossWarn||0) > 0) {
+							e._bossWarn--;
+							ctx.globalAlpha = (e._bossWarn / 30) * 0.75;
+							ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2; ctx.setLineDash([5,5]);
+							ctx.beginPath(); ctx.arc(e.x, by, e.r + 18 + (30 - e._bossWarn) * 1.5, 0, Math.PI*2); ctx.stroke();
+							ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.lineWidth = 1;
+						}
 						const bCol = e._phase3 ? '#ff6000' : (e._phase2 ? '#ff2060' : (e.bossColor || '#6a2a9a'));
 						// Phase 2/3 rage aura
 						if (e._phase3) {
@@ -6040,6 +6155,40 @@
 						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+5, _sAng-Math.PI*0.52, _sAng+Math.PI*0.52); ctx.stroke();
 						ctx.globalAlpha = 0.3; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
 						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+5, _sAng-Math.PI*0.52, _sAng+Math.PI*0.52); ctx.stroke();
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					}
+					if (e.special === 'healer') {
+						ctx.globalAlpha = 0.9; ctx.fillStyle = '#40ff80';
+						ctx.fillRect(e.x - 1, e.y - e.r - 8, 2, 6);
+						ctx.fillRect(e.x - 3, e.y - e.r - 6, 6, 2);
+						ctx.globalAlpha = 1;
+					}
+					if (e.special === 'sniper' && e._aimTarget) {
+						const _aimProg = Math.min(1, (e._aimTimer||0) / 120);
+						ctx.globalAlpha = _aimProg * 0.8; ctx.strokeStyle = `rgba(255,0,0,${_aimProg})`; ctx.lineWidth = 1;
+						ctx.setLineDash([3, 3]);
+						ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e._aimTarget.x, e._aimTarget.y); ctx.stroke();
+						ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					}
+					if (e.special === 'phaser' && e._phaseInvuln) {
+						ctx.globalAlpha = 0.35 + Math.sin(t * 0.5) * 0.15;
+						ctx.strokeStyle = '#8080ff'; ctx.lineWidth = 3;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3, 0, Math.PI*2); ctx.stroke();
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					}
+					if (e.special === 'berserker' && (e._berzMult||1) > 1.4) {
+						const _bAlpha = Math.min(0.55, ((e._berzMult||1) - 1.4) * 0.55);
+						ctx.globalAlpha = _bAlpha; ctx.fillStyle = '#ff2020';
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 2, 0, Math.PI*2); ctx.fill();
+						ctx.globalAlpha = 1;
+					}
+					// Mirror miniboss: show reflective face arc
+					if (e.miniboss && e.mbKey === 'mirror') {
+						const _mAng = e._mirrorAngle || 0;
+						ctx.globalAlpha = 0.8; ctx.strokeStyle = '#c0f0f0'; ctx.lineWidth = 3;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+4, _mAng-1.22, _mAng+1.22); ctx.stroke();
+						ctx.globalAlpha = 0.4; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+						ctx.beginPath(); ctx.arc(e.x, e.y, e.r+4, _mAng-1.22, _mAng+1.22); ctx.stroke();
 						ctx.globalAlpha = 1; ctx.lineWidth = 1;
 					}
 				}
@@ -6330,7 +6479,7 @@
 				  const mb = !boss && S.enemies.find(e => e.miniboss);
 				  if (boss) {
 					const bw = Math.min(VW - 36, 240), bx = (VW - bw) / 2, byy = 58;
-					const arch = S.bossArchetype || BOSS_ARCHETYPES[0];
+					const arch = FLOOR_BOSSES[Math.min(4, (S.floor||1) - 1)];
 					ctx.fillStyle = "rgba(10,8,18,0.85)"; ctx.fillRect(bx - 3, byy - 2, bw + 6, 12);
 					ctx.fillStyle = "#3a2030"; ctx.fillRect(bx, byy, bw, 8);
 					ctx.fillStyle = arch.barColor || "#ff4d63"; ctx.fillRect(bx, byy, bw * Math.max(0, boss.hp / boss.maxHp), 8);
