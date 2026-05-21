@@ -5516,7 +5516,11 @@
 					}
 					// Block door for gauntlet until all waves cleared
 					if (S.roomType === 'gauntlet' && !S._gauntletDone && !S._gauntletPending) {
-						S._gauntletPending = 60; // countdown to next wave
+						if (S._gauntletWave >= 3) {
+							S._gauntletDone = true; // all 3 waves cleared
+						} else {
+							S._gauntletPending = 60; // countdown to next wave
+						}
 					}
 					// Gauntlet complete bonus stardust (fires once)
 					if (S.roomType === 'gauntlet' && S._gauntletDone && !S._gauntletBonusDone) {
