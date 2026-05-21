@@ -3678,7 +3678,7 @@
 			// Sprite cache — reuse the player's trainer sheet + the partner's
 			// follower spritesheet (both already shipped game assets).
 			let dunImgPlayer = null, dunImgPartner = null, dunPartnerMeta = null, dunPartnerForm = null;
-			function loadSprites() {
+			function loadSprites(forceForm) {
 				if (!dunImgPlayer) {
 					const raw = new Image();
 					raw.onload = () => {
@@ -3694,11 +3694,15 @@
 					};
 					raw.src = "Pictures/sprites/calem.png";
 				}
+				// Use explicitly-passed form (from beginRun) so the sprite
+				// matches the partner the player actually selected, not whoever
+				// happens to be the current equipped companion in inventory.
 				const inv = Inventory.load();
-				const form = (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || "eevee"));
+				const rawForm = forceForm != null ? forceForm
+					: (inv.companionForm != null ? inv.companionForm : (inv.eeveeForm || "eevee"));
 				const local = { eevee:1, vaporeon:1, espeon:1, umbreon:1, flareon:1, jolteon:1, leafeon:1, glaceon:1, sylveon:1 };
-				const dexNum = parseInt(form);
-				const useForm = local[form] ? form : (!isNaN(dexNum) && FOLLOWER_FORMS && FOLLOWER_FORMS[dexNum] ? dexNum : 'eevee');
+				const dexNum = parseInt(rawForm);
+				const useForm = local[rawForm] ? rawForm : (!isNaN(dexNum) && FOLLOWER_FORMS && FOLLOWER_FORMS[dexNum] ? dexNum : 'eevee');
 				if (dunPartnerForm !== useForm) {
 					dunPartnerForm = useForm;
 					dunPartnerMeta = (FOLLOWER_FORMS && FOLLOWER_FORMS[useForm]) || { sheet: useForm, cols: 7, frameW: 40, frameH: 48 };
@@ -5674,7 +5678,7 @@
 					if (rk) { S.relics.push(rk); if (rk==='swift') S.rapid=true; }
 				}
 				if (startRelicCount > 0) checkSynergies();
-				loadSprites();
+				loadSprites(form);
 				newRoom();
 				if (raf) cancelAnimationFrame(raf);
 				loop();
