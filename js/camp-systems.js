@@ -5023,11 +5023,16 @@
 					} else { S.result = 'lose'; }
 				}
 			}
+			// Zoom factor: scales the game world up so the camera stays tight
+			// around the player even on large/hi-DPI viewports.
+			const DUNGEON_ZOOM = 2.0;
 			function draw() {
 				const t = S.tick;
+				// Effective viewport in game-world units
+				const evw = VW / DUNGEON_ZOOM, evh = VH / DUNGEON_ZOOM;
 				// camera follows the player, clamped to the room bounds
-				let camX = Math.max(0, Math.min(W - VW, S.px - VW / 2));
-				let camY = Math.max(0, Math.min(H - VH, S.py - VH / 2));
+				let camX = Math.max(0, Math.min(W - evw, S.px - evw / 2));
+				let camY = Math.max(0, Math.min(H - evh, S.py - evh / 2));
 				// Screen shake
 				if (S.shake > 0) {
 					const shk = S.shake * 0.6;
@@ -5036,7 +5041,9 @@
 					S.shake--;
 				}
 				ctx.fillStyle = "#0e0b16"; ctx.fillRect(0, 0, VW, VH);
-				ctx.save(); ctx.translate(-camX, -camY);
+				ctx.save();
+				ctx.scale(DUNGEON_ZOOM, DUNGEON_ZOOM);
+				ctx.translate(-camX, -camY);
 				// floor — dungeon stone tiles
 				for (let y = WALL; y < H - WALL; y += 16) {
 					for (let x = WALL; x < W - WALL; x += 16) {
