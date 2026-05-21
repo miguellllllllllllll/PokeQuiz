@@ -3454,7 +3454,7 @@
 	// Self-contained canvas-overlay minigame; does not touch the Phaser scenes.
 	// Your partner Pokémon fights alongside you, auto-firing at nearby foes.
 		const TowerDungeon = (() => {
-			let W = 560, H = 560, VW = 320, VH = 240; const WALL = 16, MAX_ROOM = 9;
+			let W = 560, H = 560, VW = 320, VH = 240; const WALL = 16, MAX_ROOM = 15, ROOMS_PER_FLOOR = 5, MAX_FLOOR = 3;
 			let root = null, cv = null, ctx = null, raf = null, openFlag = false;
 			let S = null;
 			const keys = {};
@@ -4186,10 +4186,10 @@
 				el.innerHTML = '';
 				const h = document.createElement('h2');
 				h.style.color = '#ffe060';
-				h.textContent = '🏆 Floor 9 Cleared!';
+				h.textContent = '🏆 Tower Cleared!';
 				el.appendChild(h);
 				const p = document.createElement('p');
-				p.textContent = 'You have conquered the tower. Push further into endless?';
+				p.textContent = 'All ' + MAX_FLOOR + ' floors conquered. Push further into endless?';
 				el.appendChild(p);
 				const bankBtn = document.createElement('button');
 				bankBtn.className = 'tower-btn primary';
@@ -4219,6 +4219,59 @@
 				el.appendChild(endlessBtn);
 				el.hidden = false;
 			}
+				// ── Descend screen (between floors) ─────────────────────────────
+				function showDescendOverlay(onDone) {
+					hideAllOverlays();
+					const el = getOverlay('towerRecapOverlay');
+					if (!el) { onDone(); return; }
+					el.innerHTML = '';
+					const fl = S.floor || 1;
+					const flNames = ['', 'The Upper Ruins', 'The Deep Crypt', 'The Void'];
+					const flColors = ['', '#a090c0', '#c09060', '#c04040'];
+					const h = document.createElement('h2');
+					h.style.cssText = 'color:' + (flColors[fl]||'#ffe060') + ';margin-bottom:4px;';
+					h.textContent = '\u2694 Floor ' + fl + ' Cleared!';
+					el.appendChild(h);
+					const sub = document.createElement('p');
+					sub.style.cssText = 'color:#b0a0c8;font-size:10px;margin:2px 0 12px;';
+					sub.textContent = 'Descending into ' + (flNames[fl+1]||'the abyss') + '...';
+					el.appendChild(sub);
+					const statsDiv = document.createElement('div');
+					statsDiv.style.cssText = 'font-size:9px;color:#8a7aaa;margin-bottom:14px;background:rgba(255,255,255,0.04);padding:8px 14px;border-radius:6px;display:flex;gap:18px;justify-content:center;';
+					const _elapsed = Math.floor((Date.now() - (S.startTime||Date.now())) / 1000);
+					const _emm = String(Math.floor(_elapsed/60)).padStart(2,'0'), _ess = String(_elapsed%60).padStart(2,'0');
+					['Kills: <b style="color:#ffe0a0">'+(S.kills||0)+'</b>',
+					 'Stardust: <b style="color:#ffe0a0">'+(S.stardust||0)+'</b>',
+					 'Time: <b style="color:#ffe0a0">'+_emm+':'+_ess+'</b>',
+					 'HP: <b style="color:#ff8090">'+(S.hp||0)+'/'+S.maxHp+'</b>'].forEach(_html => {
+						const sp = document.createElement('span'); sp.innerHTML = _html; statsDiv.appendChild(sp);
+					});
+					el.appendChild(statsDiv);
+					const cLabel = document.createElement('p');
+					cLabel.style.cssText = 'font-size:10px;color:#cfc6ee;margin:0 0 10px;';
+					cLabel.textContent = 'Choose your reward before descending:';
+					el.appendChild(cLabel);
+					const row = document.createElement('div');
+					row.style.cssText = 'display:flex;gap:10px;justify-content:center;';
+					el.appendChild(row);
+					const _mkBtn = (icon, title, desc, primary, cb) => {
+						const btn = document.createElement('button');
+						btn.className = 'tower-btn' + (primary ? ' primary' : '');
+						btn.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 18px;min-width:108px;';
+						btn.innerHTML = '<span style="font-size:20px">'+icon+'</span><span style="font-size:11px;font-weight:bold">'+title+'</span><span style="font-size:9px;color:#b0a0c8;text-align:center">'+desc+'</span>';
+						btn.addEventListener('click', () => { el.hidden = true; cb(); });
+						return btn;
+					};
+					row.appendChild(_mkBtn('\ud83d\udc99', 'Rest', 'Heal 2 HP', false, () => {
+						S.hp = Math.min(S.maxHp, S.hp + 2);
+						showToast('\ud83d\udc99 Healed 2 HP!');
+						onDone();
+					}));
+					row.appendChild(_mkBtn('\u26a1', 'Press On', 'Choose an upgrade', true, () => {
+						showPerkOverlay(() => { onDone(); });
+					}));
+					el.hidden = false;
+				}
 			// ── Recap screen ────────────────────────────────────────────────
 			function showRecapScreen(win) {
 				hideAllOverlays();
@@ -4232,7 +4285,7 @@
 				const endlessLoop = S ? (S.endlessLoop || 0) : 0;
 				const roomNum = S ? Math.max(0, S.room - 1) : 0;
 				const stats = [
-					'Floors cleared: ' + (endlessLoop > 0 ? 'ENDLESS ×' + endlessLoop + ' + ' + roomNum : roomNum),
+					'Floors cleared: ' + (endlessLoop > 0 ? 'ENDLESS ×' + endlessLoop : String(S ? (S.floor||1) : 1) + ' / ' + MAX_FLOOR),
 					'Enemies defeated: ' + (S ? S.kills : 0),
 					'Stardust earned: ' + (S ? S.stardust : 0),
 					'Relics collected: ' + (S ? S.relics.length : 0),
@@ -4382,7 +4435,7 @@
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
 				S.hazards = []; S.obstacles = []; S.floorHazards = []; S._perkDone = false; S._clearDone = false; S._clearFlash = 0;
-				S.roomThemeIdx = S.roomType === 'boss' ? 3 : Math.min(2, Math.floor((S.room-1)/3));
+				S.roomThemeIdx = S.roomType === 'boss' ? 3 : Math.min(2, (S.floor||1) - 1);
 				S._roomOverlay = false;
 				S._trainerBattle = false;
 				S.berryUsed = false;
@@ -4399,17 +4452,24 @@
 					if (endlessRoomInCycle % 3 === 0) { S.roomType = 'boss'; }
 					else if (endlessRoomInCycle % 3 === 2) { S.roomType = Math.random() < 0.5 ? 'rest' : 'treasure'; }
 					else { S.roomType = Math.random() < 0.4 ? 'combat' : (Math.random() < 0.5 ? 'trainer' : 'ambush'); }
-				} else if (r >= MAX_ROOM) { S.roomType = 'boss'; }
-				else if (r === 8) { S.roomType = 'rest'; }
-				else if (r === 7) { S.roomType = Math.random() < 0.5 ? 'trainer' : 'shop'; }
-				else if (r === 6) { S.roomType = 'combat'; }
-				else if (r === 5) { S.roomType = Math.random() < 0.5 ? 'puzzle' : 'shrine'; }
-				else if (r === 4) { S.roomType = 'miniboss'; }
-				else if (r === 3) { S.roomType = Math.random() < 0.5 ? 'treasure' : 'ambush'; }
-				else { S.roomType = 'combat'; }
-				// Curse room override: rooms 2, 3, 6 have 20% chance
-				if ((r===2||r===3||r===6) && el===0 && Math.random()<0.20) S.roomType = 'curse';
-				const tier = Math.floor((r - 1) / 3); // 0,1,2
+				} else {
+					const roomInFloor = ((r - 1) % ROOMS_PER_FLOOR) + 1; // 1–5
+					const fl = S.floor || 1;
+					if (roomInFloor === 5)      { S.roomType = 'boss'; }
+					else if (roomInFloor === 4) { S.roomType = 'miniboss'; }
+					else if (roomInFloor === 3) {
+						if (fl === 1) S.roomType = Math.random() < 0.5 ? 'treasure' : 'rest';
+						else if (fl === 2) S.roomType = (['shrine','shop','trainer','puzzle'])[Math.floor(Math.random()*4)];
+						else              S.roomType = Math.random() < 0.5 ? 'puzzle' : 'rest';
+					} else if (roomInFloor === 2) {
+						S.roomType = Math.random() < 0.55 ? 'combat' : 'ambush';
+					} else {
+						S.roomType = 'combat'; // room 1 always combat
+					}
+					// Curse override: room 2 of any floor (20% fl1, 25% fl2+)
+					if (roomInFloor === 2 && el === 0 && Math.random() < (fl > 1 ? 0.25 : 0.20)) S.roomType = 'curse';
+				}
+				const tier = Math.min(2, (S.floor||1) - 1); // 0=floor1, 1=floor2, 2=floor3
 				const tierTypes = ['poison','psychic','dark'];
 				const eType = tierTypes[Math.min(tier, 2)];
 				if (S.roomType === 'treasure') {
@@ -5327,11 +5387,28 @@
 						if (S.room > MAX_ROOM) {
 							if (!S._endlessChoiceShown) {
 								S._endlessChoiceShown = true;
-								S.doorOpen = false; // prevent re-triggering every tick
-								S.py = WALL + 20;   // push player away from door threshold
+								S.doorOpen = false;
+								S.py = WALL + 20;
 								showEndlessChoice();
 							}
-						} else { newRoom(); S.px = W / 2; S.py = H - 40; }
+						} else {
+							const _prevRoom = S.room - 1;
+							const _justClearedFloor = _prevRoom % ROOMS_PER_FLOOR === 0;
+							const _fl = S.floor || 1;
+							if (_justClearedFloor && _fl < MAX_FLOOR && !S._descendShown) {
+								S._descendShown = true;
+								S._roomOverlay = true;
+								S.doorOpen = false;
+								S.py = WALL + 20;
+								showDescendOverlay(() => {
+									S._descendShown = false;
+									S.floor = _fl + 1;
+									newRoom(); S.px = W / 2; S.py = H - 40;
+								});
+							} else {
+								newRoom(); S.px = W / 2; S.py = H - 40;
+							}
+						}
 					}
 				}
 				if (S.hp <= 0) {
@@ -5942,7 +6019,7 @@
 					const ROOM_COLORS = { combat:'#ff6040', boss:'#c040ff', miniboss:'#ff9020', treasure:'#ffe060', rest:'#60d0ff', shop:'#a0e070', puzzle:'#80c0ff', shrine:'#ffc060', trainer:'#ff8090', ambush:'#ff8030' };
 					const label = ROOM_LABELS[S.roomType] || S.roomType;
 					const accentCol = ROOM_COLORS[S.roomType] || '#ffe060';
-					const roomNum = S.endlessLoop > 0 ? 'ENDLESS ×' + S.endlessLoop + ' — R' + S.room : 'ROOM ' + S.room + ' / ' + MAX_ROOM;
+					const _rif = ((S.room-1) % ROOMS_PER_FLOOR) + 1; const roomNum = S.endlessLoop > 0 ? 'ENDLESS ×' + S.endlessLoop + ' — R' + S.room : 'FL.' + (S.floor||1) + '  ·  ROOM ' + _rif + ' / ' + ROOMS_PER_FLOOR;
 					const slideY = bannerAlpha < 1 ? VH/2 - 22 + (1-bannerAlpha)*18 : VH/2 - 22;
 					ctx.globalAlpha = bannerAlpha * 0.9;
 					ctx.fillStyle = 'rgba(8,5,18,0.92)';
@@ -5986,7 +6063,7 @@
 					if (on) { ctx.fillStyle = "#ff8a98"; ctx.fillRect(hx + 1, hy + 2, 2, 2); }
 				}
 				ctx.font = "8px monospace"; ctx.textAlign = "right";
-				const roomLabel = S.endlessLoop > 0 ? ("END×" + S.endlessLoop + " R" + S.room) : ("ROOM " + S.room + "/" + MAX_ROOM);
+				const _rif2 = ((S.room-1) % ROOMS_PER_FLOOR) + 1; const roomLabel = S.endlessLoop > 0 ? ("END×" + S.endlessLoop + " R" + S.room) : ("FL." + (S.floor||1) + " R" + _rif2 + "/" + ROOMS_PER_FLOOR);
 				ctx.fillStyle = S.endlessLoop > 0 ? "#ff9040" : "#ffe060"; ctx.fillText(roomLabel, VW - 6, 11);
 				ctx.textAlign = "center";
 				if (S.roomType === "boss" && S.enemies.length) { ctx.fillStyle = "#ff7a8a"; ctx.fillText("BOSS FIGHT", VW / 2, 11); }
@@ -6148,7 +6225,8 @@
 					ctx.fillStyle = win?'#ffe060':'#ff7a8a'; ctx.fillText(win?'TOWER CLEARED!':'DEFEATED', VW/2, VH/2-52);
 					// Stats block
 					const stats = [
-						['Rooms cleared', String(S.room-1) + ' / ' + MAX_ROOM],
+						['Floor reached', String(S.floor||1) + ' / ' + MAX_FLOOR],
+						['Rooms cleared', String(S.room-1)],
 						['Enemies killed', String(S.kills||0)],
 						['Stardust earned', String(S.stardust||0)],
 						['Run time', mm+':'+ss],
@@ -6263,7 +6341,7 @@
 					minibossType: chosenMiniboss,
 					modifier: chosenMod.key,
 					synergies: new Set(),
-					endlessLoop: 0,
+					endlessLoop: 0, floor: 1, _descendShown: false,
 					roomTimer: 0,
 					shake: 0, hitStop: 0, startTime: Date.now(),
 					roomBanner: 0,
