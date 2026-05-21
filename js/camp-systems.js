@@ -4090,6 +4090,7 @@
 				btn.textContent = 'Fight!';
 				btn.addEventListener('click', () => {
 					el.hidden = true;
+					S._roomOverlay = false;
 					S._trainerBattle = true;
 					S._trainerData = trainerData;
 					S._trainerTeamIdx = 0;
@@ -4117,7 +4118,7 @@
 					x: W/2 + (Math.random()-0.5)*80, y: WALL + 60 + Math.random()*80,
 					hp: tm.hp, maxHp: tm.hp, r: tm.r, col: tm.col,
 					eType: tm.type, boss:false, shooter: Math.random()<0.4,
-					cd: 60, spd: 0.55 + tier*0.12, hurt:0,
+					cd: 60, spd: 0.55 + tier*0.12, hurt:0, eStatuses:{},
 				}];
 			}
 			// ── Endless choice screen ───────────────────────────────────────
