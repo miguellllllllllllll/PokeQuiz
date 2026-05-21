@@ -4381,7 +4381,7 @@
 			function newRoom() {
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
-				S.hazards = []; S.obstacles = []; S.floorHazards = []; S._perkDone = false;
+				S.hazards = []; S.obstacles = []; S.floorHazards = []; S._perkDone = false; S._clearDone = false; S._clearFlash = 0;
 				S.roomThemeIdx = S.roomType === 'boss' ? 3 : Math.min(2, Math.floor((S.room-1)/3));
 				S._roomOverlay = false;
 				S._trainerBattle = false;
@@ -4911,6 +4911,21 @@
 					}
 				}
 				for (const e of S.enemies) {
+					// Boss phase 2: enrage at 50% HP
+					if (e.boss && !e._phase2 && e.hp > 0 && e.hp <= e.maxHp * 0.5) {
+						e._phase2 = true;
+						e.spd = (e.spd||0.55) * 1.8;
+						e.cd = Math.min(e.cd, 25);
+						e.r += 4;
+						const _btier = Math.min(2, Math.floor((S.room-1)/3));
+						for (let _k=0;_k<2;_k++) {
+							const _ba = _k/2*Math.PI*2;
+							S.enemies.push({x:e.x+Math.cos(_ba)*55,y:e.y+Math.sin(_ba)*55,hp:4+_btier*3,maxHp:4+_btier*3,r:9,shooter:true,cd:50+_k*30,spd:0.8,hurt:0,eType:e.eType,held:null,heldUsed:false,moveMode:'circler',attackPat:'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_summon:true});
+						}
+						S.shake = 14;
+						for (let _k=0;_k<20;_k++) S.fx.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7,life:20,col:'#ff2040'});
+						S._bossPhase2Flash = 20;
+					}
 					// Berserker: elite enemies go into overdrive below 50% HP
 					if (e.elite && !e._berserk && e.hp > 0 && e.hp <= e.maxHp * 0.5) {
 						e._berserk = true;
@@ -5086,7 +5101,13 @@
 						if (e.boss) {
 							const am = e.attackMode || 'dark';
 							const ba = Math.atan2(S.py - e.y, S.px - e.x);
-							if (am === 'dark') {
+							// Phase 2: override with spiral + homing burst every other shot
+							if (e._phase2 && S.tick % 2 === 0) {
+								const spiralA = S.tick * 0.18;
+								for (let _k=0;_k<3;_k++) { const aa=spiralA+_k/3*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.6,vy:Math.sin(aa)*2.6,dmg:1,col:e.bossColor||'#ff2060',r:3.5}); }
+								if (S.tick % 90 === 0) { for (let _k=0;_k<5;_k++) { const aa=_k/5*Math.PI*2; S.ebullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*2.0,vy:Math.sin(aa)*2.0,dmg:1,col:'#ff80c0',r:3,homing:true}); } }
+								e.cd = 10;
+							} else if (am === 'dark') {
 								for (const off of [-0.34, 0, 0.34]) { const aa = ba + off;
 									const eb = { x: e.x, y: e.y, vx: Math.cos(aa) * 2.3, vy: Math.sin(aa) * 2.3, dmg: 1, col: "#9a4ad0", r: 3 };
 									if (Math.random()<0.2) eb.statusPara = true;
@@ -5231,6 +5252,12 @@
 					S.fx.push(...Array.from({length:8},()=>({x:rx,y:ry,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:12,col:'#ff4040'})));
 				}
 				if (S.enemies.length === 0 && !S._roomOverlay && !S._trainerBattle) {
+					// Room clear fanfare — fires once when enemies just hit 0
+					if (!S._clearDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss')) {
+						S._clearDone = true; S._clearFlash = 55;
+						const cx2=W/2,cy2=H/2;
+						for (let _k=0;_k<24;_k++) { const _a=_k/24*Math.PI*2; S.fx.push({x:cx2+Math.cos(_a)*30,y:cy2+Math.sin(_a)*30,vx:Math.cos(_a)*4.5,vy:Math.sin(_a)*4.5,life:28,col:['#ffe060','#60d060','#60c0ff','#ff8060'][_k%4]}); }
+					}
 					// Perk selection overlay after combat/ambush/miniboss rooms
 					if (!S._perkDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss')) {
 						S._perkDone = true;
@@ -5548,7 +5575,17 @@
 					}
 					if (e.boss) {
 						const by = e.y + Math.sin(t * 0.06) * 3;
-						const bCol = e.bossColor || '#6a2a9a';
+						const bCol = e._phase2 ? '#ff2060' : (e.bossColor || '#6a2a9a');
+						// Phase 2 rage aura
+						if (e._phase2) {
+							ctx.globalAlpha = 0.18 + Math.sin(t*0.4)*0.12;
+							ctx.strokeStyle = '#ff3040'; ctx.lineWidth = 10;
+							ctx.beginPath(); ctx.arc(e.x, by, e.r+10, 0, Math.PI*2); ctx.stroke();
+							ctx.globalAlpha = 0.3 + Math.sin(t*0.55)*0.15;
+							ctx.strokeStyle = '#ff8020'; ctx.lineWidth = 3;
+							ctx.beginPath(); ctx.arc(e.x, by, e.r+6, 0, Math.PI*2); ctx.stroke();
+							ctx.globalAlpha = 1; ctx.lineWidth = 1;
+						}
 						// Lighter shade for highlight
 						ctx.fillStyle = hurt ? "#ffffff" : "#1a0e26";
 						ctx.beginPath(); ctx.moveTo(e.x - 14, by - 11); ctx.lineTo(e.x - 21, by - 27); ctx.lineTo(e.x - 6, by - 14); ctx.closePath(); ctx.fill();
@@ -5820,16 +5857,23 @@
 				if (S.roomBanner > 0) {
 					const bannerAlpha = S.roomBanner > 70 ? (90 - S.roomBanner) / 20 : Math.min(1, S.roomBanner / 30);
 					const ROOM_LABELS = { combat:'⚔ Combat', boss:'💀 Boss Fight', miniboss:'🔥 Mini-Boss', treasure:'💎 Treasure Room', rest:'💙 Rest Room', shop:'🛒 Shop', puzzle:'🧩 Puzzle', shrine:'🌟 Shrine', trainer:'🎌 Trainer Battle', ambush:'⚠ Ambush!' };
+					const ROOM_COLORS = { combat:'#ff6040', boss:'#c040ff', miniboss:'#ff9020', treasure:'#ffe060', rest:'#60d0ff', shop:'#a0e070', puzzle:'#80c0ff', shrine:'#ffc060', trainer:'#ff8090', ambush:'#ff8030' };
 					const label = ROOM_LABELS[S.roomType] || S.roomType;
+					const accentCol = ROOM_COLORS[S.roomType] || '#ffe060';
 					const roomNum = S.endlessLoop > 0 ? 'ENDLESS ×' + S.endlessLoop + ' — R' + S.room : 'ROOM ' + S.room + ' / ' + MAX_ROOM;
-					ctx.globalAlpha = bannerAlpha * 0.85;
-					ctx.fillStyle = 'rgba(10,8,22,0.9)';
-					ctx.fillRect(VW * 0.1, VH / 2 - 22, VW * 0.8, 36);
+					const slideY = bannerAlpha < 1 ? VH/2 - 22 + (1-bannerAlpha)*18 : VH/2 - 22;
+					ctx.globalAlpha = bannerAlpha * 0.9;
+					ctx.fillStyle = 'rgba(8,5,18,0.92)';
+					ctx.fillRect(VW * 0.08, slideY, VW * 0.84, 38);
+					// Accent side bar
+					ctx.fillStyle = accentCol;
+					ctx.fillRect(VW * 0.08, slideY, 3, 38);
+					ctx.fillRect(VW * 0.92 - 3, slideY, 3, 38);
 					ctx.globalAlpha = bannerAlpha;
-					ctx.fillStyle = '#ffe060'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
-					ctx.fillText(label, VW / 2, VH / 2 - 5);
+					ctx.fillStyle = accentCol; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+					ctx.fillText(label, VW / 2, slideY + 17);
 					ctx.fillStyle = '#8a7aaa'; ctx.font = '7px monospace';
-					ctx.fillText(roomNum, VW / 2, VH / 2 + 9);
+					ctx.fillText(roomNum, VW / 2, slideY + 31);
 					ctx.globalAlpha = 1;
 					S.roomBanner--;
 				}
@@ -5986,15 +6030,57 @@
 						ctx.globalAlpha = 1;
 					}
 				}
+				// Room clear fanfare text
+				if ((S._clearFlash||0) > 0) {
+					S._clearFlash--;
+					const _cf = S._clearFlash;
+					const _ca = _cf > 35 ? (_cf-35)/20 : Math.min(1, _cf/20);
+					ctx.globalAlpha = _ca;
+					ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+					ctx.fillStyle = '#000'; ctx.fillText('CLEARED!', VW/2+2, VH/2-18+2);
+					ctx.fillStyle = '#60ff80'; ctx.fillText('CLEARED!', VW/2, VH/2-18);
+					ctx.globalAlpha = 1;
+				}
+				// Boss phase 2 flash
+				if ((S._bossPhase2Flash||0) > 0) {
+					S._bossPhase2Flash--;
+					const _pf = S._bossPhase2Flash;
+					ctx.fillStyle = 'rgba(255,20,60,' + (_pf/20*0.55).toFixed(2) + ')'; ctx.fillRect(0,0,VW,VH);
+					if (_pf > 14) {
+						ctx.globalAlpha = (_pf-14)/6;
+						ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center';
+						ctx.fillStyle = '#fff'; ctx.fillText('ENRAGED!', VW/2+2, VH/2+2);
+						ctx.fillStyle = '#ff2040'; ctx.fillText('ENRAGED!', VW/2, VH/2);
+						ctx.globalAlpha = 1;
+					}
+				}
 				if (S.result) {
-					ctx.fillStyle = "rgba(6,4,12,0.8)"; ctx.fillRect(0, 0, VW, VH);
-					ctx.textAlign = "center";
-					const win = S.result === "win";
-					ctx.fillStyle = win ? "#ffe060" : "#ff7a8a"; ctx.font = "15px monospace";
-					ctx.fillText(win ? "TOWER CLEARED!" : "DEFEATED", VW / 2, VH / 2 - 12);
-					ctx.fillStyle = "#cfc6ee"; ctx.font = "8px monospace";
-					ctx.fillText("Rooms cleared: " + (S.room - 1), VW / 2, VH / 2 + 10);
-					ctx.fillText("Tap LEAVE to collect rewards", VW / 2, VH / 2 + 26);
+					const win = S.result === 'win';
+					const elapsed = Math.floor(((Date.now())-(S.startTime||Date.now()))/1000);
+					const mm = String(Math.floor(elapsed/60)).padStart(2,'0'), ss = String(elapsed%60).padStart(2,'0');
+					ctx.fillStyle = 'rgba(6,4,14,0.88)'; ctx.fillRect(0,0,VW,VH);
+					ctx.textAlign = 'center';
+					// Title
+					ctx.font = 'bold 18px monospace';
+					ctx.fillStyle = '#000'; ctx.fillText(win?'TOWER CLEARED!':'DEFEATED', VW/2+2, VH/2-52+2);
+					ctx.fillStyle = win?'#ffe060':'#ff7a8a'; ctx.fillText(win?'TOWER CLEARED!':'DEFEATED', VW/2, VH/2-52);
+					// Stats block
+					const stats = [
+						['Rooms cleared', String(S.room-1) + ' / ' + MAX_ROOM],
+						['Enemies killed', String(S.kills||0)],
+						['Stardust earned', String(S.stardust||0)],
+						['Run time', mm+':'+ss],
+						['Perks taken', String(Object.values(S.perks||{}).reduce((a,b)=>a+b,0))],
+					];
+					ctx.font = '9px monospace';
+					stats.forEach(([label,val],i) => {
+						const y = VH/2 - 22 + i*18;
+						ctx.fillStyle='rgba(255,255,255,0.08)'; ctx.fillRect(VW/2-90,y-11,180,14);
+						ctx.fillStyle='#8a7aaa'; ctx.textAlign='left';  ctx.fillText(label, VW/2-84, y);
+						ctx.fillStyle='#ffe0a0'; ctx.textAlign='right'; ctx.fillText(val,   VW/2+84, y);
+					});
+					ctx.textAlign='center'; ctx.fillStyle='#605878'; ctx.font='7px monospace';
+					ctx.fillText('Tap LEAVE to collect rewards', VW/2, VH/2+76);
 				}
 				if (S.flash > 0) { ctx.fillStyle = "rgba(255,40,60," + (S.flash / 26) + ")"; ctx.fillRect(0, 0, VW, VH); }
 			}
@@ -6097,7 +6183,7 @@
 					synergies: new Set(),
 					endlessLoop: 0,
 					roomTimer: 0,
-					shake: 0, hitStop: 0,
+					shake: 0, hitStop: 0, startTime: Date.now(),
 					roomBanner: 0,
 					roomFlash: 0,
 					frozenField: 0,
