@@ -4991,6 +4991,8 @@
 						if (S.room > MAX_ROOM) {
 							if (!S._endlessChoiceShown) {
 								S._endlessChoiceShown = true;
+								S.doorOpen = false; // prevent re-triggering every tick
+								S.py = WALL + 20;   // push player away from door threshold
 								showEndlessChoice();
 							}
 						} else { newRoom(); S.px = W / 2; S.py = H - 40; }
