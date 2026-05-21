@@ -4246,7 +4246,18 @@
 					 'HP: <b style="color:#ff8090">'+(S.hp||0)+'/'+S.maxHp+'</b>'].forEach(_html => {
 						const sp = document.createElement('span'); sp.innerHTML = _html; statsDiv.appendChild(sp);
 					});
-					el.appendChild(statsDiv);
+					// Pick a random floor curse not already active
+					const _floorCursePool = ['fragile', 'slow', 'drain', 'jinx'];
+					const _availFC = _floorCursePool.filter(k => !(S.curses||[]).includes(k));
+					const _fcKey = _availFC.length ? _availFC[Math.floor(Math.random()*_availFC.length)] : null;
+					const _fcDef = _fcKey ? CURSES.find(c => c.key === _fcKey) : null;
+					// Curse warning
+					if (_fcDef) {
+						const curseWarn = document.createElement('div');
+						curseWarn.style.cssText = 'background:rgba(255,50,50,0.12);border:1px solid rgba(255,80,80,0.35);border-radius:6px;padding:7px 14px;margin-bottom:10px;font-size:9px;color:#ff9090;text-align:center;';
+						curseWarn.innerHTML = '⚠ <b>Descent Curse:</b> ' + _fcDef.icon + ' <b>' + _fcDef.name + '</b> — ' + _fcDef.desc;
+						el.appendChild(curseWarn);
+					}
 					const cLabel = document.createElement('p');
 					cLabel.style.cssText = 'font-size:10px;color:#cfc6ee;margin:0 0 10px;';
 					cLabel.textContent = 'Choose your reward before descending:';
@@ -4254,20 +4265,23 @@
 					const row = document.createElement('div');
 					row.style.cssText = 'display:flex;gap:10px;justify-content:center;';
 					el.appendChild(row);
+					const _applyFC = () => {
+						if (_fcKey) { if (!S.curses) S.curses = []; S.curses.push(_fcKey); showToast((_fcDef?_fcDef.icon:'⚠')+' Curse: '+(_fcDef?_fcDef.name:_fcKey)+'!'); }
+					};
 					const _mkBtn = (icon, title, desc, primary, cb) => {
 						const btn = document.createElement('button');
 						btn.className = 'tower-btn' + (primary ? ' primary' : '');
 						btn.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 18px;min-width:108px;';
 						btn.innerHTML = '<span style="font-size:20px">'+icon+'</span><span style="font-size:11px;font-weight:bold">'+title+'</span><span style="font-size:9px;color:#b0a0c8;text-align:center">'+desc+'</span>';
-						btn.addEventListener('click', () => { el.hidden = true; cb(); });
+						btn.addEventListener('click', () => { el.hidden = true; _applyFC(); cb(); });
 						return btn;
 					};
-					row.appendChild(_mkBtn('\ud83d\udc99', 'Rest', 'Heal 2 HP', false, () => {
+					row.appendChild(_mkBtn('💙', 'Rest', 'Heal 2 HP', false, () => {
 						S.hp = Math.min(S.maxHp, S.hp + 2);
-						showToast('\ud83d\udc99 Healed 2 HP!');
+						showToast('💙 Healed 2 HP!');
 						onDone();
 					}));
-					row.appendChild(_mkBtn('\u26a1', 'Press On', 'Choose an upgrade', true, () => {
+					row.appendChild(_mkBtn('⚡', 'Press On', 'Choose an upgrade', true, () => {
 						showPerkOverlay(() => { onDone(); });
 					}));
 					el.hidden = false;
@@ -4525,7 +4539,8 @@
 					// combat or ambush
 					const isAmbush = (S.roomType === 'ambush');
 					const isHorde = S.modifier === 'horde';
-					const base = 3 + Math.min(8, r + 1) + (isHorde ? 2 : 0);
+					const _rif3 = ((r - 1) % ROOMS_PER_FLOOR) + 1; const _fl3 = S.floor || 1;
+						const base = 3 + Math.min(6, _rif3 + 1) + (_fl3 - 1) * 3 + (isHorde ? 2 : 0);
 					const n = isAmbush ? base * 2 : base;
 					const tierR = [7,10,12][tier];
 					const tierHpMin = [3,6,11][tier];
@@ -4543,7 +4558,8 @@
 					const modePool = movePools[Math.min(tier, 2)];
 					const heldPool = [null,null,null,null,null,'sitrus','sitrus','helmet','berries','berries','berries','shell','toxic_orb','toxic_orb'];
 					for (let i = 0; i < n; i++) {
-						const shooter = r >= 2 && Math.random() < 0.42;
+						const _shooterRate = (_rif3 >= 2 || _fl3 >= 2) ? [0.42, 0.55, 0.68][_fl3 - 1] : 0;
+						const shooter = Math.random() < _shooterRate;
 						const hp = tierHpMin + Math.floor(Math.random()*(tierHpMax-tierHpMin+1));
 						const heldRoll = r >= 3 && Math.random() < 0.25;
 						const held = heldRoll ? heldPool[Math.floor(Math.random()*heldPool.length)] : null;
@@ -4556,7 +4572,9 @@
 						const endlessHpScale = 1 + (S.endlessLoop||0) * 0.2;
 						// Horde: 80% HP and size
 						const hordeScale = isHorde ? 0.8 : 1;
-						const finalHp = Math.max(1, Math.round(hp * hordeScale * endlessHpScale));
+						const floorHpMult = [1.0, 1.6, 2.5][_fl3 - 1];
+						const floorSpdMult = [1.0, 1.2, 1.45][_fl3 - 1];
+						const finalHp = Math.max(1, Math.round(hp * hordeScale * endlessHpScale * floorHpMult));
 						const finalR = Math.max(5, Math.round(tierR * hordeScale));
 						// Spread spawn: angular distribution so enemies approach from all sides
 						const _spawnA = (i / n) * Math.PI * 2 + Math.random() * 0.8;
@@ -4566,13 +4584,14 @@
 						const enemy = {
 							x: _sx, y: _sy,
 							hp: finalHp, maxHp: finalHp, r: finalR, shooter, cd:50+Math.random()*70,
-							spd: shooter ? tierSpd*0.7 : tierSpd+Math.random()*0.2,
+							spd: (shooter ? tierSpd*0.7 : tierSpd+Math.random()*0.2) * floorSpdMult,
 							hurt:0, eType, held, heldUsed:false, moveMode, attackPat, zigTimer:0, burstQueue:0,
 							shellHp: (held==='shell' ? 3 : 0),
 							eStatuses:{},
 						};
-						// Elite variant
-						if (Math.random() < 0.20) {
+						// Elite variant — chance scales with floor
+						const _eliteChance = [0.20, 0.38, 0.55][_fl3 - 1];
+						if (Math.random() < _eliteChance) {
 							enemy.elite = true;
 							enemy.hp = Math.ceil(enemy.hp*2.2);
 							enemy.maxHp = enemy.hp;
@@ -4604,7 +4623,7 @@
 				}
 				// Generate room obstacles (pillars/cover) for combat rooms
 				S.obstacles = genObstacles(S.roomType);
-				S.floorHazards = genFloorHazards(S.roomType, Math.min(2, Math.floor((S.room-1)/3)));
+				S.floorHazards = genFloorHazards(S.roomType, Math.min(2, (S.floor||1) - 1));
 			}
 			// Called once per room after overlay
 			function openRoomAfterOverlay() {
@@ -4724,7 +4743,7 @@
 					S._pk[name] = cur;
 				};
 				edge(kL,'L',-1,0); edge(kR,'R',1,0); edge(kU,'U',0,-1); edge(kD,'D',0,1);
-				const SP = 1.85 * (1 + 0.18 * ((S.perks&&S.perks.swift)||0)) * (S._onIce ? 0.55 : 1);
+				const SP = 1.85 * (1 + 0.18 * ((S.perks&&S.perks.swift)||0)) * (S._onIce ? 0.55 : 1) * (S.curses&&S.curses.includes('slow') ? 0.75 : 1);
 				if (S.rollT > 0) {
 					S.rollT--; S.invuln = Math.max(S.invuln, 2);
 					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+S.rollVx));
@@ -4861,6 +4880,7 @@
 				const baseDmg = Math.max(1, 1 + (S.relics.indexOf('power')>=0?1:0) + (S.bonusDmg||0) + ((S.perks&&S.perks.power)||0) - curseWeak);
 				const tgt = nearest(S.px, S.py, S.enemies);
 				if (tgt && S.fireCd <= 0) {
+					if (S.curses&&S.curses.includes('jinx')&&Math.random()<0.25) { S.fireCd=playerFireRate; } else {
 					const critChance = 0.10 + (S.relics.indexOf('scope')>=0?0.15:0);
 					const isCrit = Math.random() < critChance;
 					const critMult = (S.synergies && S.synergies.has('sniper')) ? 2.5 : 1.5;
@@ -4869,6 +4889,7 @@
 					else { shoot(S.bullets, S.px, S.py, tgt.x, tgt.y, 3.4, Math.ceil(dmg), '#ffe060'); S.bullets[S.bullets.length-1].isCrit=isCrit; S.pAim=Math.atan2(tgt.y-S.py,tgt.x-S.px); }
 					if (isCrit) S.fx.push({x:S.px,y:S.py-10,vx:0,vy:-0.5,life:22,col:'#ffd700',crit:true,text:'CRIT!'});
 					S.fireCd = playerFireRate; S.pMuzzle = 5;
+					} // end jinx-else
 				}
 				if (S.partnerCd > 0) S.partnerCd--;
 				const ptgt = nearest(S.partner.x, S.partner.y, S.enemies);
@@ -5018,7 +5039,7 @@
 						e.spd = (e.spd||0.55) * 1.8;
 						e.cd = Math.min(e.cd, 25);
 						e.r += 4;
-						const _btier = Math.min(2, Math.floor((S.room-1)/3));
+						const _btier = Math.min(2, (S.floor||1) - 1);
 						for (let _k=0;_k<2;_k++) {
 							const _ba = _k/2*Math.PI*2;
 							S.enemies.push({x:e.x+Math.cos(_ba)*55,y:e.y+Math.sin(_ba)*55,hp:4+_btier*3,maxHp:4+_btier*3,r:9,shooter:true,cd:50+_k*30,spd:0.8,hurt:0,eType:e.eType,held:null,heldUsed:false,moveMode:'circler',attackPat:'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_summon:true});
@@ -5186,7 +5207,7 @@
 							if (S.synergies && S.synergies.has('luckybreak')) S.stardust += 8;
 						} else {
 							if ((S.revivals||0) > 0 && S.hp <= 1) { S.revivals--; S.hp = 1; S.invuln = 120; S.flash = 12; showToast('💚 Revival Herb activated!'); }
-							else { S.hp--; S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; S.shake = 8; }
+							else { S.hp -= (S.curses&&S.curses.includes('fragile') ? 2 : 1); S.invuln = S.relics.indexOf("guard") >= 0 ? 72 : 52; S.flash = 8; S.shake = 8; }
 						}
 						if (S.relics.indexOf('lum') < 0 && Math.random() < 0.15) {
 							if (e.eType==='poison') applyStatus('poison', e.held==='toxic_orb'?360:180);
@@ -5283,7 +5304,7 @@
 						if (S.barrier > 0) { S.ebullets.splice(i,1); continue; }
 						const guardT = S.synergies && S.synergies.has('ironbarbs') ? 90 : (S.relics.indexOf("guard") >= 0 ? 72 : 52);
 						if ((S.revivals||0) > 0 && S.hp <= 1) { S.revivals--; S.hp = 1; S.invuln = 120; S.flash = 12; showToast('💚 Revival Herb activated!'); }
-						else { S.hp--; }
+						else { S.hp -= (S.curses&&S.curses.includes('fragile') ? 2 : 1); }
 						S.invuln = guardT; S.flash = 8;
 						try { Sound.chime && Sound.chime(); } catch(_) {}
 						if (b.statusPara && S.relics.indexOf('lum')<0) applyStatus('para',120);
@@ -5349,7 +5370,7 @@
 				if (!(S.floorHazards&&S.floorHazards.some(h=>h.type==='ice'))) S._onIce = false;
 				// Reinforcement: if combat room drags on, a new enemy drops in every 300 ticks
 				if ((S.roomType==='combat'||S.roomType==='ambush') && S.enemies.length > 0 && !S._roomOverlay && S.tick % 300 === 299) {
-					const tier = Math.min(2, Math.floor((S.room-1)/3));
+					const tier = Math.min(2, (S.floor||1) - 1);
 					const eType = ['poison','psychic','dark'][tier];
 					const reinHp = [4,8,14][tier];
 					const side = Math.floor(Math.random()*4);
@@ -5411,6 +5432,8 @@
 						}
 					}
 				}
+				// Floor curse: Life Drain — lose 1 HP every 10 seconds
+				if (S.curses&&S.curses.includes('drain')&&S.tick%600===599&&S.hp>1) { S.hp--; S.flash=8; S.shake=3; showToast('🩸 Life Drain!'); }
 				if (S.hp <= 0) {
 					if ((S.revivals||0) > 0) { S.revivals--; S.hp = 1; S.invuln = 120; S.flash = 12; showToast('💚 Revival Herb activated!'); }
 					else if (S.relics.indexOf('focus') >= 0 && !S._focusUsed && Math.random() < 0.2) {
@@ -6261,7 +6284,13 @@
 				{ key:'slow_gun',  icon:'🐌', name:'Slow Trigger', desc:'Fire rate -30%' },
 				{ key:'weak',      icon:'😰', name:'Weakened',     desc:'-1 shot damage min 1' },
 				{ key:'fast_foes', icon:'💨', name:'Frenzy',       desc:'Enemies +30% faster' },
-			];
+			
+					// Floor descent curses
+					{ key:'fragile', icon:'🫧', name:'Fragile',     desc:'Take +1 extra damage per hit' },
+					{ key:'slow',    icon:'🐢', name:'Leaden Feet', desc:'Move speed -25%' },
+					{ key:'drain',   icon:'🩸', name:'Life Drain',  desc:'Lose 1 HP every 10 seconds' },
+					{ key:'jinx',    icon:'✦',  name:'Jinxed',      desc:'25% of shots fizzle out' },
+				];
 			// Floor modifiers — one per run
 			const MODIFIERS = [
 				{ key:'fog',      icon:'🌫', name:'Foggy', desc:'Reduced visibility' },
