@@ -3720,13 +3720,26 @@
 				if (e.type === 'keydown' && k === 'escape') exit();
 			}
 			function fit() {
+				const dpr = Math.min(window.devicePixelRatio || 1, 3);
 				const vw = Math.max(300, window.innerWidth || 360);
 				const vh = Math.max(300, window.innerHeight || 540);
-				const ar = vw / vh;
-				if (ar >= 1) { VW = 380; VH = Math.round(380 / ar); }
-				else { VH = 380; VW = Math.round(380 * ar); }
-				if (cv) { cv.width = VW; cv.height = VH; }
-				if (ctx) ctx.imageSmoothingEnabled = false;
+				// Use actual viewport so the canvas fills the screen at 1:1 CSS pixels —
+				// capped at the game-world size so the camera never shows outside the room.
+				VW = Math.min(vw, W);
+				VH = Math.min(vh, H);
+				if (cv) {
+					// Physical-pixel resolution so anti-aliasing renders at native DPI,
+					// not at a fraction that gets stretched and looks grainy.
+					cv.width  = Math.round(VW * dpr);
+					cv.height = Math.round(VH * dpr);
+					// CSS size matches logical viewport — no stretching.
+					cv.style.width  = VW + 'px';
+					cv.style.height = VH + 'px';
+				}
+				if (ctx) {
+					ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+					ctx.imageSmoothingEnabled = false;
+				}
 			}
 			function ensure() {
 				if (root) return;
@@ -3736,7 +3749,8 @@
 				root.style.cssText = "position:fixed;inset:0;z-index:120;background:#07060f;font-family:monospace;touch-action:none;overflow:hidden";
 				cv = document.createElement("canvas");
 				cv.width = W; cv.height = H;
-				cv.style.cssText = "image-rendering:pixelated;position:absolute;inset:0;width:100%;height:100%;background:#15101f";
+				// width/height are overwritten by fit() — keep only layout/positioning here.
+				cv.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#15101f;display:block";
 				ctx = cv.getContext("2d");
 				ctx.imageSmoothingEnabled = false;
 				root.appendChild(cv);
