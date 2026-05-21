@@ -3721,22 +3721,17 @@
 			}
 			function fit() {
 				const dpr = Math.min(window.devicePixelRatio || 1, 3);
-				const vw = Math.max(300, window.innerWidth || 360);
-				const vh = Math.max(300, window.innerHeight || 540);
-				// Use actual viewport so the canvas fills the screen at 1:1 CSS pixels —
-				// capped at the game-world size so the camera never shows outside the room.
-				VW = Math.min(vw, W);
-				VH = Math.min(vh, H);
+				// Logical viewport = actual screen size. The canvas CSS always fills
+				// 100% of the fixed-inset parent so there is no CSS stretching.
+				VW = Math.max(300, window.innerWidth  || 360);
+				VH = Math.max(300, window.innerHeight || 540);
 				if (cv) {
-					// Physical-pixel resolution so anti-aliasing renders at native DPI,
-					// not at a fraction that gets stretched and looks grainy.
+					// DPR-scaled internal resolution so rendering is 1:1 physical pixels.
 					cv.width  = Math.round(VW * dpr);
 					cv.height = Math.round(VH * dpr);
-					// CSS size matches logical viewport — no stretching.
-					cv.style.width  = VW + 'px';
-					cv.style.height = VH + 'px';
 				}
 				if (ctx) {
+					// Pre-scale so all draw calls use logical (CSS-pixel) coordinates.
 					ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 					ctx.imageSmoothingEnabled = false;
 				}
@@ -3749,8 +3744,8 @@
 				root.style.cssText = "position:fixed;inset:0;z-index:120;background:#07060f;font-family:monospace;touch-action:none;overflow:hidden";
 				cv = document.createElement("canvas");
 				cv.width = W; cv.height = H;
-				// width/height are overwritten by fit() — keep only layout/positioning here.
-				cv.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#15101f;display:block";
+				// fill the fixed-inset parent div — fit() sets internal resolution.
+				cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#15101f;display:block";
 				ctx = cv.getContext("2d");
 				ctx.imageSmoothingEnabled = false;
 				root.appendChild(cv);
