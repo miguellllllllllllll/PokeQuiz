@@ -4465,12 +4465,12 @@
 					// combat or ambush
 					const isAmbush = (S.roomType === 'ambush');
 					const isHorde = S.modifier === 'horde';
-					const base = 2 + Math.min(7, r + 1) + (isHorde ? 2 : 0);
+					const base = 3 + Math.min(8, r + 1) + (isHorde ? 2 : 0);
 					const n = isAmbush ? base * 2 : base;
-					const tierR = [7,9,11][tier];
-					const tierHpMin = [2,4,8][tier];
-					const tierHpMax = [4,8,14][tier];
-					const tierSpd = [0.55,0.7,0.88][tier];
+					const tierR = [7,10,12][tier];
+					const tierHpMin = [3,6,11][tier];
+					const tierHpMax = [5,10,18][tier];
+					const tierSpd = [0.62,0.82,1.02][tier];
 					// Move mode weights by tier
 					const movePools = [
 						// tier 0: 70% charger, 20% zigzagger, 10% circler
@@ -4483,7 +4483,7 @@
 					const modePool = movePools[Math.min(tier, 2)];
 					const heldPool = [null,null,null,null,null,'sitrus','sitrus','helmet','berries','berries','berries','shell','toxic_orb','toxic_orb'];
 					for (let i = 0; i < n; i++) {
-						const shooter = r >= 3 && Math.random() < 0.35;
+						const shooter = r >= 2 && Math.random() < 0.42;
 						const hp = tierHpMin + Math.floor(Math.random()*(tierHpMax-tierHpMin+1));
 						const heldRoll = r >= 3 && Math.random() < 0.25;
 						const held = heldRoll ? heldPool[Math.floor(Math.random()*heldPool.length)] : null;
@@ -4498,9 +4498,13 @@
 						const hordeScale = isHorde ? 0.8 : 1;
 						const finalHp = Math.max(1, Math.round(hp * hordeScale * endlessHpScale));
 						const finalR = Math.max(5, Math.round(tierR * hordeScale));
+						// Spread spawn: angular distribution so enemies approach from all sides
+						const _spawnA = (i / n) * Math.PI * 2 + Math.random() * 0.8;
+						const _spawnD = 110 + Math.random() * 90;
+						const _sx = Math.max(WALL+20, Math.min(W-WALL-20, W/2 + Math.cos(_spawnA)*_spawnD));
+						const _sy = Math.max(WALL+20, Math.min(H-WALL-120, H/2 - 30 + Math.sin(_spawnA)*_spawnD));
 						const enemy = {
-							x: WALL+24+Math.random()*(W-2*WALL-48),
-							y: WALL+24+Math.random()*(H-2*WALL-120),
+							x: _sx, y: _sy,
 							hp: finalHp, maxHp: finalHp, r: finalR, shooter, cd:50+Math.random()*70,
 							spd: shooter ? tierSpd*0.7 : tierSpd+Math.random()*0.2,
 							hurt:0, eType, held, heldUsed:false, moveMode, attackPat, zigTimer:0, burstQueue:0,
@@ -4508,7 +4512,7 @@
 							eStatuses:{},
 						};
 						// Elite variant
-						if (Math.random() < 0.12) {
+						if (Math.random() < 0.20) {
 							enemy.elite = true;
 							enemy.hp = Math.ceil(enemy.hp*2.2);
 							enemy.maxHp = enemy.hp;
@@ -4870,8 +4874,8 @@
 								if (S.partnerLevel<2 && S.partnerXP>=8) { S.partnerLevel=2; showToast(S.partnerNickname+' reached Lv.2!'); try { Sound.evolve && Sound.evolve(); } catch(_) {} }
 								else if (S.partnerLevel<3 && S.partnerXP>=20) { S.partnerLevel=3; showToast(S.partnerNickname+' reached Lv.3!'); try { Sound.evolve && Sound.evolve(); } catch(_) {} }
 								if (S.relics.indexOf("shellbell") >= 0 && S.kills % 4 === 0) S.hp = Math.min(S.maxHp, S.hp + 1);
-								if (!e.boss && !e.miniboss && Math.random() < 0.2) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
-								if (e.elite && !e.boss) S.pickups.push({ x: e.x+10, y: e.y, kind: "heart", r: 8, bob: 2 });
+								if (!e.boss && !e.miniboss && Math.random() < 0.11) S.pickups.push({ x: e.x, y: e.y, kind: "heart", r: 8, bob: 0 });
+								if (e.elite && !e.boss) S.stardust += 4; // elites drop stardust, not hearts
 								if (e.held === 'berries') S.pickups.push({ x: e.x, y: e.y+10, kind: 'heart', r: 8, bob: Math.random()*5 });
 								try { Sound.plant && Sound.plant(); } catch(_) {}
 							}
@@ -5035,6 +5039,13 @@
 					} else {
 						e.x += Math.cos(_da) * effSpd; e.y += Math.sin(_da) * effSpd;
 					}
+					// Enemy separation — push apart so they surround instead of clump
+					for (const other of S.enemies) {
+						if (other === e) continue;
+						const _sdx=e.x-other.x, _sdy=e.y-other.y, _sd2=_sdx*_sdx+_sdy*_sdy;
+						const _sep = (e.r+other.r+4)**2;
+						if (_sd2 < _sep && _sd2 > 0) { const _sd=Math.sqrt(_sd2); e.x+=_sdx/_sd*0.9; e.y+=_sdy/_sd*0.9; }
+					}
 					// Clamp to room bounds
 					e.x = Math.max(WALL + e.r, Math.min(W - WALL - e.r, e.x));
 					e.y = Math.max(WALL + e.r, Math.min(H - WALL - e.r, e.y));
@@ -5172,7 +5183,7 @@
 						}
 						fxCol = "#ffe060";
 					} else if (p.kind === "restpad") {
-						S.hp = S.maxHp; S.energy = S.maxEnergy; S.berryUsed = false; fxCol = "#7ad0ff";
+						S.hp = Math.min(S.maxHp, S.hp + Math.max(2, Math.ceil(S.maxHp * 0.6))); S.energy = S.maxEnergy; S.berryUsed = false; fxCol = "#7ad0ff";
 					} else if (p.kind === "reroll") {
 						if (S.relics.length > 0) {
 							S.stardust -= 10;
@@ -5208,6 +5219,17 @@
 					}
 				}
 				if (!(S.floorHazards&&S.floorHazards.some(h=>h.type==='ice'))) S._onIce = false;
+				// Reinforcement: if combat room drags on, a new enemy drops in every 300 ticks
+				if ((S.roomType==='combat'||S.roomType==='ambush') && S.enemies.length > 0 && !S._roomOverlay && S.tick % 300 === 299) {
+					const tier = Math.min(2, Math.floor((S.room-1)/3));
+					const eType = ['poison','psychic','dark'][tier];
+					const reinHp = [4,8,14][tier];
+					const side = Math.floor(Math.random()*4);
+					const rx = side===0?WALL+20:side===1?W-WALL-20:WALL+60+Math.random()*(W-2*WALL-120);
+					const ry = side===2?WALL+20:side===3?H-WALL-20:WALL+60+Math.random()*(H-2*WALL-120);
+					S.enemies.push({x:rx,y:ry,hp:reinHp,maxHp:reinHp,r:[8,10,12][tier],shooter:Math.random()<0.4,cd:40,spd:[0.7,0.9,1.1][tier],hurt:0,eType,held:null,heldUsed:false,moveMode:'charger',attackPat:'straight',zigTimer:0,burstQueue:0,shellHp:0,eStatuses:{},_reinf:true});
+					S.fx.push(...Array.from({length:8},()=>({x:rx,y:ry,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:12,col:'#ff4040'})));
+				}
 				if (S.enemies.length === 0 && !S._roomOverlay && !S._trainerBattle) {
 					// Perk selection overlay after combat/ambush/miniboss rooms
 					if (!S._perkDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss')) {
