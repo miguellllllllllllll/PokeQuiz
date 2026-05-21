@@ -5917,11 +5917,12 @@
 				}
 				ctx.globalAlpha = 1;
 				ctx.restore();
-				// Fog modifier — darken beyond 130px circle around player
+				// Fog modifier — darken beyond circle around player (CSS-pixel space)
 				if (S.modifier === 'fog') {
-					const fogPX = S.px - (Math.max(0, Math.min(W - VW, S.px - VW / 2)));
-					const fogPY = S.py - (Math.max(0, Math.min(H - VH, S.py - VH / 2)));
-					const fogG = ctx.createRadialGradient(fogPX, fogPY, 90, fogPX, fogPY, 200);
+					const fogPX = (S.px - camX) * DUNGEON_ZOOM;
+					const fogPY = (S.py - camY) * DUNGEON_ZOOM;
+					const fogInner = 90 * DUNGEON_ZOOM, fogOuter = 200 * DUNGEON_ZOOM;
+					const fogG = ctx.createRadialGradient(fogPX, fogPY, fogInner, fogPX, fogPY, fogOuter);
 					fogG.addColorStop(0, 'rgba(0,0,0,0)');
 					fogG.addColorStop(0.65, 'rgba(0,0,0,0.55)');
 					fogG.addColorStop(1, 'rgba(0,0,0,0.92)');
