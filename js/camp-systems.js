@@ -3705,7 +3705,7 @@
 					dunImgPartner = null;
 					const pi = new Image();
 					pi.onload = () => { dunImgPartner = pi; };
-					pi.src = "Pictures/sprites/" + dunPartnerMeta.sheet + ".png";
+					pi.src = dunPartnerMeta.url || ("Pictures/sprites/" + dunPartnerMeta.sheet + ".png");
 				}
 			}
 			function onKey(e) {
