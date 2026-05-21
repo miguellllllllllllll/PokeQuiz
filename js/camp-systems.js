@@ -4288,15 +4288,15 @@
 					S.doorOpen = false;
 					S._roomOverlay = true;
 					// Show overlay after a short delay (next tick)
-					S._pendingOverlay = S.roomType;
+					S._pendingOverlay = S.roomType; S._pendingOverlayTick = S.tick;
 				} else if (S.roomType === 'curse') {
 					S.doorOpen = false;
 					S._roomOverlay = true;
-					S._pendingOverlay = 'curse';
+					S._pendingOverlay = 'curse'; S._pendingOverlayTick = S.tick;
 				} else if (S.roomType === 'trainer') {
 					S.doorOpen = false;
 					S._roomOverlay = true;
-					S._pendingOverlay = 'trainer';
+					S._pendingOverlay = 'trainer'; S._pendingOverlayTick = S.tick;
 				} else if (S.roomType === 'boss') {
 					const arch = S.bossArchetype || BOSS_ARCHETYPES[0];
 					const hpScale = 1 + (S.endlessLoop||0) * 0.2;
@@ -4408,7 +4408,7 @@
 					return;
 				}
 				// Handle pending overlay triggers (fire on tick 2 of the new room)
-				if (S._pendingOverlay && S.tick === 2) {
+				if (S._pendingOverlay && S.tick >= S._pendingOverlayTick + 2) {
 					const ov = S._pendingOverlay;
 					S._pendingOverlay = null;
 					S._roomOverlay = true;
