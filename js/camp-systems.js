@@ -4442,10 +4442,10 @@
 						if (rk) S.pickups.push({ x:W/2, y:H/2, kind:'relic', relic:rk, r:11, bob:0 });
 						S.doorOpen = true;
 						if (S._trainerOnDone) { const cb = S._trainerOnDone; S._trainerOnDone=null; cb(); }
+						return; // battle over
 					} else {
-						spawnTrainerWave();
+						spawnTrainerWave(); // next wave spawns same tick — no freeze
 					}
-					return;
 				}
 				// Status ticks
 				for (const [k, v] of Object.entries(S.statuses)) { if (v > 0) S.statuses[k]--; }
@@ -4630,7 +4630,7 @@
 				const partnerFireRate = (S.relics.indexOf('swift')>=0||S.rapid) ? 22 : (S.partnerLevel>=3?28:36);
 				const partnerDmg = 1 + (S.partnerLevel>=2?1:0);
 				if (ptgt && S.partnerCd <= 0) {
-					const pType = FORM_TYPE[S.partnerForm] || 'normal';
+					const pType = formType(S.partnerForm || 'eevee');
 					const mult = typeMultiplier(pType, ptgt.eType || 'normal');
 					const typePowerBonus = mult > 1 ? (perm.typePower||0) : 0;
 					shoot(S.bullets, S.partner.x, S.partner.y, ptgt.x, ptgt.y, 3.0, partnerDmg * mult + typePowerBonus, S.pColor);
@@ -4684,7 +4684,7 @@
 							if (e.held==='sitrus' && !e.heldUsed && e.hp < e.maxHp*0.5) { e.hp=Math.min(e.maxHp,e.hp+3); e.heldUsed=true; }
 							// Partner bullet status effect
 							if (b.partner && e.eStatuses) {
-								const pType = FORM_TYPE[S.partnerForm] || 'normal';
+								const pType = formType(S.partnerForm || 'eevee');
 								const statusMap = { fire:'burn', water:'slow', electric:'para', ice:'slow', grass:'poison', psychic:'para' };
 								const sKey = statusMap[pType];
 								if (sKey) {
@@ -5707,10 +5707,20 @@
 				}
 			}
 			function exit() { _doExit(); }
-			function loop() {
+			let _loopLast = 0;
+			const _STEP_MS = 1000 / 60;
+			function loop(ts) {
 				if (!openFlag) return;
-				try { if (S) { step(); draw(); } } catch (e) { console.warn('[TowerDungeon]', e); }
 				raf = requestAnimationFrame(loop);
+				if (!S) return;
+				// Cap logic to 60 fps regardless of display refresh rate
+				if (ts - _loopLast >= _STEP_MS) {
+					_loopLast += _STEP_MS;
+					// If we fall more than 3 frames behind (tab was hidden etc.) skip catch-up
+					if (ts - _loopLast > _STEP_MS * 3) _loopLast = ts;
+					try { step(); } catch (e) { console.warn('[TowerDungeon step]', e); }
+				}
+				try { draw(); } catch (e) { console.warn('[TowerDungeon draw]', e); }
 			}
 			return { start, exit, isOpen: () => openFlag };
 		})();
