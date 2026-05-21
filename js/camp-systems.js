@@ -4301,19 +4301,44 @@
 				const cx = W / 2, cy = H / 2;
 				const PR = 13;
 				function safe(x, y) {
-					if (Math.abs(x - W/2) < 52 && y < WALL + 65) return false;       // near door
-					if (Math.abs(x - W/2) < 64 && y > H - WALL - 95) return false;   // near player start
+					if (Math.abs(x - W/2) < 52 && y < WALL + 65) return false;
+					if (Math.abs(x - W/2) < 64 && y > H - WALL - 95) return false;
 					if (x < WALL+PR+4 || x > W-WALL-PR-4 || y < WALL+PR+4 || y > H-WALL-PR-4) return false;
-					for (const o of obs) { if ((x-o.x)**2+(y-o.y)**2 < (PR*2+16)**2) return false; }
+					for (const o of obs) {
+						if (o.r && (x-o.x)**2+(y-o.y)**2 < (PR*2+16)**2) return false;
+					}
 					return true;
 				}
 				function add(x, y) { if (safe(x, y)) obs.push({x, y, r:PR}); }
+				function wall(x, y, w, h) {
+					// Check wall doesn't block door or player start
+					const cx2 = x+w/2, cy2 = y+h/2;
+					if (Math.abs(cx2-W/2)<52 && cy2<WALL+65) return;
+					if (Math.abs(cx2-W/2)<64 && cy2>H-WALL-95) return;
+					if (x<WALL+4||x+w>W-WALL-4||y<WALL+4||y+h>H-WALL-4) return;
+					obs.push({x, y, w, h});
+				}
 				const templates = [
+					// 0: Quad pillars
 					() => { add(cx-90,cy-55); add(cx+90,cy-55); add(cx-90,cy+55); add(cx+90,cy+55); },
+					// 1: Diamond ring
 					() => { add(cx,cy-105); add(cx+105,cy); add(cx,cy+75); add(cx-105,cy); },
+					// 2: Side columns
 					() => { add(cx-115,cy-65); add(cx-115,cy+35); add(cx+115,cy-65); add(cx+115,cy+35); },
+					// 3: T-row
 					() => { add(cx-130,cy); add(cx,cy-75); add(cx+130,cy); },
+					// 4: L-pair
 					() => { add(cx-85,cy-75); add(cx+85,cy-75); add(cx-85,cy+45); },
+					// 5: Centre corridor — two wall segments flanking the centre
+					() => { wall(cx-130,cy-18,52,36); wall(cx+78,cy-18,52,36); },
+					// 6: Cross divider — short walls in a cross
+					() => { wall(cx-10,cy-90,20,52); wall(cx-10,cy+38,20,52); wall(cx-90,cy-10,52,20); wall(cx+38,cy-10,52,20); },
+					// 7: Corner blocks — thick blocks tucked in two corners
+					() => { wall(WALL+28,WALL+36,40,40); wall(W-WALL-68,WALL+36,40,40); },
+					// 8: Ring of 5 pillars
+					() => { for (let k=0;k<5;k++) { const a=k/5*Math.PI*2-Math.PI/2; add(cx+Math.cos(a)*95, cy-10+Math.sin(a)*75); } },
+					// 9: Spine wall — long central divider with two gaps
+					() => { wall(cx-10,WALL+50,20,60); wall(cx-10,cy+15,20,65); },
 				];
 				templates[Math.floor(Math.random() * templates.length)]();
 				if (roomType === 'ambush' && Math.random() < 0.65) {
@@ -4321,10 +4346,43 @@
 				}
 				return obs;
 			}
+			function genFloorHazards(roomType, tier) {
+				const hzs = [];
+				if (roomType !== 'combat' && roomType !== 'ambush') return hzs;
+				// Spike traps from tier 1+
+				if (tier >= 1) {
+					const count = 1 + Math.floor(Math.random() * (tier + 1));
+					const cx = W/2, cy = H/2;
+					const tried = [];
+					for (let i = 0; i < count * 4 && hzs.length < count; i++) {
+						const x = WALL + 50 + Math.random() * (W - 2*WALL - 100);
+						const y = WALL + 50 + Math.random() * (H - 2*WALL - 150);
+						// Avoid door zone and player start
+						if (Math.abs(x-cx)<60 && y<WALL+80) continue;
+						if (Math.abs(x-cx)<70 && y>H-WALL-100) continue;
+						// Avoid existing hazards
+						if (hzs.some(h=>(x-h.x)**2+(y-h.y)**2<70*70)) continue;
+						hzs.push({x, y, r:18, type:'spike', phase:Math.floor(Math.random()*130)});
+					}
+				}
+				// Ice patches from tier 2
+				if (tier >= 2) {
+					for (let i = 0; i < 2; i++) {
+						const x = WALL + 60 + Math.random() * (W - 2*WALL - 120);
+						const y = WALL + 60 + Math.random() * (H - 2*WALL - 160);
+						if (Math.abs(x-W/2)<60 && y<WALL+80) continue;
+						if (Math.abs(x-W/2)<70 && y>H-WALL-100) continue;
+						if (hzs.some(h=>(x-h.x)**2+(y-h.y)**2<80*80)) continue;
+						hzs.push({x, y, r:28, type:'ice', phase:0});
+					}
+				}
+				return hzs;
+			}
 			function newRoom() {
 				S.doorOpen = false;
 				S.bullets = []; S.ebullets = []; S.enemies = []; S.pickups = [];
-				S.hazards = []; S.obstacles = []; S._perkDone = false;
+				S.hazards = []; S.obstacles = []; S.floorHazards = []; S._perkDone = false;
+				S.roomThemeIdx = S.roomType === 'boss' ? 3 : Math.min(2, Math.floor((S.room-1)/3));
 				S._roomOverlay = false;
 				S._trainerBattle = false;
 				S.berryUsed = false;
@@ -4466,6 +4524,7 @@
 				}
 				// Generate room obstacles (pillars/cover) for combat rooms
 				S.obstacles = genObstacles(S.roomType);
+				S.floorHazards = genFloorHazards(S.roomType, Math.min(2, Math.floor((S.room-1)/3)));
 			}
 			// Called once per room after overlay
 			function openRoomAfterOverlay() {
@@ -4585,7 +4644,7 @@
 					S._pk[name] = cur;
 				};
 				edge(kL,'L',-1,0); edge(kR,'R',1,0); edge(kU,'U',0,-1); edge(kD,'D',0,1);
-				const SP = 1.85 * (1 + 0.18 * ((S.perks&&S.perks.swift)||0));
+				const SP = 1.85 * (1 + 0.18 * ((S.perks&&S.perks.swift)||0)) * (S._onIce ? 0.55 : 1);
 				if (S.rollT > 0) {
 					S.rollT--; S.invuln = Math.max(S.invuln, 2);
 					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+S.rollVx));
@@ -4595,10 +4654,16 @@
 					S.px = Math.max(WALL+7, Math.min(W-WALL-7, S.px+mx*SP));
 					S.py = Math.max(WALL+7, Math.min(H-WALL-7, S.py+my*SP));
 				}
-				// Obstacle (pillar) collision for player
+				// Obstacle collision for player (circles + rects)
 				if (S.obstacles) for (const ob of S.obstacles) {
-					const dx=S.px-ob.x, dy=S.py-ob.y, d2=dx*dx+dy*dy, minD=ob.r+8;
-					if (d2 < minD*minD) { const d=Math.sqrt(d2)||0.01; const p=minD-d+0.5; S.px+=dx/d*p; S.py+=dy/d*p; }
+					if (ob.r) {
+						const dx=S.px-ob.x, dy=S.py-ob.y, d2=dx*dx+dy*dy, minD=ob.r+8;
+						if (d2 < minD*minD) { const d=Math.sqrt(d2)||0.01; const p=minD-d+0.5; S.px+=dx/d*p; S.py+=dy/d*p; }
+					} else if (ob.w) {
+						const nx=Math.max(ob.x,Math.min(ob.x+ob.w,S.px)), ny=Math.max(ob.y,Math.min(ob.y+ob.h,S.py));
+						const dx=S.px-nx, dy=S.py-ny, dist=Math.sqrt(dx*dx+dy*dy)||0.01;
+						if (dist < 8) { const p=8-dist+0.5; S.px+=dx/dist*p; S.py+=dy/dist*p; }
+					}
 				}
 				// Track roll cooldown for visual indicator
 				if (S.rollT <= 0 && S.rollCd > 0) S.rollCd--;
@@ -4751,7 +4816,7 @@
 						if (nt) { const ha=Math.atan2(nt.y-b.y,nt.x-b.x); b.vx+=Math.cos(ha)*0.18; b.vy+=Math.sin(ha)*0.18; const spd=Math.hypot(b.vx,b.vy); if(spd>4.2){b.vx=b.vx/spd*4.2;b.vy=b.vy/spd*4.2;} }
 					}
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.bullets.splice(i, 1); continue; }
-					if (S.obstacles && !b.pierce && !b.isNova) { let ho=false; for (const ob of S.obstacles) { if ((b.x-ob.x)**2+(b.y-ob.y)**2 < ob.r*ob.r) { ho=true; break; } } if (ho) { S.bullets.splice(i,1); continue; } }
+					if (S.obstacles && !b.pierce && !b.isNova) { let ho=false; for (const ob of S.obstacles) { if (ob.r?(((b.x-ob.x)**2+(b.y-ob.y)**2)<ob.r*ob.r):(ob.w&&b.x>ob.x&&b.x<ob.x+ob.w&&b.y>ob.y&&b.y<ob.y+ob.h)) { ho=true; break; } } if (ho) { S.bullets.splice(i,1); continue; } }
 					let hit = false;
 					for (const e of S.enemies) {
 						if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + b.r) ** 2) {
@@ -4973,10 +5038,16 @@
 					// Clamp to room bounds
 					e.x = Math.max(WALL + e.r, Math.min(W - WALL - e.r, e.x));
 					e.y = Math.max(WALL + e.r, Math.min(H - WALL - e.r, e.y));
-					// Obstacle (pillar) collision for enemies
+					// Obstacle collision for enemies (circles + rects)
 					if (S.obstacles) for (const ob of S.obstacles) {
-						const dx=e.x-ob.x, dy=e.y-ob.y, d2=dx*dx+dy*dy, minD=ob.r+e.r;
-						if (d2 < minD*minD) { const d=Math.sqrt(d2)||0.01; const p=minD-d+0.5; e.x+=dx/d*p; e.y+=dy/d*p; }
+						if (ob.r) {
+							const dx=e.x-ob.x, dy=e.y-ob.y, d2=dx*dx+dy*dy, minD=ob.r+e.r;
+							if (d2 < minD*minD) { const d=Math.sqrt(d2)||0.01; const p=minD-d+0.5; e.x+=dx/d*p; e.y+=dy/d*p; }
+						} else if (ob.w) {
+							const nx=Math.max(ob.x,Math.min(ob.x+ob.w,e.x)), ny=Math.max(ob.y,Math.min(ob.y+ob.h,e.y));
+							const dx=e.x-nx, dy=e.y-ny, dist=Math.sqrt(dx*dx+dy*dy)||0.01;
+							if (dist < e.r) { const p=e.r-dist+0.5; e.x+=dx/dist*p; e.y+=dy/dist*p; }
+						}
 					}
 					if ((e.x - S.px) ** 2 + (e.y - S.py) ** 2 < (e.r + 7) ** 2 && S.invuln <= 0 && S.barrier <= 0) {
 						if (S.relics.indexOf('thorns') >= 0) { const thDmg = (S.synergies && S.synergies.has('ironbarbs')) ? 2 : 1; e.hp -= thDmg; if(e.hp<=0&&!e._dead){e._dead=true;S.kills++;S.stardust+=(S.relics.indexOf('lucky')>=0?2:1);} }
@@ -5071,7 +5142,7 @@
 					const b = S.ebullets[i]; b.x += b.vx; b.y += b.vy;
 					if (b.homing) { const ha=Math.atan2(S.py-b.y,S.px-b.x); b.vx+=Math.cos(ha)*0.14; b.vy+=Math.sin(ha)*0.14; }
 					if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { S.ebullets.splice(i, 1); continue; }
-					if (S.obstacles) { let ho=false; for (const ob of S.obstacles) { if ((b.x-ob.x)**2+(b.y-ob.y)**2 < ob.r*ob.r) { ho=true; break; } } if (ho) { S.ebullets.splice(i,1); continue; } }
+					if (S.obstacles) { let ho=false; for (const ob of S.obstacles) { if (ob.r?(((b.x-ob.x)**2+(b.y-ob.y)**2)<ob.r*ob.r):(ob.w&&b.x>ob.x&&b.x<ob.x+ob.w&&b.y>ob.y&&b.y<ob.y+ob.h)) { ho=true; break; } } if (ho) { S.ebullets.splice(i,1); continue; } }
 					if ((b.x - S.px) ** 2 + (b.y - S.py) ** 2 < (b.r + 7) ** 2 && S.invuln <= 0) {
 						if (S.barrier > 0) { S.ebullets.splice(i,1); continue; }
 						const guardT = S.synergies && S.synergies.has('ironbarbs') ? 90 : (S.relics.indexOf("guard") >= 0 ? 72 : 52);
@@ -5122,6 +5193,21 @@
 					for (let k = 0; k < 10; k++) S.fx.push({ x: p.x, y: p.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 14, col: fxCol });
 					S.pickups.splice(i, 1);
 				}
+				// Floor hazard tick (spikes, ice)
+				for (const hz of (S.floorHazards||[])) {
+					hz.phase = (hz.phase + 1) % 130;
+					if (hz.type === 'spike') {
+						const active = hz.phase >= 80 && hz.phase < 100;
+						if (active && (S.px-hz.x)**2+(S.py-hz.y)**2 < hz.r*hz.r && S.invuln <= 0 && S.barrier <= 0) {
+							if ((S.revivals||0)>0&&S.hp<=1){S.revivals--;S.hp=1;S.invuln=120;S.flash=12;}
+							else{S.hp--;} S.invuln=45; S.flash=6; S.shake=5;
+						}
+					} else if (hz.type === 'ice') {
+						// Slow applied dynamically in SP calc — just tag player
+						S._onIce = (S.px-hz.x)**2+(S.py-hz.y)**2 < hz.r*hz.r;
+					}
+				}
+				if (!(S.floorHazards&&S.floorHazards.some(h=>h.type==='ice'))) S._onIce = false;
 				if (S.enemies.length === 0 && !S._roomOverlay && !S._trainerBattle) {
 					// Perk selection overlay after combat/ambush/miniboss rooms
 					if (!S._perkDone && (S.roomType==='combat'||S.roomType==='ambush'||S.roomType==='miniboss')) {
@@ -5161,6 +5247,16 @@
 			}
 			// Zoom factor: scales the game world up so the camera stays tight
 			// around the player even on large/hi-DPI viewports.
+			const ROOM_THEMES = [
+				// tier 0 — purple dungeon (rooms 1-3)
+				{ tiles:['#272036','#221c30','#2c2540'], brickFace:'#4a4068', brickHi:'#5a4f80', brickMortar:'#322a4a', door:'#1a1426', doorArch:'#2a2240', pillar:'#2d2448', pillarEdge:'#5a4e82', pillarHi:'rgba(255,255,255,0.09)', diamond:'#a090c0', bg:'#0e0b16' },
+				// tier 1 — stone ruins (rooms 4-6)
+				{ tiles:['#221a10','#261e14','#2c2418'], brickFace:'#584030', brickHi:'#6a5040', brickMortar:'#3a2820', door:'#1e1408', doorArch:'#302018', pillar:'#3a2a18', pillarEdge:'#6a5038', pillarHi:'rgba(255,200,120,0.08)', diamond:'#c09060', bg:'#100c06' },
+				// tier 2 — blood crypt (rooms 7-9)
+				{ tiles:['#1a0e0e','#200e10','#240e12'], brickFace:'#4a2020', brickHi:'#5c2828', brickMortar:'#301010', door:'#1a0808', doorArch:'#301010', pillar:'#38100e', pillarEdge:'#601820', pillarHi:'rgba(255,80,80,0.08)', diamond:'#c04040', bg:'#0e0606' },
+				// boss — obsidian chamber
+				{ tiles:['#0e0c14','#120e18','#160e1a'], brickFace:'#2a2040', brickHi:'#3a3054', brickMortar:'#1a1828', door:'#0c0c14', doorArch:'#201828', pillar:'#1e1830', pillarEdge:'#4a3870', pillarHi:'rgba(160,120,255,0.1)', diamond:'#8060d0', bg:'#080610' },
+			];
 			const DUNGEON_ZOOM = 2.0;
 			function draw() {
 				const t = S.tick;
@@ -5176,18 +5272,46 @@
 					camY += (Math.random() - 0.5) * shk;
 					S.shake--;
 				}
-				ctx.fillStyle = "#0e0b16"; ctx.fillRect(0, 0, VW, VH);
+				const _th = ROOM_THEMES[S.roomThemeIdx || 0];
+				ctx.fillStyle = _th.bg; ctx.fillRect(0, 0, VW, VH);
 				ctx.save();
 				ctx.scale(DUNGEON_ZOOM, DUNGEON_ZOOM);
 				ctx.translate(-camX, -camY);
-				// floor — dungeon stone tiles
+				// floor — themed stone tiles
 				for (let y = WALL; y < H - WALL; y += 16) {
 					for (let x = WALL; x < W - WALL; x += 16) {
 						const v = ((x * 7 + y * 13) >> 4) % 3;
-						ctx.fillStyle = ["#272036", "#221c30", "#2c2540"][v];
+						ctx.fillStyle = _th.tiles[v];
 						ctx.fillRect(x, y, 16, 16);
 						ctx.fillStyle = "rgba(0,0,0,0.28)"; ctx.fillRect(x, y, 16, 1); ctx.fillRect(x, y, 1, 16);
 						ctx.fillStyle = "rgba(255,255,255,0.035)"; ctx.fillRect(x + 1, y + 15, 15, 1);
+					}
+				}
+				// Floor hazards (drawn under entities)
+				for (const hz of (S.floorHazards||[])) {
+					const warn = hz.phase >= 55 && hz.phase < 80;
+					const active = hz.phase >= 80 && hz.phase < 100;
+					if (hz.type === 'spike') {
+						ctx.globalAlpha = active ? 0.9 : (warn ? 0.5+Math.sin(hz.phase*0.35)*0.3 : 0.25);
+						ctx.fillStyle = active ? '#c01818' : (warn ? '#883010' : '#442010');
+						ctx.beginPath(); ctx.arc(hz.x, hz.y, hz.r, 0, Math.PI*2); ctx.fill();
+						if (!active) { ctx.strokeStyle = warn ? '#ff6020' : '#663020'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(hz.x, hz.y, hz.r, 0, Math.PI*2); ctx.stroke(); }
+						if (active || warn) {
+							ctx.fillStyle = active ? '#ff4040' : '#cc6030';
+							const spikes = 4;
+							for (let k=0;k<spikes;k++) {
+								const a = k/spikes*Math.PI*2 + (active?hz.phase*0.1:0);
+								ctx.beginPath(); ctx.moveTo(hz.x+Math.cos(a)*5,hz.y+Math.sin(a)*5); ctx.lineTo(hz.x+Math.cos(a+0.3)*(hz.r-2),hz.y+Math.sin(a+0.3)*(hz.r-2)); ctx.lineTo(hz.x+Math.cos(a-0.3)*(hz.r-2),hz.y+Math.sin(a-0.3)*(hz.r-2)); ctx.closePath(); ctx.fill();
+							}
+						}
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
+					} else if (hz.type === 'ice') {
+						ctx.globalAlpha = 0.22 + Math.sin(hz.phase*0.05)*0.06;
+						ctx.fillStyle = '#80d8ff';
+						ctx.beginPath(); ctx.arc(hz.x, hz.y, hz.r, 0, Math.PI*2); ctx.fill();
+						ctx.strokeStyle = '#c0f0ff'; ctx.lineWidth = 1;
+						ctx.beginPath(); ctx.arc(hz.x, hz.y, hz.r, 0, Math.PI*2); ctx.stroke();
+						ctx.globalAlpha = 1; ctx.lineWidth = 1;
 					}
 				}
 				// Corner stones — darkened squares at the 4 corners of the playable area
@@ -5200,7 +5324,7 @@
 				});
 				// Centre floor marking — subtle diamond
 				const cx2 = W/2, cy2 = H/2, cr = 22;
-				ctx.globalAlpha = 0.09; ctx.strokeStyle = '#a090c0'; ctx.lineWidth = 1.5;
+				ctx.globalAlpha = 0.09; ctx.strokeStyle = _th.diamond; ctx.lineWidth = 1.5;
 				ctx.beginPath();
 				ctx.moveTo(cx2, cy2-cr); ctx.lineTo(cx2+cr, cy2);
 				ctx.lineTo(cx2, cy2+cr); ctx.lineTo(cx2-cr, cy2); ctx.closePath(); ctx.stroke();
@@ -5211,9 +5335,9 @@
 						const off = ((y / 8) % 2) * 8;
 						for (let x = bx - 8; x < bx + bw; x += 16) {
 							const px = x + off;
-							ctx.fillStyle = "#4a4068"; ctx.fillRect(px, y, 16, 8);
-							ctx.fillStyle = "#5a4f80"; ctx.fillRect(px + 1, y + 1, 14, 2);
-							ctx.fillStyle = "#322a4a"; ctx.fillRect(px, y + 7, 16, 1); ctx.fillRect(px + 15, y, 1, 8);
+							ctx.fillStyle = _th.brickFace; ctx.fillRect(px, y, 16, 8);
+							ctx.fillStyle = _th.brickHi; ctx.fillRect(px + 1, y + 1, 14, 2);
+							ctx.fillStyle = _th.brickMortar; ctx.fillRect(px, y + 7, 16, 1); ctx.fillRect(px + 15, y, 1, 8);
 						}
 					}
 				};
@@ -5221,7 +5345,7 @@
 				brick(0, 0, WALL, H); brick(W - WALL, 0, WALL, H);
 				// door arch (top centre)
 				const dx = W / 2;
-				ctx.fillStyle = "#1a1426"; ctx.fillRect(dx - 15, 0, 30, WALL);
+				ctx.fillStyle = _th.door; ctx.fillRect(dx - 15, 0, 30, WALL);
 				if (S.doorOpen) {
 					const gl = 0.5 + Math.sin(t * 0.15) * 0.25;
 					ctx.fillStyle = "rgba(120,235,150," + gl.toFixed(2) + ")"; ctx.fillRect(dx - 12, 0, 24, WALL);
@@ -5231,19 +5355,35 @@
 					ctx.fillStyle = "#6a4a2a";
 					for (let i = 0; i < 5; i++) ctx.fillRect(dx - 13 + i * 6, 2, 3, WALL - 4);
 				}
-				ctx.fillStyle = "#2a2240"; ctx.fillRect(dx - 16, 0, 3, WALL); ctx.fillRect(dx + 13, 0, 3, WALL);
-				// Pillars / obstacles
+				ctx.fillStyle = _th.doorArch; ctx.fillRect(dx - 16, 0, 3, WALL); ctx.fillRect(dx + 13, 0, 3, WALL);
+				// Pillars / obstacles (circles and wall segments)
 				if (S.obstacles) for (const ob of S.obstacles) {
-					ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
-					ctx.beginPath(); ctx.arc(ob.x+3, ob.y+5, ob.r, 0, Math.PI*2); ctx.fill();
-					ctx.globalAlpha = 1;
-					ctx.fillStyle = '#2d2448';
-					ctx.beginPath(); ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI*2); ctx.fill();
-					ctx.strokeStyle = '#5a4e82'; ctx.lineWidth = 2;
-					ctx.beginPath(); ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI*2); ctx.stroke();
-					ctx.fillStyle = 'rgba(255,255,255,0.09)';
-					ctx.beginPath(); ctx.arc(ob.x - ob.r*0.3, ob.y - ob.r*0.35, ob.r*0.55, 0, Math.PI*2); ctx.fill();
-					ctx.lineWidth = 1;
+					if (ob.r) {
+						// Circular pillar
+						ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
+						ctx.beginPath(); ctx.arc(ob.x+3, ob.y+5, ob.r, 0, Math.PI*2); ctx.fill();
+						ctx.globalAlpha = 1;
+						ctx.fillStyle = _th.pillar;
+						ctx.beginPath(); ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI*2); ctx.fill();
+						ctx.strokeStyle = _th.pillarEdge; ctx.lineWidth = 2;
+						ctx.beginPath(); ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI*2); ctx.stroke();
+						ctx.fillStyle = _th.pillarHi;
+						ctx.beginPath(); ctx.arc(ob.x - ob.r*0.3, ob.y - ob.r*0.35, ob.r*0.55, 0, Math.PI*2); ctx.fill();
+						ctx.lineWidth = 1;
+					} else if (ob.w) {
+						// Rectangular wall segment
+						ctx.globalAlpha = 0.22; ctx.fillStyle = '#000';
+						ctx.fillRect(ob.x+3, ob.y+4, ob.w, ob.h); // shadow
+						ctx.globalAlpha = 1;
+						ctx.fillStyle = _th.brickFace; ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
+						ctx.strokeStyle = _th.pillarEdge; ctx.lineWidth = 1.5;
+						ctx.strokeRect(ob.x+0.5, ob.y+0.5, ob.w-1, ob.h-1);
+						// mortar lines
+						ctx.strokeStyle = _th.brickMortar; ctx.lineWidth = 1;
+						for (let ry = ob.y+8; ry < ob.y+ob.h; ry+=8) { ctx.beginPath(); ctx.moveTo(ob.x+2,ry); ctx.lineTo(ob.x+ob.w-2,ry); ctx.stroke(); }
+						for (let rx = ob.x+12; rx < ob.x+ob.w; rx+=12) { ctx.beginPath(); ctx.moveTo(rx,ob.y+2); ctx.lineTo(rx,ob.y+ob.h-2); ctx.stroke(); }
+						ctx.lineWidth = 1;
+					}
 				}
 				// soft shadows
 				ctx.fillStyle = "rgba(0,0,0,0.34)";
@@ -5915,7 +6055,7 @@
 					partnerForm: form, partnerNickname: nickname || formDisplayName(form),
 					partnerLevel: 1, partnerXP: 0,
 					bullets: [], ebullets: [], enemies: [], fx: [], pickups: [], ptrail: [],
-					hazards: [], obstacles: [],
+					hazards: [], obstacles: [], floorHazards: [],
 					fireCd: 0, partnerCd: 0, invuln: 0, doorOpen: false,
 					faceX: 0, faceY: 1, pMuzzle: 0, partnerMuzzle: 0, walkPhase: 0,
 					result: null, endTimer: 0, tick: 0, flash: 0, roomType: 'combat', rapid: false,
@@ -5925,6 +6065,7 @@
 					tapDir: '', tapT: -99, ePrev: true,
 					statuses: { burn:0, poison:0, para:0, sleep:0 },
 					_roomOverlay: false, _pendingOverlay: null, _ambushRoom: false, _ambushDropped: false, _perkDone: false,
+					roomThemeIdx: 0,
 					perks: {},
 					_trainerBattle: false, _trainerData: null, _trainerTeamIdx: 0, _trainerOnDone: null,
 					_focusUsed: false, _recapShown: false, berryUsed: false,
