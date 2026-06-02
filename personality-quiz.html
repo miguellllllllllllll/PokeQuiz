@@ -153,18 +153,31 @@
 
   function applyResultColors(color) {
     var rgb = hexToRgb(color);
-    var tint6  = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.06)';
-    var tint12 = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.12)';
-    /* Page background: radial glow centered behind the card */
+    var tint8  = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.08)';
+    var tint25 = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.25)';
+    /* Page background: stronger radial glow centered behind the card */
     document.body.style.backgroundImage =
-      'radial-gradient(ellipse 90% 55% at 50% 38%, ' + tint12 + ' 0%, transparent 68%),' +
+      'radial-gradient(ellipse 100% 60% at 50% 36%, ' + tint25 + ' 0%, transparent 72%),' +
       'radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)';
     document.body.style.backgroundSize = 'auto, 20px 20px';
     /* Card border accent */
     elCard.style.borderColor = color;
     elCard.style.boxShadow   = '5px 5px 0 ' + color;
     /* Result body wash */
-    document.body.style.setProperty('--pq-result-tint', tint6);
+    document.body.style.setProperty('--pq-result-tint', tint8);
+  }
+
+  /* Generate a banner gradient from the winner's type color */
+  function winnerBannerGrad(color) {
+    var rgb = hexToRgb(color);
+    var dark = {
+      r: Math.max(0, rgb.r - 55),
+      g: Math.max(0, rgb.g - 55),
+      b: Math.max(0, rgb.b - 55)
+    };
+    return 'linear-gradient(160deg, rgb(' +
+      rgb.r + ',' + rgb.g + ',' + rgb.b + ') 0%, rgb(' +
+      dark.r + ',' + dark.g + ',' + dark.b + ') 100%)';
   }
 
   function resetColors() {
@@ -436,7 +449,7 @@
       '</div>';
 
     elResult.innerHTML =
-      '<div class="pq-result-banner" style="background:' + activeQuiz.gradient + '">' +
+      '<div class="pq-result-banner" style="background:' + winnerBannerGrad(winner.color) + '">' +
         '<p class="pq-result-eyebrow">You are&hellip;</p>' +
         heroHtml +
       '</div>' +
