@@ -717,6 +717,106 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Affinity chart ──────────────────────────────────────────── */
+.pq-affinity-chart {
+  width: 100%;
+  background: #f7f7f9;
+  border: 2px solid #e4e4ec;
+  border-radius: 12px;
+  padding: 14px 16px;
+  animation: pq-fade-up 0.45s 0.58s both;
+}
+
+.pq-affinity-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #aaa;
+  letter-spacing: 0.08em;
+  margin: 0 0 12px;
+  text-align: left;
+}
+
+.pq-aff-row {
+  display: grid;
+  grid-template-columns: 28px minmax(56px, 84px) 1fr 36px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.pq-aff-row:last-child { margin-bottom: 0; }
+
+.pq-aff-vis {
+  width: 32px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pq-aff-img {
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.pq-aff-sprite {
+  width: 32px;
+  height: 28px;
+}
+
+.pq-aff-type {
+  width: 48px;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.pq-aff-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.pq-aff-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.pq-aff-winner .pq-aff-name { color: #111; }
+
+.pq-aff-bar-wrap {
+  height: 10px;
+  background: #e2e2e8;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.pq-aff-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pq-aff-winner .pq-aff-bar {
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+.pq-aff-pct {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #999;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pq-aff-winner .pq-aff-pct { color: #444; font-size: 7.5px; }
+
 /* ── Confetti ─────────────────────────────────────────────────── */
 .pq-confetti {
   position: fixed;

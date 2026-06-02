@@ -20,7 +20,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/personality-quiz.css?v=3">
+	<link rel="stylesheet" href="css/personality-quiz.css?v=4">
     <script defer src="js/theme.js?v=1"></script>
 </head>
 <body class="pq-body">
@@ -333,9 +333,7 @@
     /* Rank results */
     var ranked  = Object.keys(scores).sort(function(a, b) { return scores[b] - scores[a]; });
     var winKey  = ranked[0];
-    var runKey  = ranked[1];
     var winner  = activeQuiz.pokemon[winKey];
-    var runner  = activeQuiz.pokemon[runKey];
     var isType  = activeQuiz.id === 'type';
 
     /* Hero image */
@@ -358,22 +356,47 @@
       badgeHtml = '<span class="pq-result-type-badge" style="--res-color:' + winner.color + ';background:' + winner.color + '">' + esc(badgeLabel) + '</span>';
     }
 
-    /* Runner-up visual */
-    var runnerVisual;
-    if (isType) {
-      runnerVisual = runner.typeId
-        ? '<img class="pq-runnerup-badge" src="' + TYPE_BADGE_URL(runner.typeId) + '" alt="">'
-        : '<span style="font-size:20px">' + (runner.icon || '') + '</span>';
-    } else {
-      runnerVisual = '<img class="pq-runnerup-sprite" src="' + SPRITE_URL(runner.id) + '" alt="">';
-    }
-
     var traitsHtml = (winner.traits || []).map(function(t) {
       return '<span class="pq-result-trait">' + esc(t) + '</span>';
     }).join('');
 
-    var nameLabel  = isType ? (winner.typeName + ' Type') : winner.name;
-    var runnerName = isType ? (runner.typeName + ' Type') : runner.name;
+    var nameLabel = isType ? (winner.typeName + ' Type') : winner.name;
+
+    /* ── Affinity chart — top 5 scored results ── */
+    var topKeys  = ranked.slice(0, 5);
+    var maxScore = scores[topKeys[0]] || 1;
+
+    var chartRows = topKeys.map(function(key, i) {
+      var pok      = activeQuiz.pokemon[key];
+      var pct      = Math.round((scores[key] / maxScore) * 100);
+      var isWinner = i === 0;
+      var barColor = pok.color || winner.color;
+      var label    = isType ? pok.typeName : pok.name;
+
+      var visHtml;
+      if (isType) {
+        visHtml = pok.typeId
+          ? '<img class="pq-aff-img pq-aff-type" src="' + TYPE_BADGE_URL(pok.typeId) + '" alt="">'
+          : '<span class="pq-aff-icon">' + (pok.icon || '') + '</span>';
+      } else {
+        visHtml = '<img class="pq-aff-img pq-aff-sprite" src="' + SPRITE_URL(pok.id) + '" alt="">';
+      }
+
+      return '<div class="pq-aff-row' + (isWinner ? ' pq-aff-winner' : '') + '">' +
+        '<div class="pq-aff-vis">' + visHtml + '</div>' +
+        '<span class="pq-aff-name">' + esc(label) + (isWinner ? ' 👑' : '') + '</span>' +
+        '<div class="pq-aff-bar-wrap">' +
+          '<div class="pq-aff-bar" data-pct="' + pct + '" style="width:0%;background:' + barColor + '"></div>' +
+        '</div>' +
+        '<span class="pq-aff-pct">' + pct + '%</span>' +
+      '</div>';
+    }).join('');
+
+    var chartHtml =
+      '<div class="pq-affinity-chart">' +
+        '<p class="pq-affinity-label">YOUR AFFINITY</p>' +
+        chartRows +
+      '</div>';
 
     elResult.innerHTML =
       '<div class="pq-result-banner" style="background:' + activeQuiz.gradient + '">' +
@@ -385,11 +408,7 @@
         badgeHtml +
         (traitsHtml ? '<div class="pq-result-traits">' + traitsHtml + '</div>' : '') +
         '<p class="pq-result-desc">' + esc(winner.desc) + '</p>' +
-        '<div class="pq-result-divider"></div>' +
-        '<div class="pq-result-runnerup">' +
-          runnerVisual +
-          '<span>Close second: <strong>' + esc(runnerName) + '</strong></span>' +
-        '</div>' +
+        chartHtml +
         '<div class="pq-result-actions">' +
           '<button class="pq-btn pq-btn-primary" id="pq-replay-btn" style="--res-color:' + winner.color + ';background:' + winner.color + '">&#8635; PLAY AGAIN</button>' +
           '<button class="pq-btn pq-btn-secondary" id="pq-try-other-btn">TRY ANOTHER</button>' +
@@ -398,6 +417,13 @@
 
     elLoading.hidden = true;
     elResult.hidden  = false;
+
+    /* Animate bars in after the card fades up */
+    setTimeout(function() {
+      elResult.querySelectorAll('.pq-aff-bar').forEach(function(bar) {
+        bar.style.width = bar.dataset.pct + '%';
+      });
+    }, 420);
 
     document.getElementById('pq-replay-btn').addEventListener('click', function() {
       elResult.hidden = true;
