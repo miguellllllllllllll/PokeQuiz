@@ -140,6 +140,41 @@
   function ARTWORK_URL(id) { return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/' + id + '.png'; }
   function TYPE_BADGE_URL(typeId) { return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/' + typeId + '.png'; }
 
+  /* ── Color helpers ────────────────────────────────────────── */
+  function hexToRgb(hex) {
+    var h = hex.replace('#', '');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return {
+      r: parseInt(h.slice(0, 2), 16),
+      g: parseInt(h.slice(2, 4), 16),
+      b: parseInt(h.slice(4, 6), 16)
+    };
+  }
+
+  function applyResultColors(color) {
+    var rgb = hexToRgb(color);
+    var tint6  = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.06)';
+    var tint12 = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.12)';
+    /* Page background: radial glow centered behind the card */
+    document.body.style.backgroundImage =
+      'radial-gradient(ellipse 90% 55% at 50% 38%, ' + tint12 + ' 0%, transparent 68%),' +
+      'radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px)';
+    document.body.style.backgroundSize = 'auto, 20px 20px';
+    /* Card border accent */
+    elCard.style.borderColor = color;
+    elCard.style.boxShadow   = '5px 5px 0 ' + color;
+    /* Result body wash */
+    document.body.style.setProperty('--pq-result-tint', tint6);
+  }
+
+  function resetColors() {
+    document.body.style.backgroundImage = '';
+    document.body.style.backgroundSize  = '';
+    elCard.style.borderColor = '';
+    elCard.style.boxShadow   = '';
+    document.body.style.removeProperty('--pq-result-tint');
+  }
+
   /* ── Elements ─────────────────────────────────────────────── */
   var elSel      = document.getElementById('pq-selection');
   var elRunner   = document.getElementById('pq-runner');
@@ -217,6 +252,7 @@
 
   /* ── Start a quiz ─────────────────────────────────────────── */
   function startQuiz(id) {
+    resetColors();
     activeQuiz  = QUIZZES[id];
     scores      = {};
     currentQ    = 0;
@@ -315,6 +351,7 @@
 
   /* ── Back to selection ────────────────────────────────────── */
   elBack.addEventListener('click', function() {
+    resetColors();
     elRunner.hidden  = true;
     elSel.hidden     = false;
     showQuizContent(true);
@@ -437,6 +474,7 @@
       showQuizContent(true);
     });
 
+    applyResultColors(winner.color);
     spawnConfetti(winner.color);
   }
 

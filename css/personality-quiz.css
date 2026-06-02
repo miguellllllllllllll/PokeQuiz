@@ -9,6 +9,7 @@
   background-image: radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px);
   background-size: 20px 20px;
   min-height: 100vh;
+  transition: background-image 0.6s ease;
 }
 
 .pq-main {
@@ -204,6 +205,7 @@
   box-shadow: 5px 5px 0 #1a1a2e;
   overflow: hidden;
   position: relative;
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
 }
 
 /* Coloured topbar — shows quiz label + counter */
@@ -568,6 +570,8 @@
   align-items: center;
   gap: 12px;
   text-align: center;
+  background: var(--pq-result-tint, transparent);
+  transition: background 0.5s ease;
 }
 
 .pq-result-name {
