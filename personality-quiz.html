@@ -20,7 +20,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/personality-quiz.css?v=4">
+	<link rel="stylesheet" href="css/personality-quiz.css?v=6">
     <script defer src="js/theme.js?v=1"></script>
 </head>
 <body class="pq-body">
@@ -91,6 +91,12 @@
 				<div class="pq-xp-track">
 					<div class="pq-xp-fill" id="pq-xp-fill" style="width:0%"></div>
 				</div>
+			</div>
+
+			<!-- Live affinity meter — appears after first answer -->
+			<div class="pq-live-meter" id="pq-live-meter" hidden>
+				<span class="pq-live-label">LEADING</span>
+				<div class="pq-live-cands" id="pq-live-cands"></div>
 			</div>
 
 			<!-- Question -->
@@ -203,8 +209,10 @@
   var elNext     = document.getElementById('pq-next-btn');
   var elNextWrap = document.getElementById('pq-next-wrap');
   var elBack     = document.getElementById('pq-back-btn');
-  var elLoading  = document.getElementById('pq-loading');
-  var elLoadBall = document.getElementById('pq-loading-ball');
+  var elLoading   = document.getElementById('pq-loading');
+  var elLoadBall  = document.getElementById('pq-loading-ball');
+  var elLiveMeter = document.getElementById('pq-live-meter');
+  var elLiveCands = document.getElementById('pq-live-cands');
   var elResult   = document.getElementById('pq-result');
   var elQArea    = document.getElementById('pq-question-area');
   var elGrid     = document.getElementById('pq-type-grid');
@@ -263,6 +271,40 @@
   var deepLink = qs.get('quiz');
   if (deepLink && QUIZZES[deepLink]) startQuiz(deepLink);
 
+  /* ── Live affinity meter ─────────────────────────────────── */
+  function updateLiveMeter(currentScores) {
+    var ranked = Object.keys(currentScores)
+      .filter(function(k) { return currentScores[k] > 0; })
+      .sort(function(a, b) { return currentScores[b] - currentScores[a]; });
+    if (!ranked.length) return;
+
+    var isType = activeQuiz.id === 'type';
+    var top2   = ranked.slice(0, 2);
+    var prev   = elLiveCands.querySelector('.pq-live-leader');
+    var prevKey = prev ? prev.dataset.key : null;
+
+    elLiveCands.innerHTML = top2.map(function(key, i) {
+      var pok    = activeQuiz.pokemon[key];
+      var label  = isType ? pok.typeName : pok.name;
+      var isLeader = i === 0;
+      var changed  = isLeader && key !== prevKey && prevKey !== null;
+
+      var imgHtml = isType
+        ? '<img class="pq-live-img pq-live-type" src="' + TYPE_BADGE_URL(pok.typeId) + '" alt="">'
+        : '<img class="pq-live-img pq-live-sprite" src="' + SPRITE_URL(pok.id) + '" alt="">';
+
+      return '<div class="pq-live-cand' +
+        (isLeader ? ' pq-live-leader' : ' pq-live-second') +
+        (changed  ? ' pq-live-changed' : '') +
+        '" data-key="' + key + '" style="--cand-color:' + pok.color + '">' +
+        imgHtml +
+        '<span class="pq-live-name">' + esc(label) + '</span>' +
+      '</div>';
+    }).join('<span class="pq-live-vs">vs</span>');
+
+    elLiveMeter.hidden = false;
+  }
+
   /* ── Start a quiz ─────────────────────────────────────────── */
   function startQuiz(id) {
     resetColors();
@@ -282,8 +324,10 @@
     elTopLabel.textContent = activeQuiz.label || activeQuiz.name.toUpperCase();
 
     /* Reset sub-panels */
-    elLoading.hidden = true;
-    elResult.hidden  = true;
+    elLoading.hidden    = true;
+    elResult.hidden     = true;
+    elLiveMeter.hidden  = true;
+    elLiveCands.innerHTML = '';
     showQuizContent(true);
 
     elSel.hidden    = true;
@@ -294,11 +338,12 @@
 
   /* ── Show/hide quiz content panels ───────────────────────── */
   function showQuizContent(show) {
-    elTopbar.hidden  = !show;
-    elXpWrap.hidden  = !show;
-    elQArea.hidden   = !show;
-    elAnswers.hidden = !show;
+    elTopbar.hidden   = !show;
+    elXpWrap.hidden   = !show;
+    elQArea.hidden    = !show;
+    elAnswers.hidden  = !show;
     elNextWrap.hidden = !show;
+    if (!show) elLiveMeter.hidden = true;
   }
 
   /* ── Render question ──────────────────────────────────────── */
@@ -354,6 +399,7 @@
     currentQ++;
 
     if (currentQ < activeQuiz.questions.length) {
+      updateLiveMeter(scores);
       renderQuestion(currentQ);
     } else {
       showQuizContent(false);

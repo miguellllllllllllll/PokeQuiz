@@ -298,6 +298,108 @@
   to   { transform: translateX(200%); }
 }
 
+/* ── Live affinity meter ─────────────────────────────────── */
+@keyframes pq-meter-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.pq-live-meter {
+  padding: 6px 20px 7px;
+  background: rgba(0,0,0,0.025);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: pq-meter-fade 0.25s ease both;
+}
+
+.pq-live-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  color: #bbb;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.pq-live-cands {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pq-live-cand {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 20px;
+  padding: 2px 9px 2px 3px;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  background: rgba(0,0,0,0.03);
+  transition: border-color 0.3s, background 0.3s;
+  min-width: 0;
+}
+
+.pq-live-leader {
+  border-color: var(--cand-color);
+  background: color-mix(in srgb, var(--cand-color) 9%, white);
+}
+
+.pq-live-second {
+  opacity: 0.55;
+}
+
+.pq-live-img {
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.pq-live-sprite {
+  width: 26px;
+  height: 26px;
+}
+
+.pq-live-type {
+  width: 38px;
+  height: auto;
+}
+
+.pq-live-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.pq-live-leader .pq-live-name { color: #111; }
+
+.pq-live-vs {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  color: #ccc;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+@keyframes pq-live-flash {
+  0%   { opacity: 1; }
+  30%  { opacity: 0.4; }
+  60%  { opacity: 1; }
+}
+
+.pq-live-changed {
+  animation: pq-live-flash 0.45s ease;
+}
+
 /* ── Question area ─────────────────────────────────────────── */
 .pq-question-area {
   padding: 22px 24px 6px;
