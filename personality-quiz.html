@@ -20,7 +20,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/personality-quiz.css?v=6">
+	<link rel="stylesheet" href="css/personality-quiz.css?v=7">
     <script defer src="js/theme.js?v=1"></script>
 </head>
 <body class="pq-body">
@@ -132,7 +132,7 @@
 
 <script src="js/util.js" defer></script>
 <script src="js/profile.js" defer></script>
-<script src="js/personality-data.js?v=3"></script>
+<script src="js/personality-data.js?v=4"></script>
 <script>
 (function () {
   'use strict';
@@ -458,6 +458,25 @@
 
     var nameLabel = isType ? (winner.typeName + ' Type') : winner.name;
 
+    /* Signature move + ideal partner */
+    var statsHtml = '';
+    if (winner.signatureMove || winner.idealPartner) {
+      statsHtml = '<div class="pq-result-stats">';
+      if (winner.signatureMove) {
+        statsHtml += '<div class="pq-result-stat">' +
+          '<span class="pq-result-stat-label">⚔️ SIGNATURE MOVE</span>' +
+          '<span class="pq-result-stat-value">' + esc(winner.signatureMove) + '</span>' +
+        '</div>';
+      }
+      if (winner.idealPartner) {
+        statsHtml += '<div class="pq-result-stat">' +
+          '<span class="pq-result-stat-label">🤝 IDEAL PARTNER</span>' +
+          '<span class="pq-result-stat-value">' + esc(winner.idealPartner) + '</span>' +
+        '</div>';
+      }
+      statsHtml += '</div>';
+    }
+
     /* ── Affinity chart — top 5 scored results ── */
     var topKeys  = ranked.slice(0, 5);
     var maxScore = scores[topKeys[0]] || 1;
@@ -499,11 +518,12 @@
         '<p class="pq-result-eyebrow">You are&hellip;</p>' +
         heroHtml +
       '</div>' +
-      '<div class="pq-result-body">' +
+      '<div class="pq-result-body" style="--res-color:' + winner.color + '">' +
         '<h2 class="pq-result-name">' + esc(nameLabel) + '</h2>' +
         badgeHtml +
         (traitsHtml ? '<div class="pq-result-traits">' + traitsHtml + '</div>' : '') +
         '<p class="pq-result-desc">' + esc(winner.desc) + '</p>' +
+        statsHtml +
         chartHtml +
         '<div class="pq-result-actions">' +
           '<button class="pq-btn pq-btn-primary" id="pq-replay-btn" style="--res-color:' + winner.color + ';background:' + winner.color + '">&#8635; PLAY AGAIN</button>' +
