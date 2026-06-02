@@ -15,155 +15,392 @@ window.PERSONALITY_DATA = {
       id: 'starter',
       name: 'Which Starter Pokémon Are You?',
       label: 'STARTER QUIZ',
-      subtitle: '9 results · 13 questions',
+      subtitle: '27 results · 20 questions',
       icon: '🌿',
       color: '#00b894',
       gradient: 'linear-gradient(135deg,#00b894 0%,#00cec9 100%)',
-      desc: 'Grass, Fire, or Water? Find your Gen 1–3 starter match.',
+      desc: 'Grass, Fire, or Water? Find your Gen 1–9 starter match.',
       showcasePokemon: [4, 1, 7],   // Charmander · Bulbasaur · Squirtle
 
       pokemon: {
-        bulbasaur:  { id: 1,   typeId: 12, name: 'Bulbasaur',  type: 'Grass',  color: '#00b894',
-                      traits: ['Reliable','Calm','Nurturing','Steady'],
-                      signatureMove: 'Leech Seed', idealPartner: 'Squirtle',
-                      desc: "The underrated choice that always delivers. Your steady, patient presence is what keeps everything together, no spotlight needed. People who pick you never regret it." },
-        charmander: { id: 4,   typeId: 10, name: 'Charmander', type: 'Fire',   color: '#e17055',
-                      traits: ['Passionate','Driven','Bold','Loyal'],
-                      signatureMove: 'Flamethrower', idealPartner: 'Bulbasaur',
-                      desc: "You start small but burn hotter than anyone expected. Driven, passionate, and fiercely loyal to the people you care about. Once you commit to something, absolutely nothing can stop you." },
-        squirtle:   { id: 7,   typeId: 11, name: 'Squirtle',   type: 'Water',  color: '#0984e3',
-                      traits: ['Cool','Chill','Dependable','Smart'],
-                      signatureMove: 'Hydro Pump', idealPartner: 'Charmander',
-                      desc: "Effortlessly cool, dependable, and always in control. You've got a calm confidence that people find magnetic, and when it's time to perform, you never let anyone down." },
-        chikorita:  { id: 152, typeId: 12, name: 'Chikorita',  type: 'Grass',  color: '#00b894',
-                      traits: ['Gentle','Optimistic','Loyal','Sweet'],
-                      signatureMove: 'Synthesis', idealPartner: 'Cyndaquil',
-                      desc: "You lead with kindness and a stubborn, contagious optimism. Some might underestimate you at first, but you always find a way to prove them wrong with pure heart and persistence." },
-        cyndaquil:  { id: 155, typeId: 10, name: 'Cyndaquil',  type: 'Fire',   color: '#fdcb6e',
-                      traits: ['Shy','Sincere','Hardworking','Warm'],
-                      signatureMove: 'Eruption', idealPartner: 'Chikorita',
-                      desc: "Quiet on the outside, burning on the inside. You take a little time to warm up to new people, but once you do you're one of the most genuine and dedicated friends anyone could ask for." },
-        totodile:   { id: 158, typeId: 11, name: 'Totodile',   type: 'Water',  color: '#74b9ff',
-                      traits: ['Energetic','Fearless','Playful','Fun'],
-                      signatureMove: 'Aqua Jet', idealPartner: 'Cyndaquil',
-                      desc: "Pure unfiltered enthusiasm, every single day. You dive into everything head-first with a massive grin on your face, and somehow your ridiculous confidence actually works out more often than not." },
-        treecko:    { id: 252, typeId: 12, name: 'Treecko',    type: 'Grass',  color: '#00b894',
-                      traits: ['Cool','Independent','Composed','Sharp'],
-                      signatureMove: 'Leaf Blade', idealPartner: 'Mudkip',
-                      desc: "Impossibly cool under pressure and too proud to show it. You face every challenge with a stone-cold expression and a sharp mind, and somehow that makes people trust you completely." },
-        torchic:    { id: 255, typeId: 10, name: 'Torchic',    type: 'Fire',   color: '#e84393',
-                      traits: ['Spirited','Affectionate','Fierce','Confident'],
-                      signatureMove: 'Blaze Kick', idealPartner: 'Treecko',
-                      desc: "Small but absolutely unstoppable. Endlessly spirited and surprisingly fierce, you throw everything you have into everything you do. The people who love you are never surprised when you win." },
-        mudkip:     { id: 258, typeId: 11, name: 'Mudkip',     type: 'Water',  color: '#6c5ce7',
-                      traits: ['Laid-back','Dependable','Quietly Strong','Genuine'],
-                      signatureMove: 'Muddy Water', idealPartner: 'Torchic',
-                      desc: "Completely unassuming, wildly effective. You don't make a fuss, you don't need the attention. You just show up, do the work, and somehow end up being the most powerful one in the room." }
+        // ── Gen 1 ──────────────────────────────────────────────────────────
+        bulbasaur:   { id: 1,   typeId: 12, name: 'Bulbasaur',   type: 'Grass', color: '#00b894',
+                       traits: ['Reliable','Calm','Nurturing','Steady'],
+                       signatureMove: 'Leech Seed', idealPartner: 'Squirtle',
+                       desc: "The underrated choice that always delivers. Your steady, patient presence is what keeps everything together, no spotlight needed. People who pick you never regret it." },
+        charmander:  { id: 4,   typeId: 10, name: 'Charmander',  type: 'Fire',  color: '#e17055',
+                       traits: ['Passionate','Driven','Bold','Loyal'],
+                       signatureMove: 'Flamethrower', idealPartner: 'Bulbasaur',
+                       desc: "You start small but burn hotter than anyone expected. Driven, passionate, and fiercely loyal to the people you care about. Once you commit to something, absolutely nothing can stop you." },
+        squirtle:    { id: 7,   typeId: 11, name: 'Squirtle',    type: 'Water', color: '#0984e3',
+                       traits: ['Cool','Chill','Dependable','Smart'],
+                       signatureMove: 'Hydro Pump', idealPartner: 'Charmander',
+                       desc: "Effortlessly cool, dependable, and always in control. You've got a calm confidence that people find magnetic, and when it's time to perform, you never let anyone down." },
+        // ── Gen 2 ──────────────────────────────────────────────────────────
+        chikorita:   { id: 152, typeId: 12, name: 'Chikorita',   type: 'Grass', color: '#00b894',
+                       traits: ['Gentle','Optimistic','Loyal','Sweet'],
+                       signatureMove: 'Synthesis', idealPartner: 'Cyndaquil',
+                       desc: "You lead with kindness and a stubborn, contagious optimism. Some might underestimate you at first, but you always find a way to prove them wrong with pure heart and persistence." },
+        cyndaquil:   { id: 155, typeId: 10, name: 'Cyndaquil',   type: 'Fire',  color: '#fdcb6e',
+                       traits: ['Shy','Sincere','Hardworking','Warm'],
+                       signatureMove: 'Eruption', idealPartner: 'Chikorita',
+                       desc: "Quiet on the outside, burning on the inside. You take a little time to warm up to new people, but once you do you're one of the most genuine and dedicated friends anyone could ask for." },
+        totodile:    { id: 158, typeId: 11, name: 'Totodile',    type: 'Water', color: '#74b9ff',
+                       traits: ['Energetic','Fearless','Playful','Fun'],
+                       signatureMove: 'Aqua Jet', idealPartner: 'Cyndaquil',
+                       desc: "Pure unfiltered enthusiasm, every single day. You dive into everything head-first with a massive grin on your face, and somehow your ridiculous confidence actually works out more often than not." },
+        // ── Gen 3 ──────────────────────────────────────────────────────────
+        treecko:     { id: 252, typeId: 12, name: 'Treecko',     type: 'Grass', color: '#00b894',
+                       traits: ['Cool','Independent','Composed','Sharp'],
+                       signatureMove: 'Leaf Blade', idealPartner: 'Mudkip',
+                       desc: "Impossibly cool under pressure and too proud to show it. You face every challenge with a stone-cold expression and a sharp mind, and somehow that makes people trust you completely." },
+        torchic:     { id: 255, typeId: 10, name: 'Torchic',     type: 'Fire',  color: '#e84393',
+                       traits: ['Spirited','Affectionate','Fierce','Confident'],
+                       signatureMove: 'Blaze Kick', idealPartner: 'Treecko',
+                       desc: "Small but absolutely unstoppable. Endlessly spirited and surprisingly fierce, you throw everything you have into everything you do. The people who love you are never surprised when you win." },
+        mudkip:      { id: 258, typeId: 11, name: 'Mudkip',      type: 'Water', color: '#6c5ce7',
+                       traits: ['Laid-back','Dependable','Quietly Strong','Genuine'],
+                       signatureMove: 'Muddy Water', idealPartner: 'Torchic',
+                       desc: "Completely unassuming, wildly effective. You don't make a fuss, you don't need the attention. You just show up, do the work, and somehow end up being the most powerful one in the room." },
+        // ── Gen 4 ──────────────────────────────────────────────────────────
+        turtwig:     { id: 387, typeId: 12, name: 'Turtwig',     type: 'Grass', color: '#00cec9',
+                       traits: ['Patient','Earnest','Grounded','Dependable'],
+                       signatureMove: 'Wood Hammer', idealPartner: 'Piplup',
+                       desc: "You take your time and do things right. There's no rushing you and no fooling you. You've built your life on genuine effort and it shows in everything you do, even when no one's watching." },
+        chimchar:    { id: 390, typeId: 10, name: 'Chimchar',    type: 'Fire',  color: '#e17055',
+                       traits: ['Playful','Scrappy','Resilient','Spirited'],
+                       signatureMove: 'Flare Blitz', idealPartner: 'Turtwig',
+                       desc: "You get knocked down and come back grinning. Scrappy, adaptable, and absolutely impossible to keep down — your energy is infectious and your bounce-back game is unmatched." },
+        piplup:      { id: 393, typeId: 11, name: 'Piplup',      type: 'Water', color: '#0652DD',
+                       traits: ['Proud','Independent','Dignified','Determined'],
+                       signatureMove: 'Hydro Pump', idealPartner: 'Chimchar',
+                       desc: "You carry yourself with a natural dignity that can read as aloofness — but underneath is real conviction and iron will. You don't ask for help easily, and you don't need to." },
+        // ── Gen 5 ──────────────────────────────────────────────────────────
+        snivy:       { id: 495, typeId: 12, name: 'Snivy',       type: 'Grass', color: '#55efc4',
+                       traits: ['Composed','Sharp','Elegant','Confident'],
+                       signatureMove: 'Leaf Storm', idealPartner: 'Oshawott',
+                       desc: "You don't raise your voice or make a fuss. You're already the most capable person in the room and everyone quietly knows it. Cool, effortlessly stylish, and with a wit that cuts clean through the noise." },
+        tepig:       { id: 498, typeId: 10, name: 'Tepig',       type: 'Fire',  color: '#fd9644',
+                       traits: ['Cheerful','Resilient','Warmhearted','Sunny'],
+                       signatureMove: 'Heat Crash', idealPartner: 'Snivy',
+                       desc: "You're genuinely warm and impossible not to like. You bounce back fast when things go wrong, and your optimism isn't naïve — it's real and it pulls people through." },
+        oshawott:    { id: 501, typeId: 11, name: 'Oshawott',    type: 'Water', color: '#45aaf2',
+                       traits: ['Earnest','Courageous','Sincere','Endearing'],
+                       signatureMove: 'Razor Shell', idealPartner: 'Tepig',
+                       desc: "You try harder than almost anyone, and it shows. You're not always the most graceful, but your sincerity and courage are unmistakable. People underestimate you right until you prove them spectacularly wrong." },
+        // ── Gen 6 ──────────────────────────────────────────────────────────
+        chespin:     { id: 650, typeId: 12, name: 'Chespin',     type: 'Grass', color: '#78e08f',
+                       traits: ['Carefree','Enthusiastic','Reckless','Warm'],
+                       signatureMove: 'Spiky Shield', idealPartner: 'Froakie',
+                       desc: "You dive into everything headfirst with zero hesitation and maximum energy. Slightly reckless? Sure. But your fearless warmth makes you the kind of person who makes everything more fun just by showing up." },
+        fennekin:    { id: 653, typeId: 10, name: 'Fennekin',    type: 'Fire',  color: '#f7b731',
+                       traits: ['Ambitious','Refined','Clever','Discerning'],
+                       signatureMove: 'Mystical Fire', idealPartner: 'Chespin',
+                       desc: "You have high standards — for yourself and for everything you invest in. Quietly ambitious and sharper than most, you prefer depth over breadth in everything from ideas to people." },
+        froakie:     { id: 656, typeId: 11, name: 'Froakie',     type: 'Water', color: '#74b9ff',
+                       traits: ['Focused','Analytical','Reserved','Capable'],
+                       signatureMove: 'Water Shuriken', idealPartner: 'Fennekin',
+                       desc: "You're the quiet one who's actually the most capable in the room. Understated, sharp, and decisive when it counts — you don't announce yourself. Your results do." },
+        // ── Gen 7 ──────────────────────────────────────────────────────────
+        rowlet:      { id: 722, typeId: 12, name: 'Rowlet',      type: 'Grass', color: '#6ab04c',
+                       traits: ['Calm','Adaptable','Thoughtful','Unhurried'],
+                       signatureMove: 'Leaf Blade', idealPartner: 'Litten',
+                       desc: "You move at your own pace and it's never a problem. Adaptable without being a pushover, calm without being boring — you have an effortless quality that makes difficult things look easy." },
+        litten:      { id: 725, typeId: 10, name: 'Litten',      type: 'Fire',  color: '#d63031',
+                       traits: ['Independent','Stoic','Intense','Loyal'],
+                       signatureMove: 'Fire Fang', idealPartner: 'Rowlet',
+                       desc: "You're a closed book to most people, and that's exactly how you like it. Fiercely loyal to the few you let in, and completely unbothered by the approval of everyone else. That quiet intensity is magnetic." },
+        popplio:     { id: 728, typeId: 11, name: 'Popplio',     type: 'Water', color: '#a29bfe',
+                       traits: ['Hardworking','Expressive','Earnest','Resilient'],
+                       signatureMove: 'Sparkling Aria', idealPartner: 'Rowlet',
+                       desc: "You put in the work even when no one's watching, and you wear your heart completely on your sleeve. You get underestimated a lot — which just gives you more material to work with." },
+        // ── Gen 8 ──────────────────────────────────────────────────────────
+        grookey:     { id: 810, typeId: 12, name: 'Grookey',     type: 'Grass', color: '#26de81',
+                       traits: ['Mischievous','Curious','Spontaneous','Energetic'],
+                       signatureMove: 'Drum Beating', idealPartner: 'Scorbunny',
+                       desc: "You're the one who gets the whole group doing something completely unplanned and everyone ends up having the best time. Curious about everything, impossible to contain, and just chaotic enough to be genuinely exciting." },
+        scorbunny:   { id: 813, typeId: 10, name: 'Scorbunny',   type: 'Fire',  color: '#ff7675',
+                       traits: ['Athletic','Spirited','Determined','Bright'],
+                       signatureMove: 'Pyro Ball', idealPartner: 'Sobble',
+                       desc: "You bring full energy everywhere you go. Competitive, driven, and genuinely enthusiastic — you're at your best when there's something to run toward, and you make the people around you better just by being there." },
+        sobble:      { id: 816, typeId: 11, name: 'Sobble',      type: 'Water', color: '#6c5ce7',
+                       traits: ['Sensitive','Empathetic','Gentle','Sincere'],
+                       signatureMove: 'Snipe Shot', idealPartner: 'Grookey',
+                       desc: "You feel everything more deeply than most, and that emotional intelligence is a genuine gift. You notice what others miss, care in ways people don't bother with, and the right people see you and think: finally, someone who actually gets it." },
+        // ── Gen 9 ──────────────────────────────────────────────────────────
+        sprigatito:  { id: 906, typeId: 12, name: 'Sprigatito',  type: 'Grass', color: '#badc58',
+                       traits: ['Charming','Carefree','Playful','Magnetic'],
+                       signatureMove: 'Magical Leaf', idealPartner: 'Quaxly',
+                       desc: "You have a natural magnetism you barely even try for. Effortlessly charming, a little playful, and completely at ease in any room — people want to be around you without fully understanding why. You know exactly what you're doing." },
+        fuecoco:     { id: 909, typeId: 10, name: 'Fuecoco',     type: 'Fire',  color: '#ff6348',
+                       traits: ['Relaxed','Content','Cheerful','Easygoing'],
+                       signatureMove: 'Flamethrower', idealPartner: 'Sprigatito',
+                       desc: "You don't stress what you can't control, and you're genuinely fine with that. You know how to enjoy things fully in the moment, and that rare contentment is something people spend their whole lives chasing." },
+        quaxly:      { id: 912, typeId: 11, name: 'Quaxly',      type: 'Water', color: '#0984e3',
+                       traits: ['Diligent','Principled','Meticulous','Stubborn'],
+                       signatureMove: 'Aqua Step', idealPartner: 'Fuecoco',
+                       desc: "You have standards and you keep them. You take quiet pride in doing things properly, and while that can make you seem inflexible, it's actually just respect — for the work, for yourself, for what things are supposed to be." }
       },
 
       questions: [
-        { text: "You're about to choose a starter. What matters most?",
+        // Q1 ── Energy level: calm vs high-energy
+        { text: "It's the start of a new day. How do you feel?",
           answers: [
-            { emoji:'💚', text: "Something dependable — I need consistency",     weights: { bulbasaur:3, chikorita:2, mudkip:1 } },
-            { emoji:'🔥', text: "Something with fire — raw power and passion",   weights: { torchic:3, cyndaquil:2, charmander:1 } },
-            { emoji:'💧', text: "Something cool — style and smart thinking",     weights: { squirtle:3, totodile:2, treecko:1 } },
-            { emoji:'✨', text: "Whatever people least expect me to pick",       weights: { treecko:3, mudkip:2, chikorita:1 } }
+            { emoji:'☀️', text: "Ready to go — I'm already thinking about what to tackle first",
+              weights: { charmander:3, scorbunny:2, totodile:2, torchic:1, tepig:1, chimchar:1, sprigatito:1 } },
+            { emoji:'🌿', text: "Peaceful and present — no rush, the day will unfold how it should",
+              weights: { rowlet:3, fuecoco:2, bulbasaur:2, turtwig:1, mudkip:1, chikorita:1, cyndaquil:1 } },
+            { emoji:'😤', text: "Quietly focused — I have a plan and I'm already moving on it",
+              weights: { snivy:3, froakie:2, treecko:2, quaxly:1, piplup:1, fennekin:1 } },
+            { emoji:'💥', text: "Hyped and a little unpredictable — let's see where it goes",
+              weights: { grookey:3, chespin:2, litten:2, oshawott:1, popplio:1, sobble:1, squirtle:1 } }
           ]
         },
-        { text: "Where do you feel most at home?",
+        // Q2 ── Social style: outgoing vs reserved vs selective vs confident
+        { text: "You're at a party where you only know one person. You...",
           answers: [
-            { emoji:'🌲', text: "Deep in nature — forests, mountains, trails",   weights: { bulbasaur:3, chikorita:2, treecko:2 } },
-            { emoji:'🏙️', text: "In the city — always something happening",      weights: { charmander:3, torchic:2, totodile:1 } },
-            { emoji:'🌊', text: "Near water — ocean, lake, a river",             weights: { mudkip:3, squirtle:2, totodile:1 } },
-            { emoji:'🛖', text: "Anywhere cozy — it's who I'm with, not where",  weights: { cyndaquil:3, totodile:2, mudkip:1 } }
+            { emoji:'🎉', text: "Talk to everyone — you genuinely love meeting new people",
+              weights: { totodile:3, sprigatito:2, chimchar:2, grookey:1, chespin:1, torchic:1, tepig:1 } },
+            { emoji:'🤝', text: "Stick close to your friend but gradually open up",
+              weights: { cyndaquil:3, sobble:2, popplio:2, oshawott:1, chikorita:1, bulbasaur:1, turtwig:1 } },
+            { emoji:'👁️', text: "Observe first, then engage selectively with interesting people",
+              weights: { litten:3, froakie:2, treecko:2, snivy:1, fennekin:1, quaxly:1, rowlet:1 } },
+            { emoji:'😎', text: "Walk in like you own the place — you feel comfortable anywhere",
+              weights: { squirtle:3, piplup:2, charmander:2, scorbunny:1, mudkip:1, fuecoco:1 } }
           ]
         },
-        { text: "A rival shows up looking for a battle. You...",
+        // Q3 ── Pride vs humility
+        { text: "You just did something genuinely impressive. You...",
           answers: [
-            { emoji:'🔥', text: "Step up immediately — bring it on",             weights: { torchic:3, charmander:2, totodile:1 } },
-            { emoji:'🤔', text: "Study them first — wait for the right moment",  weights: { treecko:3, squirtle:2, bulbasaur:1 } },
-            { emoji:'💬', text: "Try talking it out — battles aren't everything",weights: { cyndaquil:3, chikorita:2, mudkip:1 } },
-            { emoji:'😤', text: "Accept calmly, but fight like your life depends on it",weights: { squirtle:3, bulbasaur:2, treecko:1 } }
+            { emoji:'🏆', text: "Own it — you worked hard for this and you're proud of it",
+              weights: { piplup:3, torchic:2, snivy:2, charmander:1, treecko:1, fennekin:1, scorbunny:1 } },
+            { emoji:'🙏', text: "Thank the people who helped — it was truly a team effort",
+              weights: { bulbasaur:3, chikorita:2, turtwig:2, oshawott:1, popplio:1, tepig:1, cyndaquil:1 } },
+            { emoji:'😏', text: "Move on quietly — your results speak for themselves",
+              weights: { mudkip:3, froakie:2, litten:2, quaxly:1, rowlet:1, squirtle:1, sobble:1 } },
+            { emoji:'🎊', text: "Celebrate loudly and drag everyone into the fun with you",
+              weights: { chimchar:3, totodile:2, grookey:2, chespin:1, sprigatito:1, fuecoco:1 } }
           ]
         },
-        { text: "How do you handle a really bad day?",
+        // Q4 ── How they handle failure
+        { text: "You put real effort into something and it completely falls apart. You...",
           answers: [
-            { emoji:'🔥', text: "Push through it — frustration becomes fuel",    weights: { charmander:3, torchic:2, totodile:1 } },
-            { emoji:'🛋️', text: "Rest and recharge — tomorrow will be better",   weights: { mudkip:3, bulbasaur:2, cyndaquil:2 } },
-            { emoji:'👫', text: "Talk to the people I trust most",               weights: { cyndaquil:3, chikorita:2, squirtle:1 } },
-            { emoji:'😤', text: "Shake it off and act like nothing happened",    weights: { treecko:3, totodile:2, squirtle:1 } }
+            { emoji:'🔥', text: "Get frustrated for a moment, then channel it into going harder",
+              weights: { torchic:3, charmander:2, scorbunny:2, tepig:1, litten:1, grookey:1, chimchar:1 } },
+            { emoji:'🌱', text: "Regroup calmly, find what went wrong, and try with a better plan",
+              weights: { turtwig:3, bulbasaur:2, quaxly:2, snivy:1, fennekin:1, rowlet:1, piplup:1 } },
+            { emoji:'🤍', text: "Let yourself feel it, then talk to someone you trust",
+              weights: { sobble:3, cyndaquil:2, chikorita:2, popplio:1, oshawott:1, squirtle:1, froakie:1 } },
+            { emoji:'😂', text: "Laugh it off — you've bounced back from worse and you will again",
+              weights: { chespin:3, totodile:2, treecko:2, mudkip:1, fuecoco:1, sprigatito:1 } }
           ]
         },
-        { text: "Your friends would say you're the one who...",
+        // Q5 ── Chaos vs order
+        { text: "Your ideal environment to work or create in:",
           answers: [
-            { emoji:'💪', text: "Always shows up when things get hard",          weights: { cyndaquil:3, totodile:2, mudkip:1 } },
-            { emoji:'🎉', text: "Makes everything more fun",                     weights: { totodile:3, torchic:2, charmander:1 } },
-            { emoji:'🧊', text: "Stays cool when everyone else panics",          weights: { treecko:3, squirtle:2, mudkip:1 } },
-            { emoji:'💛', text: "Is always encouraging and kind",                weights: { chikorita:3, cyndaquil:2, bulbasaur:1 } }
+            { emoji:'📐', text: "Perfectly organized — everything in its place, nothing wasted",
+              weights: { quaxly:3, fennekin:2, froakie:2, piplup:1, snivy:1, charmander:1, turtwig:1 } },
+            { emoji:'🌿', text: "Calm and minimal — just what I need, nothing extra",
+              weights: { chikorita:3, bulbasaur:2, cyndaquil:2, rowlet:1, fuecoco:1, sobble:1, litten:1 } },
+            { emoji:'🌀', text: "Controlled chaos — looks messy but I know exactly where everything is",
+              weights: { mudkip:3, grookey:2, chespin:2, chimchar:1, totodile:1, torchic:1, popplio:1 } },
+            { emoji:'🔁', text: "Flexible — I adapt to whatever the situation calls for",
+              weights: { sprigatito:3, squirtle:2, oshawott:2, tepig:1, treecko:1, scorbunny:1 } }
           ]
         },
-        { text: "What's your approach to a new challenge?",
+        // Q6 ── Emotional openness vs closed
+        { text: "When something is bothering you, you typically...",
           answers: [
-            { emoji:'📋', text: "Plan carefully — I want every advantage",       weights: { squirtle:3, bulbasaur:2, treecko:1 } },
-            { emoji:'💥', text: "Dive in and figure it out as I go",             weights: { totodile:3, charmander:2, torchic:1 } },
-            { emoji:'🌱', text: "Start slow, build momentum, then go all in",    weights: { chikorita:3, mudkip:2, cyndaquil:1 } },
-            { emoji:'😎', text: "Walk in like I've done this a hundred times",   weights: { treecko:3, squirtle:2, charmander:1 } }
+            { emoji:'💬', text: "Open up fairly quickly — you find that sharing helps",
+              weights: { popplio:3, chikorita:2, sobble:2, tepig:1, oshawott:1, chespin:1, sprigatito:1 } },
+            { emoji:'🔒', text: "Keep it inside until you've fully processed it yourself",
+              weights: { treecko:3, litten:2, snivy:2, froakie:1, turtwig:1, piplup:1, fennekin:1 } },
+            { emoji:'😤', text: "Power through — solving the problem feels better than talking",
+              weights: { scorbunny:3, torchic:2, quaxly:2, charmander:1, mudkip:1, squirtle:1, bulbasaur:1 } },
+            { emoji:'🎭', text: "Let it out sideways — through humor, creativity, or staying busy",
+              weights: { fuecoco:3, grookey:2, chimchar:2, totodile:1, rowlet:1, cyndaquil:1 } }
           ]
         },
-        { text: "Pick a power you'd want:",
+        // Q7 ── Ambition vs contentment
+        { text: "How do you feel about big goals?",
           answers: [
-            { emoji:'🌿', text: "Healing — restore energy and regrow anything",  weights: { bulbasaur:3, chikorita:2, mudkip:1 } },
-            { emoji:'🔥', text: "Flames — control fire with pure will",          weights: { torchic:3, cyndaquil:2, charmander:1 } },
-            { emoji:'🌊', text: "Water — command rivers, oceans, storms",        weights: { squirtle:3, totodile:2, mudkip:2 } },
-            { emoji:'🌳', text: "Growth — make any living thing thrive",         weights: { chikorita:3, treecko:2, bulbasaur:1 } }
+            { emoji:'🚀', text: "They fuel me — I always have something big I'm working toward",
+              weights: { fennekin:3, charmander:2, scorbunny:2, torchic:1, piplup:1, snivy:1, quaxly:1 } },
+            { emoji:'🌅', text: "I prefer meaningful over massive — depth matters more than scale",
+              weights: { oshawott:3, cyndaquil:2, rowlet:2, turtwig:1, sobble:1, chikorita:1, bulbasaur:1 } },
+            { emoji:'😌', text: "Honestly? I'm pretty content with a genuinely good life right now",
+              weights: { totodile:3, fuecoco:2, mudkip:2, squirtle:1, chespin:1, sprigatito:1, litten:1 } },
+            { emoji:'⚡', text: "Driven — but I want to actually enjoy the journey too",
+              weights: { tepig:3, popplio:2, chimchar:2, grookey:1, froakie:1, treecko:1 } }
           ]
         },
-        { text: "Your ideal Saturday:",
+        // Q8 ── What energizes you
+        { text: "You're most energized by...",
           answers: [
-            { emoji:'🏕️', text: "Hiking somewhere quiet and beautiful",          weights: { bulbasaur:3, chikorita:2, treecko:1 } },
-            { emoji:'🎮', text: "Gaming, competing, or training hard",            weights: { torchic:3, charmander:2, squirtle:1 } },
-            { emoji:'🏄', text: "Surfing, swimming — anything on the water",      weights: { totodile:3, mudkip:2, squirtle:1 } },
-            { emoji:'☕', text: "Staying in, comfortable, zero obligations",      weights: { cyndaquil:3, mudkip:2, bulbasaur:1 } }
+            { emoji:'👥', text: "Being around people — good conversation, genuine connection",
+              weights: { sprigatito:3, totodile:2, tepig:2, chikorita:1, grookey:1, chespin:1, popplio:1 } },
+            { emoji:'🎯', text: "Deep focus on something you care about — just you and the work",
+              weights: { froakie:3, litten:2, quaxly:2, fennekin:1, snivy:1, turtwig:1, treecko:1 } },
+            { emoji:'🤸', text: "Moving, doing, competing — anything physical and high-stakes",
+              weights: { scorbunny:3, chimchar:2, torchic:2, fuecoco:1, charmander:1, piplup:1 } },
+            { emoji:'🌙', text: "Quiet time alone — space to think, recharge, and just be",
+              weights: { rowlet:3, mudkip:2, oshawott:2, cyndaquil:1, sobble:1, squirtle:1, bulbasaur:1 } }
           ]
         },
-        { text: "When you win, you...",
+        // Q9 ── Approach to conflict
+        { text: "Someone challenges you in front of others. You...",
           answers: [
-            { emoji:'😤', text: "Nod quietly — you knew this would happen",      weights: { treecko:3, squirtle:2, mudkip:1 } },
-            { emoji:'🎊', text: "Celebrate loudly — everyone's celebrating",    weights: { totodile:3, torchic:2, charmander:1 } },
-            { emoji:'🙏', text: "Thank everyone who helped you get there",       weights: { chikorita:3, cyndaquil:2, bulbasaur:1 } },
-            { emoji:'😤', text: "Feel proud for a moment, then go train harder", weights: { charmander:3, squirtle:2, treecko:1 } }
+            { emoji:'🔥', text: "Accept immediately and make sure they don't regret asking",
+              weights: { torchic:3, charmander:2, piplup:2, scorbunny:1, fennekin:1, quaxly:1 } },
+            { emoji:'🧊', text: "Respond calmly with a precision that shuts it down completely",
+              weights: { snivy:3, treecko:2, froakie:2, litten:1, squirtle:1, turtwig:1, cyndaquil:1 } },
+            { emoji:'😅', text: "Defuse it with humor — you'd rather laugh than fight",
+              weights: { grookey:3, sprigatito:2, chimchar:2, totodile:1, fuecoco:1, chespin:1, mudkip:1 } },
+            { emoji:'🕊️', text: "Try to understand where they're coming from before escalating",
+              weights: { chikorita:3, oshawott:2, sobble:2, popplio:1, tepig:1, bulbasaur:1, rowlet:1 } }
           ]
         },
-        { text: "Last question — what drives you?",
+        // Q10 ── Trust and loyalty
+        { text: "For you, trust is...",
           answers: [
-            { emoji:'❤️', text: "Protecting the people I love",                  weights: { bulbasaur:3, cyndaquil:2, chikorita:2 } },
-            { emoji:'🏆', text: "Proving I'm the best — full stop",              weights: { torchic:3, charmander:2, treecko:1 } },
-            { emoji:'🌊', text: "Going with life's flow and enjoying the ride",  weights: { mudkip:3, totodile:2, squirtle:1 } },
-            { emoji:'🤝', text: "Making sure everyone around me thrives",        weights: { chikorita:3, mudkip:2, bulbasaur:1 } }
+            { emoji:'🔐', text: "Earned slowly through consistent actions over a long time",
+              weights: { litten:3, turtwig:2, quaxly:2, cyndaquil:1, rowlet:1, fuecoco:1 } },
+            { emoji:'💛', text: "Given generously — you prefer to start open and adjust from there",
+              weights: { popplio:3, chikorita:2, tepig:2, chespin:1, oshawott:1, sprigatito:1, grookey:1 } },
+            { emoji:'🛡️', text: "Sacred — once given it's absolute, but it takes real time",
+              weights: { charmander:3, mudkip:2, bulbasaur:2, squirtle:1, piplup:1, totodile:1, torchic:1 } },
+            { emoji:'🎲', text: "Situational — you assess each person and context on its own",
+              weights: { treecko:3, froakie:2, snivy:2, fennekin:1, scorbunny:1, chimchar:1, sobble:1 } }
           ]
         },
-        { text: "How do you approach learning something completely new?",
+        // Q11 ── Planning vs improvising
+        { text: "Before a big event or challenge, you...",
           answers: [
-            { emoji:'📚', text: "Research it thoroughly before touching anything", weights: { squirtle:3, bulbasaur:2, mudkip:1 } },
-            { emoji:'🔥', text: "Jump straight in — failing fast is how I grow",  weights: { totodile:3, torchic:2, charmander:1 } },
-            { emoji:'🌱', text: "Go slow, build foundations, then accelerate",    weights: { chikorita:3, cyndaquil:2, bulbasaur:1 } },
-            { emoji:'😎', text: "Watch the best do it, then copy and refine",     weights: { treecko:3, squirtle:2, mudkip:1 } }
+            { emoji:'📋', text: "Plan everything down to the smallest detail",
+              weights: { quaxly:3, fennekin:2, piplup:2, bulbasaur:1, froakie:1, turtwig:1, snivy:1 } },
+            { emoji:'🌊', text: "Have a rough outline but stay flexible — things always shift",
+              weights: { squirtle:3, rowlet:2, oshawott:2, fuecoco:1, mudkip:1, chikorita:1, sprigatito:1 } },
+            { emoji:'🔥', text: "Trust yourself to adapt — you work best in the moment",
+              weights: { chimchar:3, totodile:2, grookey:2, chespin:1, scorbunny:1, tepig:1 } },
+            { emoji:'📚', text: "Research and prepare deeply, then practice until it feels natural",
+              weights: { cyndaquil:3, treecko:2, torchic:2, popplio:1, charmander:1, litten:1, sobble:1 } }
           ]
         },
-        { text: "When things don't go your way, you...",
+        // Q12 ── Pace and patience
+        { text: "When results take longer than expected, you...",
           answers: [
-            { emoji:'🔥', text: "Use the frustration as fuel and go harder",      weights: { charmander:3, torchic:2, totodile:1 } },
-            { emoji:'🌿', text: "Step back, regroup, and find a new approach",    weights: { bulbasaur:3, chikorita:2, mudkip:1 } },
-            { emoji:'🧊', text: "Stay composed — showing emotion only helps opponents", weights: { treecko:3, squirtle:2, mudkip:1 } },
-            { emoji:'🤍', text: "Talk it out with someone you trust completely",  weights: { cyndaquil:3, mudkip:2, totodile:1 } }
+            { emoji:'🐢', text: "Stay patient — you know good things genuinely take time",
+              weights: { turtwig:3, bulbasaur:2, rowlet:2, cyndaquil:1, chikorita:1, popplio:1, sobble:1 } },
+            { emoji:'😤', text: "Double down — clearly you haven't been pushing hard enough",
+              weights: { fennekin:3, torchic:2, scorbunny:2, charmander:1, piplup:1, chimchar:1, quaxly:1 } },
+            { emoji:'🔄', text: "Reassess — maybe the approach needs to change, not the effort",
+              weights: { froakie:3, snivy:2, oshawott:2, squirtle:1, litten:1, treecko:1 } },
+            { emoji:'😌', text: "Trust the process and don't stress — it'll come when it's ready",
+              weights: { fuecoco:3, mudkip:2, sprigatito:2, totodile:1, chespin:1, tepig:1, grookey:1 } }
           ]
         },
-        { text: "Pick a word that fits your ambition:",
+        // Q13 ── Self-image: humble vs self-assured
+        { text: "How do you see yourself compared to others?",
           answers: [
-            { emoji:'🌋', text: "Burning — I want to leave a mark on the world",  weights: { charmander:3, cyndaquil:2, torchic:1 } },
-            { emoji:'🌊', text: "Flowing — I grow steadily toward where I belong", weights: { mudkip:3, squirtle:2, totodile:1 } },
-            { emoji:'🌿', text: "Rooted — I build something that truly lasts",    weights: { bulbasaur:3, chikorita:2, treecko:1 } },
-            { emoji:'🌪️', text: "Wild — I don't know where I'll end up, and I love it", weights: { totodile:3, torchic:2, treecko:1 } }
+            { emoji:'🌟', text: "I know I'm capable — and I'm not going to pretend otherwise",
+              weights: { snivy:3, piplup:2, treecko:2, charmander:1, fennekin:1, froakie:1, quaxly:1 } },
+            { emoji:'🤷', text: "I don't really compare — I'm just focused on my own path",
+              weights: { bulbasaur:3, fuecoco:2, rowlet:2, mudkip:1, turtwig:1, litten:1, squirtle:1 } },
+            { emoji:'💪', text: "I know I have more to prove, and honestly that drives me",
+              weights: { oshawott:3, popplio:2, chimchar:2, cyndaquil:1, scorbunny:1, torchic:1 } },
+            { emoji:'🌈', text: "I try to lift others up — everyone does better together",
+              weights: { tepig:3, chikorita:2, sobble:2, chespin:1, grookey:1, sprigatito:1, totodile:1 } }
+          ]
+        },
+        // Q14 ── Risk appetite
+        { text: "A risky opportunity comes up with a big potential reward. You...",
+          answers: [
+            { emoji:'🎯', text: "Calculate the odds carefully — then make a rational call",
+              weights: { froakie:3, fennekin:2, squirtle:2, snivy:1, piplup:1, turtwig:1, quaxly:1 } },
+            { emoji:'🐾', text: "Go for it — you figure the rest out as you go",
+              weights: { totodile:3, grookey:2, chimchar:2, sprigatito:1, torchic:1, scorbunny:1 } },
+            { emoji:'🤔', text: "Think it over carefully — you've learned not to rush these things",
+              weights: { chespin:3, bulbasaur:2, cyndaquil:2, rowlet:1, chikorita:1, oshawott:1, popplio:1 } },
+            { emoji:'💫', text: "Trust your gut and commit fully once you've decided",
+              weights: { charmander:3, litten:2, mudkip:2, sobble:1, treecko:1, tepig:1, fuecoco:1 } }
+          ]
+        },
+        // Q15 ── Depth vs breadth of interests
+        { text: "When it comes to hobbies and interests, you...",
+          answers: [
+            { emoji:'🔭', text: "Go deep on one or two things — mastery matters more than variety",
+              weights: { fennekin:3, froakie:2, litten:2, snivy:1, quaxly:1, cyndaquil:1, turtwig:1 } },
+            { emoji:'🌐', text: "Try everything — you get bored fast and love novelty",
+              weights: { chespin:3, grookey:2, sprigatito:2, totodile:1, chimchar:1, tepig:1 } },
+            { emoji:'🌱', text: "A healthy mix — some deep passions, some light exploration",
+              weights: { rowlet:3, squirtle:2, oshawott:2, fuecoco:1, mudkip:1, chikorita:1, bulbasaur:1 } },
+            { emoji:'🎖️', text: "Gravitate toward things you can get genuinely great at",
+              weights: { scorbunny:3, piplup:2, charmander:2, torchic:1, popplio:1, sobble:1, treecko:1 } }
+          ]
+        },
+        // Q16 ── Loyalty and relationships
+        { text: "Your closest friendships are built on...",
+          answers: [
+            { emoji:'🤝', text: "Shared history and unspoken loyalty that's built over years",
+              weights: { cyndaquil:3, bulbasaur:2, litten:2, turtwig:1, mudkip:1, rowlet:1, charmander:1 } },
+            { emoji:'💡', text: "Mutual respect for each other's minds and ideas",
+              weights: { piplup:3, fennekin:2, snivy:2, froakie:1, treecko:1, quaxly:1, squirtle:1 } },
+            { emoji:'😂', text: "Constant laughing and making ridiculous memories together",
+              weights: { sprigatito:3, grookey:2, totodile:2, chimchar:1, chespin:1, scorbunny:1, torchic:1 } },
+            { emoji:'💗', text: "Genuine emotional honesty — you can say absolutely anything",
+              weights: { sobble:3, popplio:2, chikorita:2, oshawott:1, tepig:1, fuecoco:1 } }
+          ]
+        },
+        // Q17 ── Competitive spirit
+        { text: "When it comes to competition, you're...",
+          answers: [
+            { emoji:'🥇', text: "All in — you play to win and you don't apologize for it",
+              weights: { torchic:3, scorbunny:2, piplup:2, charmander:1, snivy:1, treecko:1, fennekin:1 } },
+            { emoji:'🧘', text: "Focused on yourself — you compete against your own last performance",
+              weights: { quaxly:3, turtwig:2, cyndaquil:2, rowlet:1, froakie:1, bulbasaur:1 } },
+            { emoji:'🎮', text: "Casual — but actually quite competitive beneath the surface",
+              weights: { mudkip:3, squirtle:2, fuecoco:2, sprigatito:1, chespin:1, oshawott:1, litten:1 } },
+            { emoji:'🎪', text: "In it for the fun — you want everyone to leave smiling",
+              weights: { chimchar:3, grookey:2, tepig:2, totodile:1, popplio:1, sobble:1, chikorita:1 } }
+          ]
+        },
+        // Q18 ── Handling uncertainty
+        { text: "When the future feels uncertain, you...",
+          answers: [
+            { emoji:'🗺️', text: "Make a plan immediately — structure genuinely calms you down",
+              weights: { piplup:3, quaxly:2, fennekin:2, froakie:1, snivy:1, cyndaquil:1 } },
+            { emoji:'🌊', text: "Let it flow — you've learned that most things work out fine",
+              weights: { litten:3, mudkip:2, fuecoco:2, squirtle:1, totodile:1, sprigatito:1, rowlet:1 } },
+            { emoji:'🤗', text: "Lean on the people close to you — together you figure it out",
+              weights: { chikorita:3, sobble:2, oshawott:2, tepig:1, popplio:1, chespin:1, grookey:1 } },
+            { emoji:'😤', text: "Focus hard on what you CAN control and attack that relentlessly",
+              weights: { bulbasaur:3, torchic:2, scorbunny:2, treecko:1, chimchar:1, charmander:1, turtwig:1 } }
+          ]
+        },
+        // Q19 ── Creativity and expression
+        { text: "When you need to express yourself, you reach for...",
+          answers: [
+            { emoji:'🎨', text: "Art, music, or making something real with your hands",
+              weights: { popplio:3, grookey:2, sobble:2, sprigatito:1, chikorita:1, chespin:1, fuecoco:1 } },
+            { emoji:'💬', text: "Conversation — you think out loud and love bouncing ideas off people",
+              weights: { tepig:3, torchic:2, chimchar:2, cyndaquil:1, totodile:1, charmander:1 } },
+            { emoji:'📝', text: "Writing or structured thinking — putting things in precise order",
+              weights: { oshawott:3, snivy:2, fennekin:2, quaxly:1, froakie:1, bulbasaur:1, piplup:1 } },
+            { emoji:'🏃', text: "Action — you express yourself through what you do, not what you say",
+              weights: { squirtle:3, scorbunny:2, litten:2, mudkip:1, turtwig:1, treecko:1, rowlet:1 } }
+          ]
+        },
+        // Q20 ── Core motivation
+        { text: "At your core, what matters most to you?",
+          answers: [
+            { emoji:'❤️', text: "Connection — the people you love and who love you back",
+              weights: { turtwig:3, chikorita:2, bulbasaur:2, cyndaquil:1, popplio:1, tepig:1 } },
+            { emoji:'🌋', text: "Achievement — leaving a real mark and proving what you're made of",
+              weights: { treecko:3, charmander:2, torchic:2, scorbunny:1, piplup:1, snivy:1, chimchar:1 } },
+            { emoji:'🧭', text: "Integrity — doing things right and staying true to your values",
+              weights: { sobble:3, quaxly:2, litten:2, froakie:1, oshawott:1, squirtle:1, fennekin:1 } },
+            { emoji:'🌈', text: "Freedom — space to be fully yourself without compromise",
+              weights: { fuecoco:3, sprigatito:2, grookey:2, mudkip:1, rowlet:1, chespin:1, totodile:1 } }
           ]
         }
       ]
