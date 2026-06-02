@@ -739,39 +739,102 @@
   animation: pq-fade-up 0.45s 0.5s both;
 }
 
-/* ── Signature move + ideal partner stat tiles ─────────────── */
-.pq-result-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 18px;
+/* ── Compatibility chart ─────────────────────────────────────── */
+.pq-compat-chart {
+  margin-top: 22px;
   animation: pq-fade-up 0.45s 0.56s both;
 }
 
-.pq-result-stat {
-  background: rgba(0,0,0,0.03);
-  border: 1.5px solid rgba(0,0,0,0.07);
-  border-radius: 12px;
-  padding: 11px 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.pq-result-stat-label {
+.pq-compat-label {
   font-family: 'Press Start 2P', monospace;
-  font-size: 5.5px;
-  letter-spacing: 0.06em;
-  color: var(--res-color, #888);
-  line-height: 1.4;
+  font-size: 6px;
+  letter-spacing: 0.1em;
+  color: #bbb;
+  margin: 0 0 12px;
   text-transform: uppercase;
 }
 
-.pq-result-stat-value {
-  font-size: 13px;
-  font-weight: 800;
-  color: #111;
+.pq-compat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.pq-compat-card {
+  background: rgba(0,0,0,0.025);
+  border: 1.5px solid rgba(0,0,0,0.07);
+  border-radius: 14px;
+  padding: 12px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pq-compat-card:hover {
+  border-color: var(--cc);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--cc) 20%, transparent);
+}
+
+.pq-compat-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--cc) 12%, white);
+  border: 2px solid color-mix(in srgb, var(--cc) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pq-compat-img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.pq-compat-sprite {
+  width: 36px;
+  height: 36px;
+}
+
+.pq-compat-type {
+  width: 38px;
+  height: auto;
+}
+
+.pq-compat-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #222;
+  text-align: center;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.pq-compat-bar-wrap {
+  width: 100%;
+  height: 5px;
+  background: rgba(0,0,0,0.07);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.pq-compat-bar {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+
+.pq-compat-pct {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6.5px;
+  color: var(--cc);
+  line-height: 1;
 }
 
 .pq-result-divider {

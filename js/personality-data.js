@@ -15,7 +15,7 @@ window.PERSONALITY_DATA = {
       id: 'starter',
       name: 'Which Starter Pokémon Are You?',
       label: 'STARTER QUIZ',
-      subtitle: '9 results · 10 questions',
+      subtitle: '9 results · 13 questions',
       icon: '🌿',
       color: '#00b894',
       gradient: 'linear-gradient(135deg,#00b894 0%,#00cec9 100%)',
@@ -141,6 +141,30 @@ window.PERSONALITY_DATA = {
             { emoji:'🌊', text: "Going with life's flow and enjoying the ride",  weights: { totodile:3, mudkip:2, squirtle:1 } },
             { emoji:'🤝', text: "Making sure everyone around me thrives",        weights: { chikorita:3, mudkip:2, bulbasaur:1 } }
           ]
+        },
+        { text: "How do you approach learning something completely new?",
+          answers: [
+            { emoji:'📚', text: "Research it thoroughly before touching anything", weights: { squirtle:3, bulbasaur:2, mudkip:1 } },
+            { emoji:'🔥', text: "Jump straight in — failing fast is how I grow",  weights: { totodile:3, torchic:2, charmander:1 } },
+            { emoji:'🌱', text: "Go slow, build foundations, then accelerate",    weights: { chikorita:3, cyndaquil:2, bulbasaur:1 } },
+            { emoji:'😎', text: "Watch the best do it, then copy and refine",     weights: { treecko:3, squirtle:2, mudkip:1 } }
+          ]
+        },
+        { text: "When things don't go your way, you...",
+          answers: [
+            { emoji:'🔥', text: "Use the frustration as fuel and go harder",      weights: { charmander:3, torchic:2, totodile:1 } },
+            { emoji:'🌿', text: "Step back, regroup, and find a new approach",    weights: { bulbasaur:3, chikorita:2, mudkip:1 } },
+            { emoji:'🧊', text: "Stay composed — showing emotion only helps opponents", weights: { treecko:3, squirtle:2, mudkip:1 } },
+            { emoji:'🤍', text: "Talk it out with someone you trust completely",  weights: { cyndaquil:3, chikorita:2, bulbasaur:1 } }
+          ]
+        },
+        { text: "Pick a word that fits your ambition:",
+          answers: [
+            { emoji:'🌋', text: "Burning — I want to leave a mark on the world",  weights: { charmander:3, torchic:2, cyndaquil:1 } },
+            { emoji:'🌊', text: "Flowing — I grow steadily toward where I belong", weights: { squirtle:3, mudkip:2, totodile:1 } },
+            { emoji:'🌿', text: "Rooted — I build something that truly lasts",    weights: { bulbasaur:3, chikorita:2, treecko:1 } },
+            { emoji:'🌪️', text: "Wild — I don't know where I'll end up, and I love it", weights: { totodile:3, torchic:2, treecko:1 } }
+          ]
         }
       ]
     },
@@ -152,7 +176,7 @@ window.PERSONALITY_DATA = {
       id: 'type',
       name: 'Which Pokémon Type Are You?',
       label: 'TYPE QUIZ',
-      subtitle: '10 results · 10 questions',
+      subtitle: '10 results · 13 questions',
       icon: '🔮',
       color: '#6c5ce7',
       gradient: 'linear-gradient(135deg,#6c5ce7 0%,#a29bfe 100%)',
@@ -282,6 +306,30 @@ window.PERSONALITY_DATA = {
             { emoji:'🤩', text: "Alive — like they're part of something wild",   weights: { electric:3, ghost:2, fighting:1 } },
             { emoji:'🥶', text: "Intrigued — like they've only seen a fraction", weights: { ice:3, psychic:2, ghost:1 } }
           ]
+        },
+        { text: "When something is unfair, you...",
+          answers: [
+            { emoji:'🥊', text: "Call it out directly — loudly if necessary",    weights: { fighting:3, fire:2, electric:1 } },
+            { emoji:'🌊', text: "Feel it deeply but choose your battles wisely",  weights: { water:3, grass:2, ice:1 } },
+            { emoji:'👻', text: "Work around it quietly on your own terms",      weights: { ghost:3, psychic:2, dragon:1 } },
+            { emoji:'📜', text: "Document it methodically and build a case",     weights: { normal:3, ice:2, grass:1 } }
+          ]
+        },
+        { text: "Your favourite kind of surprise?",
+          answers: [
+            { emoji:'🔥', text: "A challenge that demands absolutely everything",weights: { fire:3, dragon:2, fighting:1 } },
+            { emoji:'💫', text: "A discovery that changes how you see the world", weights: { psychic:3, electric:2, ghost:1 } },
+            { emoji:'🤗', text: "Someone showing up for you unexpectedly",        weights: { water:3, grass:2, normal:1 } },
+            { emoji:'🌀', text: "A situation so strange you can't help but laugh",weights: { ghost:3, ice:2, normal:1 } }
+          ]
+        },
+        { text: "How do you leave a lasting impression?",
+          answers: [
+            { emoji:'💥', text: "You're impossible to ignore in the room",        weights: { fire:3, electric:2, fighting:1 } },
+            { emoji:'🧊', text: "You're impossible to forget once they leave",    weights: { ice:3, ghost:2, dragon:1 } },
+            { emoji:'🌱', text: "You become the person they realise they needed", weights: { grass:3, water:2, normal:1 } },
+            { emoji:'🔮', text: "You're the one they're still trying to figure out",weights: { psychic:3, ghost:2, dragon:1 } }
+          ]
         }
       ]
     },
@@ -293,7 +341,7 @@ window.PERSONALITY_DATA = {
       id: 'kanto',
       name: 'Which Kanto Pokémon Are You?',
       label: 'KANTO QUIZ',
-      subtitle: '12 results · 12 questions',
+      subtitle: '12 results · 16 questions',
       icon: '✨',
       color: '#ee1515',
       gradient: 'linear-gradient(135deg,#ee1515 0%,#ff6b35 100%)',
@@ -446,6 +494,38 @@ window.PERSONALITY_DATA = {
             { emoji:'✨', text: "A gentle move that heals or protects",          weights: { lapras:3, bulbasaur:2, jigglypuff:1 } },
             { emoji:'🎯', text: "A calculated, perfectly-timed strike",          weights: { alakazam:3, squirtle:2, mewtwo:1 } },
             { emoji:'👻', text: "A sneaky trick nobody saw coming",              weights: { gengar:3, eevee:2, mewtwo:1 } }
+          ]
+        },
+        { text: "How do you recharge after a completely draining day?",
+          answers: [
+            { emoji:'😴', text: "Sleep as long as possible — rest is non-negotiable",weights: { snorlax:3, lapras:2, bulbasaur:1 } },
+            { emoji:'📖', text: "Quiet time alone — reading, thinking, absorbing",  weights: { alakazam:3, mewtwo:2, squirtle:1 } },
+            { emoji:'🎤', text: "Creating something — music, art, anything expressive", weights: { jigglypuff:3, gengar:2, eevee:1 } },
+            { emoji:'🏋️', text: "A physical challenge to clear out the mental fog", weights: { machamp:3, charizard:2, pikachu:1 } }
+          ]
+        },
+        { text: "What do you need most to feel truly at home?",
+          answers: [
+            { emoji:'🤗', text: "Warmth and consistent connection with people I love", weights: { lapras:3, eevee:2, bulbasaur:1 } },
+            { emoji:'🔥', text: "Shared ambition — people who push me to grow",       weights: { charizard:3, machamp:2, pikachu:1 } },
+            { emoji:'🎭', text: "Freedom to be genuinely, weirdly myself",            weights: { gengar:3, jigglypuff:2, eevee:1 } },
+            { emoji:'🧘', text: "Comfortable silence — no performance required",      weights: { snorlax:3, mewtwo:2, alakazam:1 } }
+          ]
+        },
+        { text: "People who really know you would say you're actually...",
+          answers: [
+            { emoji:'💛', text: "Much kinder and softer than you appear",            weights: { gengar:3, mewtwo:2, charizard:1 } },
+            { emoji:'🔥', text: "Far more driven and competitive than you let on",   weights: { eevee:3, snorlax:2, jigglypuff:1 } },
+            { emoji:'🧠', text: "Deeper and more thoughtful than people first expect",weights: { alakazam:3, lapras:2, squirtle:1 } },
+            { emoji:'🌟', text: "Just as joyful and genuine as you always seem",     weights: { pikachu:3, bulbasaur:2, lapras:1 } }
+          ]
+        },
+        { text: "The journey's almost over. What actually kept you going?",
+          answers: [
+            { emoji:'❤️', text: "The people counting on me — I don't let them down", weights: { lapras:3, bulbasaur:2, eevee:1 } },
+            { emoji:'🏆', text: "Proving something to myself more than anyone else",  weights: { charizard:3, machamp:2, mewtwo:1 } },
+            { emoji:'💫', text: "Pure stubbornness — I simply don't know how to stop",weights: { pikachu:3, alakazam:2, squirtle:1 } },
+            { emoji:'🎉', text: "Honestly? The whole thing was fun from start to finish",weights: { gengar:3, jigglypuff:2, snorlax:1 } }
           ]
         }
       ]

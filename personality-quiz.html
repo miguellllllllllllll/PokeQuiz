@@ -20,7 +20,7 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap">
 	<link rel="stylesheet" href="css/base.css">
-	<link rel="stylesheet" href="css/personality-quiz.css?v=7">
+	<link rel="stylesheet" href="css/personality-quiz.css?v=8">
     <script defer src="js/theme.js?v=1"></script>
 </head>
 <body class="pq-body">
@@ -132,7 +132,7 @@
 
 <script src="js/util.js" defer></script>
 <script src="js/profile.js" defer></script>
-<script src="js/personality-data.js?v=4"></script>
+<script src="js/personality-data.js?v=5"></script>
 <script>
 (function () {
   'use strict';
@@ -458,28 +458,36 @@
 
     var nameLabel = isType ? (winner.typeName + ' Type') : winner.name;
 
-    /* Signature move + ideal partner */
-    var statsHtml = '';
-    if (winner.signatureMove || winner.idealPartner) {
-      statsHtml = '<div class="pq-result-stats">';
-      if (winner.signatureMove) {
-        statsHtml += '<div class="pq-result-stat">' +
-          '<span class="pq-result-stat-label">⚔️ SIGNATURE MOVE</span>' +
-          '<span class="pq-result-stat-value">' + esc(winner.signatureMove) + '</span>' +
+    /* ── Compatibility chart — top 3 runner-ups from actual scores ── */
+    var compatKeys = ranked.slice(1, 4);
+    var maxScore   = scores[ranked[0]] || 1;
+    var compatHtml = '';
+    if (compatKeys.length) {
+      var compatCards = compatKeys.map(function(key) {
+        var pok   = activeQuiz.pokemon[key];
+        var pct   = Math.min(97, Math.round((scores[key] / maxScore) * 100));
+        var label = isType ? pok.typeName : pok.name;
+        var imgHtml = isType
+          ? '<img class="pq-compat-img pq-compat-type" src="' + TYPE_BADGE_URL(pok.typeId) + '" alt="">'
+          : '<img class="pq-compat-img pq-compat-sprite" src="' + SPRITE_URL(pok.id) + '" alt="">';
+        return '<div class="pq-compat-card" style="--cc:' + pok.color + '">' +
+          '<div class="pq-compat-avatar">' + imgHtml + '</div>' +
+          '<span class="pq-compat-name">' + esc(label) + '</span>' +
+          '<div class="pq-compat-bar-wrap">' +
+            '<div class="pq-compat-bar" data-pct="' + pct + '" style="width:0%;background:' + pok.color + '"></div>' +
+          '</div>' +
+          '<span class="pq-compat-pct">' + pct + '%</span>' +
         '</div>';
-      }
-      if (winner.idealPartner) {
-        statsHtml += '<div class="pq-result-stat">' +
-          '<span class="pq-result-stat-label">🤝 IDEAL PARTNER</span>' +
-          '<span class="pq-result-stat-value">' + esc(winner.idealPartner) + '</span>' +
+      }).join('');
+      compatHtml =
+        '<div class="pq-compat-chart">' +
+          '<p class="pq-compat-label">COMPATIBILITY CHART</p>' +
+          '<div class="pq-compat-grid">' + compatCards + '</div>' +
         '</div>';
-      }
-      statsHtml += '</div>';
     }
 
     /* ── Affinity chart — top 5 scored results ── */
-    var topKeys  = ranked.slice(0, 5);
-    var maxScore = scores[topKeys[0]] || 1;
+    var topKeys = ranked.slice(0, 5);
 
     var chartRows = topKeys.map(function(key, i) {
       var pok      = activeQuiz.pokemon[key];
@@ -523,7 +531,7 @@
         badgeHtml +
         (traitsHtml ? '<div class="pq-result-traits">' + traitsHtml + '</div>' : '') +
         '<p class="pq-result-desc">' + esc(winner.desc) + '</p>' +
-        statsHtml +
+        compatHtml +
         chartHtml +
         '<div class="pq-result-actions">' +
           '<button class="pq-btn pq-btn-primary" id="pq-replay-btn" style="--res-color:' + winner.color + ';background:' + winner.color + '">&#8635; PLAY AGAIN</button>' +
@@ -536,7 +544,7 @@
 
     /* Animate bars in after the card fades up */
     setTimeout(function() {
-      elResult.querySelectorAll('.pq-aff-bar').forEach(function(bar) {
+      elResult.querySelectorAll('.pq-aff-bar, .pq-compat-bar').forEach(function(bar) {
         bar.style.width = bar.dataset.pct + '%';
       });
     }, 420);
