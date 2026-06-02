@@ -65,7 +65,7 @@ window.PERSONALITY_DATA = {
         { text: "You're about to choose a starter. What matters most?",
           answers: [
             { emoji:'💚', text: "Something dependable — I need consistency",     weights: { bulbasaur:3, chikorita:2, mudkip:1 } },
-            { emoji:'🔥', text: "Something with fire — raw power and passion",   weights: { charmander:3, torchic:2, cyndaquil:1 } },
+            { emoji:'🔥', text: "Something with fire — raw power and passion",   weights: { torchic:3, cyndaquil:2, charmander:1 } },
             { emoji:'💧', text: "Something cool — style and smart thinking",     weights: { squirtle:3, totodile:2, treecko:1 } },
             { emoji:'✨', text: "Whatever people least expect me to pick",       weights: { treecko:3, mudkip:2, chikorita:1 } }
           ]
@@ -74,15 +74,15 @@ window.PERSONALITY_DATA = {
           answers: [
             { emoji:'🌲', text: "Deep in nature — forests, mountains, trails",   weights: { bulbasaur:3, chikorita:2, treecko:2 } },
             { emoji:'🏙️', text: "In the city — always something happening",      weights: { charmander:3, torchic:2, totodile:1 } },
-            { emoji:'🌊', text: "Near water — ocean, lake, a river",             weights: { squirtle:3, totodile:2, mudkip:2 } },
-            { emoji:'🛖', text: "Anywhere cozy — it's who I'm with, not where",  weights: { cyndaquil:3, chikorita:2, bulbasaur:1 } }
+            { emoji:'🌊', text: "Near water — ocean, lake, a river",             weights: { mudkip:3, squirtle:2, totodile:1 } },
+            { emoji:'🛖', text: "Anywhere cozy — it's who I'm with, not where",  weights: { cyndaquil:3, totodile:2, mudkip:1 } }
           ]
         },
         { text: "A rival shows up looking for a battle. You...",
           answers: [
-            { emoji:'🔥', text: "Step up immediately — bring it on",             weights: { charmander:3, totodile:2, torchic:2 } },
+            { emoji:'🔥', text: "Step up immediately — bring it on",             weights: { torchic:3, charmander:2, totodile:1 } },
             { emoji:'🤔', text: "Study them first — wait for the right moment",  weights: { treecko:3, squirtle:2, bulbasaur:1 } },
-            { emoji:'💬', text: "Try talking it out — battles aren't everything",weights: { chikorita:3, cyndaquil:2, mudkip:1 } },
+            { emoji:'💬', text: "Try talking it out — battles aren't everything",weights: { cyndaquil:3, chikorita:2, mudkip:1 } },
             { emoji:'😤', text: "Accept calmly, but fight like your life depends on it",weights: { squirtle:3, bulbasaur:2, treecko:1 } }
           ]
         },
@@ -90,13 +90,13 @@ window.PERSONALITY_DATA = {
           answers: [
             { emoji:'🔥', text: "Push through it — frustration becomes fuel",    weights: { charmander:3, torchic:2, totodile:1 } },
             { emoji:'🛋️', text: "Rest and recharge — tomorrow will be better",   weights: { mudkip:3, bulbasaur:2, cyndaquil:2 } },
-            { emoji:'👫', text: "Talk to the people I trust most",               weights: { chikorita:3, squirtle:2, cyndaquil:1 } },
+            { emoji:'👫', text: "Talk to the people I trust most",               weights: { cyndaquil:3, chikorita:2, squirtle:1 } },
             { emoji:'😤', text: "Shake it off and act like nothing happened",    weights: { treecko:3, totodile:2, squirtle:1 } }
           ]
         },
         { text: "Your friends would say you're the one who...",
           answers: [
-            { emoji:'💪', text: "Always shows up when things get hard",          weights: { bulbasaur:3, mudkip:2, cyndaquil:2 } },
+            { emoji:'💪', text: "Always shows up when things get hard",          weights: { cyndaquil:3, totodile:2, mudkip:1 } },
             { emoji:'🎉', text: "Makes everything more fun",                     weights: { totodile:3, torchic:2, charmander:1 } },
             { emoji:'🧊', text: "Stays cool when everyone else panics",          weights: { treecko:3, squirtle:2, mudkip:1 } },
             { emoji:'💛', text: "Is always encouraging and kind",                weights: { chikorita:3, cyndaquil:2, bulbasaur:1 } }
@@ -113,7 +113,7 @@ window.PERSONALITY_DATA = {
         { text: "Pick a power you'd want:",
           answers: [
             { emoji:'🌿', text: "Healing — restore energy and regrow anything",  weights: { bulbasaur:3, chikorita:2, mudkip:1 } },
-            { emoji:'🔥', text: "Flames — control fire with pure will",          weights: { charmander:3, torchic:2, cyndaquil:2 } },
+            { emoji:'🔥', text: "Flames — control fire with pure will",          weights: { torchic:3, cyndaquil:2, charmander:1 } },
             { emoji:'🌊', text: "Water — command rivers, oceans, storms",        weights: { squirtle:3, totodile:2, mudkip:2 } },
             { emoji:'🌳', text: "Growth — make any living thing thrive",         weights: { chikorita:3, treecko:2, bulbasaur:1 } }
           ]
@@ -121,7 +121,7 @@ window.PERSONALITY_DATA = {
         { text: "Your ideal Saturday:",
           answers: [
             { emoji:'🏕️', text: "Hiking somewhere quiet and beautiful",          weights: { bulbasaur:3, chikorita:2, treecko:1 } },
-            { emoji:'🎮', text: "Gaming, competing, or training hard",            weights: { charmander:3, torchic:2, squirtle:1 } },
+            { emoji:'🎮', text: "Gaming, competing, or training hard",            weights: { torchic:3, charmander:2, squirtle:1 } },
             { emoji:'🏄', text: "Surfing, swimming — anything on the water",      weights: { totodile:3, mudkip:2, squirtle:1 } },
             { emoji:'☕', text: "Staying in, comfortable, zero obligations",      weights: { cyndaquil:3, mudkip:2, bulbasaur:1 } }
           ]
@@ -137,8 +137,8 @@ window.PERSONALITY_DATA = {
         { text: "Last question — what drives you?",
           answers: [
             { emoji:'❤️', text: "Protecting the people I love",                  weights: { bulbasaur:3, cyndaquil:2, chikorita:2 } },
-            { emoji:'🏆', text: "Proving I'm the best — full stop",              weights: { charmander:3, torchic:2, treecko:1 } },
-            { emoji:'🌊', text: "Going with life's flow and enjoying the ride",  weights: { totodile:3, mudkip:2, squirtle:1 } },
+            { emoji:'🏆', text: "Proving I'm the best — full stop",              weights: { torchic:3, charmander:2, treecko:1 } },
+            { emoji:'🌊', text: "Going with life's flow and enjoying the ride",  weights: { mudkip:3, totodile:2, squirtle:1 } },
             { emoji:'🤝', text: "Making sure everyone around me thrives",        weights: { chikorita:3, mudkip:2, bulbasaur:1 } }
           ]
         },
@@ -155,13 +155,13 @@ window.PERSONALITY_DATA = {
             { emoji:'🔥', text: "Use the frustration as fuel and go harder",      weights: { charmander:3, torchic:2, totodile:1 } },
             { emoji:'🌿', text: "Step back, regroup, and find a new approach",    weights: { bulbasaur:3, chikorita:2, mudkip:1 } },
             { emoji:'🧊', text: "Stay composed — showing emotion only helps opponents", weights: { treecko:3, squirtle:2, mudkip:1 } },
-            { emoji:'🤍', text: "Talk it out with someone you trust completely",  weights: { cyndaquil:3, chikorita:2, bulbasaur:1 } }
+            { emoji:'🤍', text: "Talk it out with someone you trust completely",  weights: { cyndaquil:3, mudkip:2, totodile:1 } }
           ]
         },
         { text: "Pick a word that fits your ambition:",
           answers: [
-            { emoji:'🌋', text: "Burning — I want to leave a mark on the world",  weights: { charmander:3, torchic:2, cyndaquil:1 } },
-            { emoji:'🌊', text: "Flowing — I grow steadily toward where I belong", weights: { squirtle:3, mudkip:2, totodile:1 } },
+            { emoji:'🌋', text: "Burning — I want to leave a mark on the world",  weights: { charmander:3, cyndaquil:2, torchic:1 } },
+            { emoji:'🌊', text: "Flowing — I grow steadily toward where I belong", weights: { mudkip:3, squirtle:2, totodile:1 } },
             { emoji:'🌿', text: "Rooted — I build something that truly lasts",    weights: { bulbasaur:3, chikorita:2, treecko:1 } },
             { emoji:'🌪️', text: "Wild — I don't know where I'll end up, and I love it", weights: { totodile:3, torchic:2, treecko:1 } }
           ]
@@ -229,24 +229,24 @@ window.PERSONALITY_DATA = {
       questions: [
         { text: "When you feel a strong emotion, you...",
           answers: [
-            { emoji:'🔥', text: "Express it immediately and loudly",             weights: { fire:3, electric:2, fighting:1 } },
-            { emoji:'🌊', text: "Let it wash over you and sit with it",          weights: { water:3, ice:2, grass:1 } },
-            { emoji:'🎭', text: "Process it privately — nobody needs to know",   weights: { ghost:3, psychic:2, ice:1 } },
-            { emoji:'📊', text: "Analyse it before reacting",                    weights: { psychic:3, normal:2, dragon:1 } }
+            { emoji:'🔥', text: "Express it immediately and loudly",             weights: { fighting:3, fire:2, electric:1 } },
+            { emoji:'🌊', text: "Let it wash over you and sit with it",          weights: { water:3, grass:2, ice:1 } },
+            { emoji:'🎭', text: "Process it privately — nobody needs to know",   weights: { ice:3, ghost:2, psychic:1 } },
+            { emoji:'📊', text: "Analyse it before reacting",                    weights: { normal:3, psychic:2, dragon:1 } }
           ]
         },
         { text: "Your friends come to you for...",
           answers: [
-            { emoji:'💡', text: "Energy and ideas — you get everyone excited",   weights: { fire:3, electric:2, fighting:1 } },
-            { emoji:'🤗', text: "Listening — you make people feel heard",        weights: { water:3, grass:2, normal:1 } },
+            { emoji:'💡', text: "Energy and ideas — you get everyone excited",   weights: { electric:3, fighting:2, fire:1 } },
+            { emoji:'🤗', text: "Listening — you make people feel heard",        weights: { normal:3, grass:2, water:1 } },
             { emoji:'🧠', text: "Advice — you actually see the whole picture",   weights: { psychic:3, dragon:2, ice:1 } },
             { emoji:'😂', text: "A good time — you make everything more fun",    weights: { electric:3, ghost:2, normal:1 } }
           ]
         },
         { text: "How do you feel about being the centre of attention?",
           answers: [
-            { emoji:'🎤', text: "I love it — this is my natural habitat",        weights: { fire:3, electric:2, fighting:1 } },
-            { emoji:'👀', text: "Fine with it, but I don't chase it",            weights: { dragon:3, normal:2, grass:1 } },
+            { emoji:'🎤', text: "I love it — this is my natural habitat",        weights: { electric:3, fighting:2, fire:1 } },
+            { emoji:'👀', text: "Fine with it, but I don't chase it",            weights: { dragon:3, grass:2, normal:1 } },
             { emoji:'😌', text: "I prefer blending in and observing",            weights: { ghost:3, water:2, ice:1 } },
             { emoji:'🤔', text: "I'm okay with it when it's deserved",           weights: { psychic:3, ice:2, normal:1 } }
           ]
@@ -254,8 +254,8 @@ window.PERSONALITY_DATA = {
         { text: "Pick the environment you feel most alive in:",
           answers: [
             { emoji:'🌋', text: "Somewhere with heat and high stakes",           weights: { fire:3, fighting:2, dragon:1 } },
-            { emoji:'🌊', text: "Near water — coastal, calm, endless",           weights: { water:3, ice:2, grass:1 } },
-            { emoji:'🌃', text: "A city at night — lights, secrets, energy",     weights: { ghost:3, electric:2, psychic:1 } },
+            { emoji:'🌊', text: "Near water — coastal, calm, endless",           weights: { water:3, ice:2, normal:1 } },
+            { emoji:'🌃', text: "A city at night — lights, secrets, energy",     weights: { electric:3, ghost:2, psychic:1 } },
             { emoji:'🏔️', text: "High up — remote, powerful, above it all",      weights: { dragon:3, ice:2, fighting:1 } }
           ]
         },
@@ -270,14 +270,14 @@ window.PERSONALITY_DATA = {
         { text: "How much of yourself do you share with others?",
           answers: [
             { emoji:'📖', text: "Everything — I'm an open book",                 weights: { fire:3, electric:2, normal:1 } },
-            { emoji:'🌊', text: "Quite a lot — I value deep connection",         weights: { water:3, grass:2, fighting:1 } },
-            { emoji:'🔐', text: "Very little — most people don't get the real me",weights: { ghost:3, dragon:2, ice:1 } },
-            { emoji:'🧩', text: "Only pieces — I reveal myself slowly",          weights: { psychic:3, ice:2, normal:1 } }
+            { emoji:'🌊', text: "Quite a lot — I value deep connection",         weights: { normal:3, water:2, grass:1 } },
+            { emoji:'🔐', text: "Very little — most people don't get the real me",weights: { dragon:3, ghost:2, ice:1 } },
+            { emoji:'🧩', text: "Only pieces — I reveal myself slowly",          weights: { ice:3, psychic:2, normal:1 } }
           ]
         },
         { text: "Your biggest strength is your...",
           answers: [
-            { emoji:'🔥', text: "Passion — you go harder than anyone else",      weights: { fire:3, fighting:2, electric:1 } },
+            { emoji:'🔥', text: "Passion — you go harder than anyone else",      weights: { fighting:3, fire:2, electric:1 } },
             { emoji:'🧘', text: "Patience — you can wait as long as it takes",   weights: { grass:3, water:2, ice:1 } },
             { emoji:'🔮', text: "Intuition — you just know things somehow",      weights: { psychic:3, ghost:2, dragon:1 } },
             { emoji:'🛡️', text: "Consistency — you show up every single time",   weights: { normal:3, fighting:2, grass:1 } }
@@ -293,9 +293,9 @@ window.PERSONALITY_DATA = {
         },
         { text: "Pick a word that fits you best:",
           answers: [
-            { emoji:'🔥', text: "Unstoppable",                                   weights: { fire:3, fighting:3, dragon:1 } },
-            { emoji:'💙', text: "Empathetic",                                    weights: { water:3, grass:3, normal:1 } },
-            { emoji:'🌑', text: "Enigmatic",                                     weights: { ghost:3, psychic:2, ice:2 } },
+            { emoji:'🔥', text: "Unstoppable",                                   weights: { fighting:3, dragon:2, fire:1 } },
+            { emoji:'💙', text: "Empathetic",                                    weights: { grass:3, normal:2, ice:1 } },
+            { emoji:'🌑', text: "Enigmatic",                                     weights: { dragon:3, ghost:2, psychic:1 } },
             { emoji:'⚡', text: "Electric",                                      weights: { electric:3, fire:2, dragon:1 } }
           ]
         },
@@ -317,9 +317,9 @@ window.PERSONALITY_DATA = {
         },
         { text: "Your favourite kind of surprise?",
           answers: [
-            { emoji:'🔥', text: "A challenge that demands absolutely everything",weights: { fire:3, dragon:2, fighting:1 } },
+            { emoji:'🔥', text: "A challenge that demands absolutely everything",weights: { dragon:3, fire:2, fighting:1 } },
             { emoji:'💫', text: "A discovery that changes how you see the world", weights: { psychic:3, electric:2, ghost:1 } },
-            { emoji:'🤗', text: "Someone showing up for you unexpectedly",        weights: { water:3, grass:2, normal:1 } },
+            { emoji:'🤗', text: "Someone showing up for you unexpectedly",        weights: { normal:3, water:2, grass:1 } },
             { emoji:'🌀', text: "A situation so strange you can't help but laugh",weights: { ghost:3, ice:2, normal:1 } }
           ]
         },
@@ -328,7 +328,7 @@ window.PERSONALITY_DATA = {
             { emoji:'💥', text: "You're impossible to ignore in the room",        weights: { fire:3, electric:2, fighting:1 } },
             { emoji:'🧊', text: "You're impossible to forget once they leave",    weights: { ice:3, ghost:2, dragon:1 } },
             { emoji:'🌱', text: "You become the person they realise they needed", weights: { grass:3, water:2, normal:1 } },
-            { emoji:'🔮', text: "You're the one they're still trying to figure out",weights: { psychic:3, ghost:2, dragon:1 } }
+            { emoji:'🔮', text: "You're the one they're still trying to figure out",weights: { dragon:3, psychic:2, ghost:1 } }
           ]
         }
       ]
@@ -402,55 +402,55 @@ window.PERSONALITY_DATA = {
       questions: [
         { text: "What's your ideal weekend?",
           answers: [
-            { emoji:'🎉', text: "Big hangout — the more the merrier",            weights: { pikachu:3, jigglypuff:2, eevee:1 } },
+            { emoji:'🎉', text: "Big hangout — the more the merrier",            weights: { eevee:3, pikachu:2, jigglypuff:1 } },
             { emoji:'🏋️', text: "Pushing hard toward a personal goal",           weights: { charizard:3, machamp:2, pikachu:1 } },
             { emoji:'🛋️', text: "Recharging at home in total comfort",           weights: { snorlax:3, bulbasaur:2, lapras:1 } },
-            { emoji:'🗺️', text: "Exploring somewhere new, alone",                weights: { mewtwo:3, alakazam:2, eevee:1 } }
+            { emoji:'🗺️', text: "Exploring somewhere new, alone",                weights: { mewtwo:3, alakazam:2, squirtle:1 } }
           ]
         },
         { text: "How do you handle conflict?",
           answers: [
-            { emoji:'⚡', text: "Face it head-on — say exactly what I think",    weights: { charizard:3, pikachu:2, machamp:1 } },
-            { emoji:'🤝', text: "Find a compromise that works for everyone",      weights: { bulbasaur:3, lapras:2, eevee:1 } },
-            { emoji:'🧠', text: "Outsmart it with a clever strategy",             weights: { alakazam:3, gengar:2, mewtwo:1 } },
-            { emoji:'😄', text: "Defuse it with humour before it escalates",      weights: { gengar:3, pikachu:2, jigglypuff:1 } }
+            { emoji:'⚡', text: "Face it head-on — say exactly what I think",    weights: { machamp:3, charizard:2, pikachu:1 } },
+            { emoji:'🤝', text: "Find a compromise that works for everyone",      weights: { bulbasaur:3, lapras:2, snorlax:1 } },
+            { emoji:'🧠', text: "Outsmart it with a clever strategy",             weights: { alakazam:3, squirtle:2, mewtwo:1 } },
+            { emoji:'😄', text: "Defuse it with humour before it escalates",      weights: { gengar:3, jigglypuff:2, pikachu:1 } }
           ]
         },
         { text: "Pick your ideal home vibe:",
           answers: [
             { emoji:'☕', text: "Cozy — warm lighting, snacks on every surface", weights: { snorlax:3, bulbasaur:2, lapras:1 } },
-            { emoji:'🔬', text: "Sleek and minimal — everything has a purpose",   weights: { mewtwo:3, alakazam:2, squirtle:1 } },
-            { emoji:'🎈', text: "Lively — always buzzing with people",            weights: { pikachu:3, jigglypuff:2, eevee:1 } },
-            { emoji:'🌑', text: "Hidden away — mysterious and all mine",          weights: { gengar:3, mewtwo:2, alakazam:1 } }
+            { emoji:'🔬', text: "Sleek and minimal — everything has a purpose",   weights: { mewtwo:3, squirtle:2, alakazam:1 } },
+            { emoji:'🎈', text: "Lively — always buzzing with people",            weights: { eevee:3, pikachu:2, jigglypuff:1 } },
+            { emoji:'🌑', text: "Hidden away — mysterious and all mine",          weights: { mewtwo:3, gengar:2, alakazam:1 } }
           ]
         },
         { text: "Your squad has a big project. Your role?",
           answers: [
-            { emoji:'📣', text: "Hype person — keeping morale sky-high",         weights: { pikachu:3, charizard:2, machamp:1 } },
+            { emoji:'📣', text: "Hype person — keeping morale sky-high",         weights: { pikachu:3, jigglypuff:2, machamp:1 } },
             { emoji:'💡', text: "Idea factory — creativity is my whole thing",   weights: { jigglypuff:3, gengar:2, eevee:1 } },
-            { emoji:'📊', text: "Researcher — I need data before deciding",      weights: { alakazam:3, squirtle:2, mewtwo:1 } },
+            { emoji:'📊', text: "Researcher — I need data before deciding",      weights: { squirtle:3, alakazam:2, mewtwo:1 } },
             { emoji:'💙', text: "The glue — no one gets left behind",            weights: { lapras:3, bulbasaur:2, eevee:1 } }
           ]
         },
         { text: "A friend is in trouble. You...",
           answers: [
-            { emoji:'🚀', text: "Rush in — figure out the plan on the way",      weights: { charizard:3, pikachu:2, machamp:1 } },
-            { emoji:'🔍', text: "Think it through carefully before acting",      weights: { alakazam:3, squirtle:2, mewtwo:1 } },
-            { emoji:'📞', text: "Rally everyone — strength in numbers",          weights: { pikachu:3, eevee:2, lapras:1 } },
-            { emoji:'🎭', text: "Find a clever angle nobody else considered",    weights: { gengar:3, mewtwo:2, alakazam:1 } }
+            { emoji:'🚀', text: "Rush in — figure out the plan on the way",      weights: { charizard:3, machamp:2, pikachu:1 } },
+            { emoji:'🔍', text: "Think it through carefully before acting",      weights: { squirtle:3, alakazam:2, mewtwo:1 } },
+            { emoji:'📞', text: "Rally everyone — strength in numbers",          weights: { bulbasaur:3, lapras:2, eevee:1 } },
+            { emoji:'🎭', text: "Find a clever angle nobody else considered",    weights: { lapras:3, gengar:2, mewtwo:1 } }
           ]
         },
         { text: "How do people usually describe you?",
           answers: [
-            { emoji:'🌟', text: "The life of the party",                         weights: { pikachu:3, jigglypuff:2, gengar:1 } },
-            { emoji:'🪨', text: "The reliable one everyone counts on",           weights: { bulbasaur:3, squirtle:2, machamp:1 } },
+            { emoji:'🌟', text: "The life of the party",                         weights: { jigglypuff:3, pikachu:2, gengar:1 } },
+            { emoji:'🪨', text: "The reliable one everyone counts on",           weights: { bulbasaur:3, machamp:2, squirtle:1 } },
             { emoji:'🌑', text: "The mysterious one — hard to read",             weights: { mewtwo:3, gengar:2, alakazam:1 } },
-            { emoji:'🎲', text: "The wildcard — anything could happen",          weights: { charizard:3, eevee:2, gengar:1 } }
+            { emoji:'🎲', text: "The wildcard — anything could happen",          weights: { eevee:3, charizard:2, gengar:1 } }
           ]
         },
         { text: "Your relationship with rules?",
           answers: [
-            { emoji:'📋', text: "They exist for a reason — I respect them",      weights: { squirtle:3, bulbasaur:2, machamp:1 } },
+            { emoji:'📋', text: "They exist for a reason — I respect them",      weights: { squirtle:3, snorlax:2, machamp:1 } },
             { emoji:'🎨', text: "Rules box in creativity — I bend them freely",  weights: { charizard:3, jigglypuff:2, gengar:1 } },
             { emoji:'🔧', text: "Rules are tools — useful when they serve me",   weights: { alakazam:3, mewtwo:2, eevee:1 } },
             { emoji:'🌪️', text: "What rules? I chart my own course",             weights: { mewtwo:3, charizard:2, gengar:1 } }
@@ -458,7 +458,7 @@ window.PERSONALITY_DATA = {
         },
         { text: "What do you actually spend money on?",
           answers: [
-            { emoji:'✈️', text: "Experiences — concerts, trips, adventures",     weights: { pikachu:3, charizard:2, eevee:1 } },
+            { emoji:'✈️', text: "Experiences — concerts, trips, adventures",     weights: { pikachu:3, eevee:2, charizard:1 } },
             { emoji:'🍕', text: "Food — you know exactly what you love",          weights: { snorlax:3, machamp:2, bulbasaur:1 } },
             { emoji:'📚', text: "Books, gadgets, or courses to level up",         weights: { alakazam:3, mewtwo:2, squirtle:1 } },
             { emoji:'🎵', text: "Art, music, and creative projects",              weights: { jigglypuff:3, gengar:2, lapras:1 } }
@@ -466,7 +466,7 @@ window.PERSONALITY_DATA = {
         },
         { text: "Pick an element that calls to you:",
           answers: [
-            { emoji:'🔥', text: "Fire — passion, power, transformation",         weights: { charizard:3, pikachu:2, machamp:1 } },
+            { emoji:'🔥', text: "Fire — passion, power, transformation",         weights: { charizard:3, machamp:2, pikachu:1 } },
             { emoji:'🌊', text: "Water — calm, flow, depth",                     weights: { squirtle:3, lapras:2, snorlax:1 } },
             { emoji:'🌿', text: "Earth — stability, growth, patience",           weights: { bulbasaur:3, snorlax:2, lapras:1 } },
             { emoji:'⚡', text: "Lightning — raw energy and a sharp mind",       weights: { pikachu:3, alakazam:2, mewtwo:1 } }
@@ -474,15 +474,15 @@ window.PERSONALITY_DATA = {
         },
         { text: "Your biggest fear is...",
           answers: [
-            { emoji:'💤', text: "Wasting potential by standing still",           weights: { charizard:3, machamp:2, pikachu:1 } },
-            { emoji:'💔', text: "Being misunderstood or left out",               weights: { jigglypuff:3, eevee:2, lapras:1 } },
+            { emoji:'💤', text: "Wasting potential by standing still",           weights: { machamp:3, charizard:2, pikachu:1 } },
+            { emoji:'💔', text: "Being misunderstood or left out",               weights: { eevee:3, jigglypuff:2, lapras:1 } },
             { emoji:'🎛️', text: "Losing control of a situation",                 weights: { mewtwo:3, alakazam:2, squirtle:1 } },
-            { emoji:'😴', text: "Total boredom with zero surprises",             weights: { gengar:3, pikachu:2, eevee:1 } }
+            { emoji:'😴', text: "Total boredom with zero surprises",             weights: { gengar:3, eevee:2, pikachu:1 } }
           ]
         },
         { text: "What energy do you bring?",
           answers: [
-            { emoji:'⚡', text: "High-voltage — always moving, always doing",    weights: { pikachu:3, charizard:2, machamp:1 } },
+            { emoji:'⚡', text: "High-voltage — always moving, always doing",    weights: { machamp:3, pikachu:2, charizard:1 } },
             { emoji:'🌊', text: "Steady and consistent — never burned out",      weights: { bulbasaur:3, squirtle:2, lapras:1 } },
             { emoji:'😌', text: "Totally chill — why rush anything?",            weights: { snorlax:3, lapras:2, eevee:1 } },
             { emoji:'🌀', text: "Intense bursts followed by deep rest",          weights: { gengar:3, mewtwo:2, alakazam:1 } }
@@ -490,9 +490,9 @@ window.PERSONALITY_DATA = {
         },
         { text: "One last move — what's it gonna be?",
           answers: [
-            { emoji:'💥', text: "A massive, flashy signature attack",            weights: { charizard:3, pikachu:2, machamp:1 } },
+            { emoji:'💥', text: "A massive, flashy signature attack",            weights: { charizard:3, machamp:2, pikachu:1 } },
             { emoji:'✨', text: "A gentle move that heals or protects",          weights: { lapras:3, bulbasaur:2, jigglypuff:1 } },
-            { emoji:'🎯', text: "A calculated, perfectly-timed strike",          weights: { alakazam:3, squirtle:2, mewtwo:1 } },
+            { emoji:'🎯', text: "A calculated, perfectly-timed strike",          weights: { squirtle:3, alakazam:2, mewtwo:1 } },
             { emoji:'👻', text: "A sneaky trick nobody saw coming",              weights: { gengar:3, eevee:2, mewtwo:1 } }
           ]
         },
@@ -506,8 +506,8 @@ window.PERSONALITY_DATA = {
         },
         { text: "What do you need most to feel truly at home?",
           answers: [
-            { emoji:'🤗', text: "Warmth and consistent connection with people I love", weights: { lapras:3, eevee:2, bulbasaur:1 } },
-            { emoji:'🔥', text: "Shared ambition — people who push me to grow",       weights: { charizard:3, machamp:2, pikachu:1 } },
+            { emoji:'🤗', text: "Warmth and consistent connection with people I love", weights: { eevee:3, lapras:2, bulbasaur:1 } },
+            { emoji:'🔥', text: "Shared ambition — people who push me to grow",       weights: { machamp:3, charizard:2, pikachu:1 } },
             { emoji:'🎭', text: "Freedom to be genuinely, weirdly myself",            weights: { gengar:3, jigglypuff:2, eevee:1 } },
             { emoji:'🧘', text: "Comfortable silence — no performance required",      weights: { snorlax:3, mewtwo:2, alakazam:1 } }
           ]
@@ -524,8 +524,8 @@ window.PERSONALITY_DATA = {
           answers: [
             { emoji:'❤️', text: "The people counting on me — I don't let them down", weights: { lapras:3, bulbasaur:2, eevee:1 } },
             { emoji:'🏆', text: "Proving something to myself more than anyone else",  weights: { charizard:3, machamp:2, mewtwo:1 } },
-            { emoji:'💫', text: "Pure stubbornness — I simply don't know how to stop",weights: { pikachu:3, alakazam:2, squirtle:1 } },
-            { emoji:'🎉', text: "Honestly? The whole thing was fun from start to finish",weights: { gengar:3, jigglypuff:2, snorlax:1 } }
+            { emoji:'💫', text: "Pure stubbornness — I simply don't know how to stop",weights: { squirtle:3, pikachu:2, alakazam:1 } },
+            { emoji:'🎉', text: "Honestly? The whole thing was fun from start to finish",weights: { jigglypuff:3, gengar:2, snorlax:1 } }
           ]
         }
       ]
