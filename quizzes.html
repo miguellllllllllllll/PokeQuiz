@@ -23,6 +23,7 @@
 	<link rel="stylesheet" href="css/base.css">
 	<link rel="stylesheet" href="css/puzzle.css">
 	<link rel="stylesheet" href="css/puzzles.css">
+	<link rel="stylesheet" href="css/personality-quiz.css">
 	<style>
 		.game-card-wrap {
 			display: flex;
@@ -130,56 +131,73 @@
 					<h2 style="font-size:clamp(18px,4vw,26px);margin:0 0 8px">Personality Quizzes</h2>
 					<p class="lede">No right or wrong answers &mdash; just find out which Pok&eacute;mon matches your vibe.</p>
 				</div>
-				<div class="games-grid" style="margin-top:16px">
-					<a class="game-card is-available" href="personality-quiz.html?quiz=starter" style="--stagger:0">
-						<span class="game-badge" style="background:#00b894">Personality</span>
-						<div class="game-icon" style="--icon-bg: rgba(34,197,94,0.12)">
-							<img class="game-item-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="" width="56" height="56">
+				<div class="pq-grid" style="margin-top:16px">
+					<a class="pq-type-card" style="--card-color:#00b894" href="personality-quiz.html?quiz=starter">
+						<div class="pq-card-hero">
+							<span class="pq-card-hero-label">STARTER QUIZ</span>
+							<div class="pq-card-hero-sprites">
+								<img class="pq-hub-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="" loading="lazy">
+								<img class="pq-hub-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="" loading="lazy">
+								<img class="pq-hub-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="" loading="lazy">
+							</div>
 						</div>
-						<strong class="game-title">Which Starter Pokémon Are You?</strong>
-						<span class="game-desc">Grass, Fire, or Water? Find your Gen 1–9 starter match.</span>
-						<div class="game-chips">
-							<span class="game-chip">🌿 Personality</span>
-							<span class="game-chip">20 Questions</span>
-							<span class="game-chip">27 Results</span>
-						</div>
-						<div class="game-footer">
-							<span class="game-best"><span class="gb-label">Type</span><span class="gb-value">Fun</span></span>
-							<span class="game-cta">Start &rarr;</span>
-						</div>
-					</a>
-					<a class="game-card is-available" href="personality-quiz.html?quiz=type" style="--stagger:1">
-						<span class="game-badge" style="background:#6c5ce7">Personality</span>
-						<div class="game-icon" style="--icon-bg: rgba(139,92,246,0.12)">
-							<img class="game-item-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/14.png" alt="" width="56" height="56">
-						</div>
-						<strong class="game-title">Which Type Are You?</strong>
-						<span class="game-desc">Fire, Psychic, Ghost… which of the 10 types fits your personality?</span>
-						<div class="game-chips">
-							<span class="game-chip">🔮 Personality</span>
-							<span class="game-chip">13 Questions</span>
-							<span class="game-chip">10 Results</span>
-						</div>
-						<div class="game-footer">
-							<span class="game-best"><span class="gb-label">Type</span><span class="gb-value">Fun</span></span>
-							<span class="game-cta">Start &rarr;</span>
+						<div class="pq-type-card-body">
+							<div class="pq-type-card-info">
+								<p class="pq-type-card-name">Which Starter Pok&eacute;mon Are You?</p>
+								<p class="pq-type-card-desc">Grass, Fire, or Water? Find your Gen 1–9 starter match.</p>
+								<div class="pq-type-card-chips">
+									<span class="pq-type-chip">🌿 Personality</span>
+									<span class="pq-type-chip">27 results</span>
+									<span class="pq-type-chip">20 questions</span>
+								</div>
+							</div>
+							<span class="pq-type-card-arrow">&#8594;</span>
 						</div>
 					</a>
-					<a class="game-card is-available" href="personality-quiz.html?quiz=kanto" style="--stagger:2">
-						<span class="game-badge" style="background:#ee1515">Personality</span>
-						<div class="game-icon" style="--icon-bg: rgba(238,21,21,0.12)">
-							<img class="game-item-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" alt="" width="56" height="56">
+					<a class="pq-type-card" style="--card-color:#6c5ce7" href="personality-quiz.html?quiz=type">
+						<div class="pq-card-hero">
+							<span class="pq-card-hero-label">TYPE QUIZ</span>
+							<div class="pq-card-hero-sprites">
+								<img class="pq-hub-type-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/10.png" alt="" loading="lazy">
+								<img class="pq-hub-type-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/11.png" alt="" loading="lazy">
+								<img class="pq-hub-type-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/14.png" alt="" loading="lazy">
+								<img class="pq-hub-type-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/8.png" alt="" loading="lazy">
+							</div>
 						</div>
-						<strong class="game-title">Which Kanto Pok&eacute;mon Are You?</strong>
-						<span class="game-desc">Discover your true Gen 1 counterpart among all 151 original Pokémon.</span>
-						<div class="game-chips">
-							<span class="game-chip">✨ Personality</span>
-							<span class="game-chip">40 Questions</span>
-							<span class="game-chip">151 Results</span>
+						<div class="pq-type-card-body">
+							<div class="pq-type-card-info">
+								<p class="pq-type-card-name">Which Type Are You?</p>
+								<p class="pq-type-card-desc">Fire, Psychic, Ghost… which of the 10 types fits your personality?</p>
+								<div class="pq-type-card-chips">
+									<span class="pq-type-chip">🔮 Personality</span>
+									<span class="pq-type-chip">10 results</span>
+									<span class="pq-type-chip">13 questions</span>
+								</div>
+							</div>
+							<span class="pq-type-card-arrow">&#8594;</span>
 						</div>
-						<div class="game-footer">
-							<span class="game-best"><span class="gb-label">Type</span><span class="gb-value">Fun</span></span>
-							<span class="game-cta">Start &rarr;</span>
+					</a>
+					<a class="pq-type-card" style="--card-color:#ee1515" href="personality-quiz.html?quiz=kanto">
+						<div class="pq-card-hero">
+							<span class="pq-card-hero-label">KANTO QUIZ</span>
+							<div class="pq-card-hero-sprites">
+								<img class="pq-hub-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" alt="" loading="lazy">
+								<img class="pq-hub-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt="" loading="lazy">
+								<img class="pq-hub-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png" alt="" loading="lazy">
+								<img class="pq-hub-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png" alt="" loading="lazy">
+							</div>
+						</div>
+						<div class="pq-type-card-body">
+							<div class="pq-type-card-info">
+								<p class="pq-type-card-name">Which Kanto Pok&eacute;mon Are You?</p>
+								<p class="pq-type-card-desc">Discover your true Gen 1 counterpart among all 151 original Pok&eacute;mon.</p>
+								<div class="pq-type-card-chips">
+									<span class="pq-type-chip">✨ Personality</span>
+									<span class="pq-type-chip">151 results</span>
+									<span class="pq-type-chip">40 questions</span>
+								</div>
+							</div>
+							<span class="pq-type-card-arrow">&#8594;</span>
 						</div>
 					</a>
 				</div>
