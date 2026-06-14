@@ -11,11 +11,44 @@
 	gap: 12px;
 	flex-wrap: wrap;
 }
+.tw-left {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
+}
+.tw-avatar {
+	width: 36px;
+	height: 36px;
+	image-rendering: pixelated;
+	filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+}
+.tw-name-group {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
 .tw-greet {
 	font-weight: 800;
 	font-size: 13px;
 	white-space: nowrap;
+	line-height: 1.2;
 }
+.tw-rank {
+	display: inline-block;
+	padding: 1px 7px;
+	border-radius: 999px;
+	font-size: 9px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	align-self: flex-start;
+}
+.tw-rank--rookie  { background: rgba(150,150,150,0.25); color: #ccc; border: 1px solid rgba(200,200,200,0.3); }
+.tw-rank--trainer { background: rgba(59,130,246,0.25);  color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); }
+.tw-rank--ace     { background: rgba(139,92,246,0.25);  color: #c4b5fd; border: 1px solid rgba(139,92,246,0.4); }
+.tw-rank--elite   { background: rgba(249,115,22,0.25);  color: #fdba74; border: 1px solid rgba(249,115,22,0.4); }
+.tw-rank--champ   { background: linear-gradient(90deg,rgba(234,179,8,0.3),rgba(239,68,68,0.3)); color: #fde68a; border: 1px solid rgba(234,179,8,0.5); }
 .tw-stats {
 	display: flex;
 	gap: 8px;
@@ -34,6 +67,10 @@
 	font-weight: 700;
 	color: rgba(255,255,255,0.85);
 }
+.tw-chip--gold  { background: rgba(234,179,8,0.18);  border-color: rgba(234,179,8,0.45);  color: #fde68a; }
+.tw-chip--green { background: rgba(34,197,94,0.15);  border-color: rgba(34,197,94,0.4);   color: #86efac; }
+.tw-chip--fire  { background: rgba(249,115,22,0.18); border-color: rgba(249,115,22,0.4);  color: #fdba74; }
+.tw-chip--blue  { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.4);  color: #93c5fd; }
 .tw-camp-link {
 	margin-left: auto;
 	display: inline-block;

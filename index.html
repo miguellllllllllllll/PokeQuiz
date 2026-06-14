@@ -70,7 +70,13 @@
 	<div class="trainer-welcome" id="trainerWelcome" hidden>
 		<div class="container">
 			<div class="tw-inner">
-				<span class="tw-greet" id="twGreet">Welcome back, Trainer!</span>
+				<div class="tw-left">
+					<img class="tw-avatar" id="twAvatar" src="" alt="" width="36" height="36">
+					<div class="tw-name-group">
+						<span class="tw-greet" id="twGreet">Welcome back, Trainer!</span>
+						<span class="tw-rank" id="twRank" hidden></span>
+					</div>
+				</div>
 				<div class="tw-stats" id="twStats"></div>
 				<a class="tw-camp-link" href="camp.html">Open Camp 🏕️</a>
 			</div>
@@ -284,25 +290,71 @@
 				if (name && name !== 'Trainer') {
 					const inv = JSON.parse(localStorage.getItem('pokequiz_inventory') || '{}');
 					const tokens = typeof inv.tokens === 'number' ? inv.tokens : 0;
-					const streak = typeof inv.streak === 'number' ? inv.streak : 0;
+
+					// Login streak from camp stats
+					let loginStreak = 0;
+					try {
+						const campStats = JSON.parse(localStorage.getItem('pokequiz_camp_stats') || '{}');
+						loginStreak = typeof campStats.loginStreak === 'number' ? campStats.loginStreak : 0;
+					} catch {}
 
 					const banner = document.getElementById('trainerWelcome');
 					const greet = document.getElementById('twGreet');
 					const stats = document.getElementById('twStats');
+					const rankEl = document.getElementById('twRank');
+					const avatarEl = document.getElementById('twAvatar');
 
 					greet.textContent = `Welcome back, ${name}!`;
 
+					// Pokémon sprite — hash name to one of 12 iconic Gen 1 Pokémon
+					const AVATARS = [25,1,4,7,52,54,39,143,131,133,6,9];
+					const nameSum = name.split('').reduce((s,c) => s + c.charCodeAt(0), 0);
+					const avatarId = AVATARS[nameSum % AVATARS.length];
+					avatarEl.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${avatarId}.png`;
+
+					// Rank based on tokens
+					const RANKS = [
+						{ min: 1000, label: 'Champion',    cls: 'tw-rank--champ'   },
+						{ min: 500,  label: 'Elite Four',  cls: 'tw-rank--elite'   },
+						{ min: 250,  label: 'Ace Trainer', cls: 'tw-rank--ace'     },
+						{ min: 100,  label: 'Trainer',     cls: 'tw-rank--trainer' },
+						{ min: 0,    label: 'Rookie',      cls: 'tw-rank--rookie'  },
+					];
+					const rank = RANKS.find(r => tokens >= r.min);
+					if (rank) {
+						rankEl.textContent = rank.label;
+						rankEl.className = `tw-rank ${rank.cls}`;
+						rankEl.hidden = false;
+					}
+
+					// Chips
 					const chips = [];
-					if (tokens > 0) chips.push(`💰 ${tokens} Tokens`);
-					if (streak > 1) chips.push(`🔥 ${streak}-day streak`);
+					if (tokens > 0) chips.push({ text: `💰 ${tokens} Tokens`, cls: 'tw-chip--gold' });
+					if (loginStreak > 1) chips.push({ text: `🔥 ${loginStreak}-day streak`, cls: 'tw-chip--fire' });
 
 					// Best leaderboard score
 					const lb = JSON.parse(localStorage.getItem('pokequiz_leaderboard') || '[]');
 					const myBest = lb.filter(e => e.name === name).sort((a,b) => b.score - a.score)[0];
-					if (myBest) chips.push(`⭐ Best: ${myBest.score}/${myBest.total || 21}`);
+					if (myBest) chips.push({ text: `⭐ Best: ${myBest.score}/${myBest.total || 21}`, cls: 'tw-chip--green' });
+
+					// Daily quests hook
+					const today = new Date().toISOString().slice(0,10);
+					const dq = inv.dailyQuests;
+					if (dq && dq.date === today && !dq.claimed) {
+						const done = Object.values(dq.progress || {}).filter(Boolean).length;
+						const total = 3;
+						const remaining = total - done;
+						if (remaining > 0) {
+							chips.push({ text: `🗓️ ${remaining} quest${remaining > 1 ? 's' : ''} ready`, cls: 'tw-chip--blue', href: 'camp.html' });
+						}
+					}
 
 					if (chips.length) {
-						stats.innerHTML = chips.map(c => `<span class="tw-chip">${c}</span>`).join('');
+						stats.innerHTML = chips.map(c =>
+							c.href
+								? `<a class="tw-chip ${c.cls}" href="${c.href}" style="text-decoration:none">${c.text}</a>`
+								: `<span class="tw-chip ${c.cls}">${c.text}</span>`
+						).join('');
 					}
 
 					banner.hidden = false;
